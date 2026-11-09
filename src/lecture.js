@@ -21,9 +21,10 @@ async function avecArticles(db, sujets, extraits = true) {
   return sujets;
 }
 
-// Sigles du métier : on cherche aussi (ou plutôt) leur forme développée.
+// Sigles du métier (produits français) : on cherche le sigle et sa forme développée,
+// et seulement dans les sujets couverts par au moins une source française.
 const SIGLES = {
-  per: '"epargne retraite"',
+  per: '(per OR "plan d epargne retraite" OR "plan epargne retraite")',
   perco: '(perco OR "epargne retraite")',
   pea: '(pea OR "plan d epargne en actions")',
   ifi: '(ifi OR "fortune immobiliere")',
@@ -38,8 +39,9 @@ const SIGLES = {
 // mots de 4 lettres et plus = début de mot ("assur" trouve "assurance") ; mots courts = mot exact ; sigles = forme développée.
 export function construireRequete(saisie) {
   const mots = String(saisie || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-  const termes = mots.slice(0, 8).map((m) => SIGLES[m] || (m.length >= 4 ? `"${m}"*` : `"${m}"`));
-  return termes.join(" AND ");
+  const retenus = mots.slice(0, 8);
+  const termes = retenus.map((m) => SIGLES[m] || (m.length >= 4 ? `"${m}"*` : `"${m}"`));
+  return { requete: termes.join(" AND "), francais: retenus.some((m) => SIGLES[m]) };
 }
 
 const PERIODES = { "24h": 1, "7j": 7, "30j": 30, "90j": 90 };
@@ -103,15 +105,16 @@ export async function routeLecture(chemin, url, db) {
 
   // Recherche plein texte (titres, chapôs, résumés), insensible aux accents.
   if (chemin === "/api/recherche") {
-    const requete = construireRequete(p.get("q"));
+    const { requete, francais } = construireRequete(p.get("q"));
     if (!requete) return json({ sujets: [] });
+    const filtreFr = francais ? "AND EXISTS (SELECT 1 FROM articles a WHERE a.sujet_id = s.id AND a.langue = 'fr')" : "";
     const { results: ids } = await db
-      .prepare("SELECT sujet_id, MIN(rank) AS pertinence FROM recherche WHERE recherche MATCH ? GROUP BY sujet_id ORDER BY pertinence LIMIT 60")
+      .prepare("SELECT sujet_id, MIN(rank) AS pertinence FROM recherche WHERE recherche MATCH ? GROUP BY sujet_id ORDER BY pertinence LIMIT 90")
       .bind(requete)
       .all();
     if (!ids.length) return json({ sujets: [] });
     const { results } = await db
-      .prepare(`SELECT ${COLONNES} FROM sujets s WHERE s.id IN (${ids.map(() => "?").join(",")}) AND s.nb_articles > 0 ORDER BY s.derniere_pub DESC`)
+      .prepare(`SELECT ${COLONNES} FROM sujets s WHERE s.id IN (${ids.map(() => "?").join(",")}) AND s.nb_articles > 0 ${filtreFr} ORDER BY s.derniere_pub DESC`)
       .bind(...ids.map((r) => r.sujet_id))
       .all();
     await avecArticles(db, results);

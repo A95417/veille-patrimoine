@@ -41,7 +41,7 @@ TA TÂCHE : pour chaque sujet fourni, donne :
   2 = secondaire : déclaration ou proposition politique sans texte en discussion (meeting, interview, programme de campagne), actualité d'une entreprise, information sectorielle, actualité internationale peu liée à l'épargne des clients.
   1 = hors sujet pour un gestionnaire de patrimoine.
   En cas d'hésitation entre deux niveaux, choisis le plus bas.
-- "categories" : 1 à 3 catégories, choisies uniquement dans la liste autorisée (« Autre » si rien ne convient).
+- "categories" : 1 à 3 catégories, choisies uniquement dans la liste autorisée (« Autre » si rien ne convient). Les catégories de produits et de règles (Assurance-vie, Épargne retraite (PER), Épargne réglementée, Fiscalité, Législation patrimoniale, Transmission & succession, Retraite & réformes, Prévoyance…) concernent UNIQUEMENT la France : un dispositif étranger (401(k), IRA, ISA, fiscalité américaine…) va dans « Autre », « Marchés actions » ou « Macroéconomie » selon le cas.
 - "titre_fr" : le titre en français. Si l'article est en anglais, traduis-le fidèlement ; s'il est déjà en français, recopie-le tel quel.
 - "resume_court" : 2 à 3 phrases factuelles en français qui disent ce que l'article apporte. N'écris pas ce qui manque dans l'extrait (pas de « l'extrait ne précise pas »). Si seul le titre est disponible, commence par « D'après le titre publié par la source, ».
 Réponds pour TOUS les sujets, en recopiant exactement leur "id".`;
