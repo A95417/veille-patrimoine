@@ -1,0 +1,12 @@
+// Configuration Cloudflare du site "veille-patrimoine"
+// Ce fichier ne contient AUCUN secret : les clés sont dans le coffre GitHub.
+{
+  "name": "veille-patrimoine",
+  "main": "src/index.js",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  }
+}
