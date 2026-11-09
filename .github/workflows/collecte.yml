@@ -26,6 +26,9 @@ concurrency:
 jobs:
   collecter:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash   # "bash" active pipefail : une étape qui échoue apparaît bien en rouge, même avec "| tee"
     timeout-minutes: 10
     steps:
       - name: Récupérer le code
