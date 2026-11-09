@@ -6,17 +6,43 @@
   <title>Accueil · Veille Patrimoine</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/commun.js"></script>
+  <style>
+    .fil { display: grid; gap: 14px; }
+    .sujet { background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 16px 18px; }
+    .sujet h3 { margin: 4px 0 8px; font-size: 1.05rem; line-height: 1.35; }
+    .sujet h3 a { color: var(--texte); text-decoration: none; }
+    .sujet h3 a:hover { text-decoration: underline; }
+    .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 0.82rem; color: var(--doux); }
+    .groupe { text-transform: uppercase; letter-spacing: .04em; font-weight: 600; font-size: 0.72rem; }
+    .extrait { color: var(--texte); opacity: .85; margin: 0 0 10px; font-size: 0.95rem;
+               display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .sources { display: flex; gap: 6px; flex-wrap: wrap; }
+    .source { font-size: 0.8rem; padding: 3px 9px; border: 1px solid var(--bord); border-radius: 99px;
+              color: var(--texte); text-decoration: none; background: var(--fond); }
+    .source:hover { border-color: var(--accent); }
+    .plus-sources { font-size: 0.85rem; margin-top: 8px; }
+    .plus-sources summary { cursor: pointer; color: var(--accent); }
+    .plus-sources li { margin: 4px 0; }
+    .vide { text-align: center; padding: 40px 16px; }
+    .barre { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
   <main class="page">
-    <section class="carte">
-      <h1 id="bonjour">Bonjour</h1>
-      <p class="doux">Vous êtes connecté. Le fil d'actualités, le bandeau « À la une » et les marchés arriveront ici dans les prochaines étapes.</p>
-    </section>
+    <div class="barre">
+      <h1 id="bonjour">Actualités</h1>
+      <span class="doux" id="info-maj"></span>
+    </div>
+    <p class="doux" style="margin-top:-6px">Mis à jour automatiquement toutes les 15 minutes. Les résumés par l'IA, les catégories et le bandeau « À la une » arrivent à l'étape suivante.</p>
 
-    <section class="carte carte-etroite">
-      <h2>Changer mon mot de passe</h2>
+    <div class="fil" id="fil"><p class="doux">Chargement…</p></div>
+    <div style="text-align:center;margin:20px 0">
+      <button class="bouton bouton-discret" id="btn-suite" hidden>Afficher plus d'actualités</button>
+    </div>
+
+    <details class="carte carte-etroite" style="margin-top:30px">
+      <summary style="cursor:pointer;font-weight:600">Mon compte : changer mon mot de passe</summary>
       <form id="form-mdp">
         <label for="actuel">Mot de passe actuel</label>
         <input id="actuel" type="password" autocomplete="current-password" required>
@@ -25,12 +51,61 @@
         <button class="bouton bouton-large" type="submit">Enregistrer</button>
         <div class="message" id="msg-mdp" role="alert"></div>
       </form>
-    </section>
+    </details>
   </main>
   <script>
-    chargerEntete("/").then((moi) => {
-      document.getElementById("bonjour").textContent = "Bonjour " + moi.nom;
-    });
+    const GROUPES = { officielle: "Officiel", presse: "Presse", international: "International", crypto: "Crypto" };
+    let suite = null;
+
+    function quand(iso) {
+      const d = new Date(iso), maintenant = new Date();
+      const min = Math.round((maintenant - d) / 60000);
+      if (min < 1) return "à l'instant";
+      if (min < 60) return `il y a ${min} min`;
+      if (min < 24 * 60 && d.getDate() === maintenant.getDate()) return `aujourd'hui à ${d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+      return d.toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function carte(s) {
+      const principal = s.articles[s.articles.length - 1] || s.articles[0];   // le premier publié
+      const avecExtrait = s.articles.find((a) => a.extrait && a.extrait.length > 40);
+      const noms = [...new Map(s.articles.map((a) => [a.source_nom, a])).values()];
+      const pastilles = noms.slice(0, 4).map((a) =>
+        `<a class="source" href="${echapper(a.lien)}" target="_blank" rel="noopener noreferrer">${echapper(a.source_nom)} ↗</a>`).join("");
+      const liste = s.articles.length > 1
+        ? `<details class="plus-sources"><summary>${s.articles.length} articles sur ce sujet</summary><ul>${
+            s.articles.map((a) => `<li><a href="${echapper(a.lien)}" target="_blank" rel="noopener noreferrer">${echapper(a.titre)}</a>
+              <span class="doux">· ${echapper(a.source_nom)} · ${quand(a.publie_le)}</span></li>`).join("")}</ul></details>`
+        : "";
+      return `<article class="sujet">
+        <div class="meta"><span class="groupe">${GROUPES[principal.groupe] || ""}</span><span>·</span><span>${quand(s.derniere_pub)}</span>
+          ${principal.langue === "en" ? '<span>· en anglais</span>' : ""}</div>
+        <h3><a href="${echapper(principal.lien)}" target="_blank" rel="noopener noreferrer">${echapper(s.titre)}</a></h3>
+        ${avecExtrait ? `<p class="extrait">${echapper(avecExtrait.extrait)}</p>` : ""}
+        <div class="sources">${pastilles}</div>
+        ${liste}
+      </article>`;
+    }
+
+    async function charger(ajouter) {
+      const fil = document.getElementById("fil");
+      const params = new URLSearchParams({ limite: "30" });
+      if (ajouter && suite) params.set("avant", suite);
+      const r = await appelApi("/api/actualites?" + params);
+      suite = r.suite;
+      const html = r.sujets.map(carte).join("");
+      if (ajouter) fil.insertAdjacentHTML("beforeend", html);
+      else fil.innerHTML = html || `<div class="carte vide"><strong>Aucune actualité pour l'instant.</strong><br>
+        <span class="doux">Le robot de collecte n'a pas encore tourné. Les premiers articles arriveront dans les 15 minutes.</span></div>`;
+      document.getElementById("btn-suite").hidden = !suite;
+      document.getElementById("info-maj").textContent = "Affiché à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    document.getElementById("btn-suite").onclick = () => charger(true);
+    chargerEntete("/").then(() => charger(false));
+    // Rafraîchit le fil toutes les 5 minutes si l'onglet est visible et qu'on est en haut de page.
+    setInterval(() => { if (!document.hidden && scrollY < 200) charger(false); }, 5 * 60 * 1000);
+
     document.getElementById("form-mdp").addEventListener("submit", async (e) => {
       e.preventDefault();
       const msg = document.getElementById("msg-mdp");
@@ -41,9 +116,7 @@
         });
         e.target.reset();
         afficherMessage(msg, "Mot de passe modifié.", "ok");
-      } catch (err) {
-        afficherMessage(msg, err.message, "ko");
-      }
+      } catch (err) { afficherMessage(msg, err.message, "ko"); }
     });
   </script>
 </body>
