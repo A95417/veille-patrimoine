@@ -1,18 +1,5 @@
 [
   {
-    "id": "service-public-particuliers",
-    "nom": "Service-public.fr (particuliers)",
-    "groupe": "officielle",
-    "flux": [
-      {
-        "url": "https://www.service-public.gouv.fr/abonnements/rss/actu-actu-part.rss",
-        "ok": false,
-        "raison": "erreur HTTP 404",
-        "origine": "connu"
-      }
-    ]
-  },
-  {
     "id": "service-public-entreprises",
     "nom": "Service-public.fr (entreprises)",
     "groupe": "officielle",
@@ -65,20 +52,6 @@
         "robots_ok": true,
         "exemple": "La protection des lieux de culte et du patrimoine religieux - �tude de l�gislation compar�e n� 364",
         "origine": "connu"
-      },
-      {
-        "url": "https://www.senat.fr/rss/presse.rss",
-        "ok": true,
-        "titre": "S�nat - communiqu�s de presse",
-        "format": "RSS",
-        "nb_articles": 6,
-        "dernier_article": "2026-11-05T18:02:44.000Z",
-        "age_jours": 4,
-        "part_avec_resume": 0,
-        "longueur_resume_moy": 34,
-        "robots_ok": true,
-        "exemple": "Article 34 du PLFSS : le bon sens l'emporte enfin !",
-        "origine": "connu"
       }
     ]
   },
@@ -99,47 +72,6 @@
         "longueur_resume_moy": 260,
         "robots_ok": true,
         "exemple": "IF - Actualisation des plafonds d’exonération de cotisation foncière des entreprises (CFE) pour 2027 dans les zones urba",
-        "origine": "connu"
-      },
-      {
-        "url": "https://bofip.impots.gouv.fr/bofip/ext/rss.xml?actualites=1",
-        "ok": true,
-        "titre": "BOFiP-Impôts - Actualités",
-        "format": "RSS",
-        "nb_articles": 3,
-        "dernier_article": null,
-        "age_jours": null,
-        "part_avec_resume": 100,
-        "longueur_resume_moy": 249,
-        "robots_ok": true,
-        "exemple": "IF - Actualisation des plafonds d’exonération de cotisation foncière des entreprises (CFE) pour 2027 dans les zones urba",
-        "origine": "connu"
-      }
-    ]
-  },
-  {
-    "id": "tresor",
-    "nom": "Direction générale du Trésor",
-    "groupe": "officielle",
-    "flux": [
-      {
-        "url": "https://www.tresor.economie.gouv.fr/Flux/Atom/Articles",
-        "ok": false,
-        "raison": "erreur HTTP 404",
-        "origine": "connu"
-      },
-      {
-        "url": "https://www.tresor.economie.gouv.fr/Flux/Atom/Articles/Tags/Persepctives-economiques",
-        "ok": true,
-        "titre": "Trésor-Info - Publications de la direction générale du Trésor - Persepctives-economiques",
-        "format": "Atom",
-        "nb_articles": 2,
-        "dernier_article": "2025-10-14T22:00:00.000Z",
-        "age_jours": 391,
-        "part_avec_resume": 100,
-        "longueur_resume_moy": 639,
-        "robots_ok": true,
-        "exemple": "Le rapport économique, social et financier (RESF) 2026 est publié",
         "origine": "connu"
       }
     ]
@@ -194,30 +126,6 @@
     ]
   },
   {
-    "id": "amf",
-    "nom": "AMF",
-    "groupe": "officielle",
-    "flux": []
-  },
-  {
-    "id": "banque-de-france",
-    "nom": "Banque de France",
-    "groupe": "officielle",
-    "flux": []
-  },
-  {
-    "id": "acpr",
-    "nom": "ACPR",
-    "groupe": "officielle",
-    "flux": []
-  },
-  {
-    "id": "assemblee-nationale",
-    "nom": "Assemblée nationale",
-    "groupe": "officielle",
-    "flux": []
-  },
-  {
     "id": "bce",
     "nom": "BCE",
     "groupe": "officielle",
@@ -239,6 +147,47 @@
     ]
   },
   {
+    "id": "bri",
+    "nom": "BRI – discours des banquiers centraux (Fed, BCE, Banque de France…)",
+    "groupe": "officielle",
+    "flux": [
+      {
+        "url": "https://www.bis.org/doclist/cbspeeches.rss",
+        "ok": true,
+        "titre": "Central bankers' speeches - english",
+        "format": "RSS",
+        "nb_articles": 50,
+        "dernier_article": "2026-11-09T00:00:00.000Z",
+        "age_jours": 1,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 180,
+        "robots_ok": true,
+        "exemple": "Opening remarks - 2026 Market Practitioners Group Conference",
+        "origine": "connu"
+      },
+      {
+        "url": "https://www.bis.org/doclist/all_pressrels.rss",
+        "ok": false,
+        "raison": "flux vide",
+        "origine": "connu"
+      },
+      {
+        "url": "https://www.bis.org/rss.xml",
+        "ok": true,
+        "titre": "Bank for International Settlements",
+        "format": "RSS",
+        "nb_articles": 10,
+        "dernier_article": "2026-10-30T11:50:00.000Z",
+        "age_jours": 10,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 11531,
+        "robots_ok": true,
+        "exemple": "Senior Business Analyst",
+        "origine": "essai"
+      }
+    ]
+  },
+  {
     "id": "agefi",
     "nom": "L'Agefi",
     "groupe": "presse",
@@ -249,12 +198,12 @@
         "titre": "Actualité financière et économique - Information finance avec l'AGEFI",
         "format": "RSS",
         "nb_articles": 250,
-        "dernier_article": "2026-11-09T13:02:42.000Z",
+        "dernier_article": "2026-11-09T14:56:42.000Z",
         "age_jours": 0,
         "part_avec_resume": 95,
         "longueur_resume_moy": 204,
         "robots_ok": true,
-        "exemple": "Ares injecte un milliard de dollars dans Equinox",
+        "exemple": "Jensen Huang, sous le coup d’une enquête interne, met à l’épreuve la gouvernance de Nvidia",
         "origine": "connu"
       }
     ]
@@ -270,12 +219,12 @@
         "titre": "Le Revenu - Actualités financières",
         "format": "RSS",
         "nb_articles": 50,
-        "dernier_article": "2026-11-09T12:55:28.000Z",
+        "dernier_article": "2026-11-09T15:07:06.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
         "longueur_resume_moy": 205,
         "robots_ok": true,
-        "exemple": "Présidentielle 2027 : Teddy Riner annonce sa candidature et veut rassembler les Français",
+        "exemple": "États-Unis : Amazon déploie le shopping conversationnel avec Alexa",
         "origine": "connu"
       }
     ]
@@ -291,12 +240,12 @@
         "titre": "Le Figaro - Ancien flux Patrimoine",
         "format": "RSS",
         "nb_articles": 20,
-        "dernier_article": "2026-11-09T13:16:35.000Z",
+        "dernier_article": "2026-11-09T14:45:19.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 216,
+        "longueur_resume_moy": 228,
         "robots_ok": true,
-        "exemple": "Marginal, aucune «idéologie particulière», fasciné par la violence… Qui était Michał Oksiński, l’auteur de la fusillade ",
+        "exemple": "Hubert Védrine : « Le malaise de la France par rapport à son passé est si ancien que l’on pourrait parler d’un Covid nat",
         "origine": "connu"
       },
       {
@@ -333,12 +282,12 @@
         "titre": "Le Figaro - Economie - Actualité économique et financière, conseils en gestion de patrimoine",
         "format": "RSS",
         "nb_articles": 20,
-        "dernier_article": "2026-11-09T13:30:56.000Z",
+        "dernier_article": "2026-11-09T15:08:03.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 184,
+        "longueur_resume_moy": 185,
         "robots_ok": true,
-        "exemple": "Le gouvernement annonce une revalorisation du smic de 1,6% pour le porter à 1502 euros dès le 1er décembre",
+        "exemple": "Le prix de référence du gaz augmentera encore en décembre, de 5,8%",
         "origine": "connu"
       }
     ]
@@ -354,12 +303,12 @@
         "titre": "https://www.capital.fr : flux d'articles",
         "format": "RSS",
         "nb_articles": 10,
-        "dernier_article": "2026-11-09T13:24:41.000Z",
+        "dernier_article": "2026-11-09T14:48:57.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 270,
+        "longueur_resume_moy": 269,
         "robots_ok": true,
-        "exemple": "C’est officiel, le Smic augmente au 1er décembre, ce que vous toucherez en plus sur votre fiche de paie",
+        "exemple": "Grève du 17 novembre : pourquoi les syndicats rejettent les annonces du gouvernement sur le Smic",
         "origine": "connu"
       }
     ]
@@ -375,12 +324,12 @@
         "titre": "Argent & Placements : Toute l’actualité sur Le Monde.fr.",
         "format": "RSS",
         "nb_articles": 20,
-        "dernier_article": "2026-11-09T10:48:06.000Z",
+        "dernier_article": "2026-11-09T14:30:03.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 241,
+        "longueur_resume_moy": 242,
         "robots_ok": true,
-        "exemple": "La Cour des comptes repart à la charge contre les niches fiscales",
+        "exemple": "Crédit agricole ambitionne de créer le troisième groupe bancaire d’Italie",
         "origine": "connu"
       },
       {
@@ -389,15 +338,115 @@
         "titre": "Économie : Toute l’actualité sur Le Monde.fr.",
         "format": "RSS",
         "nb_articles": 20,
-        "dernier_article": "2026-11-09T12:30:04.000Z",
+        "dernier_article": "2026-11-09T14:59:46.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 242,
+        "longueur_resume_moy": 234,
         "robots_ok": true,
-        "exemple": "Stéphane Carcillo et Gilbert Cette, économistes : « Le coup de pouce au smic est une mauvaise nouvelle pour l’emploi et ",
+        "exemple": "EN DIRECT, annonces de Sébastien Lecornu : le premier ministre reçoit les représentants des lycéens et des étudiants, av",
         "origine": "connu"
       }
     ]
+  },
+  {
+    "id": "bfm-business",
+    "nom": "BFM Business",
+    "groupe": "presse",
+    "flux": [
+      {
+        "url": "https://www.bfmtv.com/rss/economie/",
+        "ok": true,
+        "titre": "Homepage Economie - actualités",
+        "format": "RSS",
+        "nb_articles": 30,
+        "dernier_article": "2026-11-09T15:02:11.000Z",
+        "age_jours": 0,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 243,
+        "robots_ok": true,
+        "exemple": "L'intégrale d'USA Today du lundi 9 novembre",
+        "origine": "connu"
+      },
+      {
+        "url": "https://www.bfmtv.com/rss/economie/patrimoine/",
+        "ok": true,
+        "titre": "Home Patrimoine - actualités",
+        "format": "RSS",
+        "nb_articles": 30,
+        "dernier_article": "2026-11-09T08:36:46.000Z",
+        "age_jours": 0,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 275,
+        "robots_ok": true,
+        "exemple": "Ils ont 168 euros en moyenne cachés à la maison: s'ils n'ont jamais autant payé par carte, les Français sont inquiets de",
+        "origine": "connu"
+      },
+      {
+        "url": "https://www.bfmtv.com/rss/economie/finances-publiques/",
+        "ok": false,
+        "raison": "erreur HTTP 404",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "boursier",
+    "nom": "Boursier.com",
+    "groupe": "presse",
+    "flux": [
+      {
+        "url": "https://www.boursier.com/rss/actualites.rss",
+        "ok": false,
+        "raison": "erreur HTTP 403",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "franceinfo-eco",
+    "nom": "Franceinfo Économie",
+    "groupe": "presse",
+    "flux": [
+      {
+        "url": "https://www.franceinfo.fr/economie.rss",
+        "ok": true,
+        "titre": "franceinfo- Éco / Conso",
+        "format": "RSS",
+        "nb_articles": 18,
+        "dernier_article": "2026-11-09T14:21:59.000Z",
+        "age_jours": 0,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 221,
+        "robots_ok": true,
+        "exemple": "La Cour des comptes propose 18 mesures pour économiser jusqu'à 38 milliards d'euros et redresser les finances publiques",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "argus-assurance",
+    "nom": "L'Argus de l'assurance",
+    "groupe": "presse",
+    "flux": [
+      {
+        "url": "https://www.argusdelassurance.com/rss",
+        "ok": false,
+        "raison": "erreur HTTP 404",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "option-finance",
+    "nom": "Option Finance",
+    "groupe": "presse",
+    "flux": []
+  },
+  {
+    "id": "funds-magazine",
+    "nom": "Funds Magazine",
+    "groupe": "presse",
+    "flux": []
   },
   {
     "id": "cnbc",
@@ -410,12 +459,12 @@
         "titre": "US Top News and Analysis",
         "format": "RSS",
         "nb_articles": 30,
-        "dernier_article": "2026-11-09T13:27:57.000Z",
+        "dernier_article": "2026-11-09T15:03:03.000Z",
         "age_jours": 0,
-        "part_avec_resume": 97,
+        "part_avec_resume": 93,
         "longueur_resume_moy": 130,
         "robots_ok": true,
-        "exemple": "Nvidia stock falls 5% as scrutiny turns to Jensen Huang’s relationship with alleged Chinese spy",
+        "exemple": "Nvidia stock falls 5% as scrutiny turns to Jensen Huang’s affair with alleged Chinese spy",
         "origine": "connu"
       },
       {
@@ -439,7 +488,7 @@
         "format": "RSS",
         "nb_articles": 30,
         "dernier_article": "2026-11-09T02:50:22.000Z",
-        "age_jours": 0,
+        "age_jours": 1,
         "part_avec_resume": 87,
         "longueur_resume_moy": 119,
         "robots_ok": true,
@@ -459,12 +508,12 @@
         "titre": "Bloomberg Markets",
         "format": "RSS",
         "nb_articles": 20,
-        "dernier_article": "2026-11-09T13:23:06.000Z",
+        "dernier_article": "2026-11-09T14:47:05.000Z",
         "age_jours": 0,
-        "part_avec_resume": 90,
-        "longueur_resume_moy": 192,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 201,
         "robots_ok": true,
-        "exemple": "SocGen’s Juckes Sees ‘Less Dollar-Friendly’ Year in 2027",
+        "exemple": "Stocks Climb as Buyers Step In Despite Nvidia Woes: Markets Wrap",
         "origine": "connu"
       },
       {
@@ -494,12 +543,81 @@
         "titre": "MarketWatch.com - Top Stories",
         "format": "RSS",
         "nb_articles": 10,
-        "dernier_article": "2026-11-09T12:27:00.000Z",
+        "dernier_article": "2026-11-09T15:00:00.000Z",
+        "age_jours": 0,
+        "part_avec_resume": 90,
+        "longueur_resume_moy": 118,
+        "robots_ok": true,
+        "exemple": "‘My life could be cut short’: I’m 55, married and have a brain tumor. Should I splash out on a $210,000 Porsche?",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "guardian-business",
+    "nom": "The Guardian (Business)",
+    "groupe": "international",
+    "flux": [
+      {
+        "url": "https://www.theguardian.com/us/business/rss",
+        "ok": true,
+        "titre": "Business | The Guardian",
+        "format": "RSS",
+        "nb_articles": 20,
+        "dernier_article": "2026-11-09T15:01:43.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 135,
+        "longueur_resume_moy": 641,
         "robots_ok": true,
-        "exemple": "The biggest takeaway from Berkshire Hathaway’s latest quarter isn’t the $357 billion cash or its stock buybacks",
+        "exemple": "Nvidia’s value tumbles by $330bn after ‘honeytrap’ investigation launched, as China denies spying claims – business live",
+        "origine": "connu"
+      },
+      {
+        "url": "https://www.theguardian.com/business/economics/rss",
+        "ok": true,
+        "titre": "Economics | The Guardian",
+        "format": "RSS",
+        "nb_articles": 20,
+        "dernier_article": "2026-11-09T15:01:43.000Z",
+        "age_jours": 0,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 732,
+        "robots_ok": true,
+        "exemple": "Nvidia’s value tumbles by $330bn after ‘honeytrap’ investigation launched, as China denies spying claims – business live",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "bbc-business",
+    "nom": "BBC (Business)",
+    "groupe": "international",
+    "flux": [
+      {
+        "url": "https://feeds.bbci.co.uk/news/business/rss.xml",
+        "ok": true,
+        "titre": "BBC News",
+        "format": "RSS",
+        "nb_articles": 50,
+        "dernier_article": "2026-11-09T13:42:03.000Z",
+        "age_jours": 0,
+        "part_avec_resume": 96,
+        "longueur_resume_moy": 104,
+        "robots_ok": true,
+        "exemple": "What we know so far about Jensen Huang's affair with suspected Chinese spy",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "yahoo-finance",
+    "nom": "Yahoo Finance",
+    "groupe": "international",
+    "flux": [
+      {
+        "url": "https://finance.yahoo.com/news/rssindex",
+        "ok": false,
+        "raison": "erreur HTTP 404",
         "origine": "connu"
       }
     ]
@@ -515,12 +633,12 @@
         "titre": "CoinDesk: Bitcoin, Ethereum, Crypto News and Price Data",
         "format": "RSS",
         "nb_articles": 25,
-        "dernier_article": "2026-11-09T12:41:35.000Z",
+        "dernier_article": "2026-11-09T15:00:44.000Z",
         "age_jours": 0,
-        "part_avec_resume": 88,
+        "part_avec_resume": 92,
         "longueur_resume_moy": 139,
         "robots_ok": true,
-        "exemple": "Solana set for its first tokenized stock venue under SEC framework, listing Galaxy",
+        "exemple": "North Korean hackers are creating memecoins to wash loot from $6.3 billion Binance hack",
         "origine": "connu"
       }
     ]
@@ -536,12 +654,46 @@
         "titre": "Journal du Coin",
         "format": "RSS",
         "nb_articles": 10,
-        "dernier_article": "2026-11-09T13:00:00.000Z",
+        "dernier_article": "2026-11-09T15:00:00.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 296,
+        "longueur_resume_moy": 293,
         "robots_ok": true,
-        "exemple": "Crypto : L’ex-agent du FBI a puisé dans au moins 79 portefeuilles liés à des enquêtes",
+        "exemple": "Économie : Les paiements en stablecoins atteignent 482 milliards de dollars en neuf mois",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "cryptoast",
+    "nom": "Cryptoast",
+    "groupe": "crypto",
+    "flux": [
+      {
+        "url": "https://cryptoast.fr/feed/",
+        "ok": true,
+        "titre": "Cryptoast",
+        "format": "RSS",
+        "nb_articles": 20,
+        "dernier_article": "2026-11-09T15:00:13.000Z",
+        "age_jours": 0,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 405,
+        "robots_ok": true,
+        "exemple": "Après Ripple, Coinbase obtient à son tour sa licence bancaire fédérale aux USA",
+        "origine": "connu"
+      }
+    ]
+  },
+  {
+    "id": "decrypt",
+    "nom": "Decrypt",
+    "groupe": "crypto",
+    "flux": [
+      {
+        "url": "https://decrypt.co/feed",
+        "ok": false,
+        "raison": "erreur HTTP 403",
         "origine": "connu"
       }
     ]
