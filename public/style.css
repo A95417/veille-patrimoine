@@ -1,4 +1,4 @@
-/* version 5.1 */
+/* version 5.2 */
 /* Styles communs du site Veille Patrimoine */
 :root {
   --fond: #f6f6f3;
@@ -98,8 +98,10 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   .tableau tr { display: block; border-bottom: 1px solid var(--bord); padding: 8px 0; }
   .tableau td { display: block; border: 0; padding: 3px 0; }
   .tableau td[data-libelle]::before { content: attr(data-libelle) " : "; color: var(--doux); font-size: 0.85rem; }
-  .nav { order: 3; width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .nav a { white-space: nowrap; }
+  /* Sur téléphone : le menu passe sur sa propre ligne, et sur deux lignes si besoin. */
+  .nav { order: 3; flex: 0 0 100%; flex-wrap: wrap; gap: 2px; }
+  .nav a { white-space: nowrap; padding: 6px 8px; }
+  .outils { margin-left: auto; }
   .entete-contenu { gap: 8px 12px; }
   .page { padding: 16px 12px 40px; }
 }
