@@ -1,97 +1,347 @@
 {
   "_aide": "Liste des sources. Ajouter : copier un bloc et changer id/nom/site/flux. Retirer : mettre \"actif\": false. 'flux' = adresses RSS utilisées ; 'site' = page où le robot de vérification cherche d'autres flux. 'note' = remarque libre.",
   "sources": [
-    { "id": "service-public-entreprises", "nom": "Service-public.fr (entreprises)", "groupe": "officielle", "langue": "fr", "actif": true,
-      "flux": ["https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss"] },
-    { "id": "senat", "nom": "Sénat", "groupe": "officielle", "langue": "fr", "actif": true,
-      "flux": ["https://www.senat.fr/rss/textes.rss", "https://www.senat.fr/rss/rapports.rss"] },
-    { "id": "bofip", "nom": "BOFiP (doctrine fiscale)", "groupe": "officielle", "langue": "fr", "actif": true,
-      "flux": ["https://bofip.impots.gouv.fr/bofip/ext/rss.xml?actualites=1&maxR=50&maxJ=30"] },
-    { "id": "insee", "nom": "INSEE", "groupe": "officielle", "langue": "fr", "actif": true,
-      "flux": ["https://www.insee.fr/fr/flux/1", "https://www.insee.fr/fr/flux/2", "https://www.insee.fr/fr/flux/3"] },
-    { "id": "bce", "nom": "BCE", "groupe": "officielle", "langue": "en", "actif": true,
+    {
+      "id": "service-public-entreprises",
+      "nom": "Service-public.fr (entreprises)",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss"
+      ]
+    },
+    {
+      "id": "senat",
+      "nom": "Sénat",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.senat.fr/rss/textes.rss",
+        "https://www.senat.fr/rss/rapports.rss"
+      ]
+    },
+    {
+      "id": "bofip",
+      "nom": "BOFiP (doctrine fiscale)",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://bofip.impots.gouv.fr/bofip/ext/rss.xml?actualites=1&maxR=50&maxJ=30"
+      ]
+    },
+    {
+      "id": "insee",
+      "nom": "INSEE",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.insee.fr/fr/flux/1",
+        "https://www.insee.fr/fr/flux/2",
+        "https://www.insee.fr/fr/flux/3"
+      ]
+    },
+    {
+      "id": "bce",
+      "nom": "BCE",
+      "groupe": "officielle",
+      "langue": "en",
+      "actif": true,
       "note": "Titres seulement : l'IA résumera à partir du titre et le signalera.",
-      "flux": ["https://www.ecb.europa.eu/rss/press.html"] },
-    { "id": "bri", "nom": "BRI – discours des banquiers centraux (Fed, BCE, Banque de France…)", "groupe": "officielle", "langue": "en", "actif": true,
-      "note": "À tester. Remplace la Fed et la Banque de France pour les prises de parole des gouverneurs.",
-      "site": "https://www.bis.org/rss/",
-      "flux": ["https://www.bis.org/doclist/cbspeeches.rss", "https://www.bis.org/doclist/all_pressrels.rss"] },
-    { "id": "service-public-particuliers", "nom": "Service-public.fr (particuliers)", "groupe": "officielle", "langue": "fr", "actif": false,
+      "flux": [
+        "https://www.ecb.europa.eu/rss/press.html"
+      ]
+    },
+    {
+      "id": "bri",
+      "nom": "BRI – discours des banquiers centraux (Fed, BCE, Banque de France…)",
+      "groupe": "officielle",
+      "langue": "en",
+      "actif": true,
+      "note": "Discours des banquiers centraux (Fed, BCE, Banque de France…). Remplace la Fed.",
+      "flux": [
+        "https://www.bis.org/doclist/cbspeeches.rss"
+      ]
+    },
+    {
+      "id": "service-public-particuliers",
+      "nom": "Service-public.fr (particuliers)",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
       "note": "Flux introuvable (erreur 404) au 09/11/2026.",
-      "flux": ["https://www.service-public.gouv.fr/abonnements/rss/actu-actu-part.rss"] },
-    { "id": "fed", "nom": "Réserve fédérale (Fed)", "groupe": "officielle", "langue": "en", "actif": false,
+      "flux": [
+        "https://www.service-public.gouv.fr/abonnements/rss/actu-actu-part.rss"
+      ]
+    },
+    {
+      "id": "fed",
+      "nom": "Réserve fédérale (Fed)",
+      "groupe": "officielle",
+      "langue": "en",
+      "actif": false,
       "note": "Refuse les robots (erreur 403). Désactivée pour respecter ce choix.",
-      "flux": ["https://www.federalreserve.gov/feeds/press_monetary.xml"] },
-
-    { "id": "agefi", "nom": "L'Agefi", "groupe": "presse", "langue": "fr", "actif": true,
-      "flux": ["https://www.agefi.fr/index.rss"] },
-    { "id": "le-revenu", "nom": "Le Revenu", "groupe": "presse", "langue": "fr", "actif": true,
-      "flux": ["https://www.lerevenu.com/rss.xml"] },
-    { "id": "figaro", "nom": "Le Figaro (Patrimoine, Placement, Impôts, Économie)", "groupe": "presse", "langue": "fr", "actif": true,
-      "flux": ["https://www.lefigaro.fr/rss/figaro_patrimoine.xml", "https://www.lefigaro.fr/rss/figaro_placement.xml", "https://www.lefigaro.fr/rss/figaro_impots.xml", "https://www.lefigaro.fr/rss/figaro_economie.xml"] },
-    { "id": "capital", "nom": "Capital", "groupe": "presse", "langue": "fr", "actif": true,
-      "flux": ["https://feed.prismamediadigital.com/v1/cap/rss"] },
-    { "id": "le-monde", "nom": "Le Monde (Argent, Économie)", "groupe": "presse", "langue": "fr", "actif": true,
-      "flux": ["https://www.lemonde.fr/argent/rss_full.xml", "https://www.lemonde.fr/economie/rss_full.xml"] },
-    { "id": "bfm-business", "nom": "BFM Business", "groupe": "presse", "langue": "fr", "actif": true,
-      "note": "À tester. Alternative aux Echos / La Tribune.",
-      "site": "https://www.bfmtv.com/economie/",
-      "flux": ["https://www.bfmtv.com/rss/economie/", "https://www.bfmtv.com/rss/economie/patrimoine/", "https://www.bfmtv.com/rss/economie/finances-publiques/"] },
-    { "id": "boursier", "nom": "Boursier.com", "groupe": "presse", "langue": "fr", "actif": true,
-      "note": "À tester. Alternative pour les marchés.",
-      "site": "https://www.boursier.com/",
-      "flux": ["https://www.boursier.com/rss/actualites.rss"] },
-    { "id": "franceinfo-eco", "nom": "Franceinfo Économie", "groupe": "presse", "langue": "fr", "actif": true,
-      "note": "À tester.",
-      "flux": ["https://www.francetvinfo.fr/economie.rss"] },
-    { "id": "argus-assurance", "nom": "L'Argus de l'assurance", "groupe": "presse", "langue": "fr", "actif": true,
-      "note": "À tester. Assurance-vie, épargne retraite, réglementation.",
-      "site": "https://www.argusdelassurance.com/",
-      "flux": ["https://www.argusdelassurance.com/rss"] },
-    { "id": "option-finance", "nom": "Option Finance", "groupe": "presse", "langue": "fr", "actif": true,
-      "note": "À tester. Alternative à l'Agefi pour la finance d'entreprise et la gestion d'actifs.",
-      "site": "https://www.optionfinance.fr/",
-      "flux": [] },
-    { "id": "funds-magazine", "nom": "Funds Magazine", "groupe": "presse", "langue": "fr", "actif": true,
-      "note": "À tester. Gestion d'actifs, CGP, private equity.",
-      "site": "https://www.funds-magazine.com/",
-      "flux": [] },
-    { "id": "les-echos", "nom": "Les Echos", "groupe": "presse", "langue": "fr", "actif": false,
-      "note": "Refuse les robots (erreur 403). Désactivée pour respecter ce choix.",
-      "flux": ["https://services.lesechos.fr/rss/les-echos-finance-marches.xml"] },
-    { "id": "la-tribune", "nom": "La Tribune", "groupe": "presse", "langue": "fr", "actif": false,
+      "flux": [
+        "https://www.federalreserve.gov/feeds/press_monetary.xml"
+      ]
+    },
+    {
+      "id": "agefi",
+      "nom": "L'Agefi",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.agefi.fr/index.rss"
+      ]
+    },
+    {
+      "id": "le-revenu",
+      "nom": "Le Revenu",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.lerevenu.com/rss.xml"
+      ]
+    },
+    {
+      "id": "figaro",
+      "nom": "Le Figaro (Patrimoine, Placement, Impôts, Économie)",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.lefigaro.fr/rss/figaro_patrimoine.xml",
+        "https://www.lefigaro.fr/rss/figaro_placement.xml",
+        "https://www.lefigaro.fr/rss/figaro_impots.xml",
+        "https://www.lefigaro.fr/rss/figaro_economie.xml"
+      ]
+    },
+    {
+      "id": "capital",
+      "nom": "Capital",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://feed.prismamediadigital.com/v1/cap/rss"
+      ]
+    },
+    {
+      "id": "le-monde",
+      "nom": "Le Monde (Argent, Économie)",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.lemonde.fr/argent/rss_full.xml",
+        "https://www.lemonde.fr/economie/rss_full.xml"
+      ]
+    },
+    {
+      "id": "bfm-business",
+      "nom": "BFM Business",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.bfmtv.com/rss/economie/",
+        "https://www.bfmtv.com/rss/economie/patrimoine/"
+      ]
+    },
+    {
+      "id": "boursier",
+      "nom": "Boursier.com",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": false,
       "note": "Refuse les robots (erreur 403).",
-      "flux": ["https://www.latribune.fr/feed.xml"] },
-
-    { "id": "cnbc", "nom": "CNBC", "groupe": "international", "langue": "en", "actif": true,
-      "flux": ["https://www.cnbc.com/id/100003114/device/rss/rss.html", "https://www.cnbc.com/id/10000664/device/rss/rss.html", "https://www.cnbc.com/id/20910258/device/rss/rss.html"] },
-    { "id": "bloomberg", "nom": "Bloomberg", "groupe": "international", "langue": "en", "actif": true,
+      "flux": [
+        "https://www.boursier.com/rss/actualites.rss"
+      ]
+    },
+    {
+      "id": "franceinfo-eco",
+      "nom": "Franceinfo Économie",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://www.franceinfo.fr/economie.rss"
+      ]
+    },
+    {
+      "id": "argus-assurance",
+      "nom": "L'Argus de l'assurance",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": false,
+      "note": "Flux introuvable (erreur 404).",
+      "flux": [
+        "https://www.argusdelassurance.com/rss"
+      ]
+    },
+    {
+      "id": "option-finance",
+      "nom": "Option Finance",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": false,
+      "note": "Aucun flux public trouvé.",
+      "flux": []
+    },
+    {
+      "id": "funds-magazine",
+      "nom": "Funds Magazine",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": false,
+      "note": "Aucun flux public trouvé.",
+      "flux": []
+    },
+    {
+      "id": "les-echos",
+      "nom": "Les Echos",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": false,
+      "note": "Refuse les robots (erreur 403). Désactivée pour respecter ce choix.",
+      "flux": [
+        "https://services.lesechos.fr/rss/les-echos-finance-marches.xml"
+      ]
+    },
+    {
+      "id": "la-tribune",
+      "nom": "La Tribune",
+      "groupe": "presse",
+      "langue": "fr",
+      "actif": false,
+      "note": "Refuse les robots (erreur 403).",
+      "flux": [
+        "https://www.latribune.fr/feed.xml"
+      ]
+    },
+    {
+      "id": "cnbc",
+      "nom": "CNBC",
+      "groupe": "international",
+      "langue": "en",
+      "actif": true,
+      "flux": [
+        "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+        "https://www.cnbc.com/id/10000664/device/rss/rss.html",
+        "https://www.cnbc.com/id/20910258/device/rss/rss.html"
+      ]
+    },
+    {
+      "id": "bloomberg",
+      "nom": "Bloomberg",
+      "groupe": "international",
+      "langue": "en",
+      "actif": true,
       "note": "Articles payants : résumé à partir de l'extrait gratuit uniquement.",
-      "flux": ["https://www.bloomberg.com/feeds/markets/news.rss", "https://www.bloomberg.com/feeds/economics/news.rss"] },
-    { "id": "marketwatch", "nom": "MarketWatch", "groupe": "international", "langue": "en", "actif": true,
-      "flux": ["https://feeds.content.dowjones.io/public/rss/mw_topstories"] },
-    { "id": "guardian-business", "nom": "The Guardian (Business)", "groupe": "international", "langue": "en", "actif": true,
-      "note": "À tester. Alternative au Financial Times.",
-      "flux": ["https://www.theguardian.com/business/rss", "https://www.theguardian.com/business/economics/rss"] },
-    { "id": "bbc-business", "nom": "BBC (Business)", "groupe": "international", "langue": "en", "actif": true,
-      "note": "À tester.",
-      "flux": ["https://feeds.bbci.co.uk/news/business/rss.xml"] },
-    { "id": "yahoo-finance", "nom": "Yahoo Finance", "groupe": "international", "langue": "en", "actif": true,
-      "note": "À tester. Alternative à Reuters (reprend de nombreuses dépêches).",
-      "flux": ["https://finance.yahoo.com/news/rssindex"] },
-    { "id": "financial-times", "nom": "Financial Times", "groupe": "international", "langue": "en", "actif": false,
+      "flux": [
+        "https://www.bloomberg.com/feeds/markets/news.rss",
+        "https://www.bloomberg.com/feeds/economics/news.rss"
+      ]
+    },
+    {
+      "id": "marketwatch",
+      "nom": "MarketWatch",
+      "groupe": "international",
+      "langue": "en",
+      "actif": true,
+      "flux": [
+        "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+      ]
+    },
+    {
+      "id": "guardian-business",
+      "nom": "The Guardian (Business)",
+      "groupe": "international",
+      "langue": "en",
+      "actif": true,
+      "flux": [
+        "https://www.theguardian.com/us/business/rss",
+        "https://www.theguardian.com/business/economics/rss"
+      ]
+    },
+    {
+      "id": "bbc-business",
+      "nom": "BBC (Business)",
+      "groupe": "international",
+      "langue": "en",
+      "actif": true,
+      "flux": [
+        "https://feeds.bbci.co.uk/news/business/rss.xml"
+      ]
+    },
+    {
+      "id": "yahoo-finance",
+      "nom": "Yahoo Finance",
+      "groupe": "international",
+      "langue": "en",
+      "actif": false,
+      "note": "Flux introuvable (erreur 404).",
+      "flux": [
+        "https://finance.yahoo.com/news/rssindex"
+      ]
+    },
+    {
+      "id": "financial-times",
+      "nom": "Financial Times",
+      "groupe": "international",
+      "langue": "en",
+      "actif": false,
       "note": "Refuse les robots (erreur 403).",
-      "flux": ["https://www.ft.com/rss/home"] },
-
-    { "id": "coindesk", "nom": "CoinDesk", "groupe": "crypto", "langue": "en", "actif": true,
-      "flux": ["https://www.coindesk.com/arc/outboundfeeds/rss"] },
-    { "id": "journal-du-coin", "nom": "Journal du Coin", "groupe": "crypto", "langue": "fr", "actif": true,
-      "flux": ["https://journalducoin.com/feed/"] },
-    { "id": "cryptoast", "nom": "Cryptoast", "groupe": "crypto", "langue": "fr", "actif": true,
-      "note": "À tester. Alternative à Cointelegraph, en français.",
-      "flux": ["https://cryptoast.fr/feed/"] },
-    { "id": "decrypt", "nom": "Decrypt", "groupe": "crypto", "langue": "en", "actif": true,
-      "note": "À tester.",
-      "flux": ["https://decrypt.co/feed"] }
+      "flux": [
+        "https://www.ft.com/rss/home"
+      ]
+    },
+    {
+      "id": "coindesk",
+      "nom": "CoinDesk",
+      "groupe": "crypto",
+      "langue": "en",
+      "actif": true,
+      "flux": [
+        "https://www.coindesk.com/arc/outboundfeeds/rss"
+      ]
+    },
+    {
+      "id": "journal-du-coin",
+      "nom": "Journal du Coin",
+      "groupe": "crypto",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://journalducoin.com/feed/"
+      ]
+    },
+    {
+      "id": "cryptoast",
+      "nom": "Cryptoast",
+      "groupe": "crypto",
+      "langue": "fr",
+      "actif": true,
+      "flux": [
+        "https://cryptoast.fr/feed/"
+      ]
+    },
+    {
+      "id": "decrypt",
+      "nom": "Decrypt",
+      "groupe": "crypto",
+      "langue": "en",
+      "actif": false,
+      "note": "Refuse les robots (erreur 403).",
+      "flux": [
+        "https://decrypt.co/feed"
+      ]
+    }
   ]
 }
