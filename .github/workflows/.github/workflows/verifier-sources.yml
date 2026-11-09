@@ -1,0 +1,33 @@
+# Vérifie toutes les sources de config/sources.json et publie un rapport
+# dans le dépôt (rapports/sources.md). Se lance à la main (bouton "Run workflow").
+name: Vérifier les sources
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # pour enregistrer le rapport dans le dépôt
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Préparer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Tester chaque source
+        run: node scripts/verifier-sources.mjs
+
+      - name: Enregistrer le rapport dans le dépôt
+        run: |
+          git config user.name "robot-veille"
+          git config user.email "robot-veille@users.noreply.github.com"
+          git add rapports/
+          git commit -m "Rapport de vérification des sources" || echo "Rien de nouveau"
+          git push
