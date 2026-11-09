@@ -73,6 +73,8 @@ export async function routeRobot(request, env, chemin) {
         ).bind(court(a.empreinte, 64), court(a.sujet_id, 64), court(a.source_id, 64), court(a.source_nom, 120), court(a.groupe, 20),
           court(a.langue || "fr", 5), court(a.titre, 500), court(a.lien, 1000), court(a.extrait, 3000), a.publie_le || maintenant, maintenant)
       );
+      ordres.push(db.prepare("INSERT INTO recherche (sujet_id, contenu) VALUES (?, ?)")
+        .bind(court(a.sujet_id, 64), `${court(a.titre, 500)} ${court(a.extrait, 3000) || ""}`));
     }
     // Mise à jour des compteurs et de la date la plus récente de chaque sujet touché.
     const touches = [...new Set(articles.map((a) => a.sujet_id))];
@@ -94,6 +96,7 @@ export async function routeRobot(request, env, chemin) {
     const limite = new Date(Date.now() - RETENTION_JOURS * 86400 * 1000).toISOString();
     const r1 = await db.prepare("DELETE FROM articles WHERE publie_le < ?").bind(limite).run();
     const r2 = await db.prepare("DELETE FROM sujets WHERE id NOT IN (SELECT DISTINCT sujet_id FROM articles)").run();
+    await db.prepare("DELETE FROM recherche WHERE sujet_id NOT IN (SELECT id FROM sujets)").run();
     return json({ ok: true, articles_supprimes: r1.meta.changes, sujets_supprimes: r2.meta.changes });
   }
 
@@ -138,8 +141,12 @@ export async function routeRobot(request, env, chemin) {
       const imp = Math.max(1, Math.min(5, Math.round(Number(t.importance) || 1)));
       const cats = [...new Set((t.categories || []).map((c) => String(c).slice(0, 80)))].slice(0, 4);
       ordres.push(db.prepare(
-        `UPDATE sujets SET importance = ?, categories = ?, resume_court = ?, ia_statut = ?, ia_modele = ?, ia_le = ? WHERE id = ?`
-      ).bind(imp, JSON.stringify(cats), court(t.resume_court, 1500), imp >= 3 ? "a_detailler" : "court", court(t.modele, 60), maintenant, t.id));
+        `UPDATE sujets SET importance = ?, categories = ?, titre_fr = ?, resume_court = ?, ia_statut = ?, ia_modele = ?, ia_le = ?,
+                resume_detail = CASE WHEN ? >= 3 THEN resume_detail ELSE NULL END WHERE id = ?`
+      ).bind(imp, JSON.stringify(cats), court(t.titre_fr, 500), court(t.resume_court, 1500), imp >= 3 ? "a_detailler" : "court",
+        court(t.modele, 60), maintenant, imp, t.id));
+      ordres.push(db.prepare("INSERT INTO recherche (sujet_id, contenu) VALUES (?, ?)")
+        .bind(t.id, `${court(t.titre_fr, 500) || ""} ${court(t.resume_court, 1500) || ""}`));
       ordres.push(db.prepare("DELETE FROM sujet_categories WHERE sujet_id = ?").bind(t.id));
       for (const c of cats) ordres.push(db.prepare("INSERT OR IGNORE INTO sujet_categories (sujet_id, categorie) VALUES (?, ?)").bind(t.id, c));
     }

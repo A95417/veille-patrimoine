@@ -4,7 +4,7 @@
 const json = (d, s = 200) =>
   new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 
-const COLONNES = "s.id, s.titre, s.derniere_pub, s.nb_articles, s.importance, s.categories, s.resume_court, s.ia_statut";
+const COLONNES = "s.id, s.titre, s.titre_fr, s.derniere_pub, s.nb_articles, s.importance, s.categories, s.resume_court, s.ia_statut";
 
 // Ajoute à chaque sujet ses articles (sources, liens, dates).
 async function avecArticles(db, sujets, extraits = true) {
@@ -78,6 +78,25 @@ export async function routeLecture(chemin, url, db) {
     await avecArticles(db, [s]);
     try { s.resume_detail = s.resume_detail ? JSON.parse(s.resume_detail) : null; } catch { s.resume_detail = null; }
     return json(s);
+  }
+
+  // Recherche plein texte (titres, chapôs, résumés), insensible aux accents.
+  if (chemin === "/api/recherche") {
+    // Chaque mot devient un préfixe : "assur vie" trouve "assurance-vie".
+    const mots = String(p.get("q") || "").normalize("NFC").match(/[\p{L}\p{N}]+/gu) || [];
+    if (!mots.length) return json({ sujets: [] });
+    const requete = mots.slice(0, 8).map((m) => `"${m}"*`).join(" AND ");
+    const { results: ids } = await db
+      .prepare("SELECT sujet_id, MIN(rank) AS pertinence FROM recherche WHERE recherche MATCH ? GROUP BY sujet_id ORDER BY pertinence LIMIT 60")
+      .bind(requete)
+      .all();
+    if (!ids.length) return json({ sujets: [] });
+    const { results } = await db
+      .prepare(`SELECT ${COLONNES} FROM sujets s WHERE s.id IN (${ids.map(() => "?").join(",")}) AND s.nb_articles > 0 ORDER BY s.derniere_pub DESC`)
+      .bind(...ids.map((r) => r.sujet_id))
+      .all();
+    await avecArticles(db, results);
+    return json({ sujets: results });
   }
 
   // Valeurs proposées dans les filtres.
