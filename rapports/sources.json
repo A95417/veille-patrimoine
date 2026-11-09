@@ -5,7 +5,7 @@
     "groupe": "officielle",
     "flux": [
       {
-        "url": "https://www.service-public.fr/abonnements/rss/actu-actu-part.rss",
+        "url": "https://www.service-public.gouv.fr/abonnements/rss/actu-actu-part.rss",
         "ok": false,
         "raison": "erreur HTTP 404",
         "origine": "connu"
@@ -17,12 +17,6 @@
     "nom": "Service-public.fr (entreprises)",
     "groupe": "officielle",
     "flux": [
-      {
-        "url": "https://entreprendre.service-public.fr/abonnements/rss/actu-actu-pro.rss",
-        "ok": false,
-        "raison": "erreur HTTP 404",
-        "origine": "connu"
-      },
       {
         "url": "https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss",
         "ok": true,
@@ -40,43 +34,10 @@
     ]
   },
   {
-    "id": "legifrance",
-    "nom": "Légifrance",
-    "groupe": "officielle",
-    "flux": []
-  },
-  {
-    "id": "assemblee-nationale",
-    "nom": "Assemblée nationale",
-    "groupe": "officielle",
-    "flux": [
-      {
-        "url": "https://www.assemblee-nationale.fr/dyn/rss/actualites",
-        "ok": false,
-        "raison": "erreur HTTP 404",
-        "origine": "connu"
-      }
-    ]
-  },
-  {
     "id": "senat",
     "nom": "Sénat",
     "groupe": "officielle",
     "flux": [
-      {
-        "url": "https://www.senat.fr/rss/presse.rss",
-        "ok": true,
-        "titre": "S�nat - communiqu�s de presse",
-        "format": "RSS",
-        "nb_articles": 6,
-        "dernier_article": "2026-11-05T18:02:44.000Z",
-        "age_jours": 4,
-        "part_avec_resume": 0,
-        "longueur_resume_moy": 34,
-        "robots_ok": true,
-        "exemple": "Article 34 du PLFSS : le bon sens l'emporte enfin !",
-        "origine": "connu"
-      },
       {
         "url": "https://www.senat.fr/rss/textes.rss",
         "ok": true,
@@ -104,6 +65,20 @@
         "robots_ok": true,
         "exemple": "La protection des lieux de culte et du patrimoine religieux - �tude de l�gislation compar�e n� 364",
         "origine": "connu"
+      },
+      {
+        "url": "https://www.senat.fr/rss/presse.rss",
+        "ok": true,
+        "titre": "S�nat - communiqu�s de presse",
+        "format": "RSS",
+        "nb_articles": 6,
+        "dernier_article": "2026-11-05T18:02:44.000Z",
+        "age_jours": 4,
+        "part_avec_resume": 0,
+        "longueur_resume_moy": 34,
+        "robots_ok": true,
+        "exemple": "Article 34 du PLFSS : le bon sens l'emporte enfin !",
+        "origine": "connu"
       }
     ]
   },
@@ -111,23 +86,122 @@
     "id": "bofip",
     "nom": "BOFiP (doctrine fiscale)",
     "groupe": "officielle",
-    "flux": []
+    "flux": [
+      {
+        "url": "https://bofip.impots.gouv.fr/bofip/ext/rss.xml?actualites=1&maxR=50&maxJ=30",
+        "ok": true,
+        "titre": "BOFiP-Impôts - Actualités",
+        "format": "RSS",
+        "nb_articles": 7,
+        "dernier_article": null,
+        "age_jours": null,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 260,
+        "robots_ok": true,
+        "exemple": "IF - Actualisation des plafonds d’exonération de cotisation foncière des entreprises (CFE) pour 2027 dans les zones urba",
+        "origine": "connu"
+      },
+      {
+        "url": "https://bofip.impots.gouv.fr/bofip/ext/rss.xml?actualites=1",
+        "ok": true,
+        "titre": "BOFiP-Impôts - Actualités",
+        "format": "RSS",
+        "nb_articles": 3,
+        "dernier_article": null,
+        "age_jours": null,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 249,
+        "robots_ok": true,
+        "exemple": "IF - Actualisation des plafonds d’exonération de cotisation foncière des entreprises (CFE) pour 2027 dans les zones urba",
+        "origine": "connu"
+      }
+    ]
   },
   {
-    "id": "impots-gouv",
-    "nom": "impots.gouv.fr",
+    "id": "tresor",
+    "nom": "Direction générale du Trésor",
     "groupe": "officielle",
-    "flux": []
+    "flux": [
+      {
+        "url": "https://www.tresor.economie.gouv.fr/Flux/Atom/Articles",
+        "ok": false,
+        "raison": "erreur HTTP 404",
+        "origine": "connu"
+      },
+      {
+        "url": "https://www.tresor.economie.gouv.fr/Flux/Atom/Articles/Tags/Persepctives-economiques",
+        "ok": true,
+        "titre": "Trésor-Info - Publications de la direction générale du Trésor - Persepctives-economiques",
+        "format": "Atom",
+        "nb_articles": 2,
+        "dernier_article": "2025-10-14T22:00:00.000Z",
+        "age_jours": 391,
+        "part_avec_resume": 100,
+        "longueur_resume_moy": 639,
+        "robots_ok": true,
+        "exemple": "Le rapport économique, social et financier (RESF) 2026 est publié",
+        "origine": "connu"
+      }
+    ]
   },
   {
-    "id": "economie-gouv",
-    "nom": "Ministère de l'Économie",
+    "id": "insee",
+    "nom": "INSEE",
     "groupe": "officielle",
-    "flux": []
+    "flux": [
+      {
+        "url": "https://www.insee.fr/fr/flux/1",
+        "ok": true,
+        "titre": "Tous les flux nationaux (hors séries chronologiques)",
+        "format": "RSS",
+        "nb_articles": 325,
+        "dernier_article": "2026-11-05T16:00:00.000Z",
+        "age_jours": 4,
+        "part_avec_resume": 35,
+        "longueur_resume_moy": 223,
+        "robots_ok": true,
+        "exemple": "Début 2024, la part des ménages endettés augmente avec le niveau de vie",
+        "origine": "connu"
+      },
+      {
+        "url": "https://www.insee.fr/fr/flux/2",
+        "ok": true,
+        "titre": "Publications nationales",
+        "format": "RSS",
+        "nb_articles": 39,
+        "dernier_article": "2026-11-05T16:00:00.000Z",
+        "age_jours": 4,
+        "part_avec_resume": 77,
+        "longueur_resume_moy": 910,
+        "robots_ok": true,
+        "exemple": "Début 2024, la part des ménages endettés augmente avec le niveau de vie",
+        "origine": "connu"
+      },
+      {
+        "url": "https://www.insee.fr/fr/flux/3",
+        "ok": true,
+        "titre": "Publications conjoncturelles",
+        "format": "RSS",
+        "nb_articles": 104,
+        "dernier_article": "2026-11-05T07:45:00.000Z",
+        "age_jours": 4,
+        "part_avec_resume": 80,
+        "longueur_resume_moy": 357,
+        "robots_ok": true,
+        "exemple": "En septembre 2026, la production manufacturière augmente de 0,5 %",
+        "origine": "connu"
+      }
+    ]
   },
   {
     "id": "amf",
     "nom": "AMF",
+    "groupe": "officielle",
+    "flux": []
+  },
+  {
+    "id": "banque-de-france",
+    "nom": "Banque de France",
     "groupe": "officielle",
     "flux": []
   },
@@ -138,8 +212,8 @@
     "flux": []
   },
   {
-    "id": "banque-de-france",
-    "nom": "Banque de France",
+    "id": "assemblee-nationale",
+    "nom": "Assemblée nationale",
     "groupe": "officielle",
     "flux": []
   },
@@ -165,77 +239,6 @@
     ]
   },
   {
-    "id": "insee",
-    "nom": "INSEE",
-    "groupe": "officielle",
-    "flux": []
-  },
-  {
-    "id": "eurostat",
-    "nom": "Eurostat",
-    "groupe": "officielle",
-    "flux": [
-      {
-        "url": "https://ec.europa.eu/eurostat/api/dissemination/catalogue/rss/en/statistics-update.rss",
-        "ok": true,
-        "titre": "ESTAT - Data and Data Structure updates",
-        "format": "RSS",
-        "nb_articles": 944,
-        "dernier_article": "2026-11-09T11:00:00.000Z",
-        "age_jours": 0,
-        "part_avec_resume": 16,
-        "longueur_resume_moy": 56,
-        "robots_ok": true,
-        "exemple": "EI_ISSET_Q - \"Dataset: updated data\"",
-        "origine": "connu"
-      }
-    ]
-  },
-  {
-    "id": "fed",
-    "nom": "Réserve fédérale (Fed)",
-    "groupe": "officielle",
-    "flux": [
-      {
-        "url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
-        "ok": false,
-        "raison": "erreur HTTP 403",
-        "origine": "connu"
-      },
-      {
-        "url": "https://www.federalreserve.gov/feeds/press_all.xml",
-        "ok": false,
-        "raison": "erreur HTTP 403",
-        "origine": "connu"
-      }
-    ]
-  },
-  {
-    "id": "les-echos",
-    "nom": "Les Echos",
-    "groupe": "presse",
-    "flux": [
-      {
-        "url": "https://services.lesechos.fr/rss/les-echos-finance-marches.xml",
-        "ok": false,
-        "raison": "erreur HTTP 403",
-        "origine": "connu"
-      },
-      {
-        "url": "https://services.lesechos.fr/rss/les-echos-economie.xml",
-        "ok": false,
-        "raison": "erreur HTTP 403",
-        "origine": "connu"
-      },
-      {
-        "url": "https://services.lesechos.fr/rss/les-echos-patrimoine.xml",
-        "ok": false,
-        "raison": "erreur HTTP 403",
-        "origine": "connu"
-      }
-    ]
-  },
-  {
     "id": "agefi",
     "nom": "L'Agefi",
     "groupe": "presse",
@@ -252,15 +255,9 @@
         "longueur_resume_moy": 204,
         "robots_ok": true,
         "exemple": "Ares injecte un milliard de dollars dans Equinox",
-        "origine": "annoncé par le site"
+        "origine": "connu"
       }
     ]
-  },
-  {
-    "id": "investir",
-    "nom": "Investir",
-    "groupe": "presse",
-    "flux": []
   },
   {
     "id": "le-revenu",
@@ -279,26 +276,13 @@
         "longueur_resume_moy": 205,
         "robots_ok": true,
         "exemple": "Présidentielle 2027 : Teddy Riner annonce sa candidature et veut rassembler les Français",
-        "origine": "essai"
-      }
-    ]
-  },
-  {
-    "id": "gestion-de-fortune",
-    "nom": "Gestion de Fortune",
-    "groupe": "presse",
-    "flux": [
-      {
-        "url": "https://www.gestiondefortune.com/feed/",
-        "ok": false,
-        "raison": "erreur HTTP 404",
         "origine": "connu"
       }
     ]
   },
   {
-    "id": "figaro-patrimoine",
-    "nom": "Le Figaro Patrimoine / Économie",
+    "id": "figaro",
+    "nom": "Le Figaro (Patrimoine, Placement, Impôts, Économie)",
     "groupe": "presse",
     "flux": [
       {
@@ -307,12 +291,12 @@
         "titre": "Le Figaro - Ancien flux Patrimoine",
         "format": "RSS",
         "nb_articles": 20,
-        "dernier_article": "2026-11-09T12:16:29.000Z",
+        "dernier_article": "2026-11-09T13:16:35.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 218,
+        "longueur_resume_moy": 216,
         "robots_ok": true,
-        "exemple": "Christophe Lecourtier, l’homme de la réconciliation franco-marocaine",
+        "exemple": "Marginal, aucune «idéologie particulière», fasciné par la violence… Qui était Michał Oksiński, l’auteur de la fusillade ",
         "origine": "connu"
       },
       {
@@ -349,7 +333,7 @@
         "titre": "Le Figaro - Economie - Actualité économique et financière, conseils en gestion de patrimoine",
         "format": "RSS",
         "nb_articles": 20,
-        "dernier_article": "2026-11-09T13:16:35.000Z",
+        "dernier_article": "2026-11-09T13:30:56.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
         "longueur_resume_moy": 184,
@@ -370,52 +354,19 @@
         "titre": "https://www.capital.fr : flux d'articles",
         "format": "RSS",
         "nb_articles": 10,
-        "dernier_article": "2026-11-09T13:00:00.000Z",
+        "dernier_article": "2026-11-09T13:24:41.000Z",
         "age_jours": 0,
         "part_avec_resume": 100,
-        "longueur_resume_moy": 278,
+        "longueur_resume_moy": 270,
         "robots_ok": true,
-        "exemple": "Simulation retraite bloquée par une erreur : que faire ?",
-        "origine": "connu"
-      },
-      {
-        "url": "https://feed.prismamediadigital.com/v1/cap/rss?limit=20",
-        "ok": true,
-        "titre": "https://www.capital.fr : flux d'articles",
-        "format": "RSS",
-        "nb_articles": 10,
-        "dernier_article": "2026-11-09T13:00:00.000Z",
-        "age_jours": 0,
-        "part_avec_resume": 100,
-        "longueur_resume_moy": 278,
-        "robots_ok": true,
-        "exemple": "Simulation retraite bloquée par une erreur : que faire ?",
-        "origine": "annoncé par le site"
-      }
-    ]
-  },
-  {
-    "id": "boursorama",
-    "nom": "Boursorama",
-    "groupe": "presse",
-    "flux": []
-  },
-  {
-    "id": "la-tribune",
-    "nom": "La Tribune",
-    "groupe": "presse",
-    "flux": [
-      {
-        "url": "https://www.latribune.fr/feed.xml",
-        "ok": false,
-        "raison": "erreur HTTP 403",
+        "exemple": "C’est officiel, le Smic augmente au 1er décembre, ce que vous toucherez en plus sur votre fiche de paie",
         "origine": "connu"
       }
     ]
   },
   {
-    "id": "le-monde-argent",
-    "nom": "Le Monde (Argent / Économie)",
+    "id": "le-monde",
+    "nom": "Le Monde (Argent, Économie)",
     "groupe": "presse",
     "flux": [
       {
@@ -449,18 +400,6 @@
     ]
   },
   {
-    "id": "mieux-vivre-votre-argent",
-    "nom": "Mieux Vivre Votre Argent",
-    "groupe": "presse",
-    "flux": []
-  },
-  {
-    "id": "reuters",
-    "nom": "Reuters",
-    "groupe": "international",
-    "flux": []
-  },
-  {
     "id": "cnbc",
     "nom": "CNBC",
     "groupe": "international",
@@ -471,10 +410,10 @@
         "titre": "US Top News and Analysis",
         "format": "RSS",
         "nb_articles": 30,
-        "dernier_article": "2026-11-09T13:13:52.000Z",
+        "dernier_article": "2026-11-09T13:27:57.000Z",
         "age_jours": 0,
         "part_avec_resume": 97,
-        "longueur_resume_moy": 129,
+        "longueur_resume_moy": 130,
         "robots_ok": true,
         "exemple": "Nvidia stock falls 5% as scrutiny turns to Jensen Huang’s relationship with alleged Chinese spy",
         "origine": "connu"
@@ -510,25 +449,6 @@
     ]
   },
   {
-    "id": "financial-times",
-    "nom": "Financial Times",
-    "groupe": "international",
-    "flux": [
-      {
-        "url": "https://www.ft.com/rss/home",
-        "ok": false,
-        "raison": "erreur HTTP 403",
-        "origine": "connu"
-      },
-      {
-        "url": "https://www.ft.com/markets?format=rss",
-        "ok": false,
-        "raison": "erreur HTTP 403",
-        "origine": "connu"
-      }
-    ]
-  },
-  {
     "id": "bloomberg",
     "nom": "Bloomberg",
     "groupe": "international",
@@ -539,12 +459,12 @@
         "titre": "Bloomberg Markets",
         "format": "RSS",
         "nb_articles": 20,
-        "dernier_article": "2026-11-09T12:47:37.000Z",
+        "dernier_article": "2026-11-09T13:23:06.000Z",
         "age_jours": 0,
         "part_avec_resume": 90,
-        "longueur_resume_moy": 208,
+        "longueur_resume_moy": 192,
         "robots_ok": true,
-        "exemple": "Soybeans Erase Gains as Ample Supply Outlook Offsets China Bets",
+        "exemple": "SocGen’s Juckes Sees ‘Less Dollar-Friendly’ Year in 2027",
         "origine": "connu"
       },
       {
@@ -552,13 +472,13 @@
         "ok": true,
         "titre": "Bloomberg Economics",
         "format": "RSS",
-        "nb_articles": 13,
-        "dernier_article": "2026-11-09T12:24:25.000Z",
+        "nb_articles": 14,
+        "dernier_article": "2026-11-09T13:19:30.000Z",
         "age_jours": 0,
-        "part_avec_resume": 92,
-        "longueur_resume_moy": 175,
+        "part_avec_resume": 93,
+        "longueur_resume_moy": 177,
         "robots_ok": true,
-        "exemple": "Brazil Economists Lift Key Rate Forecasts Again After Lula’s Win",
+        "exemple": "French Government Boosts Minimum Wage in Response to Protests",
         "origine": "connu"
       }
     ]
@@ -581,20 +501,6 @@
         "robots_ok": true,
         "exemple": "The biggest takeaway from Berkshire Hathaway’s latest quarter isn’t the $357 billion cash or its stock buybacks",
         "origine": "connu"
-      },
-      {
-        "url": "https://feeds.content.dowjones.io/public/rss/mw_marketpulse",
-        "ok": true,
-        "titre": "MarketWatch.com - MarketPulse",
-        "format": "RSS",
-        "nb_articles": 30,
-        "dernier_article": "2025-07-03T12:36:00.000Z",
-        "age_jours": 494,
-        "part_avec_resume": 0,
-        "longueur_resume_moy": 0,
-        "robots_ok": true,
-        "exemple": "Jobless claims fall to lowest level since mid-May",
-        "origine": "connu"
       }
     ]
   },
@@ -615,19 +521,6 @@
         "longueur_resume_moy": 139,
         "robots_ok": true,
         "exemple": "Solana set for its first tokenized stock venue under SEC framework, listing Galaxy",
-        "origine": "connu"
-      }
-    ]
-  },
-  {
-    "id": "cointelegraph",
-    "nom": "Cointelegraph",
-    "groupe": "crypto",
-    "flux": [
-      {
-        "url": "https://cointelegraph.com/rss",
-        "ok": false,
-        "raison": "erreur HTTP 403",
         "origine": "connu"
       }
     ]
