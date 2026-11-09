@@ -1,0 +1,101 @@
+/* Styles communs du site Veille Patrimoine */
+:root {
+  --fond: #f6f6f3;
+  --carte: #ffffff;
+  --texte: #1b1d21;
+  --doux: #666b73;
+  --bord: #e3e3de;
+  --accent: #1f4e79;
+  --accent-texte: #ffffff;
+  --ok: #1a7f4b;
+  --ko: #b42318;
+  --rayon: 12px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fond: #111214; --carte: #1b1c1f; --texte: #ececec; --doux: #9da2a9;
+    --bord: #2c2e33; --accent: #6ea8dc; --accent-texte: #0d1117; --ok: #4cc38a; --ko: #ff6b5e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --fond: #111214; --carte: #1b1c1f; --texte: #ececec; --doux: #9da2a9;
+  --bord: #2c2e33; --accent: #6ea8dc; --accent-texte: #0d1117; --ok: #4cc38a; --ko: #ff6b5e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--fond); color: var(--texte);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5;
+}
+a { color: var(--accent); }
+
+/* Barre de navigation */
+.entete {
+  position: sticky; top: 0; z-index: 10; background: var(--carte); border-bottom: 1px solid var(--bord);
+}
+.entete-contenu {
+  max-width: 1100px; margin: 0 auto; padding: 10px 16px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.logo { font-weight: 700; letter-spacing: -0.01em; color: var(--texte); text-decoration: none; }
+.nav { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+.nav a {
+  text-decoration: none; color: var(--doux); padding: 6px 10px; border-radius: 8px; font-size: 0.95rem;
+}
+.nav a:hover { background: var(--fond); color: var(--texte); }
+.nav a.actif { color: var(--texte); background: var(--fond); font-weight: 600; }
+.outils { display: flex; gap: 8px; align-items: center; }
+
+/* Mise en page */
+.page { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+.centre { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.carte {
+  background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon);
+  padding: 24px; margin-bottom: 20px;
+}
+.carte-etroite { width: 100%; max-width: 420px; }
+h1 { font-size: 1.5rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; margin: 0 0 14px; }
+.doux { color: var(--doux); }
+
+/* Formulaires */
+label { display: block; font-size: 0.9rem; font-weight: 600; margin: 14px 0 6px; }
+input {
+  width: 100%; padding: 10px 12px; font: inherit; color: var(--texte); background: var(--fond);
+  border: 1px solid var(--bord); border-radius: 8px;
+}
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.bouton {
+  display: inline-block; padding: 10px 16px; border-radius: 8px; border: 1px solid transparent;
+  background: var(--accent); color: var(--accent-texte); font: inherit; font-weight: 600; cursor: pointer;
+}
+.bouton:disabled { opacity: 0.6; cursor: wait; }
+.bouton-large { width: 100%; margin-top: 20px; }
+.bouton-discret {
+  background: transparent; color: var(--texte); border-color: var(--bord); padding: 6px 10px; font-weight: 500;
+}
+.message { margin-top: 14px; font-size: 0.95rem; min-height: 1.4em; }
+.message.ok { color: var(--ok); }
+.message.ko { color: var(--ko); }
+
+/* Tableau d'administration (devient une liste de cartes sur téléphone) */
+.tableau { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.tableau th, .tableau td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--bord); vertical-align: top; }
+.tableau th { color: var(--doux); font-weight: 600; font-size: 0.85rem; }
+.pastille { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 0.8rem; border: 1px solid var(--bord); }
+.pastille.ok { color: var(--ok); }
+.pastille.ko { color: var(--ko); }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.grille-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 14px; }
+
+@media (max-width: 720px) {
+  .grille-form { grid-template-columns: 1fr; }
+  .tableau thead { display: none; }
+  .tableau tr { display: block; border-bottom: 1px solid var(--bord); padding: 8px 0; }
+  .tableau td { display: block; border: 0; padding: 3px 0; }
+  .tableau td[data-libelle]::before { content: attr(data-libelle) " : "; color: var(--doux); font-size: 0.85rem; }
+  .nav { order: 3; width: 100%; }
+}
