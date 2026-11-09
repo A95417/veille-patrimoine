@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administration · Veille Patrimoine</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/commun.js"></script>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <h1>Administration</h1>
+    <p class="doux">Créez et gérez les comptes de vos collègues. Personne ne peut s'inscrire seul.</p>
+
+    <section class="carte">
+      <h2>Ajouter un collègue</h2>
+      <form id="form-ajout">
+        <div class="grille-form">
+          <div><label for="nom">Nom</label><input id="nom" required></div>
+          <div><label for="email">E-mail</label><input id="email" type="email" required></div>
+          <div><label for="mdp">Mot de passe provisoire</label><input id="mdp" type="text" minlength="10" required autocomplete="off"></div>
+        </div>
+        <button class="bouton" type="submit" style="margin-top:16px">Créer le compte</button>
+        <div class="message" id="msg-ajout" role="alert"></div>
+        <p class="doux" style="font-size:.9rem">Transmettez ce mot de passe provisoire au collègue de vive voix ou par SMS, et demandez-lui de le changer dès sa première connexion (page d'accueil).</p>
+      </form>
+    </section>
+
+    <section class="carte">
+      <h2>Comptes</h2>
+      <table class="tableau">
+        <thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>État</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+        <tbody id="liste"><tr><td colspan="6" class="doux">Chargement…</td></tr></tbody>
+      </table>
+      <div class="message" id="msg-liste" role="alert"></div>
+    </section>
+  </main>
+  <script>
+    let moi;
+    let comptes = [];
+    const dateFr = (iso) => iso ? new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "jamais";
+
+    async function chargerListe() {
+      comptes = await appelApi("/api/admin/utilisateurs");
+      document.getElementById("liste").innerHTML = comptes.map((c) => `
+        <tr>
+          <td data-libelle="Nom"><strong>${echapper(c.nom)}</strong></td>
+          <td data-libelle="E-mail">${echapper(c.email)}</td>
+          <td data-libelle="Rôle">${c.role === "admin" ? "Administrateur" : "Collègue"}</td>
+          <td data-libelle="État"><span class="pastille ${c.actif ? "ok" : "ko"}">${c.actif ? "Actif" : "Désactivé"}</span></td>
+          <td data-libelle="Dernière connexion">${dateFr(c.derniere_connexion)}</td>
+          <td><div class="actions">
+            ${c.id === moi.id ? "" : c.actif
+              ? `<button class="bouton bouton-discret" onclick="agir(${c.id}, 'desactiver')">Désactiver</button>`
+              : `<button class="bouton bouton-discret" onclick="agir(${c.id}, 'activer')">Réactiver</button>`}
+            <button class="bouton bouton-discret" onclick="reinitialiser(${c.id})">Nouveau mot de passe</button>
+          </div></td>
+        </tr>`).join("");
+    }
+
+    async function agir(id, action) {
+      const msg = document.getElementById("msg-liste");
+      try {
+        await appelApi(`/api/admin/utilisateurs/${id}/${action}`, "POST", {});
+        afficherMessage(msg, action === "desactiver" ? "Compte désactivé." : "Compte réactivé.", "ok");
+        chargerListe();
+      } catch (err) { afficherMessage(msg, err.message, "ko"); }
+    }
+
+    async function reinitialiser(id) {
+      const nom = (comptes.find((c) => c.id === id) || {}).nom || "ce compte";
+      const mdp = prompt(`Nouveau mot de passe provisoire pour ${nom} (10 caractères minimum) :`);
+      if (!mdp) return;
+      const msg = document.getElementById("msg-liste");
+      try {
+        await appelApi(`/api/admin/utilisateurs/${id}/reinitialiser`, "POST", { mot_de_passe: mdp });
+        afficherMessage(msg, "Mot de passe modifié. Le collègue devra se reconnecter.", "ok");
+      } catch (err) { afficherMessage(msg, err.message, "ko"); }
+    }
+
+    document.getElementById("form-ajout").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("msg-ajout");
+      try {
+        await appelApi("/api/admin/utilisateurs", "POST", {
+          nom: document.getElementById("nom").value,
+          email: document.getElementById("email").value,
+          mot_de_passe: document.getElementById("mdp").value,
+        });
+        e.target.reset();
+        afficherMessage(msg, "Compte créé.", "ok");
+        chargerListe();
+      } catch (err) { afficherMessage(msg, err.message, "ko"); }
+    });
+
+    chargerEntete("/admin").then((u) => { moi = u; chargerListe(); });
+  </script>
+</body>
+</html>

@@ -3,33 +3,48 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Veille Patrimoine</title>
-  <style>
-    :root { --fond:#f7f7f5; --carte:#ffffff; --texte:#1c1c1c; --doux:#6b6b6b; --ok:#1a7f4b; --ko:#b42318; }
-    @media (prefers-color-scheme: dark) {
-      :root { --fond:#121212; --carte:#1d1d1d; --texte:#ececec; --doux:#a0a0a0; --ok:#4cc38a; --ko:#ff6b5e; }
-    }
-    body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--fond);
-           color:var(--texte); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; padding:16px; box-sizing:border-box; }
-    .carte { background:var(--carte); border-radius:14px; padding:32px 28px; max-width:440px; width:100%;
-             box-shadow:0 2px 12px rgba(0,0,0,.08); }
-    h1 { margin:0 0 8px; font-size:1.5rem; }
-    p { color:var(--doux); line-height:1.5; margin:0 0 16px; }
-    #etat { font-weight:600; }
-    .ok { color:var(--ok); } .ko { color:var(--ko); }
-  </style>
+  <title>Accueil · Veille Patrimoine</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/commun.js"></script>
 </head>
 <body>
-  <main class="carte">
-    <h1>Veille Patrimoine</h1>
-    <p>Bonjour ! Le site est en ligne. Cette page de test sera remplacée par le vrai site dans les prochaines étapes.</p>
-    <p>État du serveur : <span id="etat">vérification…</span></p>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <section class="carte">
+      <h1 id="bonjour">Bonjour</h1>
+      <p class="doux">Vous êtes connecté. Le fil d'actualités, le bandeau « À la une » et les marchés arriveront ici dans les prochaines étapes.</p>
+    </section>
+
+    <section class="carte carte-etroite">
+      <h2>Changer mon mot de passe</h2>
+      <form id="form-mdp">
+        <label for="actuel">Mot de passe actuel</label>
+        <input id="actuel" type="password" autocomplete="current-password" required>
+        <label for="nouveau">Nouveau mot de passe (10 caractères minimum)</label>
+        <input id="nouveau" type="password" autocomplete="new-password" minlength="10" required>
+        <button class="bouton bouton-large" type="submit">Enregistrer</button>
+        <div class="message" id="msg-mdp" role="alert"></div>
+      </form>
+    </section>
   </main>
   <script>
-    fetch("/api/sante")
-      .then(r => r.json())
-      .then(d => { const e = document.getElementById("etat"); e.textContent = "OK ✔"; e.className = "ok"; })
-      .catch(() => { const e = document.getElementById("etat"); e.textContent = "ne répond pas ✘"; e.className = "ko"; });
+    chargerEntete("/").then((moi) => {
+      document.getElementById("bonjour").textContent = "Bonjour " + moi.nom;
+    });
+    document.getElementById("form-mdp").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("msg-mdp");
+      try {
+        await appelApi("/api/moi/mot-de-passe", "POST", {
+          actuel: document.getElementById("actuel").value,
+          nouveau: document.getElementById("nouveau").value,
+        });
+        e.target.reset();
+        afficherMessage(msg, "Mot de passe modifié.", "ok");
+      } catch (err) {
+        afficherMessage(msg, err.message, "ko");
+      }
+    });
   </script>
 </body>
 </html>
