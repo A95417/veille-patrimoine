@@ -1,6 +1,6 @@
 # Rapport de vérification des sources
 
-Généré le 09/11/2026 14:16:41 (heure de Paris).
+Généré le 09/11/2026 14:24:27 (heure de Paris).
 
 Légende : ✅ fonctionne · 🟡 titres seulement (résumés très courts) · 💤 inactif (rien depuis 30 jours) · ⛔ interdit par robots.txt · ❌ mort
 
