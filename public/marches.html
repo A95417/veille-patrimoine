@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marchés · Veille Patrimoine</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/commun.js"></script>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page" id="contenu"></main>
+  <script>
+    chargerEntete("/marches").then(() => pageBientot("Marchés",
+      "Le tableau de bord des marchés arrive à l'étape suivante : CAC 40, Euro Stoxx 50, S&P 500, Nasdaq, Dow Jones, Nikkei, EUR/USD, or, Brent, Bitcoin, OAT et Bund 10 ans, avec la variation du jour. Une baisse de plus de 2 % d'un grand indice apparaîtra dans le bandeau « À la une »."));
+  </script>
+</body>
+</html>

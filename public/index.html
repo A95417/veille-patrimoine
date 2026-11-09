@@ -21,25 +21,6 @@
     select { width: 100%; padding: 8px 10px; font: inherit; font-size: .9rem; color: var(--texte); background: var(--carte);
              border: 1px solid var(--bord); border-radius: 8px; }
     @media (max-width: 720px) { .filtres { grid-template-columns: 1fr 1fr; } }
-    /* Cartes */
-    .fil { display: grid; gap: 14px; }
-    .sujet { background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 16px 18px; }
-    .sujet.n5 { border-left: 5px solid var(--ko); }
-    .sujet.n4 { border-left: 5px solid #d97706; }
-    .sujet h3 { margin: 6px 0 8px; font-size: 1.05rem; line-height: 1.35; }
-    .sujet h3 a { color: var(--texte); text-decoration: none; }
-    .sujet h3 a:hover { text-decoration: underline; }
-    .meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 0.8rem; color: var(--doux); }
-    .niveau { font-weight: 700; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--bord); color: var(--texte); }
-    .niveau.n5 { background: var(--ko); color: #fff; border-color: var(--ko); }
-    .niveau.n4 { background: #d97706; color: #fff; border-color: #d97706; }
-    .cat { padding: 1px 8px; border-radius: 99px; background: var(--fond); border: 1px solid var(--bord); }
-    .resume { margin: 0 0 10px; font-size: 0.95rem; }
-    .sources { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .source { font-size: 0.8rem; padding: 3px 9px; border: 1px solid var(--bord); border-radius: 99px;
-              color: var(--texte); text-decoration: none; background: var(--fond); }
-    .source:hover { border-color: var(--accent); }
-    .lien-detail { font-size: .85rem; font-weight: 600; margin-left: auto; }
     .vide { text-align: center; padding: 40px 16px; }
   </style>
 </head>
@@ -88,30 +69,8 @@
     </details>
   </main>
   <script>
-    const GROUPES = { officielle: "Officiel", presse: "Presse", international: "International", crypto: "Crypto" };
     const CHAMPS = ["categorie", "source", "importance", "periode"];
     let suite = null;
-
-    function carte(s) {
-      const principal = s.articles[s.articles.length - 1] || s.articles[0];
-      const n = s.importance || 0;
-      const sources = [...new Map(s.articles.map((a) => [a.source_nom, a])).values()];
-      const texte = s.resume_court || (s.articles.find((a) => a.extrait && a.extrait.length > 40) || {}).extrait || "";
-      return `<article class="sujet ${n >= 4 ? "n" + n : ""}">
-        <div class="meta">
-          ${n ? `<span class="niveau n${n}" title="Importance attribuée par l'IA">${n}/5</span>` : ""}
-          <span>${GROUPES[principal.groupe] || ""}</span><span>·</span><span>${quand(s.derniere_pub)}</span>
-          ${(s.categories || []).map((c) => `<span class="cat">${echapper(c)}</span>`).join("")}
-        </div>
-        <h3><a href="/sujet?id=${encodeURIComponent(s.id)}">${echapper(s.titre)}</a></h3>
-        ${texte ? `<p class="resume">${echapper(texte)}</p>` : ""}
-        <div class="sources">
-          ${sources.slice(0, 4).map((a) => `<a class="source" href="${echapper(a.lien)}" target="_blank" rel="noopener noreferrer">${echapper(a.source_nom)} ↗</a>`).join("")}
-          ${s.articles.length > 1 ? `<span class="doux" style="font-size:.8rem">${s.articles.length} articles</span>` : ""}
-          <a class="lien-detail" href="/sujet?id=${encodeURIComponent(s.id)}">${n >= 3 ? "Résumé détaillé →" : "Détails →"}</a>
-        </div>
-      </article>`;
-    }
 
     function filtresActuels() {
       const p = new URLSearchParams();
@@ -137,7 +96,7 @@
       const { sujets } = await appelApi("/api/une");
       document.getElementById("une").hidden = !sujets.length;
       document.getElementById("une-liste").innerHTML = sujets.map((s) =>
-        `<li><a href="/sujet?id=${encodeURIComponent(s.id)}">${echapper(s.titre)}</a>
+        `<li><a href="/sujet?id=${encodeURIComponent(s.id)}">${echapper(s.titre_fr || s.titre)}</a>
           <span class="doux" style="font-size:.85rem"> · ${[...new Set(s.articles.map((a) => a.source_nom))].map(echapper).join(", ")} · ${quand(s.derniere_pub)}</span></li>`).join("");
     }
 

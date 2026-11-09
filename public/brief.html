@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brief du jour · Veille Patrimoine</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/commun.js"></script>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page" id="contenu"></main>
+  <script>
+    chargerEntete("/brief").then(() => pageBientot("Brief du jour",
+      "Chaque matin à 7 h, un récapitulatif sera généré ici : clôtures des marchés de la veille et de l'Asie, les actualités majeures des dernières 24 heures, l'agenda économique du jour et une section « À retenir pour mes rendez-vous clients ». Les briefs précédents resteront consultables."));
+  </script>
+</body>
+</html>

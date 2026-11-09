@@ -56,6 +56,37 @@ function quand(iso) {
   return d.toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+// Carte d'un sujet (accueil, recherche).
+const GROUPES = { officielle: "Officiel", presse: "Presse", international: "International", crypto: "Crypto" };
+function carte(s) {
+  const principal = s.articles[s.articles.length - 1] || s.articles[0];
+  const n = s.importance || 0;
+  const lien = `/sujet?id=${encodeURIComponent(s.id)}`;
+  const sources = [...new Map(s.articles.map((a) => [a.source_nom, a])).values()];
+  const texte = s.resume_court || (s.articles.find((a) => a.extrait && a.extrait.length > 40) || {}).extrait || "";
+  return `<article class="sujet ${n >= 4 ? "n" + n : ""}">
+    <div class="meta">
+      ${n ? `<span class="niveau n${n}" title="Importance attribuée par l'IA">${n}/5</span>` : ""}
+      <span>${GROUPES[principal.groupe] || ""}</span><span>·</span><span>${quand(s.derniere_pub)}</span>
+      ${(s.categories || []).map((c) => `<span class="cat">${echapper(c)}</span>`).join("")}
+    </div>
+    <h3><a href="${lien}">${echapper(s.titre_fr || s.titre)}</a></h3>
+    ${texte ? `<p class="resume">${echapper(texte)}</p>` : ""}
+    <div class="sources">
+      ${sources.slice(0, 4).map((a) => `<a class="source" href="${echapper(a.lien)}" target="_blank" rel="noopener noreferrer">${echapper(a.source_nom)} ↗</a>`).join("")}
+      ${s.articles.length > 1 ? `<span class="doux" style="font-size:.8rem">${s.articles.length} articles</span>` : ""}
+      <a class="lien-detail" href="${lien}">${n >= 3 ? "Résumé détaillé →" : "Détails →"}</a>
+    </div>
+  </article>`;
+}
+
+// Page « bientôt disponible » pour les rubriques des étapes suivantes.
+function pageBientot(titre, texte) {
+  document.getElementById("contenu").innerHTML =
+    `<h1>${titre}</h1><div class="carte"><p><strong>Bientôt disponible.</strong></p><p class="doux">${texte}</p>
+     <p><a href="/">← Retour aux actualités</a></p></div>`;
+}
+
 // Barre de navigation commune aux pages privées.
 async function chargerEntete(pageActive) {
   const moi = await appelApi("/api/moi");

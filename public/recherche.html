@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recherche · Veille Patrimoine</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/commun.js"></script>
+  <style>
+    .zone-recherche { display: flex; gap: 8px; margin: 12px 0 18px; }
+    .zone-recherche input { flex: 1; font-size: 1.05rem; padding: 12px 14px; }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <h1>Recherche</h1>
+    <p class="doux">Cherche dans les titres, les chapôs et les résumés des 3 derniers mois. Les accents et les majuscules sont ignorés, et les débuts de mots suffisent : « assur vie » trouve « assurance-vie ».</p>
+    <form class="zone-recherche" id="form">
+      <input id="q" type="search" placeholder="Ex. : PER, donation, Livret A, SCPI, BCE…" autocomplete="off" autofocus>
+      <button class="bouton" type="submit">Chercher</button>
+    </form>
+    <p class="doux" id="info"></p>
+    <div class="fil" id="resultats"></div>
+  </main>
+  <script>
+    async function chercher(q) {
+      const info = document.getElementById("info");
+      const zone = document.getElementById("resultats");
+      if (!q.trim()) { info.textContent = ""; zone.innerHTML = ""; return; }
+      info.textContent = "Recherche…";
+      const { sujets } = await appelApi("/api/recherche?q=" + encodeURIComponent(q));
+      info.textContent = sujets.length
+        ? `${sujets.length} sujet${sujets.length > 1 ? "s" : ""} trouvé${sujets.length > 1 ? "s" : ""}${sujets.length === 60 ? " (les 60 plus pertinents)" : ""}, du plus récent au plus ancien.`
+        : "Aucun résultat. Essayez un mot plus court ou un synonyme.";
+      zone.innerHTML = sujets.map(carte).join("");
+    }
+    document.getElementById("form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = document.getElementById("q").value;
+      history.replaceState(null, "", "?q=" + encodeURIComponent(q));
+      chercher(q);
+    });
+    chargerEntete("/recherche").then(() => {
+      const q = new URLSearchParams(location.search).get("q") || "";
+      document.getElementById("q").value = q;
+      chercher(q);
+    });
+  </script>
+</body>
+</html>

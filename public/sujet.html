@@ -38,13 +38,14 @@
       const n = s.importance || 0;
       const d = s.resume_detail;
       const basSurTitre = s.articles.every((a) => !a.extrait || a.extrait.length < 40);
-      document.title = s.titre + " · Veille Patrimoine";
+      document.title = (s.titre_fr || s.titre) + " · Veille Patrimoine";
       let html = `
         <div class="meta">
           ${n ? `<span class="niveau n${n}">Importance ${n}/5</span>` : ""}
           ${(s.categories || []).map((c) => `<span class="cat">${echapper(c)}</span>`).join("")}
         </div>
-        <h1>${echapper(s.titre)}</h1>
+        <h1>${echapper(s.titre_fr || s.titre)}</h1>
+        ${s.titre_fr && s.titre_fr !== s.titre ? `<p class="titre-original">Titre original : ${echapper(s.titre)}</p>` : ""}
         <p class="doux">Dernière publication ${quand(s.derniere_pub)} · ${s.articles.length} article${s.articles.length > 1 ? "s" : ""}</p>`;
 
       if (d) {
