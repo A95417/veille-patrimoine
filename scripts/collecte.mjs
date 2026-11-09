@@ -75,6 +75,12 @@ async function enParallele(liste, n, travail) {
   return resultats;
 }
 
+// Certains flux (BOFiP) n'ont pas de date standard mais l'écrivent dans le texte : "publié le 04/11/2026".
+export function dateDansTexte(texte) {
+  const m = String(texte || "").match(/publi[ée]e? le (\d{2})\/(\d{2})\/(\d{4})/i);
+  return m ? `${m[3]}-${m[2]}-${m[1]}T12:00:00.000Z` : null;
+}
+
 // ---------------------------------------------------------------- collecte
 export async function lireSources(sources) {
   const taches = [];
@@ -88,6 +94,7 @@ export async function lireSources(sources) {
       bilan.push({ source: source.id, url, ok: false, raison: r.erreur || `HTTP ${r.statut}` });
       return [];
     }
+    for (const a of flux.articles) if (!a.date) a.date = dateDansTexte(a.resume) || dateDansTexte(a.titre);
     const articles = flux.articles
       .filter((a) => a.titre && /^https?:\/\//.test(a.lien))
       .filter((a) => !a.date || new Date(a.date).getTime() >= limiteAge)
