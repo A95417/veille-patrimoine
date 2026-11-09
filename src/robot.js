@@ -116,6 +116,42 @@ export async function routeRobot(request, env, chemin) {
     return json({ ok: true });
   }
 
+  // ------------------------------------------------------------ Brief matinal (étape 7)
+
+  // 9) Données du brief : sujets majeurs des dernières 24 h + clôtures relevées le matin.
+  if (chemin === "/api/robot/brief/donnees" && request.method === "GET") {
+    const jour = new URL(request.url).searchParams.get("jour") || "";
+    const existe = await db.prepare("SELECT 1 AS x FROM briefs WHERE jour = ?").bind(jour).first();
+    const depuis = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { results: sujets } = await db
+      .prepare(`SELECT id, titre, titre_fr, importance, categories, resume_court, resume_detail, nb_articles, derniere_pub
+                  FROM sujets WHERE derniere_pub >= ? AND importance >= 2 AND nb_articles > 0
+                 ORDER BY importance DESC, nb_articles DESC, derniere_pub DESC LIMIT 25`)
+      .bind(depuis).all();
+    for (const lot of morceaux(sujets, PARAMS_MAX)) {
+      if (!lot.length) continue;
+      const { results } = await db
+        .prepare(`SELECT sujet_id, source_nom, lien, publie_le FROM articles WHERE sujet_id IN (${lot.map(() => "?").join(",")}) ORDER BY publie_le DESC`)
+        .bind(...lot.map((s) => s.id)).all();
+      for (const s of lot) s.sources = results.filter((a) => a.sujet_id === s.id).map(({ sujet_id, ...a }) => a);
+    }
+    const cloture = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = 'marches_cloture'").first();
+    let marches = null;
+    try { marches = cloture ? { ...JSON.parse(cloture.valeur), maj_le: cloture.maj_le } : null; } catch {}
+    return json({ jour, existe: !!existe, sujets, marches });
+  }
+
+  // 10) Enregistrer le brief du jour ; on ne garde que 3 mois d'historique.
+  if (chemin === "/api/robot/brief" && request.method === "POST") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(corps.jour || "")) return json({ erreur: "Jour invalide." }, 400);
+    await db.batch([
+      db.prepare("INSERT OR REPLACE INTO briefs (jour, contenu, cree_le) VALUES (?, ?, ?)")
+        .bind(corps.jour, JSON.stringify(corps.contenu).slice(0, 60000), new Date().toISOString()),
+      db.prepare("DELETE FROM briefs WHERE jour < ?").bind(new Date(Date.now() - 92 * 86400000).toISOString().slice(0, 10)),
+    ]);
+    return json({ ok: true });
+  }
+
   // ------------------------------------------------------------ IA (étape 4)
 
   // 6) Travail à faire : sujets à classer, puis sujets importants à résumer en détail.

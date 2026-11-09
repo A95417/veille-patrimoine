@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 6.1 -->
+<!-- version 7.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -34,6 +34,7 @@
       <ul id="une-liste"></ul>
     </section>
 
+    <p id="lien-brief" hidden style="margin:0 0 14px"></p>
     <div class="barre">
       <h1>Actualités</h1>
       <span class="doux" id="info-maj"></span>
@@ -128,7 +129,21 @@
     };
     document.getElementById("btn-suite").onclick = () => charger(true);
 
+    // Lien vers le brief du matin, s'il a été rédigé aujourd'hui.
+    async function chargerLienBrief() {
+      try {
+        const { brief } = await appelApi("/api/brief");
+        const aujourdhui = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
+        if (brief && brief.jour === aujourdhui) {
+          const p = document.getElementById("lien-brief");
+          p.innerHTML = `<a class="bouton bouton-discret" href="/brief">☀ Le brief de ce matin est prêt : ${(brief.actualites || []).length} actualités majeures, ${(brief.a_retenir || []).length} points à retenir →</a>`;
+          p.hidden = false;
+        }
+      } catch {}
+    }
+
     chargerEntete("/").then(async () => {
+      chargerLienBrief();
       tuilesMarches(document.getElementById("bandeau-marches"));
       await chargerFiltres();
       chargerUne();

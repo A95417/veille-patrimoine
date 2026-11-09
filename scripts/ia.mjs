@@ -21,7 +21,7 @@ export const CATEGORIES = [
 ];
 
 // ---------------------------------------------------------------- consignes (modifiables)
-const REGLES = `Tu es l'assistant de veille d'un cabinet de gestion de patrimoine en France. Tu prépares de l'information pour des conseillers qui échangent avec leurs clients (épargnants, investisseurs, chefs d'entreprise, retraités, contribuables soumis à l'IFI).
+export const REGLES = `Tu es l'assistant de veille d'un cabinet de gestion de patrimoine en France. Tu prépares de l'information pour des conseillers qui échangent avec leurs clients (épargnants, investisseurs, chefs d'entreprise, retraités, contribuables soumis à l'IFI).
 
 RÈGLES STRICTES, À RESPECTER SANS EXCEPTION :
 1. Tu n'utilises QUE les informations présentes dans les articles fournis (titre et chapô). N'ajoute aucun fait, chiffre, date, nom, taux ou montant qui n'y figure pas, même si tu crois le connaître.

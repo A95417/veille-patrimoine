@@ -139,6 +139,18 @@ export async function routeLecture(chemin, url, db) {
     return json({ sujets: results });
   }
 
+  // Brief matinal : celui du jour demandé (ou le plus récent), et la liste des jours disponibles.
+  if (chemin === "/api/brief") {
+    const jour = p.get("jour");
+    const b = jour
+      ? await db.prepare("SELECT jour, contenu, cree_le FROM briefs WHERE jour = ?").bind(jour).first()
+      : await db.prepare("SELECT jour, contenu, cree_le FROM briefs ORDER BY jour DESC LIMIT 1").first();
+    const { results: jours } = await db.prepare("SELECT jour FROM briefs ORDER BY jour DESC LIMIT 100").all();
+    let contenu = null;
+    try { contenu = b ? JSON.parse(b.contenu) : null; } catch {}
+    return json({ brief: b ? { jour: b.jour, cree_le: b.cree_le, ...contenu } : null, jours: jours.map((j) => j.jour) });
+  }
+
   // Valeurs proposées dans les filtres.
   if (chemin === "/api/filtres") {
     const { results: sources } = await db

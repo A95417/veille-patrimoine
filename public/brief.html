@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 5.1 -->
+<!-- version 7.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -7,13 +7,92 @@
   <title>Brief du jour · Veille Patrimoine</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/commun.js"></script>
+  <style>
+    .contenu { max-width: 860px; }
+    .entete-brief { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 10px; }
+    .entete-brief select { width: auto; min-width: 220px; }
+    .bloc h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 0 0 10px; }
+    .synthese { font-size: 1.05rem; line-height: 1.65; margin: 0; }
+    .mini-marches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 18px; margin-top: 10px; font-size: .92rem; }
+    .mini-marches div { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--bord); padding: 4px 0; }
+    .retenir li { margin: 0 0 10px; line-height: 1.55; }
+    .retenir a { font-size: .85rem; }
+    .actu { padding: 12px 0; border-bottom: 1px solid var(--bord); }
+    .actu:last-child { border: 0; }
+    .actu h3 { margin: 4px 0 6px; font-size: 1rem; line-height: 1.4; }
+    .actu h3 a { color: var(--texte); text-decoration: none; }
+    .actu h3 a:hover { text-decoration: underline; }
+    .actu p { margin: 0 0 6px; font-size: .93rem; }
+    .avertissement { font-size: .85rem; color: var(--doux); border: 1px dashed var(--bord); border-radius: 8px; padding: 10px 12px; }
+  </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
-  <main class="page" id="contenu"></main>
+  <main class="page contenu">
+    <div class="entete-brief">
+      <div>
+        <h1 id="titre">Brief du jour</h1>
+        <p class="doux" id="sous-titre" style="margin:0"></p>
+      </div>
+      <div><label for="historique" style="margin:0 0 4px">Briefs précédents</label><select id="historique"></select></div>
+    </div>
+    <div id="brief" style="margin-top:18px"><p class="doux">Chargement…</p></div>
+  </main>
   <script>
-    chargerEntete("/brief").then(() => pageBientot("Brief du jour",
-      "Chaque matin à 7 h, un récapitulatif sera généré ici : clôtures des marchés de la veille et de l'Asie, les actualités majeures des dernières 24 heures, l'agenda économique du jour et une section « À retenir pour mes rendez-vous clients ». Les briefs précédents resteront consultables."));
+    const dateLongue = (jour) => new Date(jour + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const lienSujet = (id) => `/sujet?id=${encodeURIComponent(id)}`;
+
+    function afficher(b) {
+      document.getElementById("titre").textContent = "Brief du " + dateLongue(b.jour);
+      document.getElementById("sous-titre").textContent = "Rédigé " + quand(b.genere_le || b.cree_le);
+      const valeurs = b.marches ? [...(b.marches.valeurs || []), ...(b.marches.autres || [])].filter((v) => typeof v.variation === "number") : [];
+      let html = "";
+
+      if (b.synthese) html += `<section class="carte bloc"><h2>L'essentiel ce matin</h2><p class="synthese">${echapper(b.synthese)}</p></section>`;
+
+      html += `<section class="carte bloc"><h2>Marchés : clôtures de la veille</h2>
+        ${b.commentaire_marches ? `<p style="margin:0">${echapper(b.commentaire_marches)}</p>` : ""}
+        ${valeurs.length ? `<div class="mini-marches">${valeurs.map((v) =>
+            `<div><span>${echapper(v.nom.replace(/ \(≈ .*\)/, ""))}</span>${formatVariation(v.variation)}</div>`).join("")}</div>
+          <p class="doux" style="font-size:.8rem;margin:8px 0 0">Estimations via des fonds indiciels cotés à New York (voir la page Marchés). Séance asiatique de la nuit non disponible gratuitement.</p>`
+          : `<p class="doux" style="margin:0">Aucun relevé de clôture disponible pour ce jour.</p>`}
+      </section>`;
+
+      if (b.a_retenir && b.a_retenir.length) html += `<section class="carte bloc"><h2>À retenir pour mes rendez-vous clients</h2>
+        <ul class="retenir">${b.a_retenir.map((p) => `<li>${echapper(p.texte)} <a href="${lienSujet(p.sujet_id)}">Voir le sujet →</a></li>`).join("")}</ul></section>`;
+
+      html += `<section class="carte bloc"><h2>Les actualités majeures des dernières 24 heures</h2>
+        ${(b.actualites || []).length ? b.actualites.map((a) => `<div class="actu">
+          <div class="meta"><span class="niveau n${a.importance}">${a.importance}/5</span>${(a.categories || []).map((c) => `<span class="cat">${echapper(c)}</span>`).join("")}</div>
+          <h3><a href="${lienSujet(a.id)}">${echapper(a.titre)}</a></h3>
+          ${a.resume ? `<p>${echapper(a.resume)}</p>` : ""}
+          <div class="sources">${(a.sources || []).map((s) => `<a class="source" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">${echapper(s.nom)} ↗</a>`).join("")}</div>
+        </div>`).join("") : `<p class="doux">Aucune actualité majeure sur la période.</p>`}
+      </section>`;
+
+      html += `<section class="carte bloc"><h2>Agenda économique du jour</h2><p class="doux" style="margin:0">Non disponible : aucune source gratuite et fiable ne le fournit.</p></section>`;
+      html += `<p class="avertissement">${b.ia_modele ? "Synthèse et points à retenir rédigés par une IA" : "Brief produit sans synthèse (IA indisponible ce matin-là)"} à partir des résumés des sources et des relevés de marché.
+        Vérifiez les points importants dans les articles originaux avant d'en faire état. Ce contenu est informatif et ne constitue pas un conseil en investissement.</p>`;
+      document.getElementById("brief").innerHTML = html;
+    }
+
+    async function charger(jour) {
+      const r = await appelApi("/api/brief" + (jour ? "?jour=" + encodeURIComponent(jour) : ""));
+      const choix = document.getElementById("historique");
+      choix.innerHTML = r.jours.length ? r.jours.map((j) => `<option value="${j}">${dateLongue(j)}</option>`).join("") : "<option>Aucun</option>";
+      if (!r.brief) {
+        document.getElementById("brief").innerHTML = `<div class="carte"><p><strong>Pas encore de brief.</strong></p>
+          <p class="doux">Le premier sera rédigé automatiquement demain matin vers 7 h, puis chaque jour, week-end compris.</p></div>`;
+        return;
+      }
+      choix.value = r.brief.jour;
+      afficher(r.brief);
+    }
+    document.getElementById("historique").addEventListener("change", (e) => {
+      history.replaceState(null, "", "?jour=" + e.target.value);
+      charger(e.target.value);
+    });
+    chargerEntete("/brief").then(() => charger(new URLSearchParams(location.search).get("jour")));
   </script>
 </body>
 </html>
