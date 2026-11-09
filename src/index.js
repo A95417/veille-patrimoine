@@ -7,6 +7,7 @@ import {
   tropDeTentatives, noterTentative, effacerTentatives,
 } from "./auth.js";
 import { routeRobot } from "./robot.js";
+import { routeLecture } from "./lecture.js";
 
 // Pages et fichiers visibles sans être connecté.
 const PAGES_PUBLIQUES = new Set(["/connexion", "/installation", "/style.css", "/commun.js", "/favicon.ico"]);
@@ -109,31 +110,10 @@ async function api(request, env, url) {
 
   if (chemin === "/api/moi" && methode === "GET") return json(moi);
 
-  // Fil d'actualités : les sujets les plus récents, avec leurs articles et leurs sources.
-  if (chemin === "/api/actualites" && methode === "GET") {
-    const limite = Math.min(Math.max(Number(url.searchParams.get("limite")) || 30, 1), 60);
-    const avant = url.searchParams.get("avant") || "9999";
-    const { results: sujets } = await db
-      .prepare(
-        `SELECT id, titre, derniere_pub, nb_articles, importance, categories, resume_court, ia_statut
-           FROM sujets WHERE nb_articles > 0 AND derniere_pub < ? ORDER BY derniere_pub DESC LIMIT ?`
-      )
-      .bind(avant, limite)
-      .all();
-    if (sujets.length) {
-      const { results: arts } = await db
-        .prepare(
-          `SELECT sujet_id, source_nom, groupe, langue, titre, lien, extrait, publie_le FROM articles
-            WHERE sujet_id IN (${sujets.map(() => "?").join(",")}) ORDER BY publie_le DESC`
-        )
-        .bind(...sujets.map((s) => s.id))
-        .all();
-      for (const s of sujets) {
-        s.articles = arts.filter((a) => a.sujet_id === s.id).map(({ sujet_id, ...a }) => a);
-        try { s.categories = s.categories ? JSON.parse(s.categories) : []; } catch { s.categories = []; }
-      }
-    }
-    return json({ sujets, suite: sujets.length === limite ? sujets[sujets.length - 1].derniere_pub : null });
+  // Actualités : fil filtrable, « À la une », détail d'un sujet, listes des filtres (voir lecture.js).
+  if (methode === "GET") {
+    const r = await routeLecture(chemin, url, db);
+    if (r) return r;
   }
 
   if (chemin === "/api/moi/mot-de-passe" && methode === "POST") {

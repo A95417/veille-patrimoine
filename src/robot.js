@@ -104,5 +104,69 @@ export async function routeRobot(request, env, chemin) {
     return json({ ok: true });
   }
 
+  // ------------------------------------------------------------ IA (étape 4)
+
+  // 6) Travail à faire : sujets à classer, puis sujets importants à résumer en détail.
+  if (chemin === "/api/robot/ia/travail" && request.method === "GET") {
+    const u = new URL(request.url);
+    const nbTri = Math.min(Number(u.searchParams.get("tri")) || 36, 120);
+    const nbDetail = Math.min(Number(u.searchParams.get("detail")) || 10, 40);
+    const { results: aTrier } = await db
+      .prepare(`SELECT id, titre, derniere_pub FROM sujets WHERE ia_statut = 'a_faire' AND nb_articles > 0 AND ia_essais < 3
+                ORDER BY derniere_pub DESC LIMIT ?`).bind(nbTri).all();
+    const { results: aDetailler } = await db
+      .prepare(`SELECT id, titre, derniere_pub, importance FROM sujets WHERE ia_statut = 'a_detailler' AND ia_essais < 3
+                ORDER BY importance DESC, derniere_pub DESC LIMIT ?`).bind(nbDetail).all();
+    const tous = [...aTrier, ...aDetailler];
+    if (tous.length) {
+      for (const lot of morceaux(tous, PARAMS_MAX)) {
+        const { results } = await db
+          .prepare(`SELECT sujet_id, source_nom, groupe, langue, titre, lien, extrait, publie_le FROM articles
+                     WHERE sujet_id IN (${lot.map(() => "?").join(",")}) ORDER BY publie_le`)
+          .bind(...lot.map((s) => s.id)).all();
+        for (const s of lot) s.articles = results.filter((a) => a.sujet_id === s.id).map(({ sujet_id, ...a }) => a);
+      }
+    }
+    return json({ a_trier: aTrier, a_detailler: aDetailler });
+  }
+
+  // 7) Résultats de l'IA.
+  if (chemin === "/api/robot/ia/resultats" && request.method === "POST") {
+    const maintenant = new Date().toISOString();
+    const ordres = [];
+    for (const t of corps.tri || []) {
+      const imp = Math.max(1, Math.min(5, Math.round(Number(t.importance) || 1)));
+      const cats = [...new Set((t.categories || []).map((c) => String(c).slice(0, 80)))].slice(0, 4);
+      ordres.push(db.prepare(
+        `UPDATE sujets SET importance = ?, categories = ?, resume_court = ?, ia_statut = ?, ia_modele = ?, ia_le = ? WHERE id = ?`
+      ).bind(imp, JSON.stringify(cats), court(t.resume_court, 1500), imp >= 3 ? "a_detailler" : "court", court(t.modele, 60), maintenant, t.id));
+      ordres.push(db.prepare("DELETE FROM sujet_categories WHERE sujet_id = ?").bind(t.id));
+      for (const c of cats) ordres.push(db.prepare("INSERT OR IGNORE INTO sujet_categories (sujet_id, categorie) VALUES (?, ?)").bind(t.id, c));
+    }
+    for (const d of corps.details || []) {
+      ordres.push(db.prepare(`UPDATE sujets SET resume_detail = ?, ia_statut = 'detail', ia_modele = ?, ia_le = ? WHERE id = ?`)
+        .bind(JSON.stringify(d.resume_detail).slice(0, 12000), court(d.modele, 60), maintenant, d.id));
+    }
+    for (const id of corps.echecs || []) {
+      ordres.push(db.prepare("UPDATE sujets SET ia_essais = ia_essais + 1 WHERE id = ?").bind(id));
+    }
+    for (const lot of morceaux(ordres, 80)) await db.batch(lot);
+    return json({ ok: true });
+  }
+
+  // 8) Compteur de requêtes IA du jour (remis à zéro à minuit, heure de Californie, comme chez Google).
+  if (chemin === "/api/robot/ia/quota") {
+    const jour = new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+    const ligne = await db.prepare("SELECT valeur FROM etat WHERE cle = 'ia_quota'").first();
+    let q = { jour, compteurs: {} };
+    try { const lu = JSON.parse(ligne?.valeur || "{}"); if (lu.jour === jour) q = lu; } catch {}
+    if (request.method === "POST") {
+      for (const [modele, n] of Object.entries(corps.ajouts || {})) q.compteurs[modele] = (q.compteurs[modele] || 0) + Number(n || 0);
+      await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES ('ia_quota', ?, ?)")
+        .bind(JSON.stringify(q), new Date().toISOString()).run();
+    }
+    return json(q);
+  }
+
   return json({ erreur: "Adresse inconnue." }, 404);
 }
