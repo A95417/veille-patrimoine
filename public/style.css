@@ -1,4 +1,4 @@
-/* version 5.2 */
+/* version 6.0 */
 /* Styles communs du site Veille Patrimoine */
 :root {
   --fond: #f6f6f3;
@@ -129,3 +129,9 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .titre-original { font-size: .85rem; color: var(--doux); font-style: italic; margin: -4px 0 8px; }
 select { width: 100%; padding: 8px 10px; font: inherit; font-size: .9rem; color: var(--texte); background: var(--carte);
          border: 1px solid var(--bord); border-radius: 8px; }
+
+/* Marchés */
+.bandeau-marches { background: var(--carte); border-bottom: 1px solid var(--bord); min-height: 46px; }
+.tradingview-widget-copyright { font-size: .7rem; text-align: right; padding: 2px 8px; }
+.tradingview-widget-copyright a { color: var(--doux); }
+.alerte-marche { color: var(--ko); font-weight: 600; }

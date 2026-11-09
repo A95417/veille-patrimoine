@@ -1,4 +1,4 @@
-// version 5.1
+// version 6.0
 // Outils partagés par toutes les pages.
 
 // Thème clair / sombre (mémorisé sur cet appareil uniquement).
@@ -79,6 +79,38 @@ function carte(s) {
       <a class="lien-detail" href="${lien}">${n >= 3 ? "Résumé détaillé →" : "Détails →"}</a>
     </div>
   </article>`;
+}
+
+// ---------------------------------------------------------------- Marchés (widgets TradingView, gratuits)
+// Les 12 valeurs suivies. Les symboles "TVC:" sont les indices et taux publiés par TradingView.
+const MARCHES = {
+  Indices: [
+    ["TVC:CAC40", "CAC 40"], ["TVC:SX5E", "Euro Stoxx 50"], ["SP:SPX", "S&P 500"],
+    ["NASDAQ:IXIC", "Nasdaq"], ["TVC:DJI", "Dow Jones"], ["TVC:NI225", "Nikkei 225"],
+  ],
+  "Taux 10 ans": [["TVC:FR10Y", "OAT 10 ans"], ["TVC:DE10Y", "Bund 10 ans"]],
+  "Devises, matières premières et crypto": [
+    ["FX:EURUSD", "EUR/USD"], ["TVC:GOLD", "Or"], ["TVC:UKOIL", "Pétrole Brent"], ["BITSTAMP:BTCUSD", "Bitcoin"],
+  ],
+};
+function themeActuel() {
+  const t = document.documentElement.dataset.theme;
+  return t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+}
+function widgetTradingView(conteneur, script, config) {
+  conteneur.innerHTML = `<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
+    <div class="tradingview-widget-copyright"><a href="https://fr.tradingview.com/" rel="noopener nofollow" target="_blank">Données de marché par TradingView</a></div></div>`;
+  const s = document.createElement("script");
+  s.src = `https://s3.tradingview.com/external-embedding/${script}`;
+  s.async = true;
+  s.textContent = JSON.stringify({ colorTheme: themeActuel(), isTransparent: true, locale: "fr", ...config });
+  conteneur.firstElementChild.appendChild(s);
+}
+function bandeauMarches(conteneur) {
+  widgetTradingView(conteneur, "embed-widget-ticker-tape.js", {
+    symbols: Object.values(MARCHES).flat().map(([proName, title]) => ({ proName, title })),
+    showSymbolLogo: false, displayMode: "adaptive",
+  });
 }
 
 // Page « bientôt disponible » pour les rubriques des étapes suivantes.

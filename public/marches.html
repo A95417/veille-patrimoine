@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 5.1 -->
+<!-- version 6.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -7,13 +7,71 @@
   <title>Marchés · Veille Patrimoine</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/commun.js"></script>
+  <style>
+    .grille-marches { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .grille-marches { grid-template-columns: 1fr; } }
+    .carte h2 { margin-bottom: 6px; }
+    .var-pos { color: var(--ok); font-weight: 600; }
+    .var-neg { color: var(--ko); font-weight: 600; }
+  </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
-  <main class="page" id="contenu"></main>
+  <div class="bandeau-marches" id="bandeau-marches"></div>
+  <main class="page">
+    <h1>Marchés</h1>
+    <p class="doux">Cours et variations du jour fournis par TradingView (gratuit, parfois avec quelques minutes de décalage).</p>
+
+    <div class="grille-marches">
+      <section class="carte">
+        <h2>Les 12 valeurs suivies</h2>
+        <div id="cotations"></div>
+      </section>
+      <section class="carte">
+        <h2>Agenda économique</h2>
+        <p class="doux" style="font-size:.85rem;margin-top:0">Publications importantes (France, zone euro, Allemagne, États-Unis, Royaume-Uni, Japon, Chine).</p>
+        <div id="agenda"></div>
+      </section>
+    </div>
+
+    <section class="carte">
+      <h2>Surveillance des baisses de plus de 2 %</h2>
+      <div id="releve" class="doux">Chargement…</div>
+      <p class="doux" style="font-size:.85rem">
+        Comment ça marche : pendant la séance de New York (15 h 30 - 22 h, heure de Paris, en semaine), le robot relève toutes les 15 minutes
+        des fonds indiciels (ETF) qui répliquent les grands indices, car les indices eux-mêmes ne sont pas disponibles gratuitement.
+        Pour les indices européens et japonais, l'effet du taux de change est retiré. Si l'un d'eux recule de plus de 2 %,
+        une alerte apparaît dans le bandeau « À la une ». Ce sont des estimations : les chiffres de référence sont ceux du tableau ci-dessus.
+      </p>
+    </section>
+  </main>
   <script>
-    chargerEntete("/marches").then(() => pageBientot("Marchés",
-      "Le tableau de bord des marchés arrive à l'étape suivante : CAC 40, Euro Stoxx 50, S&P 500, Nasdaq, Dow Jones, Nikkei, EUR/USD, or, Brent, Bitcoin, OAT et Bund 10 ans, avec la variation du jour. Une baisse de plus de 2 % d'un grand indice apparaîtra dans le bandeau « À la une »."));
+    const pct = (v) => typeof v === "number"
+      ? `<span class="${v < 0 ? "var-neg" : "var-pos"}">${v > 0 ? "+" : ""}${v.toFixed(2).replace(".", ",")} %</span>` : "–";
+
+    async function chargerReleve() {
+      const { direct, cloture } = await appelApi("/api/marches");
+      const zone = document.getElementById("releve");
+      const source = direct || cloture;
+      if (!source) { zone.innerHTML = "Pas encore de relevé : le premier aura lieu à l'ouverture de New York (15 h 30) ou demain à 6 h."; return; }
+      zone.innerHTML = `<p>Dernier relevé : <strong>${quand(source.maj_le)}</strong>${source === cloture ? " (clôtures de la veille)" : " (séance en cours)"}</p>
+        <table class="tableau"><thead><tr><th>Marché</th><th>Variation</th><th>Mesuré via</th></tr></thead><tbody>
+        ${source.valeurs.map((v) => `<tr><td data-libelle="Marché"><strong>${echapper(v.nom)}</strong></td>
+          <td data-libelle="Variation">${pct(v.variation)}</td><td data-libelle="Via">${echapper(v.via || "")}</td></tr>`).join("")}
+        </tbody></table>`;
+    }
+
+    bandeauMarches(document.getElementById("bandeau-marches"));
+    widgetTradingView(document.getElementById("cotations"), "embed-widget-market-quotes.js", {
+      width: "100%", height: 620, showSymbolLogo: false,
+      symbolsGroups: Object.entries(MARCHES).map(([name, liste]) => ({
+        name, symbols: liste.map(([n, displayName]) => ({ name: n, displayName })),
+      })),
+    });
+    widgetTradingView(document.getElementById("agenda"), "embed-widget-events.js", {
+      width: "100%", height: 620, importanceFilter: "0,1", countryFilter: "fr,eu,de,us,gb,jp,cn",
+    });
+    chargerEntete("/marches").then(chargerReleve);
   </script>
 </body>
 </html>

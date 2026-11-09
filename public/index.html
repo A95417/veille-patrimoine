@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 5.1 -->
+<!-- version 6.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -27,6 +27,7 @@
 </head>
 <body>
   <header class="entete" id="entete"></header>
+  <div class="bandeau-marches" id="bandeau-marches"></div>
   <main class="page">
     <section class="une" id="une" hidden>
       <h2>À la une</h2>
@@ -94,9 +95,11 @@
     }
 
     async function chargerUne() {
-      const { sujets } = await appelApi("/api/une");
-      document.getElementById("une").hidden = !sujets.length;
-      document.getElementById("une-liste").innerHTML = sujets.map((s) =>
+      const { sujets, alertes_marches: alertes = [] } = await appelApi("/api/une");
+      document.getElementById("une").hidden = !sujets.length && !alertes.length;
+      document.getElementById("une-liste").innerHTML = alertes.map((a) =>
+        `<li><a class="alerte-marche" href="/marches">▼ ${echapper(a.nom)} : ${String(a.variation).replace(".", ",")} % aujourd'hui</a>
+          <span class="doux" style="font-size:.85rem"> · estimation via ${echapper(a.via)} · relevé ${quand(a.maj_le)}</span></li>`).join("") + sujets.map((s) =>
         `<li><a href="/sujet?id=${encodeURIComponent(s.id)}">${echapper(s.titre_fr || s.titre)}</a>
           <span class="doux" style="font-size:.85rem"> · ${[...new Set(s.articles.map((a) => a.source_nom))].map(echapper).join(", ")} · ${quand(s.derniere_pub)}</span></li>`).join("");
     }
@@ -125,6 +128,7 @@
     };
     document.getElementById("btn-suite").onclick = () => charger(true);
 
+    bandeauMarches(document.getElementById("bandeau-marches"));
     chargerEntete("/").then(async () => {
       await chargerFiltres();
       chargerUne();

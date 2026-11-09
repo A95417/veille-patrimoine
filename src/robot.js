@@ -107,6 +107,14 @@ export async function routeRobot(request, env, chemin) {
     return json({ ok: true });
   }
 
+  // 5 bis) Relevé des marchés (séance de New York) ou clôtures du matin (pour le brief).
+  if (chemin === "/api/robot/marches" && request.method === "POST") {
+    const cle = corps.type === "cloture" ? "marches_cloture" : "marches_direct";
+    await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)")
+      .bind(cle, JSON.stringify(corps).slice(0, 20000), new Date().toISOString()).run();
+    return json({ ok: true });
+  }
+
   // ------------------------------------------------------------ IA (étape 4)
 
   // 6) Travail à faire : sujets à classer, puis sujets importants à résumer en détail.

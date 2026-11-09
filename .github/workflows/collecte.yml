@@ -34,11 +34,20 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
 
       - name: Classer et résumer avec l'IA
+        if: ${{ always() }}   # même si la collecte a eu un souci, on traite ce qui attend
         run: node scripts/ia.mjs | tee -a collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Relever les marchés
+        if: ${{ always() }}
+        run: node scripts/marches.mjs | tee -a collecte.log
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
 
       # GitHub met en pause les robots d'un dépôt sans activité pendant 60 jours.
       # Une fois par jour (vers 6 h, heure de Paris), le robot note son état dans le dépôt pour rester actif.

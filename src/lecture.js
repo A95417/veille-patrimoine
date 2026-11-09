@@ -44,6 +44,15 @@ export function construireRequete(saisie) {
   return { requete: termes.join(" AND "), francais: retenus.some((m) => SIGLES[m]) };
 }
 
+// Alertes « baisse de plus de 2 % » : seulement celles de la séance du jour (heure de Paris).
+async function alertesDuJour(db) {
+  const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = 'marches_direct'").first();
+  if (!l) return [];
+  const jour = (d) => new Date(d).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+  if (jour(l.maj_le) !== jour(Date.now())) return [];
+  try { return (JSON.parse(l.valeur).alertes || []).map((a) => ({ ...a, maj_le: l.maj_le })); } catch { return []; }
+}
+
 const PERIODES = { "24h": 1, "7j": 7, "30j": 30, "90j": 90 };
 
 export async function routeLecture(chemin, url, db) {
@@ -88,7 +97,16 @@ export async function routeLecture(chemin, url, db) {
       .bind(depuis)
       .all();
     await avecArticles(db, results, false);
-    return json({ sujets: results });
+    return json({ sujets: results, alertes_marches: await alertesDuJour(db) });
+  }
+
+  // Derniers relevés de marché (page Marchés).
+  if (chemin === "/api/marches") {
+    const lire = async (cle) => {
+      const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = ?").bind(cle).first();
+      try { return l ? { ...JSON.parse(l.valeur), maj_le: l.maj_le } : null; } catch { return null; }
+    };
+    return json({ direct: await lire("marches_direct"), cloture: await lire("marches_cloture") });
   }
 
   // Détail d'un sujet : résumé complet et toutes ses sources.
