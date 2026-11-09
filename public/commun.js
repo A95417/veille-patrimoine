@@ -45,6 +45,17 @@ function echapper(texte) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// Date lisible : "il y a 5 min", "aujourd'hui à 9:30", "4 nov. à 14:00".
+function quand(iso) {
+  const d = new Date(iso), maintenant = new Date();
+  const min = Math.round((maintenant - d) / 60000);
+  if (min < 1) return "à l'instant";
+  if (min < 60) return `il y a ${min} min`;
+  if (min < 24 * 60 && d.getDate() === maintenant.getDate())
+    return `aujourd'hui à ${d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+  return d.toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 // Barre de navigation commune aux pages privées.
 async function chargerEntete(pageActive) {
   const moi = await appelApi("/api/moi");
