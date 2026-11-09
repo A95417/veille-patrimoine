@@ -1,3 +1,4 @@
+// version 5.1
 // Outils partagés par toutes les pages.
 
 // Thème clair / sombre (mémorisé sur cet appareil uniquement).
