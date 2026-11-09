@@ -28,26 +28,29 @@ RÈGLES STRICTES, À RESPECTER SANS EXCEPTION :
 2. Tu ne disposes que du titre et du chapô gratuits publiés par la source, jamais de l'article complet. Si une information manque, écris-le simplement (« l'extrait ne le précise pas »).
 3. Jamais de recommandation d'investissement personnalisée : pas de « achetez », « vendez », « vous devriez placer ». Formulations générales et prudentes uniquement.
 4. Rédige en français clair et professionnel, même si l'article est en anglais.
-5. Pas de spéculation ni d'opinion. Reste factuel.`;
+5. Pas de spéculation ni d'opinion. Reste factuel.
+6. N'attribue jamais une position, une proposition ou une intention à une personne si l'extrait ne l'énonce pas explicitement. Un thème cité dans un titre (« retraite à 65 ans ») ne dit pas qui propose quoi.`;
 
 const CONSIGNES_TRI = `${REGLES}
 
 TA TÂCHE : pour chaque sujet fourni, donne :
 - "importance" de 1 à 5, du point de vue d'un gestionnaire de patrimoine français :
-  5 = événement majeur à connaître immédiatement : adoption d'une mesure fiscale ou patrimoniale, décision de taux de la BCE ou de la Fed, chute marquée des marchés, changement du taux du Livret A, réforme importante de l'assurance-vie, du PER, des successions ou de l'IFI.
-  4 = important : projet de loi ou amendement significatif, nouvelle doctrine fiscale BOFiP concernant les particuliers ou les dirigeants, chiffre macroéconomique clé (inflation, croissance, chômage en France ou en zone euro), annonce gouvernementale sur l'épargne, l'immobilier ou la retraite.
-  3 = utile pour échanger avec un client : tendance des placements, de l'immobilier ou des SCPI, mouvement de marché notable, discours d'un banquier central, actualité crypto majeure.
-  2 = secondaire : actualité d'entreprise, information sectorielle, international peu lié à l'épargne des clients.
+  5 = décision ou événement majeur, effectif ou acté : mesure fiscale ou patrimoniale adoptée ou publiée, décision de taux de la BCE ou de la Fed, chute marquée des marchés, nouveau taux du Livret A, réforme votée de l'assurance-vie, du PER, des successions ou de l'IFI.
+  4 = texte ou chiffre officiel important : projet de loi, amendement adopté en commission ou en séance, nouvelle doctrine fiscale BOFiP concernant les particuliers ou les dirigeants, chiffre macroéconomique officiel clé (inflation, croissance, chômage en France ou en zone euro), décision d'un régulateur (AMF, ACPR).
+  3 = utile pour échanger avec un client : tendance des placements, de l'immobilier ou des SCPI, mouvement de marché notable, discours d'un banquier central, analyse argumentée sur l'épargne ou la fiscalité, actualité crypto majeure.
+  2 = secondaire : déclaration ou proposition politique sans texte en discussion (meeting, interview, programme de campagne), actualité d'une entreprise, information sectorielle, actualité internationale peu liée à l'épargne des clients.
   1 = hors sujet pour un gestionnaire de patrimoine.
+  En cas d'hésitation entre deux niveaux, choisis le plus bas.
 - "categories" : 1 à 3 catégories, choisies uniquement dans la liste autorisée (« Autre » si rien ne convient).
-- "resume_court" : 2 à 3 phrases factuelles en français. Si seul le titre est disponible, commence par « D'après le titre publié par la source, ».
+- "titre_fr" : le titre en français. Si l'article est en anglais, traduis-le fidèlement ; s'il est déjà en français, recopie-le tel quel.
+- "resume_court" : 2 à 3 phrases factuelles en français qui disent ce que l'article apporte. N'écris pas ce qui manque dans l'extrait (pas de « l'extrait ne précise pas »). Si seul le titre est disponible, commence par « D'après le titre publié par la source, ».
 Réponds pour TOUS les sujets, en recopiant exactement leur "id".`;
 
 const CONSIGNES_DETAIL = `${REGLES}
 
 TA TÂCHE : rédige le résumé détaillé du sujet fourni (un ou plusieurs articles de sources différentes sur le même événement) :
 - "essentiel" : 2 à 3 phrases qui disent ce qui s'est passé.
-- "points_cles" : 3 à 6 puces courtes, avec les chiffres et les dates précis SEULEMENT s'ils figurent dans les articles.
+- "points_cles" : 2 à 6 puces sur le FOND : mesures, décisions, chiffres, montants, taux, échéances, personnes concernées. Les chiffres et dates précis SEULEMENT s'ils figurent dans les articles. Pas de puce de pure présentation (« Lieu : … », « Date du déplacement : … ») sauf si cette information compte pour le client. S'il y a peu de fond, mets peu de puces.
 - "contexte" : pourquoi c'est important, en 2 à 4 phrases, en restant dans ce que disent les articles. Si les articles ne donnent pas de contexte, dis-le.
 - "impact_clients" : 1 à 4 profils concernés parmi : épargnants, investisseurs, chefs d'entreprise, retraités, contribuables IFI, propriétaires immobiliers, futurs retraités, héritiers et donateurs. Pour chacun, une phrase sur l'impact possible, prudente et non personnalisée.
 - "parler_client" : 2 à 3 phrases simples, prêtes à être dites en rendez-vous, sans jargon, sans conseil personnalisé.
@@ -65,9 +68,10 @@ const SCHEMA_TRI = {
           id: { type: "STRING" },
           importance: { type: "INTEGER" },
           categories: { type: "ARRAY", items: { type: "STRING", enum: CATEGORIES } },
+          titre_fr: { type: "STRING" },
           resume_court: { type: "STRING" },
         },
-        required: ["id", "importance", "categories", "resume_court"],
+        required: ["id", "importance", "categories", "titre_fr", "resume_court"],
       },
     },
   },
