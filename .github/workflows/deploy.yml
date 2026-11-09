@@ -27,5 +27,7 @@ jobs:
           # Transmet au site le code d'installation rangé dans le coffre GitHub
           secrets: |
             SETUP_CODE
+            ROBOT_TOKEN
         env:
           SETUP_CODE: ${{ secrets.SETUP_CODE }}
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}

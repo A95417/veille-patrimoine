@@ -1,0 +1,49 @@
+# Robot de collecte : toutes les 15 minutes, lit les flux RSS et envoie les nouveaux articles au site.
+# Peut aussi se lancer à la main (bouton "Run workflow").
+name: Collecte des actualités
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"   # toutes les 15 min (décalé des heures pleines, plus fiable)
+  workflow_dispatch:
+
+permissions:
+  contents: write   # pour la petite note quotidienne qui garde le robot actif
+
+concurrency:
+  group: collecte
+  cancel-in-progress: false
+
+jobs:
+  collecter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Préparer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Collecter les actualités
+        run: node scripts/collecte.mjs | tee collecte.log
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+
+      # GitHub met en pause les robots d'un dépôt sans activité pendant 60 jours.
+      # Une fois par jour (vers 6 h, heure de Paris), le robot note son état dans le dépôt pour rester actif.
+      - name: Note quotidienne (garde le robot actif)
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+          if [ "$(date -u +%H)" = "05" ] && [ "$(date -u +%M)" -lt 20 ]; then
+            mkdir -p rapports
+            { echo "# Dernière collecte"; echo; echo '```'; tail -n 20 collecte.log; echo '```'; } > rapports/collecte.md
+            git config user.name "robot-veille"
+            git config user.email "robot-veille@users.noreply.github.com"
+            git add rapports/collecte.md
+            git commit -m "Note quotidienne du robot de collecte" || echo "Rien de nouveau"
+            git push
+          fi
