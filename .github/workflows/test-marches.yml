@@ -1,0 +1,16 @@
+# TEST TEMPORAIRE (sera supprimé) : vérifie les symboles disponibles chez Twelve Data.
+name: Test marchés (temporaire)
+on:
+  workflow_dispatch:
+jobs:
+  tester:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node scripts/test-marches.mjs
+        env:
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
