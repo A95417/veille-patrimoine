@@ -1,4 +1,4 @@
-// version 6.0
+// version 6.1
 // Outils partagés par toutes les pages.
 
 // Thème clair / sombre (mémorisé sur cet appareil uniquement).
@@ -81,36 +81,38 @@ function carte(s) {
   </article>`;
 }
 
-// ---------------------------------------------------------------- Marchés (widgets TradingView, gratuits)
-// Les 12 valeurs suivies. Les symboles "TVC:" sont les indices et taux publiés par TradingView.
-const MARCHES = {
-  Indices: [
-    ["TVC:CAC40", "CAC 40"], ["TVC:SX5E", "Euro Stoxx 50"], ["SP:SPX", "S&P 500"],
-    ["NASDAQ:IXIC", "Nasdaq"], ["TVC:DJI", "Dow Jones"], ["TVC:NI225", "Nikkei 225"],
-  ],
-  "Taux 10 ans": [["TVC:FR10Y", "OAT 10 ans"], ["TVC:DE10Y", "Bund 10 ans"]],
-  "Devises, matières premières et crypto": [
-    ["FX:EURUSD", "EUR/USD"], ["TVC:GOLD", "Or"], ["TVC:UKOIL", "Pétrole Brent"], ["BITSTAMP:BTCUSD", "Bitcoin"],
-  ],
-};
-function themeActuel() {
-  const t = document.documentElement.dataset.theme;
-  return t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+// ---------------------------------------------------------------- Marchés (relevés du robot)
+// Rassemble, pour chaque marché, le relevé le plus récent (séance en cours ou clôture du matin).
+async function donneesMarches() {
+  const { direct, autres, cloture } = await appelApi("/api/marches");
+  const plusRecent = (a, b) => (!a ? b : !b ? a : new Date(a.maj_le) >= new Date(b.maj_le) ? a : b);
+  const sIndices = plusRecent(direct, cloture);
+  const sAutres = plusRecent(autres, cloture && cloture.autres ? { valeurs: cloture.autres, maj_le: cloture.maj_le } : null);
+  const avec = (liste, source) => (liste || []).map((v) => ({ ...v, maj_le: source.maj_le }));
+  return [
+    ...(sIndices ? avec(sIndices.valeurs, sIndices) : []),
+    ...(sAutres ? avec(sAutres.autres || sAutres.valeurs, sAutres) : []),
+  ];
 }
-function widgetTradingView(conteneur, script, config) {
-  conteneur.innerHTML = `<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-    <div class="tradingview-widget-copyright"><a href="https://fr.tradingview.com/" rel="noopener nofollow" target="_blank">Données de marché par TradingView</a></div></div>`;
-  const s = document.createElement("script");
-  s.src = `https://s3.tradingview.com/external-embedding/${script}`;
-  s.async = true;
-  s.textContent = JSON.stringify({ colorTheme: themeActuel(), isTransparent: true, locale: "fr", ...config });
-  conteneur.firstElementChild.appendChild(s);
+function formatVariation(v) {
+  if (typeof v !== "number") return '<span class="doux">–</span>';
+  return `<span class="${v < 0 ? "var-neg" : "var-pos"}">${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(2).replace(".", ",")} %</span>`;
 }
-function bandeauMarches(conteneur) {
-  widgetTradingView(conteneur, "embed-widget-ticker-tape.js", {
-    symbols: Object.values(MARCHES).flat().map(([proName, title]) => ({ proName, title })),
-    showSymbolLogo: false, displayMode: "adaptive",
-  });
+function formatCours(v) {
+  if (typeof v.cours !== "number" || !v.symbole || /^(SPY|QQQ|DIA|FEZ|EWQ|EWJ|BNO)$/.test(v.symbole)) return "";
+  const d = v.symbole === "EUR/USD" ? 4 : v.cours > 1000 ? 0 : 2;
+  return v.cours.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+// Petites tuiles « marché + variation du jour », utilisées en haut de l'accueil.
+async function tuilesMarches(conteneur) {
+  try {
+    const valeurs = await donneesMarches();
+    if (!valeurs.length) { conteneur.hidden = true; return; }
+    const maj = valeurs.reduce((m, v) => (v.maj_le > m ? v.maj_le : m), "");
+    conteneur.innerHTML = `<div class="tuiles">${valeurs.map((v) =>
+      `<a class="tuile" href="/marches"><span class="tuile-nom">${echapper(v.nom.replace(/ \(≈ .*\)/, ""))}</span>${formatVariation(v.variation)}</a>`).join("")}
+      <span class="doux tuiles-maj">relevé ${quand(maj)}</span></div>`;
+  } catch { conteneur.hidden = true; }
 }
 
 // Page « bientôt disponible » pour les rubriques des étapes suivantes.

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 6.0 -->
+<!-- version 6.1 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -8,70 +8,67 @@
   <link rel="stylesheet" href="/style.css">
   <script src="/commun.js"></script>
   <style>
-    .grille-marches { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 900px) { .grille-marches { grid-template-columns: 1fr; } }
-    .carte h2 { margin-bottom: 6px; }
-    .var-pos { color: var(--ok); font-weight: 600; }
-    .var-neg { color: var(--ko); font-weight: 600; }
+    .grille-cotations { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin: 12px 0 20px; }
+    .cotation { background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 14px 16px; }
+    .cotation.baisse-forte { border-color: var(--ko); border-left: 5px solid var(--ko); }
+    .cotation-nom { font-weight: 600; }
+    .cotation-via { font-size: .8rem; color: var(--doux); }
+    .cotation-chiffres { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 1.25rem; }
+    .cotation-cours { font-size: .95rem; color: var(--doux); }
+    h2.groupe-titre { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 20px 0 0; }
   </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
-  <div class="bandeau-marches" id="bandeau-marches"></div>
   <main class="page">
     <h1>Marchés</h1>
-    <p class="doux">Cours et variations du jour fournis par TradingView (gratuit, parfois avec quelques minutes de décalage).</p>
+    <p class="doux" id="info">Chargement…</p>
 
-    <div class="grille-marches">
-      <section class="carte">
-        <h2>Les 12 valeurs suivies</h2>
-        <div id="cotations"></div>
-      </section>
-      <section class="carte">
-        <h2>Agenda économique</h2>
-        <p class="doux" style="font-size:.85rem;margin-top:0">Publications importantes (France, zone euro, Allemagne, États-Unis, Royaume-Uni, Japon, Chine).</p>
-        <div id="agenda"></div>
-      </section>
-    </div>
+    <h2 class="groupe-titre">Grands marchés actions</h2>
+    <div class="grille-cotations" id="indices"></div>
+
+    <h2 class="groupe-titre">Change, matières premières et crypto</h2>
+    <div class="grille-cotations" id="autres"></div>
 
     <section class="carte">
-      <h2>Surveillance des baisses de plus de 2 %</h2>
-      <div id="releve" class="doux">Chargement…</div>
-      <p class="doux" style="font-size:.85rem">
-        Comment ça marche : pendant la séance de New York (15 h 30 - 22 h, heure de Paris, en semaine), le robot relève toutes les 15 minutes
-        des fonds indiciels (ETF) qui répliquent les grands indices, car les indices eux-mêmes ne sont pas disponibles gratuitement.
-        Pour les indices européens et japonais, l'effet du taux de change est retiré. Si l'un d'eux recule de plus de 2 %,
-        une alerte apparaît dans le bandeau « À la une ». Ce sont des estimations : les chiffres de référence sont ceux du tableau ci-dessus.
+      <h2>D'où viennent ces chiffres ?</h2>
+      <p class="doux" style="font-size:.92rem;margin:0">
+        Les indices eux-mêmes (CAC 40, S&amp;P 500…) ne sont pas disponibles gratuitement. Le robot relève donc des fonds indiciels (ETF)
+        cotés à New York qui les répliquent fidèlement, via l'offre gratuite de Twelve Data. Pour l'Europe et le Japon, l'effet du taux de change
+        est retiré pour obtenir la variation en euros ou en yens.<br><br>
+        <strong>Quand ?</strong> Pendant la séance de New York (15 h 30 - 22 h, heure de Paris, en semaine), toutes les 30 minutes,
+        et chaque matin vers 6 h pour les clôtures de la veille. En dehors de ces heures, les chiffres affichés sont ceux du dernier relevé.<br><br>
+        <strong>Alerte :</strong> si l'un de ces marchés recule de plus de 2 % dans la séance, une alerte rouge apparaît dans « À la une ».<br><br>
+        Ce sont des estimations pour suivre la tendance du jour, pas des cotations officielles. Les taux OAT et Bund ne sont pas disponibles gratuitement et ne sont donc pas suivis.
       </p>
     </section>
   </main>
   <script>
-    const pct = (v) => typeof v === "number"
-      ? `<span class="${v < 0 ? "var-neg" : "var-pos"}">${v > 0 ? "+" : ""}${v.toFixed(2).replace(".", ",")} %</span>` : "–";
-
-    async function chargerReleve() {
-      const { direct, cloture } = await appelApi("/api/marches");
-      const zone = document.getElementById("releve");
-      const source = direct || cloture;
-      if (!source) { zone.innerHTML = "Pas encore de relevé : le premier aura lieu à l'ouverture de New York (15 h 30) ou demain à 6 h."; return; }
-      zone.innerHTML = `<p>Dernier relevé : <strong>${quand(source.maj_le)}</strong>${source === cloture ? " (clôtures de la veille)" : " (séance en cours)"}</p>
-        <table class="tableau"><thead><tr><th>Marché</th><th>Variation</th><th>Mesuré via</th></tr></thead><tbody>
-        ${source.valeurs.map((v) => `<tr><td data-libelle="Marché"><strong>${echapper(v.nom)}</strong></td>
-          <td data-libelle="Variation">${pct(v.variation)}</td><td data-libelle="Via">${echapper(v.via || "")}</td></tr>`).join("")}
-        </tbody></table>`;
+    const INDICES = new Set(["SPY", "QQQ", "DIA", "FEZ", "EWQ", "EWJ"]);
+    function tuile(v) {
+      const cours = formatCours(v);
+      return `<div class="cotation ${typeof v.variation === "number" && v.variation <= -2 ? "baisse-forte" : ""}">
+        <div class="cotation-nom">${echapper(v.nom)}</div>
+        <div class="cotation-via">${echapper(v.via || "")}</div>
+        <div class="cotation-chiffres">${formatVariation(v.variation)}<span class="cotation-cours">${cours}</span></div>
+      </div>`;
     }
-
-    bandeauMarches(document.getElementById("bandeau-marches"));
-    widgetTradingView(document.getElementById("cotations"), "embed-widget-market-quotes.js", {
-      width: "100%", height: 620, showSymbolLogo: false,
-      symbolsGroups: Object.entries(MARCHES).map(([name, liste]) => ({
-        name, symbols: liste.map(([n, displayName]) => ({ name: n, displayName })),
-      })),
+    chargerEntete("/marches").then(async () => {
+      try {
+        const valeurs = await donneesMarches();
+        const info = document.getElementById("info");
+        if (!valeurs.length) {
+          info.textContent = "Pas encore de relevé : le premier aura lieu pendant la prochaine séance de New York (15 h 30 - 22 h) ou demain vers 6 h.";
+          return;
+        }
+        const maj = valeurs.reduce((m, v) => (v.maj_le > m ? v.maj_le : m), "");
+        info.innerHTML = `Variations du jour. Dernier relevé : <strong>${quand(maj)}</strong>.`;
+        document.getElementById("indices").innerHTML = valeurs.filter((v) => INDICES.has(v.symbole)).map(tuile).join("");
+        document.getElementById("autres").innerHTML = valeurs.filter((v) => !INDICES.has(v.symbole)).map(tuile).join("");
+      } catch (e) {
+        document.getElementById("info").innerHTML = `<span class="message ko">${echapper(e.message)}</span>`;
+      }
     });
-    widgetTradingView(document.getElementById("agenda"), "embed-widget-events.js", {
-      width: "100%", height: 620, importanceFilter: "0,1", countryFilter: "fr,eu,de,us,gb,jp,cn",
-    });
-    chargerEntete("/marches").then(chargerReleve);
   </script>
 </body>
 </html>

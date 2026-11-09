@@ -20,10 +20,11 @@ export const SUIVIS = [
   { symbole: "EWJ", nom: "Actions japonaises (≈ Nikkei)", via: "ETF EWJ, en yens", devise: "USD/JPY" },
 ];
 const CHANGES = ["EUR/USD", "USD/JPY"];
-const AUTRES_CLOTURES = [
-  { symbole: "XAU/USD", nom: "Or (once, en dollars)" },
-  { symbole: "BTC/USD", nom: "Bitcoin (en dollars)" },
-  { symbole: "BNO", nom: "Pétrole Brent (via ETF BNO)" },
+const AUTRES = [
+  { symbole: "EUR/USD", nom: "Euro / dollar", via: "taux de change" },
+  { symbole: "XAU/USD", nom: "Or", via: "once, en dollars" },
+  { symbole: "BNO", nom: "Pétrole Brent", via: "ETF BNO, en dollars" },
+  { symbole: "BTC/USD", nom: "Bitcoin", via: "en dollars" },
 ];
 
 // ---------------------------------------------------------------- outils
@@ -35,10 +36,13 @@ function heureParis(date = new Date()) {
 }
 
 export function moment(date = new Date()) {
+  const forcer = process.env.MARCHES_FORCER;
+  if (["cloture", "indices", "autres"].includes(forcer)) return forcer;
   const { jour, minutes } = heureParis(date);
   const semaine = !["sam.", "dim."].includes(jour);
-  if (minutes >= 6 * 60 && minutes < 6 * 60 + 30) return "cloture";                      // relevé du matin pour le brief
-  if (semaine && minutes >= 15 * 60 + 30 && minutes <= 22 * 60 + 15) return "seance";     // séance de New York
+  if (minutes >= 6 * 60 && minutes < 6 * 60 + 30) return "cloture";                        // relevé du matin pour le brief
+  if (semaine && minutes >= 15 * 60 + 30 && minutes <= 22 * 60 + 15)                       // séance de New York :
+    return Math.floor(minutes / 15) % 2 === 0 ? "indices" : "autres";                       // un quart d'heure sur deux chacun
   return null;
 }
 
@@ -87,26 +91,36 @@ export function calculer(brut) {
   return { valeurs, alertes };
 }
 
+const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
+const arrondi = (x) => (typeof x === "number" && !isNaN(x) ? Math.round(x * 100) / 100 : null);
+
+async function releverIndices() {
+  const brut = await cotations([...SUIVIS.map((s) => s.symbole), ...CHANGES]);   // 8 symboles = 8 requêtes
+  return calculer(brut);
+}
+async function releverAutres() {
+  const brut = await cotations(AUTRES.map((a) => a.symbole));                      // 4 requêtes
+  return AUTRES.map((a) => {
+    const q = brut[a.symbole];
+    return q ? { ...a, cours: q.cours, variation: arrondi(q.variation), date: q.date } : { ...a, erreur: "indisponible" };
+  });
+}
+
 export async function releverMarches(quand = moment()) {
   if (!SITE || !JETON || !CLE) throw new Error("SITE_URL, ROBOT_TOKEN et TWELVEDATA_API_KEY doivent être définis.");
   if (!quand) { console.log("Marchés : hors des heures de relevé, rien à faire."); return null; }
-  // 8 requêtes par minute au maximum sur l'offre gratuite : 6 ETF + 2 changes = 8.
-  const brut = await cotations([...SUIVIS.map((s) => s.symbole), ...CHANGES]);
-  const { valeurs, alertes } = calculer(brut);
-  const corps = { type: quand, valeurs, alertes, changes: CHANGES.map((c) => ({ symbole: c, ...brut[c] })) };
-  if (quand === "cloture") {
-    await new Promise((ok) => setTimeout(ok, 62000));   // on attend la minute suivante pour les 3 dernières valeurs
-    const autres = await cotations(AUTRES_CLOTURES.map((a) => a.symbole));
-    corps.autres = AUTRES_CLOTURES.map((a) => ({ ...a, ...(autres[a.symbole] || { erreur: "indisponible" }) }));
-    corps.alertes = [];   // les alertes ne concernent que la séance en cours
-  }
+  const corps = { type: quand };
+  if (quand === "indices" || quand === "cloture") Object.assign(corps, await releverIndices());
+  if (quand === "cloture") await pause(62000);                    // minute suivante : quota de 8 requêtes/minute
+  if (quand === "autres" || quand === "cloture") corps.autres = await releverAutres();
+  if (quand === "cloture") corps.alertes = [];                     // les alertes ne concernent que la séance en cours
   await appelSite("/api/robot/marches", corps);
-  console.log(`Marchés (${quand}) :`, valeurs.map((v) => `${v.nom} ${v.variation ?? "?"} %`).join(" · "));
-  if (corps.alertes.length) console.log("ALERTE :", corps.alertes.map((a) => `${a.nom} ${a.variation} %`).join(", "));
+  const ligne = [...(corps.valeurs || []), ...(corps.autres || [])].map((v) => `${v.nom} ${v.variation ?? "?"} %`).join(" · ");
+  console.log(`Marchés (${quand}) : ${ligne}`);
+  if (corps.alertes?.length) console.log("ALERTE :", corps.alertes.map((a) => `${a.nom} ${a.variation} %`).join(", "));
   return corps;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const force = process.argv[2];   // "seance" ou "cloture" pour un essai manuel
-  releverMarches(force || moment()).catch((e) => { console.error("Échec du relevé des marchés :", e.message); process.exit(1); });
+  releverMarches(moment()).catch((e) => { console.error("Échec du relevé des marchés :", e.message); process.exit(1); });
 }

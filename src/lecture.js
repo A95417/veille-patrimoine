@@ -106,7 +106,7 @@ export async function routeLecture(chemin, url, db) {
       const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = ?").bind(cle).first();
       try { return l ? { ...JSON.parse(l.valeur), maj_le: l.maj_le } : null; } catch { return null; }
     };
-    return json({ direct: await lire("marches_direct"), cloture: await lire("marches_cloture") });
+    return json({ direct: await lire("marches_direct"), autres: await lire("marches_autres"), cloture: await lire("marches_cloture") });
   }
 
   // Détail d'un sujet : résumé complet et toutes ses sources.

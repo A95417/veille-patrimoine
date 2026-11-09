@@ -109,7 +109,8 @@ export async function routeRobot(request, env, chemin) {
 
   // 5 bis) Relevé des marchés (séance de New York) ou clôtures du matin (pour le brief).
   if (chemin === "/api/robot/marches" && request.method === "POST") {
-    const cle = corps.type === "cloture" ? "marches_cloture" : "marches_direct";
+    const cle = { cloture: "marches_cloture", indices: "marches_direct", autres: "marches_autres" }[corps.type];
+    if (!cle) return json({ erreur: "Type de relevé inconnu." }, 400);
     await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)")
       .bind(cle, JSON.stringify(corps).slice(0, 20000), new Date().toISOString()).run();
     return json({ ok: true });

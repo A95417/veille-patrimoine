@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: "7,22,37,52 * * * *"   # toutes les 15 min (décalé des heures pleines, plus fiable)
   workflow_dispatch:
+    inputs:
+      marches:
+        description: "Test : forcer un relevé de marché (indices, autres, cloture) — laisser vide en temps normal"
+        required: false
+        default: ""
 
 permissions:
   contents: write   # pour la petite note quotidienne qui garde le robot actif
@@ -48,6 +53,7 @@ jobs:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          MARCHES_FORCER: ${{ inputs.marches }}
 
       # GitHub met en pause les robots d'un dépôt sans activité pendant 60 jours.
       # Une fois par jour (vers 6 h, heure de Paris), le robot note son état dans le dépôt pour rester actif.

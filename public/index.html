@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 6.0 -->
+<!-- version 6.1 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -128,13 +128,13 @@
     };
     document.getElementById("btn-suite").onclick = () => charger(true);
 
-    bandeauMarches(document.getElementById("bandeau-marches"));
     chargerEntete("/").then(async () => {
+      tuilesMarches(document.getElementById("bandeau-marches"));
       await chargerFiltres();
       chargerUne();
       charger(false);
     });
-    setInterval(() => { if (!document.hidden && scrollY < 200) { chargerUne(); charger(false); } }, 5 * 60 * 1000);
+    setInterval(() => { if (!document.hidden && scrollY < 200) { chargerUne(); charger(false); tuilesMarches(document.getElementById("bandeau-marches")); } }, 5 * 60 * 1000);
 
     document.getElementById("form-mdp").addEventListener("submit", async (e) => {
       e.preventDefault();
