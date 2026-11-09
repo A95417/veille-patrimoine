@@ -7,6 +7,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Une seule mise en ligne à la fois : les suivantes attendent leur tour
+# (évite que deux mises en ligne se gênent quand on dépose plusieurs dossiers d'affilée).
+concurrency:
+  group: mise-en-ligne
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
