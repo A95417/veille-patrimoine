@@ -21,6 +21,27 @@ async function avecArticles(db, sujets, extraits = true) {
   return sujets;
 }
 
+// Sigles du métier : on cherche aussi (ou plutôt) leur forme développée.
+const SIGLES = {
+  per: '"epargne retraite"',
+  perco: '(perco OR "epargne retraite")',
+  pea: '(pea OR "plan d epargne en actions")',
+  ifi: '(ifi OR "fortune immobiliere")',
+  av: '"assurance vie"',
+  lmnp: '(lmnp OR "loueur en meuble")',
+  pee: '(pee OR "epargne salariale")',
+  csg: 'csg',
+  scpi: 'scpi',
+};
+
+// Transforme la saisie en requête plein texte :
+// mots de 4 lettres et plus = début de mot ("assur" trouve "assurance") ; mots courts = mot exact ; sigles = forme développée.
+export function construireRequete(saisie) {
+  const mots = String(saisie || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  const termes = mots.slice(0, 8).map((m) => SIGLES[m] || (m.length >= 4 ? `"${m}"*` : `"${m}"`));
+  return termes.join(" AND ");
+}
+
 const PERIODES = { "24h": 1, "7j": 7, "30j": 30, "90j": 90 };
 
 export async function routeLecture(chemin, url, db) {
@@ -82,10 +103,8 @@ export async function routeLecture(chemin, url, db) {
 
   // Recherche plein texte (titres, chapôs, résumés), insensible aux accents.
   if (chemin === "/api/recherche") {
-    // Chaque mot devient un préfixe : "assur vie" trouve "assurance-vie".
-    const mots = String(p.get("q") || "").normalize("NFC").match(/[\p{L}\p{N}]+/gu) || [];
-    if (!mots.length) return json({ sujets: [] });
-    const requete = mots.slice(0, 8).map((m) => `"${m}"*`).join(" AND ");
+    const requete = construireRequete(p.get("q"));
+    if (!requete) return json({ sujets: [] });
     const { results: ids } = await db
       .prepare("SELECT sujet_id, MIN(rank) AS pertinence FROM recherche WHERE recherche MATCH ? GROUP BY sujet_id ORDER BY pertinence LIMIT 60")
       .bind(requete)
