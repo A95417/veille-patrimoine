@@ -6,6 +6,7 @@ import {
   supprimerSession, cookieSession, NOM_COOKIE, LONGUEUR_MIN_MDP,
   tropDeTentatives, noterTentative, effacerTentatives,
 } from "./auth.js";
+import { routeRobot } from "./robot.js";
 
 // Pages et fichiers visibles sans être connecté.
 const PAGES_PUBLIQUES = new Set(["/connexion", "/installation", "/style.css", "/commun.js", "/favicon.ico"]);
@@ -49,6 +50,9 @@ async function api(request, env, url) {
     if (origine && origine !== url.origin) return erreur("Origine refusée.", 403);
   }
 
+  // Adresses du robot de collecte (protégées par leur propre jeton secret).
+  if (chemin.startsWith("/api/robot/")) return routeRobot(request, env, chemin);
+
   if (chemin === "/api/sante") {
     return json({ statut: "ok", heure_serveur: new Date().toISOString() });
   }
@@ -68,8 +72,8 @@ async function api(request, env, url) {
     if (String(d.mot_de_passe || "").length < LONGUEUR_MIN_MDP)
       return erreur(`Le mot de passe doit faire au moins ${LONGUEUR_MIN_MDP} caractères.`);
     const r = await db
-      .prepare("INSERT INTO utilisateurs (email, nom, hash, role, cree_le) VALUES (?, ?, ?, 'admin', ?)")
-      .bind(email, String(d.nom).trim(), await hacherMotDePasse(d.mot_de_passe), new Date().toISOString())
+      .prepare("INSERT INTO utilisateurs (email, nom, hash, role, cree_le, derniere_connexion) VALUES (?, ?, ?, 'admin', ?, ?)")
+      .bind(email, String(d.nom).trim(), await hacherMotDePasse(d.mot_de_passe), new Date().toISOString(), new Date().toISOString())
       .run();
     const { jeton, dureeMs } = await creerSession(db, r.meta.last_row_id);
     return json({ ok: true }, 200, { "Set-Cookie": cookieSession(jeton, dureeMs) });
@@ -105,6 +109,33 @@ async function api(request, env, url) {
 
   if (chemin === "/api/moi" && methode === "GET") return json(moi);
 
+  // Fil d'actualités : les sujets les plus récents, avec leurs articles et leurs sources.
+  if (chemin === "/api/actualites" && methode === "GET") {
+    const limite = Math.min(Math.max(Number(url.searchParams.get("limite")) || 30, 1), 60);
+    const avant = url.searchParams.get("avant") || "9999";
+    const { results: sujets } = await db
+      .prepare(
+        `SELECT id, titre, derniere_pub, nb_articles, importance, categories, resume_court, ia_statut
+           FROM sujets WHERE nb_articles > 0 AND derniere_pub < ? ORDER BY derniere_pub DESC LIMIT ?`
+      )
+      .bind(avant, limite)
+      .all();
+    if (sujets.length) {
+      const { results: arts } = await db
+        .prepare(
+          `SELECT sujet_id, source_nom, groupe, langue, titre, lien, extrait, publie_le FROM articles
+            WHERE sujet_id IN (${sujets.map(() => "?").join(",")}) ORDER BY publie_le DESC`
+        )
+        .bind(...sujets.map((s) => s.id))
+        .all();
+      for (const s of sujets) {
+        s.articles = arts.filter((a) => a.sujet_id === s.id).map(({ sujet_id, ...a }) => a);
+        try { s.categories = s.categories ? JSON.parse(s.categories) : []; } catch { s.categories = []; }
+      }
+    }
+    return json({ sujets, suite: sujets.length === limite ? sujets[sujets.length - 1].derniere_pub : null });
+  }
+
   if (chemin === "/api/moi/mot-de-passe" && methode === "POST") {
     const d = await lireJson(request);
     const u = await db.prepare("SELECT hash FROM utilisateurs WHERE id = ?").bind(moi.id).first();
@@ -118,6 +149,17 @@ async function api(request, env, url) {
   // --- Administration : réservée à l'administrateur.
   if (chemin.startsWith("/api/admin/")) {
     if (moi.role !== "admin") return erreur("Accès réservé à l'administrateur.", 403);
+
+    // État du robot de collecte, affiché dans l'administration.
+    if (chemin === "/api/admin/etat" && methode === "GET") {
+      const ligne = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = 'collecte'").first();
+      const totaux = await db
+        .prepare("SELECT (SELECT COUNT(*) FROM articles) AS articles, (SELECT COUNT(*) FROM sujets WHERE nb_articles > 0) AS sujets")
+        .first();
+      let collecte = null;
+      try { collecte = ligne ? { ...JSON.parse(ligne.valeur), recu_le: ligne.maj_le } : null; } catch {}
+      return json({ collecte, totaux });
+    }
 
     if (chemin === "/api/admin/utilisateurs" && methode === "GET") {
       const { results } = await db
