@@ -296,6 +296,48 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
   .grille-cartes { grid-template-columns: 1fr; }
 }
 
+/* ---------------------------------------------------------------- Jeux d'apprentissage */
+.jeu { display: flex; flex-direction: column; gap: 12px; }
+.jeu-progres { height: 6px; background: var(--fond); border-radius: 99px; overflow: hidden; }
+.jeu-progres span { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s; }
+.jeu-compteur { font-size: .82rem; color: var(--doux); }
+.jeu-question { font-family: var(--titre); font-size: 1.15rem; font-weight: 600; line-height: 1.35; margin: 0; }
+.jeu-choix { display: grid; gap: 8px; }
+.choix { display: flex; gap: 12px; align-items: center; text-align: left; font: inherit; padding: 12px 14px; min-height: 48px;
+  border-radius: 14px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); cursor: pointer; transition: transform .1s, border-color .15s; }
+.choix:hover:not(:disabled) { border-color: var(--accent); transform: translateX(2px); }
+.choix .lettre { flex: 0 0 28px; height: 28px; border-radius: 8px; background: var(--fond); display: grid; place-items: center; font-weight: 700; font-size: .85rem; }
+.choix.bonne, .vf.bonne, .paire.bonne { border-color: var(--ok); background: var(--ok-doux); }
+.choix.bonne .lettre { background: var(--ok); color: #fff; }
+.choix.fausse, .paire.fausse { border-color: var(--ko); background: var(--ko-doux); }
+.choix.fausse .lettre { background: var(--ko); color: #fff; }
+.choix:disabled { cursor: default; }
+.jeu-retour p { margin: 0 0 10px; padding: 10px 14px; border-radius: 12px; line-height: 1.5; }
+.jeu-retour p.bravo { background: var(--ok-doux); }
+.jeu-retour p.rate { background: var(--ko-doux); }
+.jeu-fin { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.vf-boutons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.vf { font: inherit; font-weight: 700; font-size: 1.05rem; min-height: 54px; border-radius: 14px; border: 2px solid var(--bord-fort);
+  background: var(--carte); color: var(--texte); cursor: pointer; }
+.vf.vrai:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
+.vf.faux:hover:not(:disabled) { border-color: var(--ko); color: var(--ko); }
+.memo { position: relative; width: 100%; min-height: 190px; border: 0; padding: 0; background: none; cursor: pointer; perspective: 1000px; font: inherit; color: inherit; }
+.memo-face { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 22px 24px;
+  border-radius: 18px; border: 1px solid var(--bord-fort); background: var(--carte); font-size: 1.08rem; line-height: 1.5; text-align: center;
+  backface-visibility: hidden; transition: transform .45s; }
+.memo-verso { transform: rotateY(180deg); background: var(--accent-doux); }
+.memo.retournee .memo-recto { transform: rotateY(180deg); }
+.memo.retournee .memo-verso { transform: rotateY(360deg); }
+.memo-titre { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--doux); font-weight: 600; }
+.jeu-actions { display: flex; gap: 8px; justify-content: center; }
+.paires { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
+.paires-col { display: flex; flex-direction: column; gap: 8px; }
+.paire { font: inherit; font-size: .9rem; text-align: left; padding: 10px 12px; min-height: 44px; border-radius: 12px; border: 1px solid var(--bord-fort);
+  background: var(--carte); color: var(--texte); cursor: pointer; line-height: 1.35; }
+.paire.choisie { border-color: var(--accent); background: var(--accent-doux); }
+.paire:disabled { cursor: default; opacity: .75; }
+@media (max-width: 760px) { .paires { grid-template-columns: 1fr; } .memo { min-height: 230px; } }
+
 /* Impression (ou « Enregistrer en PDF ») : seulement le contenu. */
 @media print {
   .entete, .filtres, .favori, .colonne-cote, .bouton, .icone-bouton, .notification, #btn-suite, .no-print { display: none !important; }

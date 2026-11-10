@@ -1,0 +1,140 @@
+<!doctype html>
+<!-- version 9.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apprendre · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <meta name="apple-mobile-web-app-title" content="Veille">
+  <script src="/commun.js"></script>
+  <script src="/jeux.js"></script>
+  <script src="/fiches.js"></script>
+  <style>
+    .grille-fiches { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .fiche-carte { position: relative; text-decoration: none; color: var(--texte); }
+    .fiche-carte h3 a::after { content: ""; position: absolute; inset: 0; }
+    .fiche-carte .sous { margin: 0; color: var(--doux); font-size: .92rem; }
+    .badge-prog { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: .78rem; font-weight: 600; background: var(--fond); color: var(--doux); }
+    .badge-prog.maitrise { background: var(--ok-doux); color: var(--ok); }
+    .badge-prog.encours { background: var(--accent-doux); color: var(--accent-fonce); }
+    .hero-apprendre { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+    .hero-apprendre .score-global { display: flex; align-items: center; gap: 14px; color: #fff; }
+    .deux-jeux { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin: 22px 0; }
+    .deux-jeux .carte { margin: 0; }
+    .deux-jeux h2 { display: flex; align-items: center; gap: 8px; }
+    .jours-quiz { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <section class="hero" style="margin-bottom:22px">
+      <svg class="hero-deco" viewBox="0 0 400 260" aria-hidden="true"><circle cx="300" cy="90" r="120" fill="#3a49d6"/><circle cx="210" cy="190" r="70" fill="#5e6cf0"/>
+        <path d="M60 210 L140 150 L200 175 L270 100 L350 120" fill="none" stroke="#9aa4ff" stroke-width="4" stroke-linecap="round"/></svg>
+      <div class="hero-apprendre">
+        <div style="max-width:620px">
+          <div class="surtitre">Apprendre · fiches, jeux et quiz de l'actu</div>
+          <h1>Les fondamentaux du conseil en patrimoine, en jouant.</h1>
+          <p>Des fiches courtes et visuelles, des jeux pour vérifier que c'est compris, et chaque jour un quiz tiré de l'actualité du brief.</p>
+        </div>
+        <div class="score-global" id="score-global"></div>
+      </div>
+    </section>
+
+    <div class="deux-jeux">
+      <section class="carte">
+        <h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M9 9h6M9 12h4"/></svg>Le quiz de l'actu</h2>
+        <p class="doux petit" style="margin:-6px 0 12px">Trois questions rédigées avec chaque brief (7 h et 18 h), sur les actualités du moment.</p>
+        <div class="jours-quiz" id="jours-quiz"></div>
+        <div id="quiz-actu"><p class="doux">Chargement…</p></div>
+      </section>
+      <section class="carte">
+        <h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.8 6.5 19.5l1-6.3L3 8.9 9 8z"/></svg>Le défi du jour</h2>
+        <p class="doux petit" style="margin:-6px 0 12px">5 questions tirées de toutes les fiches. Le même défi pour tous les collègues, renouvelé chaque jour.</p>
+        <div id="defi"></div>
+      </section>
+    </div>
+
+    <div class="titre-section"><h2>Les fiches</h2><span class="doux petit">Mises à jour avec l'actualité · vérifiées le 10 novembre 2026</span></div>
+    <div class="grille-fiches" id="fiches"></div>
+  </main>
+  <script>
+    const dateCourte = (j) => new Date(j + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    // Générateur pseudo-aléatoire stable pour le défi du jour (même tirage pour tout le monde).
+    function tirage(graine) { let x = 0; for (const c of graine) x = (x * 31 + c.charCodeAt(0)) >>> 0; return () => { x = (x * 1664525 + 1013904223) >>> 0; return x / 2 ** 32; }; }
+
+    function badge(sc) {
+      if (!sc) return '<span class="badge-prog">À découvrir</span>';
+      const p = sc.score / sc.total;
+      return p >= 0.8 ? `<span class="badge-prog maitrise">Maîtrisé · ${Math.round(p * 100)} %</span>` : `<span class="badge-prog encours">En cours · ${Math.round(p * 100)} %</span>`;
+    }
+
+    async function afficherFiches(scores) {
+      document.getElementById("fiches").innerHTML = FICHES.map((f) => `
+        <article class="sujet fiche-carte th-${f.theme}">
+          <div class="sujet-haut">${illustration(f.theme, 120)}</div>
+          <div class="sujet-corps">
+            <div class="meta">${badge(scores["fiche:" + f.id])}<span>${f.duree} min de lecture</span><span id="actu-${f.id}"></span></div>
+            <h3><a href="/fiche?id=${f.id}">${echapper(f.titre)}</a></h3>
+            <p class="sous">${echapper(f.sousTitre)}</p>
+          </div>
+        </article>`).join("");
+      // Combien d'actualités récentes parlent de chaque thème (la fiche les affiche).
+      for (const f of FICHES) {
+        appelApi("/api/recherche?q=" + encodeURIComponent(f.recherche)).then(({ sujets }) => {
+          const recents = sujets.filter((s) => Date.now() - new Date(s.derniere_pub) < 30 * 86400000).length;
+          if (recents) document.getElementById("actu-" + f.id).innerHTML = `<span class="nouveau">${recents} actu${recents > 1 ? "s" : ""} ce mois-ci</span>`;
+        }).catch(() => {});
+      }
+    }
+
+    function scoreGlobal(scores) {
+      const maitrisees = FICHES.filter((f) => { const s = scores["fiche:" + f.id]; return s && s.score / s.total >= 0.8; }).length;
+      const parties = Object.values(scores).reduce((n, s) => n + (s.essais || 0), 0);
+      document.getElementById("score-global").innerHTML = `${anneauScore(maitrisees, FICHES.length, 96).replace(/>\d+%</, `>${maitrisees}/${FICHES.length}<`)}
+        <div><strong style="font-size:1.1rem">${maitrisees} fiche${maitrisees > 1 ? "s" : ""} maîtrisée${maitrisees > 1 ? "s" : ""}</strong><br>
+        <span style="color:var(--encre-texte)">${parties} partie${parties > 1 ? "s" : ""} jouée${parties > 1 ? "s" : ""}</span></div>`;
+    }
+
+    async function quizActu() {
+      const { quiz } = await appelApi("/api/quiz-actu");
+      const zone = document.getElementById("quiz-actu");
+      if (!quiz.length) { zone.innerHTML = '<p class="doux">Le premier quiz de l\'actu arrivera avec le prochain brief (7 h ou 18 h).</p>'; return; }
+      const jouer = (k) => {
+        const q = quiz[k];
+        document.querySelectorAll("#jours-quiz .puce").forEach((b, n) => b.setAttribute("aria-pressed", n === k));
+        quizInteractif(zone, q.questions.map((x) => ({ ...x, lien: lienSujet(x.sujet_id) })), { cle: `actu:${q.jour}-${q.edition}` });
+      };
+      document.getElementById("jours-quiz").innerHTML = quiz.slice(0, 6).map((q, k) =>
+        `<button type="button" class="puce" data-k="${k}">${dateCourte(q.jour)} · ${q.edition === "soir" ? "soir" : "matin"}</button>`).join("");
+      document.querySelectorAll("#jours-quiz .puce").forEach((b) => b.onclick = () => jouer(Number(b.dataset.k)));
+      jouer(0);
+    }
+
+    function defi() {
+      const jour = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
+      const alea = tirage("defi" + jour);
+      const toutes = FICHES.flatMap((f) => f.quiz.map((q) => ({ ...q, lien: "/fiche?id=" + f.id, question: `${f.titre} — ${q.question}` })));
+      const choisies = [];
+      while (choisies.length < 5 && toutes.length) choisies.push(toutes.splice(Math.floor(alea() * toutes.length), 1)[0]);
+      quizInteractif(document.getElementById("defi"), choisies, { cle: "defi:" + jour });
+    }
+
+    chargerEntete("/apprendre").then(async () => {
+      const scores = await lireProgression();
+      scoreGlobal(scores);
+      afficherFiches(scores);
+      defi();
+      quizActu().catch((e) => { document.getElementById("quiz-actu").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; });
+    });
+  </script>
+</body>
+</html>

@@ -145,6 +145,25 @@ async function api(request, env, url) {
     return json({ sujets: await avecArticles(db, results) });
   }
 
+  // Apprendre : meilleurs scores de l'utilisateur à chaque jeu.
+  if (chemin === "/api/progression" && methode === "GET") {
+    const { results } = await db.prepare("SELECT cle, score, total, essais, maj_le FROM progression WHERE utilisateur_id = ?").bind(moi.id).all();
+    return json({ scores: Object.fromEntries(results.map(({ cle, ...r }) => [cle, r])) });
+  }
+  if (chemin === "/api/progression" && methode === "POST") {
+    const d = await lireJson(request);
+    const cle = String(d.cle || "");
+    const total = Math.floor(Number(d.total)), score = Math.floor(Number(d.score));
+    if (!/^[a-z0-9:_-]{1,80}$/.test(cle) || !(total > 0 && total <= 100) || !(score >= 0 && score <= total)) return erreur("Score invalide.");
+    await db.prepare(`INSERT INTO progression (utilisateur_id, cle, score, total, essais, maj_le) VALUES (?, ?, ?, ?, 1, ?)
+        ON CONFLICT (utilisateur_id, cle) DO UPDATE SET
+          score = CASE WHEN excluded.score * 1.0 / excluded.total >= progression.score * 1.0 / progression.total THEN excluded.score ELSE progression.score END,
+          total = CASE WHEN excluded.score * 1.0 / excluded.total >= progression.score * 1.0 / progression.total THEN excluded.total ELSE progression.total END,
+          essais = progression.essais + 1, maj_le = excluded.maj_le`)
+      .bind(moi.id, cle, score, total, new Date().toISOString()).run();
+    return json({ ok: true });
+  }
+
   if (chemin === "/api/moi/mot-de-passe" && methode === "POST") {
     const d = await lireJson(request);
     const u = await db.prepare("SELECT hash FROM utilisateurs WHERE id = ?").bind(moi.id).first();

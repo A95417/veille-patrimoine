@@ -148,16 +148,33 @@ export async function routeLecture(chemin, url, db) {
     return json({ sujets: results });
   }
 
-  // Brief matinal : celui du jour demandé (ou le plus récent), et la liste des jours disponibles.
+  // Briefs (matin et soir) : celui demandé (ou le plus récent), et la liste des éditions disponibles.
   if (chemin === "/api/brief") {
-    const jour = p.get("jour");
+    const jour = p.get("jour"), edition = p.get("edition");
     const b = jour
-      ? await db.prepare("SELECT jour, contenu, cree_le FROM briefs WHERE jour = ?").bind(jour).first()
-      : await db.prepare("SELECT jour, contenu, cree_le FROM briefs ORDER BY jour DESC LIMIT 1").first();
-    const { results: jours } = await db.prepare("SELECT jour FROM briefs ORDER BY jour DESC LIMIT 100").all();
+      ? await db.prepare("SELECT jour, edition, contenu, cree_le FROM briefs WHERE jour = ? AND edition = ?").bind(jour, edition === "soir" ? "soir" : "matin").first()
+      : await db.prepare("SELECT jour, edition, contenu, cree_le FROM briefs ORDER BY jour DESC, edition = 'soir' DESC LIMIT 1").first();
+    const { results: editions } = await db.prepare("SELECT jour, edition FROM briefs ORDER BY jour DESC, edition = 'soir' DESC LIMIT 200").all();
     let contenu = null;
     try { contenu = b ? JSON.parse(b.contenu) : null; } catch {}
-    return json({ brief: b ? { jour: b.jour, cree_le: b.cree_le, ...contenu } : null, jours: jours.map((j) => j.jour) });
+    return json({
+      brief: b ? { ...contenu, jour: b.jour, edition: b.edition, cree_le: b.cree_le } : null,
+      editions,
+      jours: [...new Set(editions.map((e) => e.jour))],
+    });
+  }
+
+  // Quiz de l'actu : les questions rédigées par l'IA avec les derniers briefs (jeu de la rubrique Apprendre).
+  if (chemin === "/api/quiz-actu") {
+    const { results } = await db.prepare("SELECT jour, edition, contenu FROM briefs ORDER BY jour DESC, edition = 'soir' DESC LIMIT 14").all();
+    const quiz = [];
+    for (const r of results) {
+      try {
+        const c = JSON.parse(r.contenu);
+        if ((c.quiz || []).length) quiz.push({ jour: r.jour, edition: r.edition, questions: c.quiz });
+      } catch {}
+    }
+    return json({ quiz });
   }
 
   // Catégories des sujets des dernières 24 heures (graphique « Les thèmes du jour » ; regroupées en thèmes par la page).

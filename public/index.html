@@ -82,7 +82,7 @@
     </section>
 
     <section class="carte" id="rdv-mobile" hidden>
-      <h2>Pour vos rendez-vous</h2>
+      <h2 class="titre-rdv">Pour vos rendez-vous</h2>
       <ol class="rdv" id="rdv-liste-mobile"></ol>
     </section>
 
@@ -118,7 +118,7 @@
 
       <aside class="colonne-cote">
         <section class="carte" id="rdv" hidden>
-          <h2>Pour vos rendez-vous</h2>
+          <h2 class="titre-rdv">Pour vos rendez-vous</h2>
           <ol class="rdv" id="rdv-liste"></ol>
         </section>
         <section class="carte" id="themes" hidden>
@@ -239,9 +239,10 @@
       const salut = h >= 18 ? "Bonsoir !" : "Bonjour !";
       const estDuJour = brief && brief.jour === aujourdhui();
       document.getElementById("hero-date").textContent = brief
-        ? `${majuscule(dateLongue(brief.jour))} · ${estDuJour ? "brief de 7 h" : "dernier brief disponible"}`
+        ? `${majuscule(dateLongue(brief.jour))} · ${estDuJour ? (brief.edition === "soir" ? "point du soir de 18 h" : "brief de 7 h") : "dernier brief disponible"}`
         : majuscule(dateLongue(aujourdhui()));
-      document.getElementById("hero-titre").textContent = estDuJour ? `${salut} Voici ce qui compte ce matin.` : `${salut} Voici l'essentiel de l'actualité.`;
+      document.getElementById("hero-titre").textContent = !estDuJour ? `${salut} Voici l'essentiel de l'actualité.`
+        : brief.edition === "soir" ? `${salut} Voici le point de la journée.` : `${salut} Voici ce qui compte ce matin.`;
       const actions = document.getElementById("hero-actions");
       if (brief) {
         const texte = brief.synthese || "Le brief de ce jour a été produit sans synthèse : retrouvez ses actualités majeures et les clôtures de marché.";
@@ -250,9 +251,9 @@
           .join(" ").split(/\s+/).length;
         const minutes = Math.max(2, Math.round(mots / 200));
         const nbPoints = (brief.a_retenir || []).length;
-        actions.innerHTML = `<a class="bouton" href="/brief">Lire le brief · ${minutes} min</a>
+        actions.innerHTML = `<a class="bouton" href="/brief?jour=${brief.jour}&edition=${brief.edition || "matin"}">${brief.edition === "soir" ? "Lire le point du soir" : "Lire le brief"} · ${minutes} min</a>
           <button type="button" class="bouton second" id="btn-ecouter">${ICONE_ECOUTE} Écouter</button>` +
-          (nbPoints ? `<a class="bouton second" href="#rdv" onclick="if (innerWidth <= 760) { event.preventDefault(); document.getElementById('rdv-mobile').scrollIntoView({ behavior: 'smooth' }); }">${nbPoints} point${nbPoints > 1 ? "s" : ""} pour mes clients</a>` : "");
+          (nbPoints ? `<a class="bouton second" href="#rdv" onclick="if (innerWidth <= 760) { event.preventDefault(); document.getElementById('rdv-mobile').scrollIntoView({ behavior: 'smooth' }); }">${nbPoints} point${nbPoints > 1 ? "s" : ""} pour ${brief.edition === "soir" ? "demain" : "mes clients"}</a>` : "");
         document.getElementById("btn-ecouter").onclick = (e) => lireAVoixHaute(texteBriefOral(brief), e.currentTarget);
       } else {
         document.getElementById("hero-texte").textContent = "Le premier brief sera rédigé demain matin vers 7 h, puis chaque jour, week-end compris.";
@@ -263,6 +264,7 @@
       const points = estDuJour ? brief.a_retenir || [] : [];
       const htmlPoints = points.map((p, i) =>
         `<li><span class="rdv-num">${i + 1}</span><span>${echapper(p.texte)} <a href="${lienSujet(p.sujet_id)}">Voir →</a></span></li>`).join("");
+      document.querySelectorAll(".titre-rdv").forEach((h) => h.textContent = brief && brief.edition === "soir" ? "Pour vos rendez-vous de demain" : "Pour vos rendez-vous");
       for (const [bloc, liste] of [["rdv", "rdv-liste"], ["rdv-mobile", "rdv-liste-mobile"]]) {
         document.getElementById(bloc).hidden = !points.length;
         document.getElementById(liste).innerHTML = htmlPoints;

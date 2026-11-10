@@ -15,9 +15,14 @@
   <meta name="theme-color" content="#3a49d6">
   <meta name="apple-mobile-web-app-title" content="Veille">
   <script src="/commun.js"></script>
+  <script src="/jeux.js"></script>
   <style>
     .contenu { max-width: 900px; }
-    .entete-brief { display: flex; justify-content: flex-end; align-items: end; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .entete-brief { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .onglets { display: inline-flex; gap: 4px; padding: 4px; background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; }
+    .onglets button { font: inherit; font-size: .92rem; border: 0; background: transparent; color: var(--doux); padding: 8px 14px; border-radius: 10px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+    .onglets button[aria-selected="true"] { background: var(--accent); color: var(--accent-texte); font-weight: 600; }
+    .onglets button:disabled { opacity: .45; cursor: not-allowed; }
     .entete-brief select { width: auto; min-width: 230px; }
     .entete-brief label { margin: 0 0 4px; font-size: .8rem; color: var(--doux); }
     .bloc h2 { font-size: 1.1rem; margin: 0 0 12px; }
@@ -42,7 +47,13 @@
   <header class="entete" id="entete"></header>
   <main class="page contenu">
     <div class="entete-brief">
-      <div><label for="historique">Briefs précédents</label><select id="historique"></select></div>
+      <div class="onglets" role="tablist" aria-label="Édition du brief">
+        <button type="button" role="tab" id="tab-matin" data-edition="matin" aria-selected="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Matin · 7 h</button>
+        <button type="button" role="tab" id="tab-soir" data-edition="soir" aria-selected="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>Soir · 18 h</button>
+      </div>
+      <div><label for="historique">Jours précédents</label><select id="historique"></select></div>
     </div>
     <div id="brief"><p class="doux">Chargement…</p></div>
   </main>
@@ -56,8 +67,8 @@
       let html = `<section class="hero" style="margin-bottom:20px">
         <svg class="hero-deco" viewBox="0 0 400 260" aria-hidden="true"><circle cx="300" cy="90" r="120" fill="#3a49d6"/><circle cx="210" cy="190" r="70" fill="#5e6cf0"/>
           <path d="M40 220 L120 170 L180 190 L260 110 L340 130 L400 60" fill="none" stroke="#9aa4ff" stroke-width="4" stroke-linecap="round"/></svg>
-        <div class="surtitre">Rédigé ${quand(b.genere_le || b.cree_le)}</div>
-        <h1>Brief du ${dateLongue(b.jour)}</h1>
+        <div class="surtitre">${b.edition === "soir" ? "Le point du soir · actualités parues depuis 7 h" : "Le brief du matin · les dernières 24 heures"} · rédigé ${quand(b.genere_le || b.cree_le)}</div>
+        <h1>${b.edition === "soir" ? "Le point de la journée" : "Brief du matin"} · ${dateLongue(b.jour)}</h1>
         <p>${echapper(b.synthese || "Brief produit sans synthèse (IA indisponible ce matin-là) : retrouvez ci-dessous les actualités majeures.")}</p>
         <div class="actions-hero no-print">
           <button type="button" class="bouton" id="btn-ecouter">${ICONE_ECOUTE} Écouter le brief</button>
@@ -72,10 +83,10 @@
           <p class="doux petit" style="margin:10px 0 0">${c.source ? "Source : " + echapper(c.source) + " · " : ""}<a href="${lienSujet(c.sujet_id)}">voir le sujet</a></p></section>`;
       }
 
-      if (b.a_retenir && b.a_retenir.length) html += `<section class="carte bloc"><h2>À retenir pour mes rendez-vous clients</h2>
+      if (b.a_retenir && b.a_retenir.length) html += `<section class="carte bloc"><h2>${b.edition === "soir" ? "À garder en tête pour demain" : "À retenir pour mes rendez-vous clients"}</h2>
         <ol class="retenir">${b.a_retenir.map((p, i) => `<li><span class="retenir-num">${i + 1}</span><span>${echapper(p.texte)} <a href="${lienSujet(p.sujet_id)}">Voir le sujet →</a></span></li>`).join("")}</ol></section>`;
 
-      html += `<section class="carte bloc"><h2>Les actualités majeures des dernières 24 heures</h2>
+      html += `<section class="carte bloc"><h2>${b.edition === "soir" ? "Les actualités majeures de la journée" : "Les actualités majeures des dernières 24 heures"}</h2>
         ${(b.actualites || []).length ? b.actualites.map((a) => {
           const t = themeDe(a.categories);
           return `<div class="actu">${picto(t.id)}<div style="min-width:0;flex:1">
@@ -87,38 +98,63 @@
         }).join("") : `<p class="doux">Aucune actualité majeure sur la période.</p>`}
       </section>`;
 
-      html += `<section class="carte bloc"><h2>Marchés : clôtures de la veille</h2>
+      html += `<section class="carte bloc"><h2>${b.edition === "soir" ? "Marchés : la séance du jour" : "Marchés : clôtures de la veille"}</h2>
         ${b.commentaire_marches ? `<p style="margin:0">${echapper(b.commentaire_marches)}</p>` : ""}
         ${valeurs.length ? `<div class="mini-marches">${valeurs.map((v) =>
             `<div><span>${echapper(nomCourt(v))}</span>${formatVariation(v.variation)}</div>`).join("")}</div>
-          <p class="doux petit" style="margin:8px 0 0">Estimations via des fonds indiciels cotés à New York (voir la page Marchés).</p>`
+          <p class="doux petit" style="margin:8px 0 0">Estimations via des fonds indiciels cotés à New York (voir la page Marchés)${b.edition === "soir" ? ", relevées pendant la séance : Europe clôturée, New York en cours" : ""}.</p>`
           : `<p class="doux" style="margin:0">Aucun relevé de clôture disponible pour ce jour.</p>`}
       </section>`;
+
+      if ((b.quiz || []).length) html += `<section class="carte bloc"><h2>Testez-vous : avez-vous retenu l'essentiel ?</h2><div id="quiz-brief"></div></section>`;
 
       html += `<p class="avertissement">${b.ia_modele ? "Synthèse, chiffre du jour et points à retenir rédigés par une IA" : "Brief produit sans synthèse (IA indisponible ce matin-là)"} à partir des résumés des sources et des relevés de marché.
         Vérifiez les points importants dans les articles originaux avant d'en faire état. Ce contenu est informatif et ne constitue pas un conseil en investissement.</p>`;
       document.getElementById("brief").innerHTML = html;
+      if ((b.quiz || []).length) quizInteractif(document.getElementById("quiz-brief"), b.quiz.map((q) => ({ ...q, lien: lienSujet(q.sujet_id) })),
+        { cle: `actu:${b.jour}-${b.edition || "matin"}` });
       window.speechSynthesis?.cancel();
       document.getElementById("btn-ecouter").onclick = (e) => lireAVoixHaute(texteBriefOral(b), e.currentTarget);
     }
 
-    async function charger(jour) {
-      const r = await appelApi("/api/brief" + (jour ? "?jour=" + encodeURIComponent(jour) : ""));
+    let editions = [];
+    async function charger(jour, edition) {
+      const q = jour ? `?jour=${encodeURIComponent(jour)}&edition=${edition || "matin"}` : "";
+      const r = await appelApi("/api/brief" + q);
+      editions = r.editions || [];
       const choix = document.getElementById("historique");
-      choix.innerHTML = r.jours.length ? r.jours.map((j) => `<option value="${j}">${dateLongue(j)}</option>`).join("") : "<option>Aucun</option>";
+      choix.innerHTML = r.jours.length ? r.jours.map((j) => `<option value="${j}">${majuscule(dateLongue(j))}</option>`).join("") : "<option>Aucun</option>";
       if (!r.brief) {
-        document.getElementById("brief").innerHTML = `<div class="carte"><h1>Brief du jour</h1><p><strong>Pas encore de brief.</strong></p>
-          <p class="doux">Le premier sera rédigé automatiquement demain matin vers 7 h, puis chaque jour, week-end compris.</p></div>`;
+        document.getElementById("brief").innerHTML = `<div class="carte"><h1>Brief</h1><p><strong>Pas encore de brief pour cette édition.</strong></p>
+          <p class="doux">Les briefs sont rédigés automatiquement vers 7 h (matin) et vers 18 h (soir), chaque jour, week-end compris.</p></div>`;
+        if (jour) choix.value = jour;
+        majOnglets(jour, edition);
         return;
       }
       choix.value = r.brief.jour;
+      majOnglets(r.brief.jour, r.brief.edition || "matin");
       afficher(r.brief);
     }
+    function majOnglets(jour, edition) {
+      for (const e of ["matin", "soir"]) {
+        const b = document.getElementById("tab-" + e);
+        b.setAttribute("aria-selected", e === edition);
+        b.disabled = !editions.some((x) => x.jour === jour && x.edition === e);
+        b.title = b.disabled ? (e === "soir" ? "Le brief du soir est rédigé vers 18 h" : "Pas de brief du matin ce jour-là") : "";
+      }
+    }
+    function aller(jour, edition) {
+      history.replaceState(null, "", `?jour=${jour}&edition=${edition}`);
+      charger(jour, edition);
+    }
+    document.querySelectorAll(".onglets button").forEach((b) => b.onclick = () => aller(document.getElementById("historique").value, b.dataset.edition));
     document.getElementById("historique").addEventListener("change", (e) => {
-      history.replaceState(null, "", "?jour=" + e.target.value);
-      charger(e.target.value);
+      const j = e.target.value;
+      const ed = editions.some((x) => x.jour === j && x.edition === "soir") ? "soir" : "matin";
+      aller(j, ed);
     });
-    chargerEntete("/brief").then(() => charger(new URLSearchParams(location.search).get("jour")));
+    const ps = new URLSearchParams(location.search);
+    chargerEntete("/brief").then(() => charger(ps.get("jour"), ps.get("edition")));
   </script>
 </body>
 </html>

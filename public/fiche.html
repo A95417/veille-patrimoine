@@ -1,0 +1,184 @@
+<!doctype html>
+<!-- version 9.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fiche · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <meta name="apple-mobile-web-app-title" content="Veille">
+  <script src="/commun.js"></script>
+  <script src="/jeux.js"></script>
+  <script src="/fiches.js"></script>
+  <style>
+    .contenu { max-width: 920px; }
+    .banniere { border-radius: var(--rayon); overflow: hidden; margin-bottom: 16px; border: 1px solid var(--bord); }
+    .phrase { font-family: var(--titre); font-size: 1.35rem; line-height: 1.45; font-weight: 500; margin: 0; }
+    .chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 0 0 20px; }
+    .chiffre-tuile { background: var(--carte); border: 1px solid var(--bord); border-radius: 16px; padding: 16px; }
+    .chiffre-tuile strong { display: block; font-family: var(--titre); font-size: 1.8rem; line-height: 1.1; color: var(--i3); margin-bottom: 6px; }
+    .chiffre-tuile span { font-size: .9rem; color: var(--doux); line-height: 1.4; display: block; }
+    .essentiel { display: grid; gap: 10px; }
+    .essentiel details { background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 0 16px; }
+    .essentiel summary { cursor: pointer; list-style: none; display: flex; gap: 12px; align-items: center; padding: 14px 0; font-weight: 600; }
+    .essentiel summary::-webkit-details-marker { display: none; }
+    .essentiel summary::after { content: "+"; margin-left: auto; font-size: 1.3rem; color: var(--doux); }
+    .essentiel details[open] summary::after { content: "−"; }
+    .essentiel .num { flex: 0 0 30px; height: 30px; border-radius: 9px; background: var(--i0); color: var(--i3); display: grid; place-items: center; font-weight: 700; }
+    .essentiel p { margin: 0 0 14px 42px; line-height: 1.6; }
+    .flux { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+    .etape { flex: 1 1 150px; background: var(--i0); border-radius: 14px; padding: 14px; position: relative; margin: 6px 14px 6px 0; }
+    .etape strong { display: block; color: var(--i3); margin-bottom: 4px; }
+    .etape span { font-size: .88rem; }
+    .etape:not(:last-child)::after { content: "→"; position: absolute; right: -14px; top: 50%; transform: translate(50%, -50%); color: var(--doux); font-weight: 700; }
+    .tableau-fiscal { width: 100%; border-collapse: collapse; font-size: .92rem; margin: 6px 0 10px; }
+    .tableau-fiscal th, .tableau-fiscal td { border-bottom: 1px solid var(--bord); padding: 10px 8px; text-align: left; vertical-align: top; }
+    .tableau-fiscal th { color: var(--doux); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+    .tableau-fiscal td:first-child { font-weight: 600; }
+    .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    .liste-icones { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .liste-icones li { display: flex; gap: 10px; line-height: 1.5; }
+    .liste-icones .ic { flex: 0 0 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .8rem; }
+    .ic.oui { background: var(--ok-doux); color: var(--ok); } .ic.non { background: var(--ko-doux); color: var(--ko); } .ic.att { background: var(--accent-doux); color: var(--accent-fonce); }
+    .cas { background: var(--i0); border-radius: 16px; padding: 18px; }
+    .cas p { margin: 0 0 10px; line-height: 1.6; }
+    .onglets-jeux { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .liens { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .liens a { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--bord); border-radius: 12px; text-decoration: none; color: var(--texte); }
+    .liens a:hover { border-color: var(--accent); }
+    .liens .type { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 3px 8px; border-radius: 6px; background: var(--fond); color: var(--doux); flex: 0 0 auto; }
+    .liens .type.video { background: var(--ko-doux); color: var(--ko); } .liens .type.officiel { background: var(--accent-doux); color: var(--accent-fonce); }
+    .simu label { margin: 10px 0 4px; }
+    .simu input[type=range] { padding: 0; accent-color: var(--accent); background: none; border: 0; }
+    .simu-resultat { margin-top: 14px; padding: 14px 16px; border-radius: 14px; font-size: 1.02rem; line-height: 1.5; }
+    .simu-resultat.gain { background: var(--ok-doux); } .simu-resultat.perte { background: var(--ko-doux); } .simu-resultat.neutre { background: var(--accent-doux); }
+    .bloc h2 { font-size: 1.15rem; display: flex; align-items: center; gap: 8px; }
+    .avertissement { font-size: .85rem; color: var(--doux); border: 1px dashed var(--bord-fort); border-radius: 12px; padding: 10px 14px; }
+    @media (max-width: 760px) { .etape:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -16px; transform: translateX(50%); } .etape { flex-basis: 100%; margin: 6px 0 14px; } .phrase { font-size: 1.15rem; } }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page contenu" id="fiche"><p class="doux">Chargement…</p></main>
+  <script>
+    const id = new URLSearchParams(location.search).get("id");
+    const f = FICHES.find((x) => x.id === id);
+
+    function simulateurAutocall() {
+      return `<section class="carte bloc simu no-print"><h2>Simulateur : un autocall en action</h2>
+        <p class="doux" style="margin-top:-4px">Exemple fictif, pour comprendre le mécanisme : coupon de 6 % par année écoulée, constatation chaque année,
+          remboursement anticipé si l'indice est au-dessus de son niveau de départ, durée maximale 8 ans, barrière de protection à −40 % à l'échéance.</p>
+        <label for="simu-annee">Année où l'on regarde l'indice : <strong id="simu-annee-val">1</strong></label>
+        <input type="range" id="simu-annee" min="1" max="8" value="1">
+        <label for="simu-perf">Évolution de l'indice depuis le départ : <strong id="simu-perf-val">+5 %</strong></label>
+        <input type="range" id="simu-perf" min="-70" max="40" value="5">
+        <div class="simu-resultat" id="simu-resultat" aria-live="polite"></div></section>`;
+    }
+    function majSimulateur() {
+      const an = Number(document.getElementById("simu-annee").value), perf = Number(document.getElementById("simu-perf").value);
+      document.getElementById("simu-annee-val").textContent = an;
+      document.getElementById("simu-perf-val").textContent = (perf > 0 ? "+" : "") + perf + " %";
+      const z = document.getElementById("simu-resultat");
+      let cls, txt;
+      if (perf >= 0) { cls = "gain"; txt = `<strong>Remboursement anticipé en année ${an}</strong> : le client récupère 100 % de son capital + ${6 * an} % de gains (${an} × 6 %). Le produit s'arrête.`; }
+      else if (an < 8) { cls = "neutre"; txt = `<strong>Pas de remboursement cette année</strong> : l'indice est sous son niveau de départ. Pas de coupon, le produit continue jusqu'à la prochaine date (année ${an + 1}).`; }
+      else if (perf >= -40) { cls = "neutre"; txt = `<strong>Échéance, barrière non franchie</strong> : l'indice a baissé de ${-perf} %, mais pas au-delà de −40 %. Le client récupère 100 % de son capital, sans gain.`; }
+      else { cls = "perte"; txt = `<strong>Échéance, barrière franchie</strong> : l'indice a baissé de ${-perf} %. La protection disparaît : le client récupère ${100 + perf} % de son capital, soit une perte de ${-perf} %.`; }
+      z.className = "simu-resultat " + cls; z.innerHTML = txt + '<br><span class="doux petit">Hors frais, fiscalité et risque de défaut de la banque émettrice.</span>';
+    }
+
+    function afficher(scores) {
+      document.title = f.titre + " · Apprendre · Veille Patrimoine";
+      const sc = scores["fiche:" + f.id];
+      let h = `
+        <p class="no-print" style="margin:0 0 12px"><a href="/apprendre">← Toutes les fiches</a></p>
+        <div class="banniere th-${f.theme}">${illustration(f.theme, 150)}</div>
+        <div class="meta th-${f.theme}"><span class="etiquette">Fiche</span><span>${f.duree} min de lecture</span><span>Vérifiée le ${f.verifie}</span>
+          ${sc ? `<span class="niveau ${sc.score / sc.total >= 0.8 ? "n4" : ""}">Meilleur score au quiz : ${sc.score}/${sc.total}</span>` : ""}</div>
+        <h1 style="margin:12px 0 4px">${echapper(f.titre)}</h1>
+        <p class="doux" style="margin:0 0 14px;font-size:1.05rem">${echapper(f.sousTitre)}</p>
+        <div class="barre-actions no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+          <a class="bouton" href="#jeux">Me tester</a>
+          <button type="button" class="bouton bouton-discret" id="btn-ecouter">${ICONE_ECOUTE} Écouter la fiche</button>
+          <button type="button" class="bouton bouton-discret" onclick="print()">Imprimer</button>
+        </div>
+        <div class="th-${f.theme}">
+        <section class="carte bloc"><div class="surtitre">En une phrase</div><p class="phrase">${echapper(f.enUnePhrase)}</p></section>
+        <div class="chiffres">${f.chiffres.map((c) => `<div class="chiffre-tuile"><strong>${echapper(c.valeur)}</strong><span>${echapper(c.libelle)}</span></div>`).join("")}</div>
+        <section class="carte bloc"><h2>L'essentiel en 5 points</h2><div class="essentiel">
+          ${f.essentiel.map((e, i) => `<details ${i === 0 ? "open" : ""}><summary><span class="num">${i + 1}</span>${echapper(e.titre)}</summary><p>${echapper(e.texte)}</p></details>`).join("")}
+        </div></section>
+        <section class="carte bloc"><h2>Comment ça marche</h2><div class="flux">
+          ${f.schema.map((e) => `<div class="etape"><strong>${echapper(e.titre)}</strong><span>${echapper(e.texte)}</span></div>`).join("")}
+        </div></section>
+        </div>
+        ${f.simulateur === "autocall" ? simulateurAutocall() : ""}
+        <section class="carte bloc"><h2>La fiscalité</h2>
+          ${f.fiscalite.map((t) => `<h3 style="font-size:1rem;margin:14px 0 4px">${echapper(t.titre)}</h3>
+            <div style="overflow-x:auto"><table class="tableau-fiscal"><thead><tr>${t.colonnes.map((c) => `<th>${echapper(c)}</th>`).join("")}</tr></thead>
+            <tbody>${t.lignes.map((l) => `<tr>${l.map((c) => `<td>${echapper(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+            ${t.note ? `<p class="doux petit" style="margin:0">${echapper(t.note)}</p>` : ""}`).join("")}
+        </section>
+        <div class="cols">
+          <section class="carte bloc"><h2>Pour qui ?</h2><ul class="liste-icones">${f.pourQui.map((x) => `<li><span class="ic oui">✓</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
+          <section class="carte bloc"><h2>À éviter si…</h2><ul class="liste-icones">${f.pasPourQui.map((x) => `<li><span class="ic non">✕</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
+        </div>
+        <section class="carte bloc"><h2>Les pièges à éviter</h2><ul class="liste-icones">${f.pieges.map((x) => `<li><span class="ic att">!</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
+        <section class="carte bloc th-${f.theme}"><h2>Cas pratique</h2><div class="cas">
+          <p>${echapper(f.cas.enonce)}</p><p><strong>${echapper(f.cas.question)}</strong></p>
+          <button type="button" class="bouton bouton-discret no-print" id="btn-cas">Voir la réponse</button>
+          <p id="cas-reponse" hidden style="margin-top:12px">${echapper(f.cas.reponse)}</p></div></section>
+        <section class="carte bloc"><h2>Comment l'expliquer à un client</h2><p class="parler" style="background:var(--accent-doux);border-radius:12px;padding:12px 16px;font-style:italic;margin:0 0 10px">${echapper(f.phraseClient)}</p>
+          <button type="button" class="bouton bouton-discret no-print" id="btn-phrase">Copier la phrase</button></section>
+        <section class="carte bloc no-print"><h2>Dans l'actualité</h2><p class="doux petit" style="margin-top:-4px">Les derniers sujets du site qui en parlent, mis à jour automatiquement.</p><div class="liste" id="actus" style="border:0;padding:0"><p class="doux">Recherche…</p></div></section>
+        <section class="carte bloc no-print" id="jeux"><h2>Je me teste</h2>
+          <div class="onglets-jeux" role="tablist">
+            <button type="button" class="puce" data-jeu="quiz" aria-pressed="true">Quiz</button>
+            <button type="button" class="puce" data-jeu="vf" aria-pressed="false">Vrai ou faux express</button>
+            <button type="button" class="puce" data-jeu="cartes" aria-pressed="false">Cartes mémo</button>
+            <button type="button" class="puce" data-jeu="paires" aria-pressed="false">Paires à associer</button>
+          </div><div id="zone-jeu"></div></section>
+        <section class="carte bloc"><h2>Pour aller plus loin</h2><ul class="liens">
+          ${f.liens.map((l) => `<li><a href="${echapper(l.url)}" target="_blank" rel="noopener noreferrer"><span class="type ${l.type}">${l.type === "video" ? "Vidéos" : l.type === "officiel" ? "Officiel" : "Guide"}</span><span>${echapper(l.titre)} ↗</span></a></li>`).join("")}
+        </ul><p class="doux petit" style="margin:10px 0 0">Les liens « Vidéos » ouvrent une recherche YouTube ; privilégiez les chaînes institutionnelles (AMF, La finance pour tous, Banque de France…).</p></section>
+        <p class="avertissement">Fiche pédagogique vérifiée le ${f.verifie} à partir de sources publiques. Les règles fiscales changent avec chaque loi de finances : vérifiez les montants sur les sources officielles avant de conseiller un client. Ce contenu ne constitue pas un conseil en investissement.</p>`;
+      document.getElementById("fiche").innerHTML = h;
+
+      if (f.simulateur === "autocall") { ["simu-annee", "simu-perf"].forEach((i) => document.getElementById(i).oninput = majSimulateur); majSimulateur(); }
+      document.getElementById("btn-cas").onclick = (e) => { document.getElementById("cas-reponse").hidden = false; e.currentTarget.remove(); };
+      document.getElementById("btn-phrase").onclick = () => copier(f.phraseClient);
+      document.getElementById("btn-ecouter").onclick = (e) => lireAVoixHaute([f.titre + ".", f.enUnePhrase, ...f.essentiel.map((x) => x.titre + ". " + x.texte),
+        "Comment l'expliquer à un client.", f.phraseClient].join(" "), e.currentTarget);
+
+      const jeux = {
+        quiz: (z) => quizInteractif(z, f.quiz, { cle: "fiche:" + f.id, melangerQuestions: true }),
+        vf: (z) => vraiOuFaux(z, f.vraiFaux, { cle: "vf:" + f.id }),
+        cartes: (z) => cartesMemo(z, f.cartes, { cle: "memo:" + f.id }),
+        paires: (z) => pairesAAssocier(z, f.paires, { cle: "paires:" + f.id }),
+      };
+      document.querySelectorAll(".onglets-jeux .puce").forEach((b) => b.onclick = () => {
+        document.querySelectorAll(".onglets-jeux .puce").forEach((x) => x.setAttribute("aria-pressed", x === b));
+        const z = document.getElementById("zone-jeu"); z.className = ""; jeux[b.dataset.jeu](z);
+      });
+      jeux.quiz(document.getElementById("zone-jeu"));
+
+      appelApi("/api/recherche?q=" + encodeURIComponent(f.recherche)).then(({ sujets }) => {
+        const z = document.getElementById("actus");
+        z.innerHTML = sujets.length ? sujets.slice(0, 6).map(ligne).join("") : '<p class="doux">Aucun sujet récent sur ce thème pour l\'instant.</p>';
+      }).catch(() => { document.getElementById("actus").innerHTML = '<p class="doux">Recherche indisponible.</p>'; });
+    }
+
+    chargerEntete("/apprendre").then(async () => {
+      if (!f) { document.getElementById("fiche").innerHTML = '<div class="carte"><p>Fiche introuvable.</p><p><a href="/apprendre">← Toutes les fiches</a></p></div>'; return; }
+      afficher(await lireProgression());
+    });
+  </script>
+</body>
+</html>

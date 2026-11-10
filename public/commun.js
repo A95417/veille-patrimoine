@@ -366,7 +366,7 @@ const LOGO = `<svg width="30" height="30" viewBox="0 0 28 28" aria-hidden="true"
   <path d="M7 18l5-5 4 3 5-7" fill="none" stroke="var(--accent-texte)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 async function chargerEntete(pageActive) {
   const moi = await appelApi("/api/moi");
-  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/selection", "Ma sélection"], ["/recherche", "Recherche"], ["/marches", "Marchés"]];
+  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/selection", "Ma sélection"], ["/marches", "Marchés"]];
   if (moi.role === "admin") liens.push(["/admin", "Admin"]);
   const nav = liens
     .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${nom}</a>`)

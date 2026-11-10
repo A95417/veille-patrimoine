@@ -139,9 +139,14 @@ export async function routeRobot(request, env, chemin) {
 
   // 9) Données du brief : sujets majeurs des dernières 24 h + clôtures relevées le matin.
   if (chemin === "/api/robot/brief/donnees" && request.method === "GET") {
-    const jour = new URL(request.url).searchParams.get("jour") || "";
-    const existe = await db.prepare("SELECT 1 AS x FROM briefs WHERE jour = ?").bind(jour).first();
-    const depuis = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const u = new URL(request.url).searchParams;
+    const jour = u.get("jour") || "";
+    const edition = u.get("edition") === "soir" ? "soir" : "matin";
+    const existe = await db.prepare("SELECT 1 AS x FROM briefs WHERE jour = ? AND edition = ?").bind(jour, edition).first();
+    // Matin : les dernières 24 heures. Soir : depuis 7 h ce matin (date fournie par le robot).
+    const depuisDemande = u.get("depuis");
+    const depuis = depuisDemande && !isNaN(new Date(depuisDemande)) ? new Date(depuisDemande).toISOString()
+      : new Date(Date.now() - 24 * 3600 * 1000).toISOString();
     const { results: sujets } = await db
       .prepare(`SELECT id, titre, titre_fr, importance, categories, resume_court, resume_detail, nb_articles, derniere_pub
                   FROM sujets WHERE derniere_pub >= ? AND importance >= 2 AND nb_articles > 0
@@ -154,18 +159,24 @@ export async function routeRobot(request, env, chemin) {
         .bind(...lot.map((s) => s.id)).all();
       for (const s of lot) s.sources = results.filter((a) => a.sujet_id === s.id).map(({ sujet_id, ...a }) => a);
     }
-    const cloture = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = 'marches_cloture'").first();
-    let marches = null;
-    try { marches = cloture ? { ...JSON.parse(cloture.valeur), maj_le: cloture.maj_le } : null; } catch {}
-    return json({ jour, existe: !!existe, sujets, marches });
+    const lireEtat = async (cle) => {
+      const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = ?").bind(cle).first();
+      try { return l ? { ...JSON.parse(l.valeur), maj_le: l.maj_le } : null; } catch { return null; }
+    };
+    const marches = await lireEtat("marches_cloture");
+    // Pour le soir : la séance du jour (indices et autres marchés relevés pendant la séance de New York).
+    const direct = edition === "soir" ? await lireEtat("marches_direct") : null;
+    const autres = edition === "soir" ? await lireEtat("marches_autres") : null;
+    return json({ jour, edition, existe: !!existe, sujets, marches, direct, autres });
   }
 
   // 10) Enregistrer le brief du jour ; on ne garde que 3 mois d'historique.
   if (chemin === "/api/robot/brief" && request.method === "POST") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(corps.jour || "")) return json({ erreur: "Jour invalide." }, 400);
+    const edition = corps.edition === "soir" ? "soir" : "matin";
     await db.batch([
-      db.prepare("INSERT OR REPLACE INTO briefs (jour, contenu, cree_le) VALUES (?, ?, ?)")
-        .bind(corps.jour, JSON.stringify(corps.contenu).slice(0, 60000), new Date().toISOString()),
+      db.prepare("INSERT OR REPLACE INTO briefs (jour, edition, contenu, cree_le) VALUES (?, ?, ?, ?)")
+        .bind(corps.jour, edition, JSON.stringify(corps.contenu).slice(0, 60000), new Date().toISOString()),
       db.prepare("DELETE FROM briefs WHERE jour < ?").bind(new Date(Date.now() - 92 * 86400000).toISOString().slice(0, 10)),
     ]);
     return json({ ok: true });
