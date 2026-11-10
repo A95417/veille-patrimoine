@@ -3,8 +3,18 @@
 
 export const USER_AGENT = "VeillePatrimoineBot/1.0 (site privé de veille ; lecture des flux RSS publics)";
 
-// Téléchargement avec délai maximal.
+// Téléchargement avec délai maximal ; une seconde tentative après une coupure réseau passagère
+// (certains sites publics, comme le Sénat, refusent parfois la connexion pendant quelques secondes).
 export async function telecharger(url, delaiMs = 15000) {
+  const r = await telechargerUneFois(url, delaiMs);
+  if (r.statut === 0 && r.erreur !== "délai dépassé") {
+    await new Promise((ok) => setTimeout(ok, 4000));
+    return telechargerUneFois(url, delaiMs);
+  }
+  return r;
+}
+
+async function telechargerUneFois(url, delaiMs) {
   const ctrl = new AbortController();
   const minuteur = setTimeout(() => ctrl.abort(), delaiMs);
   try {
@@ -20,7 +30,7 @@ export async function telecharger(url, delaiMs = 15000) {
     const texte = await r.text();
     return { ok: r.ok, statut: r.status, url: r.url, type: r.headers.get("content-type") || "", texte };
   } catch (e) {
-    return { ok: false, statut: 0, url, type: "", texte: "", erreur: e.name === "AbortError" ? "délai dépassé" : e.message };
+    return { ok: false, statut: 0, url, type: "", texte: "", erreur: e.name === "AbortError" ? "délai dépassé" : e.cause?.code ? `${e.message} : ${e.cause.code}` : e.message };
   } finally {
     clearTimeout(minuteur);
   }
