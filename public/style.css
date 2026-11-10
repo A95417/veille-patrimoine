@@ -1,4 +1,4 @@
-/* version 9.1 */
+/* version 9.2 */
 /* Styles communs du site Veille Patrimoine — design « Tableau de bord » */
 
 :root {
@@ -342,6 +342,22 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .paire.choisie { border-color: var(--accent); background: var(--accent-doux); }
 .paire:disabled { cursor: default; opacity: .75; }
 @media (max-width: 760px) { .paires { grid-template-columns: 1fr; } .memo { min-height: 230px; } }
+
+/* ---------------------------------------------------------------- Grand écran : mise en page aérée */
+@media (min-width: 1000px) {
+  body { line-height: 1.6; }
+  .page { padding: 36px 32px 72px; }
+  .carte { padding: 26px 30px; margin-bottom: 26px; }
+  .titre-section { margin-bottom: 18px; }
+  .deux-colonnes { gap: 32px; }
+  .colonne-cote { gap: 22px; }
+  .colonne-cote .carte { padding: 24px; }
+  .grille-cartes { gap: 22px; }
+  .sujet-corps { padding: 18px 22px 20px; gap: 10px; }
+  .liste { padding: 6px 22px; }
+  .ligne { padding: 16px 0; gap: 16px; }
+  .hero { padding: 38px 42px; }
+}
 
 /* ---------------------------------------------------------------- Illustrations animées (rubrique Apprendre) */
 .anime .anim-flotte, .anime .anim-flotte-2, .anime .anim-pulse, .anime .anim-balance, .anime .anim-ecarte,
