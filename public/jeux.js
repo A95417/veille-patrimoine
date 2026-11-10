@@ -1,4 +1,4 @@
-// version 1.0
+// version 1.1
 // Jeux d'apprentissage : quiz, cartes à retourner, vrai ou faux, paires à associer.
 // Les scores sont enregistrés pour chaque utilisateur (meilleur score par jeu).
 
@@ -11,6 +11,18 @@ async function lireProgression() {
 }
 const melanger = (t) => { const a = [...t]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const LETTRES = ["A", "B", "C", "D", "E"];
+
+// Pluie de confettis pour un sans-faute.
+function confettis() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const z = document.createElement("div");
+  z.className = "confettis"; z.setAttribute("aria-hidden", "true");
+  const couleurs = ["#3a49d6", "#17663f", "#e08a3c", "#d2668c", "#e2b647", "#3f8fa8"];
+  z.innerHTML = Array.from({ length: 70 }, (_, i) =>
+    `<i style="left:${Math.random() * 100}%;background:${couleurs[i % couleurs.length]};animation-delay:${Math.random() * .6}s;animation-duration:${1.4 + Math.random()}s"></i>`).join("");
+  document.body.appendChild(z);
+  setTimeout(() => z.remove(), 3200);
+}
 
 function messageFin(score, total) {
   const p = score / total;
@@ -56,6 +68,7 @@ function quizInteractif(zone, questions, { cle, melangerQuestions = false, surFi
   }
   function fin() {
     enregistrerScore(cle, score, liste.length);
+    if (score === liste.length) confettis();
     zone.innerHTML = `<div class="jeu-fin">
       ${anneauScore(score, liste.length)}
       <div><p class="jeu-question" style="margin:0 0 6px">${score} / ${liste.length}</p><p style="margin:0 0 14px">${messageFin(score, liste.length)}</p>
@@ -141,6 +154,7 @@ function vraiOuFaux(zone, affirmations, { cle } = {}) {
   }
   function fin() {
     enregistrerScore(cle, score, liste.length);
+    if (score === liste.length) confettis();
     zone.innerHTML = `<div class="jeu-fin">${anneauScore(score, liste.length)}
       <div><p class="jeu-question" style="margin:0 0 6px">${score} / ${liste.length} · meilleure série : ${meilleure}</p><p style="margin:0 0 14px">${messageFin(score, liste.length)}</p>
       <button type="button" class="bouton bouton-discret" id="vf-rejouer">Rejouer</button></div></div>`;
@@ -176,6 +190,7 @@ function pairesAAssocier(zone, paires, { cle } = {}) {
       if (trouvees === paires.length) {
         const score = Math.max(0, paires.length - erreurs);
         enregistrerScore(cle, score, paires.length);
+        if (!erreurs) confettis();
         zone.querySelector(".jeu-retour").innerHTML = `<p class="bravo"><strong>Bravo, toutes les paires sont trouvées !</strong> ${erreurs ? `(${erreurs} erreur${erreurs > 1 ? "s" : ""})` : "Sans erreur."}</p>
           <button type="button" class="bouton bouton-discret" id="paires-rejouer">Rejouer</button>`;
         zone.querySelector("#paires-rejouer").onclick = () => pairesAAssocier(zone, paires, { cle });

@@ -343,6 +343,35 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .paire:disabled { cursor: default; opacity: .75; }
 @media (max-width: 760px) { .paires { grid-template-columns: 1fr; } .memo { min-height: 230px; } }
 
+/* ---------------------------------------------------------------- Illustrations animées (rubrique Apprendre) */
+.anime .anim-flotte, .anime .anim-flotte-2, .anime .anim-pulse, .anime .anim-balance, .anime .anim-ecarte,
+.anime .anim-fumee, .anime .anim-fumee-2, .anime .anim-sable, .anime .anim-vague { transform-box: fill-box; transform-origin: center; }
+.anime .anim-flotte { animation: flotte 5s ease-in-out infinite; }
+.anime .anim-flotte-2 { animation: flotte 5s ease-in-out infinite -2.5s; }
+.anime .anim-pulse { animation: respire 4s ease-in-out infinite; }
+.anime .anim-balance { animation: balance 6s ease-in-out infinite; }
+.anime .anim-ecarte { animation: ecarte 4s ease-in-out infinite; }
+.anime .anim-fumee { animation: fumee 3.5s ease-out infinite; }
+.anime .anim-fumee-2 { animation: fumee 3.5s ease-out infinite -1.7s; }
+.anime .anim-sable { animation: respire 3s ease-in-out infinite; transform-origin: bottom; }
+.anime .anim-vague { animation: vague 6s ease-in-out infinite; }
+.anime .anim-clignote rect:nth-child(odd) { animation: clignote 3s steps(2) infinite; }
+.anime .anim-trace { stroke-dasharray: 600; stroke-dashoffset: 600; animation: trace 2.4s ease-out forwards .2s; }
+@keyframes flotte { 50% { transform: translateY(-5px); } }
+@keyframes respire { 50% { transform: scale(1.08); } }
+@keyframes balance { 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+@keyframes ecarte { 50% { transform: translateX(6px); } }
+@keyframes fumee { 0% { transform: translateY(6px) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-14px) scale(1.3); opacity: 0; } }
+@keyframes vague { 50% { transform: translateX(-10px); } }
+@keyframes clignote { 50% { opacity: .35; } }
+@keyframes trace { to { stroke-dashoffset: 0; } }
+.fiche-carte { transition: transform .2s, box-shadow .2s; }
+.fiche-carte:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(21,26,38,.10); }
+/* Confettis à la fin d'un sans-faute */
+.confettis { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.confettis i { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; animation: tombe 1.8s ease-in forwards; }
+@keyframes tombe { to { transform: translateY(105vh) rotate(540deg); opacity: .9; } }
+
 /* Impression (ou « Enregistrer en PDF ») : seulement le contenu. */
 @media print {
   .entete, .filtres, .favori, .colonne-cote, .bouton, .icone-bouton, .notification, #btn-suite, .no-print { display: none !important; }

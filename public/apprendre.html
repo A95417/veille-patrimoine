@@ -17,6 +17,7 @@
   <script src="/commun.js"></script>
   <script src="/jeux.js"></script>
   <script src="/fiches.js"></script>
+  <script src="/fiches-suite.js"></script>
   <style>
     .grille-fiches { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
     .fiche-carte { position: relative; text-decoration: none; color: var(--texte); }
@@ -30,6 +31,8 @@
     .deux-jeux { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin: 22px 0; }
     .deux-jeux .carte { margin: 0; }
     .deux-jeux h2 { display: flex; align-items: center; gap: 8px; }
+    .parcours { margin-bottom: 30px; }
+    .fiche-carte .sujet-haut { background: var(--i0); }
     .jours-quiz { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
   </style>
 </head>
@@ -63,8 +66,8 @@
       </section>
     </div>
 
-    <div class="titre-section"><h2>Les fiches</h2><span class="doux petit">Mises à jour avec l'actualité · vérifiées le 10 novembre 2026</span></div>
-    <div class="grille-fiches" id="fiches"></div>
+    <p class="doux petit" style="margin:0 0 6px">Fiches vérifiées le 10 novembre 2026 sur des sources officielles ; l'actualité liée se met à jour automatiquement.</p>
+    <div id="fiches"></div>
   </main>
   <script>
     const dateCourte = (j) => new Date(j + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
@@ -77,16 +80,32 @@
       return p >= 0.8 ? `<span class="badge-prog maitrise">Maîtrisé · ${Math.round(p * 100)} %</span>` : `<span class="badge-prog encours">En cours · ${Math.round(p * 100)} %</span>`;
     }
 
+    // Les fiches sont rangées en trois parcours.
+    const PARCOURS = [
+      { titre: "Épargne et placements", texte: "Les enveloppes et supports du quotidien", ids: ["assurance-vie", "per", "pea", "scpi", "produits-structures"] },
+      { titre: "Famille et transmission", texte: "Le couple, la donation, la succession", ids: ["regimes-matrimoniaux", "demembrement", "donations", "succession"] },
+      { titre: "Fiscalité et chef d'entreprise", texte: "Impôts patrimoniaux et transmission d'entreprise", ids: ["ifi", "girardin-industriel", "apport-cession", "pacte-dutreil"] },
+    ];
+    const maitrisee = (scores, f) => { const s = scores["fiche:" + f.id]; return s && s.score / s.total >= 0.8; };
+
     async function afficherFiches(scores) {
-      document.getElementById("fiches").innerHTML = FICHES.map((f) => `
+      const carteFiche = (f) => `
         <article class="sujet fiche-carte th-${f.theme}">
-          <div class="sujet-haut">${illustration(f.theme, 120)}</div>
+          <div class="sujet-haut">${illustrationFiche(f, 120)}</div>
           <div class="sujet-corps">
-            <div class="meta">${badge(scores["fiche:" + f.id])}<span>${f.duree} min de lecture</span><span id="actu-${f.id}"></span></div>
+            <div class="meta">${badge(scores["fiche:" + f.id])}<span>${f.duree} min</span><span id="actu-${f.id}"></span></div>
             <h3><a href="/fiche?id=${f.id}">${echapper(f.titre)}</a></h3>
             <p class="sous">${echapper(f.sousTitre)}</p>
           </div>
-        </article>`).join("");
+        </article>`;
+      document.getElementById("fiches").outerHTML = PARCOURS.map((p) => {
+        const fiches = p.ids.map((id) => FICHES.find((f) => f.id === id)).filter(Boolean);
+        const n = fiches.filter((f) => maitrisee(scores, f)).length;
+        return `<section class="parcours">
+          <div class="titre-section"><div><h2 style="margin:0">${p.titre}</h2><span class="doux petit">${p.texte}</span></div>
+            <span class="badge-prog ${n === fiches.length ? "maitrise" : n ? "encours" : ""}">${n} / ${fiches.length} maîtrisée${n > 1 ? "s" : ""}</span></div>
+          <div class="grille-fiches">${fiches.map(carteFiche).join("")}</div></section>`;
+      }).join("");
       // Combien d'actualités récentes parlent de chaque thème (la fiche les affiche).
       for (const f of FICHES) {
         appelApi("/api/recherche?q=" + encodeURIComponent(f.recherche)).then(({ sujets }) => {

@@ -17,9 +17,10 @@
   <script src="/commun.js"></script>
   <script src="/jeux.js"></script>
   <script src="/fiches.js"></script>
+  <script src="/fiches-suite.js"></script>
   <style>
     .contenu { max-width: 920px; }
-    .banniere { border-radius: var(--rayon); overflow: hidden; margin-bottom: 16px; border: 1px solid var(--bord); }
+    .banniere { border-radius: var(--rayon); overflow: hidden; margin-bottom: 16px; border: 1px solid var(--bord); background: var(--i0); }
     .phrase { font-family: var(--titre); font-size: 1.35rem; line-height: 1.45; font-weight: 500; margin: 0; }
     .chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 0 0 20px; }
     .chiffre-tuile { background: var(--carte); border: 1px solid var(--bord); border-radius: 16px; padding: 16px; }
@@ -94,12 +95,55 @@
       z.className = "simu-resultat " + cls; z.innerHTML = txt + '<br><span class="doux petit">Hors frais, fiscalité et risque de défaut de la banque émettrice.</span>';
     }
 
+    const euros = (n) => Math.round(n).toLocaleString("fr-FR") + " €";
+    // Simulateur du barème de l'usufruit (article 669 du CGI).
+    function simulateurBareme() {
+      return `<section class="carte bloc simu no-print"><h2>Calculateur : que vaut l'usufruit ?</h2>
+        <label for="b-age">Âge de l'usufruitier : <strong id="b-age-val">65 ans</strong></label><input type="range" id="b-age" min="18" max="95" value="65">
+        <label for="b-val">Valeur du bien en pleine propriété : <strong id="b-val-val"></strong></label><input type="range" id="b-val" min="50000" max="2000000" step="10000" value="400000">
+        <div class="simu-resultat neutre" id="b-res" aria-live="polite"></div></section>`;
+    }
+    function majBareme() {
+      const age = Number(document.getElementById("b-age").value), val = Number(document.getElementById("b-val").value);
+      const us = age < 21 ? 90 : age >= 91 ? 10 : 90 - 10 * Math.floor((age - 11) / 10);
+      document.getElementById("b-age-val").textContent = age + " ans";
+      document.getElementById("b-val-val").textContent = euros(val);
+      document.getElementById("b-res").innerHTML = `<div style="display:flex;height:16px;border-radius:8px;overflow:hidden;margin-bottom:10px">
+          <span style="display:block;width:${us}%;background:var(--i3)"></span><span style="display:block;width:${100 - us}%;background:var(--i1)"></span></div>
+        <strong>Usufruit : ${us} % = ${euros(val * us / 100)}</strong> · <strong>Nue-propriété : ${100 - us} % = ${euros(val * (100 - us) / 100)}</strong><br>
+        <span class="doux petit">Donner la nue-propriété à cet âge : les droits portent sur ${euros(val * (100 - us) / 100)} au lieu de ${euros(val)}.</span>`;
+    }
+    // Simulateur de l'IFI (barème et décote, BOFiP).
+    function simulateurIfi() {
+      return `<section class="carte bloc simu no-print"><h2>Calculateur : combien d'IFI ?</h2>
+        <label for="i-rp">Résidence principale : <strong id="i-rp-val"></strong></label><input type="range" id="i-rp" min="0" max="5000000" step="25000" value="1000000">
+        <label for="i-autres">Autres biens immobiliers (locatif, SCPI…) : <strong id="i-autres-val"></strong></label><input type="range" id="i-autres" min="0" max="8000000" step="25000" value="600000">
+        <label for="i-dettes">Dettes déductibles : <strong id="i-dettes-val"></strong></label><input type="range" id="i-dettes" min="0" max="3000000" step="25000" value="100000">
+        <div class="simu-resultat" id="i-res" aria-live="polite"></div></section>`;
+    }
+    function majIfi() {
+      const rp = Number(document.getElementById("i-rp").value), au = Number(document.getElementById("i-autres").value), de = Number(document.getElementById("i-dettes").value);
+      ["rp", "autres", "dettes"].forEach((k) => document.getElementById(`i-${k}-val`).textContent = euros(Number(document.getElementById("i-" + k).value)));
+      const net = Math.max(0, rp * 0.7 + au - de);
+      let ifi = 0;
+      if (net >= 1300000) {
+        const t = [[800000, 0], [1300000, .005], [2570000, .007], [5000000, .01], [10000000, .0125], [Infinity, .015]];
+        let bas = 0; for (const [haut, taux] of t) { if (net > bas) ifi += (Math.min(net, haut) - bas) * taux; bas = haut; }
+        if (net < 1400000) ifi -= 17500 - 0.0125 * net;
+      }
+      const z = document.getElementById("i-res");
+      z.className = "simu-resultat " + (ifi > 0 ? "perte" : "gain");
+      z.innerHTML = `Patrimoine net taxable : <strong>${euros(net)}</strong> (résidence principale après 30 % d'abattement).<br>
+        ${ifi > 0 ? `<strong>IFI estimé : ${euros(ifi)}</strong>${net < 1400000 ? " (après décote)" : ""}` : "<strong>Pas d'IFI</strong> : sous le seuil de 1,3 M€."}<br>
+        <span class="doux petit">Estimation pédagogique : hors plafonnement, biens professionnels et conditions de déduction des dettes.</span>`;
+    }
+
     function afficher(scores) {
       document.title = f.titre + " · Apprendre · Veille Patrimoine";
       const sc = scores["fiche:" + f.id];
       let h = `
         <p class="no-print" style="margin:0 0 12px"><a href="/apprendre">← Toutes les fiches</a></p>
-        <div class="banniere th-${f.theme}">${illustration(f.theme, 150)}</div>
+        <div class="banniere th-${f.theme}">${illustrationFiche(f, 150)}</div>
         <div class="meta th-${f.theme}"><span class="etiquette">Fiche</span><span>${f.duree} min de lecture</span><span>Vérifiée le ${f.verifie}</span>
           ${sc ? `<span class="niveau ${sc.score / sc.total >= 0.8 ? "n4" : ""}">Meilleur score au quiz : ${sc.score}/${sc.total}</span>` : ""}</div>
         <h1 style="margin:12px 0 4px">${echapper(f.titre)}</h1>
@@ -119,16 +163,16 @@
           ${f.schema.map((e) => `<div class="etape"><strong>${echapper(e.titre)}</strong><span>${echapper(e.texte)}</span></div>`).join("")}
         </div></section>
         </div>
-        ${f.simulateur === "autocall" ? simulateurAutocall() : ""}
-        <section class="carte bloc"><h2>La fiscalité</h2>
+        ${f.simulateur === "autocall" ? simulateurAutocall() : f.simulateur === "bareme669" ? simulateurBareme() : f.simulateur === "ifi" ? simulateurIfi() : ""}
+        <section class="carte bloc"><h2>${echapper(f.libelleFiscalite || "La fiscalité")}</h2>
           ${f.fiscalite.map((t) => `<h3 style="font-size:1rem;margin:14px 0 4px">${echapper(t.titre)}</h3>
             <div style="overflow-x:auto"><table class="tableau-fiscal"><thead><tr>${t.colonnes.map((c) => `<th>${echapper(c)}</th>`).join("")}</tr></thead>
             <tbody>${t.lignes.map((l) => `<tr>${l.map((c) => `<td>${echapper(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
             ${t.note ? `<p class="doux petit" style="margin:0">${echapper(t.note)}</p>` : ""}`).join("")}
         </section>
         <div class="cols">
-          <section class="carte bloc"><h2>Pour qui ?</h2><ul class="liste-icones">${f.pourQui.map((x) => `<li><span class="ic oui">✓</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
-          <section class="carte bloc"><h2>À éviter si…</h2><ul class="liste-icones">${f.pasPourQui.map((x) => `<li><span class="ic non">✕</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
+          <section class="carte bloc"><h2>${echapper(f.libellePourQui || "Pour qui ?")}</h2><ul class="liste-icones">${f.pourQui.map((x) => `<li><span class="ic oui">✓</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
+          <section class="carte bloc"><h2>${echapper(f.libellePasPourQui || "À éviter si…")}</h2><ul class="liste-icones">${f.pasPourQui.map((x) => `<li><span class="ic non">✕</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
         </div>
         <section class="carte bloc"><h2>Les pièges à éviter</h2><ul class="liste-icones">${f.pieges.map((x) => `<li><span class="ic att">!</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
         <section class="carte bloc th-${f.theme}"><h2>Cas pratique</h2><div class="cas">
@@ -152,6 +196,8 @@
       document.getElementById("fiche").innerHTML = h;
 
       if (f.simulateur === "autocall") { ["simu-annee", "simu-perf"].forEach((i) => document.getElementById(i).oninput = majSimulateur); majSimulateur(); }
+      if (f.simulateur === "bareme669") { ["b-age", "b-val"].forEach((i) => document.getElementById(i).oninput = majBareme); majBareme(); }
+      if (f.simulateur === "ifi") { ["i-rp", "i-autres", "i-dettes"].forEach((i) => document.getElementById(i).oninput = majIfi); majIfi(); }
       document.getElementById("btn-cas").onclick = (e) => { document.getElementById("cas-reponse").hidden = false; e.currentTarget.remove(); };
       document.getElementById("btn-phrase").onclick = () => copier(f.phraseClient);
       document.getElementById("btn-ecouter").onclick = (e) => lireAVoixHaute([f.titre + ".", f.enUnePhrase, ...f.essentiel.map((x) => x.titre + ". " + x.texte),
