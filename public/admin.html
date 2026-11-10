@@ -101,7 +101,7 @@
 
     async function chargerEtat() {
       const zone = document.getElementById("etat-robot");
-      const { collecte: c, totaux } = await appelApi("/api/admin/etat");
+      const { collecte: c, totaux, declencheur: dc } = await appelApi("/api/admin/etat");
       if (!c) { zone.innerHTML = "Le robot n'a pas encore tourné."; return; }
       const minutes = Math.round((Date.now() - new Date(c.recu_le)) / 60000);
       const alerte = minutes > 60;
@@ -112,6 +112,9 @@
           <strong>${totaux.articles}</strong> articles et <strong>${totaux.sujets}</strong> sujets en base (3 mois max).</p>
         ${c.flux_en_erreur && c.flux_en_erreur.length
           ? `<p style="color:var(--ko)">Flux en erreur : ${c.flux_en_erreur.map(echapper).join(", ")}</p>` : "<p>Aucun flux en erreur.</p>"}
+        <p>Déclencheur toutes les 15 min (Cloudflare) : ${dc
+          ? `<span class="pastille ${dc.ok ? "ok" : "ko"}">${dc.ok ? "OK" : "Problème"}</span> ${echapper(dc.message)}, ${quand(dc.le)}`
+          : '<span class="doux">pas encore actif</span>'}</p>
         ${alerte ? "<p>Plus d'une heure sans collecte : vérifiez l'onglet Actions sur GitHub (voir le guide « en cas de panne »).</p>" : ""}`;
     }
 

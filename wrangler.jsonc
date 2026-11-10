@@ -23,5 +23,8 @@
       "database_id": "76538af6-789e-455d-bcd5-b38020bc29cb",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+
+  // Toutes les 15 minutes : lance le robot de collecte sur GitHub (voir src/index.js, declencherRobot).
+  "triggers": { "crons": ["3,18,33,48 * * * *"] }
 }

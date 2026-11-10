@@ -138,7 +138,10 @@ async function api(request, env, url) {
         .first();
       let collecte = null;
       try { collecte = ligne ? { ...JSON.parse(ligne.valeur), recu_le: ligne.maj_le } : null; } catch {}
-      return json({ collecte, totaux });
+      const d = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = 'declencheur'").first();
+      let declencheur = null;
+      try { declencheur = d ? { ...JSON.parse(d.valeur), le: d.maj_le } : null; } catch {}
+      return json({ collecte, totaux, declencheur });
     }
 
     if (chemin === "/api/admin/utilisateurs" && methode === "GET") {
@@ -213,7 +216,42 @@ async function pages(request, env, url) {
   return protegee;
 }
 
+// Déclencheur fiable : toutes les 15 minutes, Cloudflare demande à GitHub de lancer le robot de collecte
+// (le minuteur gratuit de GitHub saute souvent des passages). Jeton GitHub limité au lancement du robot.
+const DEPOT = "A95417/veille-patrimoine";
+async function declencherRobot(env) {
+  let etat;
+  if (!env.GH_DISPATCH_TOKEN) {
+    etat = { ok: false, message: "jeton GitHub absent (secret GH_DISPATCH_TOKEN)" };
+  } else {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${DEPOT}/actions/workflows/collecte.yml/dispatches`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "User-Agent": "veille-patrimoine-declencheur",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ref: "main" }),
+      });
+      etat = r.status === 204
+        ? { ok: true, message: "robot lancé" }
+        : { ok: false, message: `GitHub a répondu ${r.status}${r.status === 401 ? " (jeton expiré ou révoqué)" : r.status === 403 || r.status === 404 ? " (droits du jeton insuffisants)" : ""}` };
+    } catch (e) {
+      etat = { ok: false, message: "GitHub injoignable : " + e.message };
+    }
+  }
+  await env.DB.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES ('declencheur', ?, ?)")
+    .bind(JSON.stringify(etat), new Date().toISOString()).run();
+}
+
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(declencherRobot(env));
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     try {

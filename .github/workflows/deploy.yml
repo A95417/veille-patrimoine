@@ -30,10 +30,12 @@ jobs:
           command: |
             d1 migrations apply veille-db --remote
             deploy
-          # Transmet au site le code d'installation rangé dans le coffre GitHub
+          # Transmet au site les secrets rangés dans le coffre GitHub
           secrets: |
             SETUP_CODE
             ROBOT_TOKEN
+            GH_DISPATCH_TOKEN
         env:
           SETUP_CODE: ${{ secrets.SETUP_CODE }}
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}

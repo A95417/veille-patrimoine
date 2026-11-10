@@ -1,4 +1,5 @@
 # Robot de collecte : toutes les 15 minutes, lit les flux RSS et envoie les nouveaux articles au site.
+# Lancé par Cloudflare toutes les 15 minutes (fiable) ; le minuteur GitHub ci-dessous sert de secours.
 # Peut aussi se lancer à la main (bouton "Run workflow").
 name: Collecte des actualités
 
@@ -75,7 +76,7 @@ jobs:
       # GitHub met en pause les robots d'un dépôt sans activité pendant 60 jours.
       # Une fois par jour (vers 6 h, heure de Paris), le robot note son état dans le dépôt pour rester actif.
       - name: Note quotidienne (garde le robot actif)
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         run: |
           if [ "$(date -u +%H)" = "05" ] && [ "$(date -u +%M)" -lt 20 ]; then
             mkdir -p rapports
@@ -84,5 +85,5 @@ jobs:
             git config user.email "robot-veille@users.noreply.github.com"
             git add rapports/collecte.md
             git commit -m "Note quotidienne du robot de collecte" || echo "Rien de nouveau"
-            git push
+            git push || echo "Note déjà enregistrée par un autre passage"
           fi
