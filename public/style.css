@@ -1,4 +1,4 @@
-/* version 9.0 */
+/* version 9.1 */
 /* Styles communs du site Veille Patrimoine — design « Tableau de bord » */
 
 :root {
@@ -95,7 +95,7 @@ h2 { font-size: 1.2rem; margin: 0 0 14px; font-weight: 600; }
 /* ---------------------------------------------------------------- En-tête */
 .entete { position: sticky; top: 0; z-index: 10; background: var(--carte); border-bottom: 1px solid var(--bord); }
 .entete-contenu {
-  max-width: 1200px; margin: 0 auto; padding: 10px 24px;
+  max-width: 1440px; margin: 0 auto; padding: 10px 24px;
   display: flex; align-items: center; gap: 10px 20px; flex-wrap: wrap;
 }
 .logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--titre); font-weight: 700; font-size: 1.15rem;
@@ -117,7 +117,7 @@ h2 { font-size: 1.2rem; margin: 0 0 14px; font-weight: 600; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------------------------------------------------------------- Mise en page */
-.page { max-width: 1200px; margin: 0 auto; padding: 28px 24px 56px; }
+.page { max-width: 1440px; margin: 0 auto; padding: 28px 24px 56px; }
 .centre { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
 .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 22px 24px; margin-bottom: 20px; }
 .carte-etroite { width: 100%; max-width: 420px; }
@@ -126,7 +126,12 @@ h2 { font-size: 1.2rem; margin: 0 0 14px; font-weight: 600; }
 .surtitre { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 0 0 10px; }
 .deux-colonnes { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
 .colonne-principale { flex: 999 1 600px; min-width: 0; }
-.colonne-cote { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.colonne-cote { flex: 1 1 300px; max-width: 380px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+/* Sur grand écran, la colonne de droite accompagne la lecture (elle reste visible en faisant défiler). */
+@media (min-width: 1000px) {
+  .colonne-cote { position: sticky; top: 84px; max-height: calc(100vh - 100px); overflow-y: auto; scrollbar-width: thin; padding-bottom: 4px; }
+}
+@media (max-width: 999px) { .colonne-cote { max-width: none; } }
 .colonne-cote .carte { margin: 0; padding: 20px; }
 .colonne-cote h2 { font-size: 1.05rem; margin: 0 0 12px; }
 
