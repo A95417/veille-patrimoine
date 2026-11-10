@@ -144,6 +144,7 @@ export async function produireBrief(date = new Date()) {
   console.log(`Brief du ${jour} enregistré : ${actualites.length} actualités, ${contenu.a_retenir.length} points à retenir, ` +
     `marchés ${marches ? "oui" : "non"}, IA ${contenu.ia_modele || "indisponible (brief sans synthèse)"}.`);
   if (contenu.synthese) console.log("Synthèse :", contenu.synthese);
+  console.log("Chiffre du jour :", contenu.chiffre_du_jour ? `${contenu.chiffre_du_jour.valeur} — ${contenu.chiffre_du_jour.libelle}` : "aucun (rien de vérifiable)");
   return contenu;
 }
 

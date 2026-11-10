@@ -40,7 +40,8 @@ export function moment(date = new Date()) {
   if (["cloture", "indices", "autres", "historique"].includes(forcer)) return forcer;
   const { jour, minutes } = heureParis(date);
   const semaine = !["sam.", "dim."].includes(jour);
-  if (minutes >= 6 * 60 && minutes < 6 * 60 + 30) return "cloture";                        // relevé du matin pour le brief
+  // Relevé du matin pour le brief : large fenêtre (4 h 30 - 7 h 15), car GitHub espace parfois les passages d'une heure.
+  if (minutes >= 4 * 60 + 30 && minutes < 7 * 60 + 15) return "cloture";
   if (semaine && minutes >= 15 * 60 + 30 && minutes <= 22 * 60 + 15)                       // séance de New York :
     return Math.floor(minutes / 15) % 2 === 0 ? "indices" : "autres";                       // un quart d'heure sur deux chacun
   return null;
