@@ -4,13 +4,13 @@
 const json = (d, s = 200) =>
   new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 
-const COLONNES = "s.id, s.titre, s.titre_fr, s.derniere_pub, s.nb_articles, s.importance, s.categories, s.resume_court, s.ia_statut";
+export const COLONNES = "s.id, s.titre, s.titre_fr, s.derniere_pub, s.nb_articles, s.importance, s.categories, s.resume_court, s.ia_statut";
 
 // Ajoute à chaque sujet ses articles (sources, liens, dates).
-async function avecArticles(db, sujets, extraits = true) {
+export async function avecArticles(db, sujets, extraits = true) {
   if (!sujets.length) return sujets;
   const { results } = await db
-    .prepare(`SELECT sujet_id, source_id, source_nom, groupe, langue, titre, lien, ${extraits ? "extrait," : ""} publie_le FROM articles
+    .prepare(`SELECT sujet_id, source_id, source_nom, groupe, langue, titre, lien, image, ${extraits ? "extrait," : ""} publie_le FROM articles
                WHERE sujet_id IN (${sujets.map(() => "?").join(",")}) ORDER BY publie_le DESC`)
     .bind(...sujets.map((s) => s.id))
     .all();

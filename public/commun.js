@@ -1,4 +1,4 @@
-// version 8.0
+// version 9.0
 // Outils partagés par toutes les pages.
 
 // Thème clair / sombre (mémorisé sur cet appareil uniquement).
@@ -8,6 +8,36 @@
     if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
   } catch {}
 })();
+
+// Taille du texte (confort de lecture), mémorisée sur cet appareil.
+const TAILLES = [1, 1.12, 1.25];
+function appliquerTaille() {
+  let i = 0;
+  try { i = Number(localStorage.getItem("taille") || 0) || 0; } catch {}
+  document.documentElement.style.fontSize = (TAILLES[i] || 1) * 100 + "%";
+  return i;
+}
+appliquerTaille();
+function changerTaille() {
+  let i = 0;
+  try { i = (Number(localStorage.getItem("taille") || 0) + 1) % TAILLES.length; localStorage.setItem("taille", String(i)); } catch {}
+  appliquerTaille();
+  const b = document.getElementById("btn-taille");
+  if (b) b.title = b.ariaLabel = `Taille du texte : ${["normale", "grande", "très grande"][i]} (cliquer pour changer)`;
+}
+
+// « Nouveau depuis votre dernière visite » : date de la visite précédente, mémorisée sur cet appareil.
+// La date est mise à jour quand on quitte la page (ou au bout de 2 minutes), pour que les pastilles restent visibles pendant la lecture.
+const VISITE_PRECEDENTE = (() => {
+  let v = null;
+  try { v = localStorage.getItem("derniere_visite"); } catch {}
+  const noter = () => { try { localStorage.setItem("derniere_visite", new Date().toISOString()); } catch {} };
+  if (!v) noter();
+  addEventListener("pagehide", noter);
+  setTimeout(noter, 120000);
+  return v;
+})();
+const estNouveau = (s) => !!VISITE_PRECEDENTE && s.derniere_pub > VISITE_PRECEDENTE;
 
 function basculerTheme() {
   const actuel = document.documentElement.dataset.theme
@@ -119,6 +149,7 @@ const PICTOS = {
   crypto: `<circle class="s3" cx="11" cy="11" r="8" stroke-width="1.8"/><path class="s3" d="M9 7v8M9 7h3a2 2 0 010 4H9h3.5a2 2 0 010 4H9" stroke-width="1.6"/>`,
   autre: `<circle class="s3" cx="11" cy="11" r="6" stroke-width="1.8"/>`,
 };
+const PICTO_SVG = (themeId) => `<svg class="ill" viewBox="0 0 22 22" aria-hidden="true" focusable="false">${PICTOS[themeId] || PICTOS.autre}</svg>`;
 function picto(themeId) {
   return `<span class="ligne-pastille th-${themeId}"><svg class="ill" viewBox="0 0 22 22" aria-hidden="true" focusable="false">${PICTOS[themeId] || PICTOS.autre}</svg></span>`;
 }
@@ -130,6 +161,64 @@ function texteCourt(s) {
   return s.resume_court || ((s.articles || []).find((a) => a.extrait && a.extrait.length > 40) || {}).extrait || "";
 }
 
+// Image fournie par l'éditeur (première trouvée parmi les articles du sujet). Elle reste hébergée chez l'éditeur ;
+// si elle ne se charge pas, l'illustration du thème reste visible dessous.
+function imageDe(s) { return (s.articles || []).find((a) => a.image && /^https:\/\//.test(a.image)) || null; }
+function visuel(s, t, hauteur = 140) {
+  const a = imageDe(s);
+  return `<div class="visuel th-${t.id}" style="height:${hauteur}px">${illustration(t.id, hauteur)}
+    ${a ? `<img src="${echapper(a.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('avec-image');this.remove()" onload="this.parentNode.classList.add('avec-image')">
+      <span class="credit">Photo : ${echapper(a.source_nom)}</span>` : ""}</div>`;
+}
+
+// Bouton « Ma sélection » (marque-page).
+let FAVORIS = new Set();
+async function chargerFavoris() {
+  try { FAVORIS = new Set((await appelApi("/api/favoris")).ids); } catch {}
+  document.querySelectorAll("[data-favori]").forEach(majBoutonFavori);
+}
+function boutonFavori(id) {
+  return `<button type="button" class="favori" data-favori="${echapper(id)}" aria-pressed="${FAVORIS.has(id)}"
+    title="${FAVORIS.has(id) ? "Retirer de ma sélection" : "Mettre de côté dans ma sélection"}" aria-label="Ma sélection">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>`;
+}
+function majBoutonFavori(b) {
+  const actif = FAVORIS.has(b.dataset.favori);
+  b.setAttribute("aria-pressed", actif);
+  b.title = actif ? "Retirer de ma sélection" : "Mettre de côté dans ma sélection";
+}
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-favori]");
+  if (!b) return;
+  e.preventDefault();
+  const id = b.dataset.favori, actif = !FAVORIS.has(id);
+  actif ? FAVORIS.add(id) : FAVORIS.delete(id);
+  document.querySelectorAll(`[data-favori="${CSS.escape(id)}"]`).forEach(majBoutonFavori);
+  try {
+    await appelApi("/api/favoris", "POST", { sujet_id: id, actif });
+    notifier(actif ? "Ajouté à votre sélection" : "Retiré de votre sélection");
+  } catch (err) {
+    actif ? FAVORIS.delete(id) : FAVORIS.add(id);
+    document.querySelectorAll(`[data-favori="${CSS.escape(id)}"]`).forEach(majBoutonFavori);
+    notifier(err.message, true);
+  }
+});
+
+// Petit message temporaire en bas de l'écran.
+function notifier(texte, erreur) {
+  let z = document.getElementById("notification");
+  if (!z) {
+    z = document.createElement("div");
+    z.id = "notification"; z.className = "notification"; z.setAttribute("role", "status"); z.setAttribute("aria-live", "polite");
+    document.body.appendChild(z);
+  }
+  z.textContent = texte;
+  z.classList.toggle("ko", !!erreur);
+  z.classList.add("visible");
+  clearTimeout(notifier.minuteur);
+  notifier.minuteur = setTimeout(() => z.classList.remove("visible"), 2600);
+}
+
 // Grande carte illustrée (sujets importants).
 function carte(s) {
   const n = s.importance || 0;
@@ -137,9 +226,10 @@ function carte(s) {
   const sources = sourcesUniques(s);
   const texte = texteCourt(s);
   return `<article class="sujet th-${t.id} ${n >= 5 ? "n5" : ""}">
-    ${illustration(t.id)}
+    <div class="sujet-haut">${visuel(s, t)}${boutonFavori(s.id)}</div>
     <div class="sujet-corps">
       <div class="meta">
+        ${estNouveau(s) ? '<span class="nouveau">Nouveau</span>' : ""}
         <span class="etiquette">${echapper((s.categories && s.categories[0]) || t.nom)}</span>
         ${n ? `<span class="niveau n${n}" title="Importance attribuée par l'IA">Importance ${n}/5</span>` : ""}
       </div>
@@ -158,17 +248,70 @@ function ligne(s) {
   const n = s.importance || 0;
   const t = themeDe(s.categories);
   const sources = sourcesUniques(s);
+  const img = imageDe(s);
   return `<div class="ligne">
-    ${picto(t.id)}
-    <div style="min-width:0">
+    ${img ? `<span class="vignette th-${t.id}">${PICTO_SVG(t.id)}<img src="${echapper(img.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()"></span>` : picto(t.id)}
+    <div style="min-width:0;flex:1">
       <a class="titre-ligne" href="${lienSujet(s.id)}">${echapper(s.titre_fr || s.titre)}</a>
       <div class="meta">
+        ${estNouveau(s) ? '<span class="nouveau">Nouveau</span>' : ""}
         <span>${echapper(t.nom)}</span><span>·</span>
         <span>${sources.slice(0, 2).map((a) => echapper(a.source_nom)).join(", ")}</span><span>·</span>
         <span>${quand(s.derniere_pub)}</span>${n ? `<span>· ${n}/5</span>` : ""}
       </div>
     </div>
+    ${boutonFavori(s.id)}
   </div>`;
+}
+
+// Écran de chargement (cartes grises animées).
+function squelettes(n = 4) {
+  return Array.from({ length: n }, () => `<div class="sujet squelette" aria-hidden="true"><div class="sq-visuel"></div>
+    <div class="sujet-corps"><div class="sq-ligne" style="width:40%"></div><div class="sq-ligne"></div><div class="sq-ligne" style="width:80%"></div></div></div>`).join("");
+}
+
+// Lecture à voix haute (synthèse vocale du navigateur, gratuite et sans envoi de données).
+function lireAVoixHaute(texte, bouton) {
+  if (!("speechSynthesis" in window)) { notifier("La lecture à voix haute n'est pas disponible sur ce navigateur.", true); return; }
+  const synth = speechSynthesis;
+  const libelle = bouton.dataset.libelle || bouton.innerHTML;
+  bouton.dataset.libelle = libelle;
+  if (synth.speaking) { synth.cancel(); bouton.innerHTML = libelle; return; }
+  const voix = synth.getVoices().filter((v) => v.lang && v.lang.toLowerCase().startsWith("fr"));
+  const meilleure = voix.find((v) => /natural|neural|premium|enhanced|google|amélie|thomas|denise|henri/i.test(v.name)) || voix[0];
+  // Découpage en phrases : certains navigateurs coupent les textes longs.
+  const phrases = texte.replace(/\s+/g, " ").match(/[^.!?;]+[.!?;]?/g) || [texte];
+  phrases.forEach((p, i) => {
+    const u = new SpeechSynthesisUtterance(p.trim());
+    u.lang = "fr-FR"; u.rate = 1.02;
+    if (meilleure) u.voice = meilleure;
+    if (i === phrases.length - 1) u.onend = u.onerror = () => { bouton.innerHTML = libelle; };
+    synth.speak(u);
+  });
+  bouton.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg> Arrêter la lecture`;
+}
+const ICONE_ECOUTE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg>`;
+
+// Texte du brief à lire à voix haute.
+function texteBriefOral(b) {
+  const jour = new Date(b.jour + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  const parts = [`Brief du ${jour}.`];
+  if (b.synthese) parts.push(b.synthese);
+  if (b.chiffre_du_jour) parts.push(`Le chiffre du jour : ${b.chiffre_du_jour.valeur}. ${b.chiffre_du_jour.libelle}.`);
+  if ((b.a_retenir || []).length) parts.push("À retenir pour vos rendez-vous.", ...b.a_retenir.map((p) => p.texte));
+  if ((b.actualites || []).length) parts.push("Les principales actualités.", ...b.actualites.slice(0, 6).map((a) => a.titre + "."));
+  if (b.commentaire_marches) parts.push("Côté marchés.", b.commentaire_marches);
+  return parts.join(" ");
+}
+
+// Copier du texte (presse-papiers), avec repli pour les anciens navigateurs.
+async function copier(texte) {
+  try { await navigator.clipboard.writeText(texte); }
+  catch {
+    const t = document.createElement("textarea"); t.value = texte; document.body.appendChild(t); t.select();
+    document.execCommand("copy"); t.remove();
+  }
+  notifier("Copié : vous pouvez le coller dans un e-mail ou un message.");
 }
 
 // ---------------------------------------------------------------- Marchés (relevés du robot)
@@ -223,8 +366,8 @@ const LOGO = `<svg width="30" height="30" viewBox="0 0 28 28" aria-hidden="true"
   <path d="M7 18l5-5 4 3 5-7" fill="none" stroke="var(--accent-texte)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 async function chargerEntete(pageActive) {
   const moi = await appelApi("/api/moi");
-  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/recherche", "Recherche"], ["/marches", "Marchés"]];
-  if (moi.role === "admin") liens.push(["/admin", "Administration"]);
+  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/selection", "Ma sélection"], ["/recherche", "Recherche"], ["/marches", "Marchés"]];
+  if (moi.role === "admin") liens.push(["/admin", "Admin"]);
   const nav = liens
     .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${nom}</a>`)
     .join("");
@@ -238,6 +381,9 @@ async function chargerEntete(pageActive) {
         <input id="recherche-rapide" name="q" type="search" placeholder="PER, IFI, LMNP…" autocomplete="off">
       </form>
       <div class="outils">
+        <button class="icone-bouton" type="button" id="btn-taille" onclick="changerTaille()" title="Taille du texte" aria-label="Changer la taille du texte">
+          <svg width="20" height="18" viewBox="0 0 26 20" aria-hidden="true"><text x="1" y="16" font-size="12" font-weight="700" fill="currentColor" font-family="system-ui">A</text><text x="10" y="16" font-size="17" font-weight="700" fill="currentColor" font-family="system-ui">A</text></svg>
+        </button>
         <button class="icone-bouton" type="button" onclick="basculerTheme()" title="Mode clair / sombre" aria-label="Basculer le mode clair ou sombre">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg>
         </button>
@@ -246,6 +392,13 @@ async function chargerEntete(pageActive) {
         </button>
       </div>
     </div>`;
+  // Raccourci clavier : « / » place le curseur dans la recherche.
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
+      e.preventDefault(); document.getElementById("recherche-rapide").focus();
+    }
+  });
+  chargerFavoris();
   document.getElementById("btn-deconnexion").onclick = async () => {
     await appelApi("/api/deconnexion", "POST", {});
     location.href = "/connexion";

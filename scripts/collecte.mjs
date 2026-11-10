@@ -108,6 +108,7 @@ export async function lireSources(sources) {
         titre: a.titre.slice(0, 500),
         lien: a.lien,
         extrait: a.resume ? a.resume.slice(0, 3000) : null,
+        image: source.images === false ? null : a.image || null,   // "images": false dans sources.json pour ne pas afficher celles d'une source
         publie_le: a.date && new Date(a.date).getTime() <= Date.now() + 3600000 ? a.date : new Date().toISOString(),
       }));
     bilan.push({ source: source.id, url, ok: true, articles: articles.length });
@@ -150,11 +151,16 @@ export async function collecter() {
   const { articles, bilan } = await lireSources(sources);
   console.log(`${articles.length} articles lus dans ${bilan.length} flux.`);
 
-  const connus = new Set();
+  const connus = new Set(), sansImage = new Set();
   for (let i = 0; i < articles.length; i += 400) {
     const r = await appelSite("/api/robot/connus", "POST", { empreintes: articles.slice(i, i + 400).map((a) => a.empreinte) });
     r.connus.forEach((e) => connus.add(e));
+    (r.sans_image || []).forEach((e) => sansImage.add(e));
   }
+  // Articles déjà connus dont le flux fournit maintenant une image : on la rattache.
+  const images = articles.filter((a) => a.image && sansImage.has(a.empreinte)).map((a) => ({ empreinte: a.empreinte, image: a.image }));
+  for (let i = 0; i < images.length; i += 400) await appelSite("/api/robot/images", "POST", { images: images.slice(i, i + 400) });
+  if (images.length) console.log(`${images.length} images rattachées à des articles déjà connus.`);
   const nouveaux = articles.filter((a) => !connus.has(a.empreinte));
   console.log(`${nouveaux.length} nouveaux articles.`);
 

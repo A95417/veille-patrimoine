@@ -1,11 +1,19 @@
 <!doctype html>
-<!-- version 8.0 -->
+<!-- version 9.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Aujourd'hui · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
   <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <meta name="apple-mobile-web-app-title" content="Veille">
   <script src="/commun.js"></script>
   <style>
     .haut { display: flex; flex-wrap: wrap; gap: 22px; margin-bottom: 22px; }
@@ -39,6 +47,11 @@
       .filtres-bas { flex-direction: column; align-items: stretch; gap: 10px; min-width: 0; }
       .filtres { min-width: 0; overflow: hidden; }
     }
+    .hero-nouv { display: inline-block; margin: -4px 0 14px; padding: 4px 12px; border-radius: 999px; background: var(--encre-2);
+      color: #fff; font-size: .88rem; font-weight: 500; }
+    .bandeau-nouveautes { display: block; width: 100%; margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; border: 0; cursor: pointer;
+      background: var(--accent); color: var(--accent-texte); font: inherit; font-weight: 600; }
+    .bandeau-nouveautes:hover { filter: brightness(1.08); }
     .legende .carre { width: 10px; height: 10px; border-radius: 3px; background: var(--i2); flex: 0 0 auto; }
   </style>
 </head>
@@ -58,6 +71,7 @@
         </svg>
         <div class="surtitre" id="hero-date">&nbsp;</div>
         <h1 id="hero-titre">Bonjour !</h1>
+        <div class="hero-nouv" id="hero-nouv" hidden></div>
         <p id="hero-texte">Chargement du brief…</p>
         <div class="actions-hero" id="hero-actions"></div>
       </div>
@@ -91,7 +105,8 @@
     <div class="deux-colonnes">
       <div class="colonne-principale">
         <div class="titre-section"><h2 id="titre-une">À la une</h2><span class="doux petit" id="info-maj"></span></div>
-        <div class="grille-cartes" id="cartes"><p class="doux">Chargement…</p></div>
+        <button type="button" class="bandeau-nouveautes" id="nouveautes" hidden></button>
+        <div class="grille-cartes" id="cartes"></div>
         <div id="bloc-lignes" hidden style="margin-top:26px">
           <div class="titre-section"><h2>Le reste de l'actualité</h2></div>
           <div class="liste" id="lignes"></div>
@@ -137,6 +152,7 @@
     let filtres = { theme: "", importance: "", periode: "", source: "", categorie: "" };
     try { filtres = { ...filtres, ...JSON.parse(localStorage.getItem("filtres2") || "{}") }; } catch {}
     let suite = null;
+    let affiches = new Set();   // sujets déjà à l'écran (pour signaler les nouveaux sans tout recharger)
 
     function puces(conteneur, cle, options) {
       const libelle = conteneur.querySelector(".puce-libelle").outerHTML;
@@ -175,6 +191,15 @@
       if (ajouter && suite) p.set("avant", suite);
       const r = await appelApi("/api/actualites?" + p);
       suite = r.suite;
+      if (!ajouter) { affiches = new Set(r.sujets.map((x) => x.id)); document.getElementById("nouveautes").hidden = true; }
+      if (!ajouter && !charger.compte && !filtres.theme && !filtres.categorie && !filtres.source && VISITE_PRECEDENTE) {
+        charger.compte = true;
+        const n = r.sujets.filter(estNouveau).length;
+        const z = document.getElementById("hero-nouv");
+        z.hidden = !n;
+        z.textContent = `${n}${n >= 40 ? "+" : ""} nouveauté${n > 1 ? "s" : ""} depuis votre dernière visite (${quand(VISITE_PRECEDENTE)})`;
+      }
+      else r.sujets.forEach((x) => affiches.add(x.id));
       const grands = r.sujets.filter((s) => (s.importance || 0) >= 3);
       const petits = r.sujets.filter((s) => (s.importance || 0) < 3);
       const zoneCartes = document.getElementById("cartes"), zoneLignes = document.getElementById("lignes");
@@ -225,8 +250,10 @@
           .join(" ").split(/\s+/).length;
         const minutes = Math.max(2, Math.round(mots / 200));
         const nbPoints = (brief.a_retenir || []).length;
-        actions.innerHTML = `<a class="bouton" href="/brief">Lire le brief · ${minutes} min</a>` +
+        actions.innerHTML = `<a class="bouton" href="/brief">Lire le brief · ${minutes} min</a>
+          <button type="button" class="bouton second" id="btn-ecouter">${ICONE_ECOUTE} Écouter</button>` +
           (nbPoints ? `<a class="bouton second" href="#rdv" onclick="if (innerWidth <= 760) { event.preventDefault(); document.getElementById('rdv-mobile').scrollIntoView({ behavior: 'smooth' }); }">${nbPoints} point${nbPoints > 1 ? "s" : ""} pour mes clients</a>` : "");
+        document.getElementById("btn-ecouter").onclick = (e) => lireAVoixHaute(texteBriefOral(brief), e.currentTarget);
       } else {
         document.getElementById("hero-texte").textContent = "Le premier brief sera rédigé demain matin vers 7 h, puis chaque jour, week-end compris.";
         actions.innerHTML = "";
@@ -316,6 +343,7 @@
       chargerThemes().then((n) => chargerBrief(n)).catch(() => chargerBrief(null));
       chargerMarches();
     }
+    document.getElementById("cartes").innerHTML = squelettes(4);
     chargerEntete("/").then(async () => {
       dessinerFiltres();
       rafraichir();
@@ -323,7 +351,21 @@
       dessinerFiltres();
       charger(false);
     });
-    setInterval(() => { if (!document.hidden && scrollY < 200) { rafraichir(); charger(false); } }, 5 * 60 * 1000);
+    // Toutes les 2 minutes : les nouveaux sujets sont signalés par un bandeau (la liste ne bouge pas pendant la lecture).
+    async function verifierNouveautes() {
+      if (document.hidden) return;
+      try {
+        const p = parametres(); p.set("limite", "40");
+        const r = await appelApi("/api/actualites?" + p);
+        const n = r.sujets.filter((x) => !affiches.has(x.id)).length;
+        const b = document.getElementById("nouveautes");
+        b.hidden = !n;
+        b.textContent = `${n} nouvelle${n > 1 ? "s" : ""} actualité${n > 1 ? "s" : ""} · afficher`;
+      } catch {}
+    }
+    document.getElementById("nouveautes").onclick = () => { charger(false); rafraichir(); };
+    setInterval(verifierNouveautes, 2 * 60 * 1000);
+    setInterval(() => { if (!document.hidden) { chargerAlertes().catch(() => {}); chargerMarches(); } }, 10 * 60 * 1000);
 
     document.getElementById("form-mdp").addEventListener("submit", async (e) => {
       e.preventDefault();

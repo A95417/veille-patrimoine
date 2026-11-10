@@ -32,15 +32,23 @@ export async function routeRobot(request, env, chemin) {
   // 1) Parmi ces empreintes, lesquelles sont déjà en base ?
   if (chemin === "/api/robot/connus" && request.method === "POST") {
     const empreintes = (corps.empreintes || []).filter((e) => typeof e === "string");
-    const connus = [];
+    const connus = [], sansImage = [];
     for (const lot of morceaux(empreintes, PARAMS_MAX)) {
       const { results } = await db
-        .prepare(`SELECT empreinte FROM articles WHERE empreinte IN (${lot.map(() => "?").join(",")})`)
+        .prepare(`SELECT empreinte, image IS NULL AS sans_image FROM articles WHERE empreinte IN (${lot.map(() => "?").join(",")})`)
         .bind(...lot)
         .all();
-      for (const r of results) connus.push(r.empreinte);
+      for (const r of results) { connus.push(r.empreinte); if (r.sans_image) sansImage.push(r.empreinte); }
     }
-    return json({ connus });
+    return json({ connus, sans_image: sansImage });
+  }
+
+  // 1 bis) Images ajoutées après coup à des articles déjà connus (adresse fournie par le flux de l'éditeur).
+  if (chemin === "/api/robot/images" && request.method === "POST") {
+    const images = (corps.images || []).filter((i) => typeof i.empreinte === "string" && /^https:\/\//.test(i.image || "")).slice(0, 500);
+    if (images.length) await db.batch(images.map((i) =>
+      db.prepare("UPDATE articles SET image = ? WHERE empreinte = ? AND image IS NULL").bind(court(i.image, 1000), court(i.empreinte, 64))));
+    return json({ ok: true, images: images.length });
   }
 
   // 2) Sujets récents (48 h) : sert au regroupement des doublons.
@@ -68,10 +76,11 @@ export async function routeRobot(request, env, chemin) {
     for (const a of articles) {
       ordres.push(
         db.prepare(
-          `INSERT OR IGNORE INTO articles (empreinte, sujet_id, source_id, source_nom, groupe, langue, titre, lien, extrait, publie_le, collecte_le)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT OR IGNORE INTO articles (empreinte, sujet_id, source_id, source_nom, groupe, langue, titre, lien, extrait, publie_le, collecte_le, image)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(court(a.empreinte, 64), court(a.sujet_id, 64), court(a.source_id, 64), court(a.source_nom, 120), court(a.groupe, 20),
-          court(a.langue || "fr", 5), court(a.titre, 500), court(a.lien, 1000), court(a.extrait, 3000), a.publie_le || maintenant, maintenant)
+          court(a.langue || "fr", 5), court(a.titre, 500), court(a.lien, 1000), court(a.extrait, 3000), a.publie_le || maintenant, maintenant,
+          /^https:\/\//.test(a.image || "") ? court(a.image, 1000) : null)
       );
       ordres.push(db.prepare("INSERT INTO recherche (sujet_id, contenu) VALUES (?, ?)")
         .bind(court(a.sujet_id, 64), `${court(a.titre, 500)} ${court(a.extrait, 3000) || ""}`));
@@ -97,6 +106,7 @@ export async function routeRobot(request, env, chemin) {
     const r1 = await db.prepare("DELETE FROM articles WHERE publie_le < ?").bind(limite).run();
     const r2 = await db.prepare("DELETE FROM sujets WHERE id NOT IN (SELECT DISTINCT sujet_id FROM articles)").run();
     await db.prepare("DELETE FROM recherche WHERE sujet_id NOT IN (SELECT id FROM sujets)").run();
+    await db.prepare("DELETE FROM favoris WHERE sujet_id NOT IN (SELECT id FROM sujets)").run();
     return json({ ok: true, articles_supprimes: r1.meta.changes, sujets_supprimes: r2.meta.changes });
   }
 

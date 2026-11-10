@@ -7,10 +7,11 @@ import {
   tropDeTentatives, noterTentative, effacerTentatives,
 } from "./auth.js";
 import { routeRobot } from "./robot.js";
-import { routeLecture } from "./lecture.js";
+import { routeLecture, avecArticles, COLONNES } from "./lecture.js";
 
 // Pages et fichiers visibles sans être connecté.
-const PAGES_PUBLIQUES = new Set(["/connexion", "/installation", "/style.css", "/commun.js", "/favicon.ico"]);
+const PAGES_PUBLIQUES = new Set(["/connexion", "/installation", "/style.css", "/commun.js", "/favicon.ico",
+  "/manifest.webmanifest", "/icone-192.png", "/icone-512.png", "/apple-touch-icon.png", "/icone.svg"]);
 
 const json = (donnees, statut = 200, entetes = {}) =>
   new Response(JSON.stringify(donnees), {
@@ -114,6 +115,34 @@ async function api(request, env, url) {
   if (methode === "GET") {
     const r = await routeLecture(chemin, url, db);
     if (r) return r;
+  }
+
+  // « Ma sélection » : sujets mis de côté par l'utilisateur connecté.
+  if (chemin === "/api/favoris" && methode === "GET") {
+    const { results } = await db.prepare("SELECT sujet_id FROM favoris WHERE utilisateur_id = ?").bind(moi.id).all();
+    return json({ ids: results.map((r) => r.sujet_id) });
+  }
+  if (chemin === "/api/favoris" && methode === "POST") {
+    const d = await lireJson(request);
+    const id = String(d.sujet_id || "").slice(0, 64);
+    if (!id) return erreur("Sujet manquant.");
+    if (d.actif) {
+      const existe = await db.prepare("SELECT 1 FROM sujets WHERE id = ?").bind(id).first();
+      if (!existe) return erreur("Ce sujet n'existe plus.", 404);
+      const n = await db.prepare("SELECT COUNT(*) AS n FROM favoris WHERE utilisateur_id = ?").bind(moi.id).first();
+      if (n.n >= 300) return erreur("Votre sélection est pleine (300 sujets) : retirez-en quelques-uns.");
+      await db.prepare("INSERT OR IGNORE INTO favoris (utilisateur_id, sujet_id, cree_le) VALUES (?, ?, ?)").bind(moi.id, id, new Date().toISOString()).run();
+    } else {
+      await db.prepare("DELETE FROM favoris WHERE utilisateur_id = ? AND sujet_id = ?").bind(moi.id, id).run();
+    }
+    return json({ ok: true });
+  }
+  if (chemin === "/api/selection" && methode === "GET") {
+    const { results } = await db
+      .prepare(`SELECT ${COLONNES}, f.cree_le AS mis_de_cote_le FROM favoris f JOIN sujets s ON s.id = f.sujet_id
+                 WHERE f.utilisateur_id = ? ORDER BY f.cree_le DESC LIMIT 300`)
+      .bind(moi.id).all();
+    return json({ sujets: await avecArticles(db, results) });
   }
 
   if (chemin === "/api/moi/mot-de-passe" && methode === "POST") {

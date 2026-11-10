@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- version 9.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ma sélection · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <meta name="apple-mobile-web-app-title" content="Veille">
+  <script src="/commun.js"></script>
+  <style>
+    .outils-selection { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+    .vide-selection { text-align: center; padding: 40px 20px; }
+    .vide-selection svg { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <div class="titre-section"><h1 style="margin:0">Ma sélection</h1><span class="doux petit" id="compte"></span></div>
+    <p class="doux" style="margin:0 0 14px">Les sujets que vous avez mis de côté avec le marque-page, pour préparer un rendez-vous ou les relire plus tard.
+      Votre sélection vous est personnelle ; elle suit la durée de conservation des articles (3 mois).</p>
+    <div class="outils-selection no-print" id="outils" hidden>
+      <button type="button" class="bouton" id="btn-revue">Copier ma revue de presse</button>
+      <button type="button" class="bouton bouton-discret" onclick="print()">Imprimer ou enregistrer en PDF</button>
+    </div>
+    <div class="grille-cartes" id="liste"></div>
+  </main>
+  <script>
+    async function charger() {
+      document.getElementById("liste").innerHTML = squelettes(3);
+      const { sujets } = await appelApi("/api/selection");
+      document.getElementById("compte").textContent = sujets.length ? `${sujets.length} sujet${sujets.length > 1 ? "s" : ""}` : "";
+      document.getElementById("outils").hidden = !sujets.length;
+      document.getElementById("liste").innerHTML = sujets.length ? sujets.map(carte).join("") :
+        `<div class="carte vide-selection" style="grid-column:1/-1">
+          <svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          <p><strong>Votre sélection est vide.</strong></p>
+          <p class="doux">Cliquez sur le marque-page d'une actualité pour la mettre de côté ici.</p>
+          <p><a href="/">← Retour à l'actualité du jour</a></p></div>`;
+      // Revue de presse : titres, résumés et liens vers les sources (à coller dans un e-mail).
+      document.getElementById("btn-revue").onclick = () => copier(
+        `Revue de presse — ${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}\n\n` +
+        sujets.map((s, i) => {
+          const a = sourcesUniques(s)[0];
+          return `${i + 1}. ${s.titre_fr || s.titre}\n${texteCourt(s)}${a ? `\nSource : ${a.source_nom} — ${a.lien}` : ""}`;
+        }).join("\n\n"));
+    }
+    // Retirer un sujet : la carte disparaît de la page.
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-favori]");
+      if (b) setTimeout(() => { if (!FAVORIS.has(b.dataset.favori)) b.closest(".sujet")?.remove(); }, 400);
+    });
+    chargerEntete("/selection").then(charger).catch((e) => {
+      document.getElementById("liste").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`;
+    });
+  </script>
+</body>
+</html>

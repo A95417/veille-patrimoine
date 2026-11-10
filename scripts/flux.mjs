@@ -71,6 +71,40 @@ function lienAtom(bloc) {
   return alt ? decoderEntites(attr(alt, "href") || "") : "";
 }
 
+// Image d'illustration fournie par l'éditeur dans son flux (media:content, media:thumbnail, enclosure,
+// ou à défaut la première image du résumé). Seules les adresses https sont gardées ; les pixels de suivi sont écartés.
+export function imageDeLArticle(bloc) {
+  const attr = (a, n) => { const m = a.match(new RegExp(`\\b${n}\\s*=\\s*["']([^"']+)["']`, "i")); return m ? decoderEntites(m[1]).trim() : ""; };
+  const candidats = [];
+  for (const m of bloc.matchAll(/<media:content\b([^>]*)>/gi)) {
+    const a = m[1], type = attr(a, "type"), medium = attr(a, "medium"), url = attr(a, "url");
+    if (url && (medium === "image" || /^image\//i.test(type) || (!type && !medium && /\.(jpe?g|png|webp)(\?|$)/i.test(url))))
+      candidats.push({ url, largeur: Number(attr(a, "width")) || 0 });
+  }
+  for (const m of bloc.matchAll(/<media:thumbnail\b([^>]*)>/gi)) {
+    const url = attr(m[1], "url");
+    if (url) candidats.push({ url, largeur: Number(attr(m[1], "width")) || 1 });
+  }
+  for (const m of bloc.matchAll(/<enclosure\b([^>]*)>/gi)) {
+    const url = attr(m[1], "url");
+    if (url && (/^image\//i.test(attr(m[1], "type")) || /\.(jpe?g|png|webp)(\?|$)/i.test(url))) candidats.push({ url, largeur: 0 });
+  }
+  if (!candidats.length) {
+    const html = decoderEntites(balise(bloc, "description", "content:encoded", "content", "summary")).replace(/<!\[CDATA\[|\]\]>/g, "");
+    const img = html.match(/<img\b[^>]*>/i);
+    if (img) {
+      const url = attr(img[0], "src"), l = Number(attr(img[0], "width")) || 0;
+      if (url && (l === 0 || l >= 100)) candidats.push({ url, largeur: l });
+    }
+  }
+  const valides = candidats.filter((c) => /^https:\/\//i.test(c.url) && c.url.length < 1000 && !/(feedburner|pixel|tracking|1x1|spacer|blank\.gif)/i.test(c.url)
+    && !(c.largeur > 0 && c.largeur < 100));
+  if (!valides.length) return null;
+  // La plus grande, mais pas une image démesurée (au-delà de 1600 px on garde la plus proche de 800 px).
+  valides.sort((a, b) => Math.abs((a.largeur || 800) - 800) - Math.abs((b.largeur || 800) - 800));
+  return valides[0].url;
+}
+
 export function dateIso(t) {
   const s = texteBrut(t);
   if (!s) return null;
@@ -95,6 +129,7 @@ export function analyserFlux(xml) {
       date: dateIso(balise(b, "pubDate", "published", "updated", "dc:date")),
       resume: texteBrut(balise(b, "description", "summary", "content:encoded", "content")),
       guid: texteBrut(balise(b, "guid", "id")) || lien.trim(),
+      image: imageDeLArticle(b),
     };
   });
   return { titre: texteBrut(balise(entete, "title")), format: atom ? "Atom" : "RSS", articles };
