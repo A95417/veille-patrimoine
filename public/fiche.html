@@ -18,6 +18,7 @@
   <script src="/jeux.js"></script>
   <script src="/fiches.js"></script>
   <script src="/fiches-suite.js"></script>
+  <script src="/fiches-client.js"></script>
   <style>
     .contenu { max-width: 920px; }
     .banniere { border-radius: var(--rayon); overflow: hidden; margin-bottom: 16px; border: 1px solid var(--bord); background: var(--i0); }
@@ -48,6 +49,18 @@
     .liste-icones li { display: flex; gap: 10px; line-height: 1.5; }
     .liste-icones .ic { flex: 0 0 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .8rem; }
     .ic.oui { background: var(--ok-doux); color: var(--ok); } .ic.non { background: var(--ko-doux); color: var(--ko); } .ic.att { background: var(--accent-doux); color: var(--accent-fonce); }
+    .deroule { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+    .deroule li { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 14px; background: var(--fond); line-height: 1.55; }
+    .etape-num { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-texte); display: grid; place-items: center; font-weight: 700; font-size: .9rem; }
+    .faq { display: grid; gap: 10px; }
+    .faq details { border: 1px solid var(--bord); border-radius: 14px; padding: 0 16px; background: var(--carte); }
+    .faq summary { cursor: pointer; list-style: none; display: flex; gap: 12px; align-items: center; padding: 14px 0; font-weight: 600; }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary::after { content: "Voir la réponse"; margin-left: auto; font-size: .78rem; font-weight: 500; color: var(--accent); white-space: nowrap; }
+    .faq details[open] summary::after { content: "Masquer"; }
+    .faq p { margin: 0 0 16px 40px; line-height: 1.6; }
+    .q-ic { flex: 0 0 28px; height: 28px; border-radius: 50%; background: var(--accent-doux); color: var(--accent-fonce); display: grid; place-items: center; font-weight: 700; }
+    #client { scroll-margin-top: 90px; }
     .cas { background: var(--i0); border-radius: 16px; padding: 18px; }
     .cas p { margin: 0 0 10px; line-height: 1.6; }
     .onglets-jeux { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -141,6 +154,7 @@
     function afficher(scores) {
       document.title = f.titre + " · Apprendre · Veille Patrimoine";
       const sc = scores["fiche:" + f.id];
+      const client = (typeof FICHES_CLIENT !== "undefined" && FICHES_CLIENT[f.id]) || null;
       let h = `
         <p class="no-print" style="margin:0 0 12px"><a href="/apprendre">← Toutes les fiches</a></p>
         <div class="banniere th-${f.theme}">${illustrationFiche(f, 150)}</div>
@@ -150,6 +164,7 @@
         <p class="doux" style="margin:0 0 14px;font-size:1.05rem">${echapper(f.sousTitre)}</p>
         <div class="barre-actions no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
           <a class="bouton" href="#jeux">Me tester</a>
+          <a class="bouton bouton-discret" href="#client">Présenter au client</a>
           <button type="button" class="bouton bouton-discret" id="btn-ecouter">${ICONE_ECOUTE} Écouter la fiche</button>
           <button type="button" class="bouton bouton-discret" onclick="print()">Imprimer</button>
         </div>
@@ -181,6 +196,13 @@
           <p id="cas-reponse" hidden style="margin-top:12px">${echapper(f.cas.reponse)}</p></div></section>
         <section class="carte bloc"><h2>Comment l'expliquer à un client</h2><p class="parler" style="background:var(--accent-doux);border-radius:12px;padding:12px 16px;font-style:italic;margin:0 0 10px">${echapper(f.phraseClient)}</p>
           <button type="button" class="bouton bouton-discret no-print" id="btn-phrase">Copier la phrase</button></section>
+        ${client ? `<section class="carte bloc" id="client"><h2>Présenter le sujet au client</h2>
+          <ol class="deroule">${client.presenter.map((e, i) => `<li><span class="etape-num">${i + 1}</span><span>${echapper(e)}</span></li>`).join("")}</ol>
+          <h3 style="font-size:1.05rem;margin:26px 0 12px">Les questions que vos clients peuvent poser</h3>
+          <div class="faq">${client.faq.map((x) => `<details><summary><span class="q-ic" aria-hidden="true">?</span>${echapper(x.q)}</summary>
+            <p><strong>Réponse possible :</strong> ${echapper(x.r)}</p></details>`).join("")}</div>
+          <p class="doux petit" style="margin:14px 0 0">Réponses générales, issues des règles de cette fiche. Un conseil personnalisé suppose de connaître la situation complète du client et de respecter vos obligations d'information et de conseil.</p>
+        </section>` : ""}
         <section class="carte bloc no-print"><h2>Dans l'actualité</h2><p class="doux petit" style="margin-top:-4px">Les derniers sujets du site qui en parlent, mis à jour automatiquement.</p><div class="liste" id="actus" style="border:0;padding:0"><p class="doux">Recherche…</p></div></section>
         <section class="carte bloc no-print" id="jeux"><h2>Je me teste</h2>
           <div class="onglets-jeux" role="tablist">
@@ -188,6 +210,7 @@
             <button type="button" class="puce" data-jeu="vf" aria-pressed="false">Vrai ou faux express</button>
             <button type="button" class="puce" data-jeu="cartes" aria-pressed="false">Cartes mémo</button>
             <button type="button" class="puce" data-jeu="paires" aria-pressed="false">Paires à associer</button>
+            ${client ? '<button type="button" class="puce" data-jeu="client" aria-pressed="false">Questions clients</button>' : ""}
           </div><div id="zone-jeu"></div></section>
         <section class="carte bloc"><h2>Pour aller plus loin</h2><ul class="liens">
           ${f.liens.map((l) => `<li><a href="${echapper(l.url)}" target="_blank" rel="noopener noreferrer"><span class="type ${l.type}">${l.type === "video" ? "Vidéos" : l.type === "officiel" ? "Officiel" : "Guide"}</span><span>${echapper(l.titre)} ↗</span></a></li>`).join("")}
@@ -208,6 +231,7 @@
         vf: (z) => vraiOuFaux(z, f.vraiFaux, { cle: "vf:" + f.id }),
         cartes: (z) => cartesMemo(z, f.cartes, { cle: "memo:" + f.id }),
         paires: (z) => pairesAAssocier(z, f.paires, { cle: "paires:" + f.id }),
+        client: (z) => cartesMemo(z, client.faq.map((x) => ({ recto: "Votre client demande : « " + x.q + " »", verso: x.r })), { cle: "client:" + f.id }),
       };
       document.querySelectorAll(".onglets-jeux .puce").forEach((b) => b.onclick = () => {
         document.querySelectorAll(".onglets-jeux .puce").forEach((x) => x.setAttribute("aria-pressed", x === b));
