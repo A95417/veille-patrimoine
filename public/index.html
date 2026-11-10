@@ -1,155 +1,329 @@
 <!doctype html>
-<!-- version 7.0 -->
+<!-- version 8.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Accueil · Veille Patrimoine</title>
+  <title>Aujourd'hui · Veille Patrimoine</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/commun.js"></script>
   <style>
-    .barre { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    /* À la une */
-    .une { border: 1px solid var(--ko); border-left: 5px solid var(--ko); border-radius: var(--rayon); background: var(--carte);
-           padding: 14px 18px; margin-bottom: 18px; }
-    .une h2 { color: var(--ko); font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px; }
-    .une ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-    .une a { color: var(--texte); font-weight: 600; text-decoration: none; }
-    .une a:hover { text-decoration: underline; }
-    /* Filtres */
-    .filtres { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 8px; margin-bottom: 16px; align-items: end; }
-    .filtres label { margin: 0 0 4px; font-size: .8rem; color: var(--doux); font-weight: 600; }
-    select { width: 100%; padding: 8px 10px; font: inherit; font-size: .9rem; color: var(--texte); background: var(--carte);
-             border: 1px solid var(--bord); border-radius: 8px; }
-    @media (max-width: 720px) { .filtres { grid-template-columns: 1fr 1fr; } }
-    .vide { text-align: center; padding: 40px 16px; }
+    .haut { display: flex; flex-wrap: wrap; gap: 22px; margin-bottom: 22px; }
+    .haut .hero { flex: 999 1 560px; min-width: 0; }
+    .haut .chiffre { flex: 1 1 300px; min-width: 0; margin: 0; justify-content: space-between; }
+    .chiffre-libelle { font-size: 1rem; line-height: 1.45; margin: 0; }
+    .stat-grille { display: flex; gap: 22px; flex-wrap: wrap; }
+    .filtres { margin-bottom: 22px; display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; }
+    .filtres-bas { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+    .plus-filtres summary { cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--accent); }
+    .plus-filtres-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; align-items: end; }
+    .plus-filtres-grille label { margin: 0 0 4px; font-size: .8rem; color: var(--doux); }
+    .vide { text-align: center; padding: 32px 16px; border: 1px dashed var(--bord-fort); border-radius: var(--rayon); color: var(--doux); }
+    .rdv { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+    .rdv li { display: flex; gap: 10px; font-size: .95rem; line-height: 1.45; }
+    .rdv-num { flex: 0 0 26px; height: 26px; border-radius: 8px; background: var(--accent-doux); color: var(--accent-fonce);
+               font-weight: 600; display: grid; place-items: center; font-size: .8rem; }
+    .rdv a { font-size: .82rem; white-space: nowrap; }
+    .anneau { display: flex; align-items: center; gap: 16px; }
+    .legende { display: flex; flex-direction: column; gap: 4px; font-size: .88rem; min-width: 0; }
+    .anneau { flex-wrap: wrap; }
+    .legende button { white-space: nowrap; }
+    .legende button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 6px; }
+    .legende button:hover, .legende button:focus-visible { background: var(--fond); }
+    #rdv-mobile { display: none; margin-bottom: 22px; }
+    @media (max-width: 760px) {
+      #rdv-mobile:not([hidden]) { display: block; }
+      #rdv { display: none; }
+      .filtres .puces { min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -18px; padding: 0 18px; }
+      .filtres .puces::-webkit-scrollbar { display: none; }
+      .filtres-bas { flex-direction: column; align-items: stretch; gap: 10px; min-width: 0; }
+      .filtres { min-width: 0; overflow: hidden; }
+    }
+    .legende .carre { width: 10px; height: 10px; border-radius: 3px; background: var(--i2); flex: 0 0 auto; }
   </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
-  <div class="bandeau-marches" id="bandeau-marches"></div>
   <main class="page">
-    <section class="une" id="une" hidden>
-      <h2>À la une</h2>
-      <ul id="une-liste"></ul>
+    <section class="alerte-bandeau" id="alerte" hidden>
+      <strong>Important</strong>
+      <ul id="alerte-liste"></ul>
     </section>
 
-    <p id="lien-brief" hidden style="margin:0 0 14px"></p>
-    <div class="barre">
-      <h1>Actualités</h1>
-      <span class="doux" id="info-maj"></span>
+    <section class="haut">
+      <div class="hero" id="hero">
+        <svg class="hero-deco" viewBox="0 0 400 260" aria-hidden="true">
+          <circle cx="300" cy="90" r="120" fill="#3a49d6"/><circle cx="210" cy="190" r="70" fill="#5e6cf0"/>
+          <path d="M40 220 L120 170 L180 190 L260 110 L340 130 L400 60" fill="none" stroke="#9aa4ff" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+        <div class="surtitre" id="hero-date">&nbsp;</div>
+        <h1 id="hero-titre">Bonjour !</h1>
+        <p id="hero-texte">Chargement du brief…</p>
+        <div class="actions-hero" id="hero-actions"></div>
+      </div>
+      <div class="carte chiffre" id="chiffre">
+        <div class="surtitre" style="margin:0">Le chiffre du jour</div>
+        <div class="chiffre-valeur">&nbsp;</div>
+      </div>
+    </section>
+
+    <section class="carte" id="rdv-mobile" hidden>
+      <h2>Pour vos rendez-vous</h2>
+      <ol class="rdv" id="rdv-liste-mobile"></ol>
+    </section>
+
+    <section class="carte filtres" id="filtres" aria-label="Filtres">
+      <div class="puces" id="f-themes"><span class="puce-libelle">Thèmes</span></div>
+      <div class="filtres-bas">
+        <div class="puces" id="f-importance"><span class="puce-libelle">Importance</span></div>
+        <div class="puces" id="f-periode"><span class="puce-libelle">Période</span></div>
+      </div>
+      <details class="plus-filtres" id="plus-filtres">
+        <summary>Plus de filtres (source, catégorie précise)</summary>
+        <div class="plus-filtres-grille">
+          <div><label for="f-source">Source</label><select id="f-source"><option value="">Toutes les sources</option></select></div>
+          <div><label for="f-categorie">Catégorie précise</label><select id="f-categorie"><option value="">Toutes</option></select></div>
+          <button class="bouton bouton-discret" type="button" id="f-effacer">Effacer les filtres</button>
+        </div>
+      </details>
+    </section>
+
+    <div class="deux-colonnes">
+      <div class="colonne-principale">
+        <div class="titre-section"><h2 id="titre-une">À la une</h2><span class="doux petit" id="info-maj"></span></div>
+        <div class="grille-cartes" id="cartes"><p class="doux">Chargement…</p></div>
+        <div id="bloc-lignes" hidden style="margin-top:26px">
+          <div class="titre-section"><h2>Le reste de l'actualité</h2></div>
+          <div class="liste" id="lignes"></div>
+        </div>
+        <div style="text-align:center;margin:20px 0">
+          <button class="bouton bouton-discret" id="btn-suite" hidden>Afficher plus d'actualités</button>
+        </div>
+      </div>
+
+      <aside class="colonne-cote">
+        <section class="carte" id="rdv" hidden>
+          <h2>Pour vos rendez-vous</h2>
+          <ol class="rdv" id="rdv-liste"></ol>
+        </section>
+        <section class="carte" id="themes" hidden>
+          <h2>Les thèmes du jour</h2>
+          <div class="anneau"><div id="anneau"></div><div class="legende" id="legende"></div></div>
+          <p class="doux petit" style="margin:10px 0 0">Sujets des dernières 24 heures. Un clic sur un thème filtre la liste.</p>
+        </section>
+        <section class="carte" id="marches" hidden>
+          <div class="titre-section" style="margin-bottom:6px"><h2 style="margin:0">Marchés en bref</h2><a href="/marches" class="petit">Détails →</a></div>
+          <div id="marches-liste"></div>
+          <p class="doux petit" style="margin:8px 0 0" id="marches-info"></p>
+        </section>
+        <details class="carte">
+          <summary style="cursor:pointer;font-weight:600">Mon compte : changer mon mot de passe</summary>
+          <form id="form-mdp">
+            <label for="actuel">Mot de passe actuel</label>
+            <input id="actuel" type="password" autocomplete="current-password" required>
+            <label for="nouveau">Nouveau mot de passe (10 caractères minimum)</label>
+            <input id="nouveau" type="password" autocomplete="new-password" minlength="10" required>
+            <button class="bouton bouton-large" type="submit">Enregistrer</button>
+            <div class="message" id="msg-mdp" role="alert"></div>
+          </form>
+        </details>
+      </aside>
     </div>
-
-    <form class="filtres" id="filtres">
-      <div><label for="f-categorie">Catégorie</label><select id="f-categorie"><option value="">Toutes</option></select></div>
-      <div><label for="f-source">Source</label><select id="f-source"><option value="">Toutes</option></select></div>
-      <div><label for="f-importance">Importance</label>
-        <select id="f-importance">
-          <option value="">Toutes</option><option value="5">5 seulement</option><option value="4">4 et plus</option><option value="3">3 et plus</option>
-        </select></div>
-      <div><label for="f-periode">Période</label>
-        <select id="f-periode">
-          <option value="">Tout (3 mois)</option><option value="24h">24 heures</option><option value="7j">7 jours</option><option value="30j">30 jours</option>
-        </select></div>
-      <button class="bouton bouton-discret" type="button" id="f-effacer">Effacer</button>
-    </form>
-
-    <div class="fil" id="fil"><p class="doux">Chargement…</p></div>
-    <div style="text-align:center;margin:20px 0">
-      <button class="bouton bouton-discret" id="btn-suite" hidden>Afficher plus d'actualités</button>
-    </div>
-
-    <details class="carte carte-etroite" style="margin-top:30px">
-      <summary style="cursor:pointer;font-weight:600">Mon compte : changer mon mot de passe</summary>
-      <form id="form-mdp">
-        <label for="actuel">Mot de passe actuel</label>
-        <input id="actuel" type="password" autocomplete="current-password" required>
-        <label for="nouveau">Nouveau mot de passe (10 caractères minimum)</label>
-        <input id="nouveau" type="password" autocomplete="new-password" minlength="10" required>
-        <button class="bouton bouton-large" type="submit">Enregistrer</button>
-        <div class="message" id="msg-mdp" role="alert"></div>
-      </form>
-    </details>
   </main>
   <script>
-    const CHAMPS = ["categorie", "source", "importance", "periode"];
+    // ------------------------------------------------------------ Filtres (mémorisés sur cet appareil)
+    const IMPORTANCES = [["", "Toutes"], ["3", "3 et plus"], ["4", "4 et plus"]];
+    const PERIODES = [["24h", "24 h"], ["7j", "7 jours"], ["30j", "30 jours"], ["", "3 mois"]];
+    let filtres = { theme: "", importance: "", periode: "", source: "", categorie: "" };
+    try { filtres = { ...filtres, ...JSON.parse(localStorage.getItem("filtres2") || "{}") }; } catch {}
     let suite = null;
 
-    function filtresActuels() {
+    function puces(conteneur, cle, options) {
+      const libelle = conteneur.querySelector(".puce-libelle").outerHTML;
+      conteneur.innerHTML = libelle + options.map(([v, nom]) =>
+        `<button type="button" class="puce" data-v="${echapper(v)}" aria-pressed="${filtres[cle] === v}">${echapper(nom)}</button>`).join("");
+      conteneur.querySelectorAll(".puce").forEach((b) => b.onclick = () => changer({ [cle]: b.dataset.v, ...(cle === "theme" ? { categorie: "" } : {}) }));
+    }
+    function dessinerFiltres() {
+      puces(document.getElementById("f-themes"), "theme", [["", "Tous"], ...THEMES.map((t) => [t.id, t.nom])]);
+      puces(document.getElementById("f-importance"), "importance", IMPORTANCES);
+      puces(document.getElementById("f-periode"), "periode", PERIODES);
+      document.getElementById("f-source").value = filtres.source;
+      document.getElementById("f-categorie").value = filtres.categorie;
+      if (filtres.source || filtres.categorie) document.getElementById("plus-filtres").open = true;
+      const t = THEMES.find((x) => x.id === filtres.theme);
+      document.getElementById("titre-une").textContent = filtres.categorie || (t ? t.nom : "À la une");
+    }
+    function changer(modif) {
+      filtres = { ...filtres, ...modif };
+      try { localStorage.setItem("filtres2", JSON.stringify(filtres)); } catch {}
+      dessinerFiltres();
+      charger(false);
+    }
+    function parametres() {
       const p = new URLSearchParams();
-      for (const c of CHAMPS) { const v = document.getElementById("f-" + c).value; if (v) p.set(c, v); }
+      if (filtres.categorie) p.append("categorie", filtres.categorie);
+      else if (filtres.theme) (THEMES.find((t) => t.id === filtres.theme) || { cats: [] }).cats.forEach((c) => p.append("categorie", c));
+      for (const c of ["importance", "periode", "source"]) if (filtres[c]) p.set(c, filtres[c]);
       return p;
     }
 
+    // ------------------------------------------------------------ Actualités : grandes cartes (importance 3+) et liste compacte
     async function charger(ajouter) {
-      const p = filtresActuels();
-      p.set("limite", "30");
+      const p = parametres();
+      p.set("limite", "40");
       if (ajouter && suite) p.set("avant", suite);
       const r = await appelApi("/api/actualites?" + p);
       suite = r.suite;
-      const fil = document.getElementById("fil");
-      const html = r.sujets.map(carte).join("");
-      if (ajouter) fil.insertAdjacentHTML("beforeend", html);
-      else fil.innerHTML = html || `<div class="carte vide"><strong>Aucune actualité pour ces filtres.</strong></div>`;
+      const grands = r.sujets.filter((s) => (s.importance || 0) >= 3);
+      const petits = r.sujets.filter((s) => (s.importance || 0) < 3);
+      const zoneCartes = document.getElementById("cartes"), zoneLignes = document.getElementById("lignes");
+      if (ajouter) {
+        zoneCartes.insertAdjacentHTML("beforeend", grands.map(carte).join(""));
+        zoneLignes.insertAdjacentHTML("beforeend", petits.map(ligne).join(""));
+      } else {
+        zoneCartes.innerHTML = grands.map(carte).join("") ||
+          (petits.length ? "" : `<div class="vide" style="grid-column:1/-1"><strong>Aucune actualité pour ces filtres.</strong><br>Essayez une période plus longue ou un autre thème.</div>`);
+        zoneLignes.innerHTML = petits.map(ligne).join("");
+      }
+      document.getElementById("bloc-lignes").hidden = !zoneLignes.children.length;
       document.getElementById("btn-suite").hidden = !suite;
-      document.getElementById("info-maj").textContent = "Affiché à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      document.getElementById("info-maj").textContent = "Mis à jour à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     }
 
-    async function chargerUne() {
+    // ------------------------------------------------------------ Alertes (sujets d'importance 5, chute de marché)
+    async function chargerAlertes() {
       const { sujets, alertes_marches: alertes = [] } = await appelApi("/api/une");
-      document.getElementById("une").hidden = !sujets.length && !alertes.length;
-      document.getElementById("une-liste").innerHTML = alertes.map((a) =>
-        `<li><a class="alerte-marche" href="/marches">▼ ${echapper(a.nom)} : ${String(a.variation).replace(".", ",")} % aujourd'hui</a>
-          <span class="doux" style="font-size:.85rem"> · estimation via ${echapper(a.via)} · relevé ${quand(a.maj_le)}</span></li>`).join("") + sujets.map((s) =>
-        `<li><a href="/sujet?id=${encodeURIComponent(s.id)}">${echapper(s.titre_fr || s.titre)}</a>
-          <span class="doux" style="font-size:.85rem"> · ${[...new Set(s.articles.map((a) => a.source_nom))].map(echapper).join(", ")} · ${quand(s.derniere_pub)}</span></li>`).join("");
+      document.getElementById("alerte").hidden = !sujets.length && !alertes.length;
+      document.getElementById("alerte-liste").innerHTML = alertes.map((a) =>
+        `<li><a class="alerte-marche" href="/marches">▼ ${echapper(nomCourt(a))} : ${String(a.variation).replace(".", ",")} % aujourd'hui</a>
+          <span class="doux petit"> · estimation via ${echapper(a.via)} · relevé ${quand(a.maj_le)}</span></li>`).join("") + sujets.map((s) =>
+        `<li><a href="${lienSujet(s.id)}">${echapper(s.titre_fr || s.titre)}</a>
+          <span class="doux petit"> · ${[...new Set(s.articles.map((a) => a.source_nom))].map(echapper).join(", ")} · ${quand(s.derniere_pub)}</span></li>`).join("");
     }
 
-    async function chargerFiltres() {
+    // ------------------------------------------------------------ Brief du matin, chiffre du jour, points pour les rendez-vous
+    const aujourdhui = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
+    const dateLongue = (jour) => new Date(jour + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    const majuscule = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+    async function chargerBrief(nbSujets24h) {
+      let brief = null;
+      try { brief = (await appelApi("/api/brief")).brief; } catch {}
+      const h = Number(new Date().toLocaleTimeString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }));
+      const salut = h >= 18 ? "Bonsoir !" : "Bonjour !";
+      const estDuJour = brief && brief.jour === aujourdhui();
+      document.getElementById("hero-date").textContent = brief
+        ? `${majuscule(dateLongue(brief.jour))} · ${estDuJour ? "brief de 7 h" : "dernier brief disponible"}`
+        : majuscule(dateLongue(aujourdhui()));
+      document.getElementById("hero-titre").textContent = estDuJour ? `${salut} Voici ce qui compte ce matin.` : `${salut} Voici l'essentiel de l'actualité.`;
+      const actions = document.getElementById("hero-actions");
+      if (brief) {
+        const texte = brief.synthese || "Le brief de ce jour a été produit sans synthèse : retrouvez ses actualités majeures et les clôtures de marché.";
+        document.getElementById("hero-texte").textContent = texte;
+        const mots = [brief.synthese, ...(brief.actualites || []).map((a) => a.titre + " " + a.resume), ...(brief.a_retenir || []).map((p) => p.texte)]
+          .join(" ").split(/\s+/).length;
+        const minutes = Math.max(2, Math.round(mots / 200));
+        const nbPoints = (brief.a_retenir || []).length;
+        actions.innerHTML = `<a class="bouton" href="/brief">Lire le brief · ${minutes} min</a>` +
+          (nbPoints ? `<a class="bouton second" href="#rdv" onclick="if (innerWidth <= 760) { event.preventDefault(); document.getElementById('rdv-mobile').scrollIntoView({ behavior: 'smooth' }); }">${nbPoints} point${nbPoints > 1 ? "s" : ""} pour mes clients</a>` : "");
+      } else {
+        document.getElementById("hero-texte").textContent = "Le premier brief sera rédigé demain matin vers 7 h, puis chaque jour, week-end compris.";
+        actions.innerHTML = "";
+      }
+
+      // Points pour les rendez-vous (du brief du jour uniquement).
+      const points = estDuJour ? brief.a_retenir || [] : [];
+      const htmlPoints = points.map((p, i) =>
+        `<li><span class="rdv-num">${i + 1}</span><span>${echapper(p.texte)} <a href="${lienSujet(p.sujet_id)}">Voir →</a></span></li>`).join("");
+      for (const [bloc, liste] of [["rdv", "rdv-liste"], ["rdv-mobile", "rdv-liste-mobile"]]) {
+        document.getElementById(bloc).hidden = !points.length;
+        document.getElementById(liste).innerHTML = htmlPoints;
+      }
+
+      // Chiffre du jour : extrait par l'IA d'un résumé, vérifié mot pour mot. Sinon, l'activité des 24 dernières heures.
+      const c = estDuJour && brief.chiffre_du_jour;
+      const zone = document.getElementById("chiffre");
+      zone.innerHTML = c
+        ? `<div class="surtitre" style="margin:0">Le chiffre du jour</div>
+           <div class="chiffre-valeur">${echapper(c.valeur)}</div>
+           <p class="chiffre-libelle">${echapper(c.libelle)}</p>
+           <p class="doux petit" style="margin:0">${c.source ? "Source : " + echapper(c.source) + " · " : ""}chiffre repéré par l'IA · <a href="${lienSujet(c.sujet_id)}">voir le sujet</a></p>`
+        : `<div class="surtitre" style="margin:0">Ces dernières 24 heures</div>
+           <div class="chiffre-valeur">${nbSujets24h ?? "–"}</div>
+           <p class="chiffre-libelle">sujets suivis par le robot, toutes sources confondues.</p>
+           <p class="doux petit" style="margin:0">Le chiffre clé du jour s'affiche ici avec le brief de 7 h.</p>`;
+    }
+
+    // ------------------------------------------------------------ Les thèmes du jour (anneau)
+    async function chargerThemes() {
+      const { sujets } = await appelApi("/api/themes");
+      const compte = {};
+      for (const cats of sujets) { const t = themeDe(cats); compte[t.id] = (compte[t.id] || 0) + 1; }
+      const lignes = [...THEMES, THEME_AUTRE].filter((t) => compte[t.id]).map((t) => ({ ...t, n: compte[t.id] })).sort((a, b) => b.n - a.n);
+      const total = lignes.reduce((s, l) => s + l.n, 0);
+      document.getElementById("themes").hidden = !total;
+      if (!total) return sujets.length;
+      let cumul = 0;
+      const arcs = lignes.map((l) => {
+        const part = l.n / total * 100;
+        const arc = `<circle class="th-${l.id}" cx="21" cy="21" r="15.9" fill="none" style="stroke:var(--i2)" stroke-width="6"
+          stroke-dasharray="${Math.max(part - 0.8, 0.5).toFixed(2)} ${(100 - Math.max(part - 0.8, 0.5)).toFixed(2)}" stroke-dashoffset="${(25 - cumul).toFixed(2)}"/>`;
+        cumul += part;
+        return arc;
+      }).join("");
+      document.getElementById("anneau").innerHTML = `<svg viewBox="0 0 42 42" width="112" height="112" role="img" aria-label="Répartition des ${total} sujets des dernières 24 heures par thème">
+        ${arcs}<text x="21" y="23.6" text-anchor="middle" font-size="8" font-weight="600" fill="currentColor" style="font-family:var(--titre)">${total}</text></svg>`;
+      document.getElementById("legende").innerHTML = lignes.map((l) =>
+        `<button type="button" class="th-${l.id}" data-theme="${l.id === "autre" ? "" : l.id}"><span class="carre"></span>${echapper(l.nom)} · ${l.n}</button>`).join("");
+      document.querySelectorAll("#legende button").forEach((b) => b.onclick = () => {
+        changer({ theme: b.dataset.theme, categorie: "" });
+        document.getElementById("filtres").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return sujets.length;
+    }
+
+    // ------------------------------------------------------------ Marchés en bref
+    const EN_BREF = ["EWQ", "FEZ", "SPY", "XAU/USD", "BTC/USD", "EUR/USD"];
+    async function chargerMarches() {
+      try {
+        const valeurs = await donneesMarches();
+        const choisis = EN_BREF.map((s) => valeurs.find((v) => v.symbole === s)).filter(Boolean);
+        document.getElementById("marches").hidden = !choisis.length;
+        if (!choisis.length) return;
+        document.getElementById("marches-liste").innerHTML = choisis.map((v) =>
+          `<a class="marche-ligne ${typeof v.variation === "number" && v.variation <= -2 ? "alerte" : ""}" href="/marches">
+            <span>${echapper(nomCourt(v))}</span>${sparkline(v.historique)}${formatVariation(v.variation)}</a>`).join("");
+        const maj = choisis.reduce((m, v) => (v.maj_le > m ? v.maj_le : m), "");
+        document.getElementById("marches-info").textContent = `Variation du jour · courbe sur 30 jours · relevé ${quand(maj)}`;
+      } catch { document.getElementById("marches").hidden = true; }
+    }
+
+    async function chargerListes() {
       const { sources, categories } = await appelApi("/api/filtres");
-      document.getElementById("f-categorie").insertAdjacentHTML("beforeend",
-        categories.map((c) => `<option value="${echapper(c.nom)}">${echapper(c.nom)} (${c.n})</option>`).join(""));
       document.getElementById("f-source").insertAdjacentHTML("beforeend",
         sources.map((s) => `<option value="${echapper(s.id)}">${echapper(s.nom)}</option>`).join(""));
-      // Restaure les filtres choisis lors de la dernière visite (sur cet appareil).
-      try {
-        const memo = JSON.parse(localStorage.getItem("filtres") || "{}");
-        for (const c of CHAMPS) if (memo[c]) document.getElementById("f-" + c).value = memo[c];
-      } catch {}
+      document.getElementById("f-categorie").insertAdjacentHTML("beforeend",
+        categories.map((c) => `<option value="${echapper(c.nom)}">${echapper(c.nom)} (${c.n})</option>`).join(""));
     }
-
-    for (const c of CHAMPS) document.getElementById("f-" + c).addEventListener("change", () => {
-      try { localStorage.setItem("filtres", JSON.stringify(Object.fromEntries(filtresActuels()))); } catch {}
-      charger(false);
-    });
-    document.getElementById("f-effacer").onclick = () => {
-      for (const c of CHAMPS) document.getElementById("f-" + c).value = "";
-      try { localStorage.removeItem("filtres"); } catch {}
-      charger(false);
-    };
+    document.getElementById("f-source").onchange = (e) => changer({ source: e.target.value });
+    document.getElementById("f-categorie").onchange = (e) => changer({ categorie: e.target.value, theme: "" });
+    document.getElementById("f-effacer").onclick = () => changer({ theme: "", importance: "", periode: "", source: "", categorie: "" });
     document.getElementById("btn-suite").onclick = () => charger(true);
 
-    // Lien vers le brief du matin, s'il a été rédigé aujourd'hui.
-    async function chargerLienBrief() {
-      try {
-        const { brief } = await appelApi("/api/brief");
-        const aujourdhui = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
-        if (brief && brief.jour === aujourdhui) {
-          const p = document.getElementById("lien-brief");
-          p.innerHTML = `<a class="bouton bouton-discret" href="/brief">☀ Le brief de ce matin est prêt : ${(brief.actualites || []).length} actualités majeures, ${(brief.a_retenir || []).length} points à retenir →</a>`;
-          p.hidden = false;
-        }
-      } catch {}
+    function rafraichir() {
+      chargerAlertes().catch(() => {});
+      chargerThemes().then((n) => chargerBrief(n)).catch(() => chargerBrief(null));
+      chargerMarches();
     }
-
     chargerEntete("/").then(async () => {
-      chargerLienBrief();
-      tuilesMarches(document.getElementById("bandeau-marches"));
-      await chargerFiltres();
-      chargerUne();
+      dessinerFiltres();
+      rafraichir();
+      await chargerListes().catch(() => {});
+      dessinerFiltres();
       charger(false);
     });
-    setInterval(() => { if (!document.hidden && scrollY < 200) { chargerUne(); charger(false); tuilesMarches(document.getElementById("bandeau-marches")); } }, 5 * 60 * 1000);
+    setInterval(() => { if (!document.hidden && scrollY < 200) { rafraichir(); charger(false); } }, 5 * 60 * 1000);
 
     document.getElementById("form-mdp").addEventListener("submit", async (e) => {
       e.preventDefault();

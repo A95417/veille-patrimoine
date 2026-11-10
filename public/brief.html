@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 7.0 -->
+<!-- version 8.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -8,70 +8,82 @@
   <link rel="stylesheet" href="/style.css">
   <script src="/commun.js"></script>
   <style>
-    .contenu { max-width: 860px; }
-    .entete-brief { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 10px; }
-    .entete-brief select { width: auto; min-width: 220px; }
-    .bloc h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 0 0 10px; }
-    .synthese { font-size: 1.05rem; line-height: 1.65; margin: 0; }
-    .mini-marches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 18px; margin-top: 10px; font-size: .92rem; }
-    .mini-marches div { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--bord); padding: 4px 0; }
-    .retenir li { margin: 0 0 10px; line-height: 1.55; }
-    .retenir a { font-size: .85rem; }
-    .actu { padding: 12px 0; border-bottom: 1px solid var(--bord); }
+    .contenu { max-width: 900px; }
+    .entete-brief { display: flex; justify-content: flex-end; align-items: end; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .entete-brief select { width: auto; min-width: 230px; }
+    .entete-brief label { margin: 0 0 4px; font-size: .8rem; color: var(--doux); }
+    .bloc h2 { font-size: 1.1rem; margin: 0 0 12px; }
+    .mini-marches { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 20px; margin-top: 12px; font-size: .92rem; }
+    .mini-marches div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--bord); padding: 6px 0; }
+    .retenir { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+    .retenir li { display: flex; gap: 12px; line-height: 1.55; }
+    .retenir-num { flex: 0 0 28px; height: 28px; border-radius: 9px; background: var(--accent-doux); color: var(--accent-fonce);
+                   font-weight: 600; display: grid; place-items: center; font-size: .85rem; }
+    .retenir a { font-size: .85rem; white-space: nowrap; }
+    .actu { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--bord); }
     .actu:last-child { border: 0; }
-    .actu h3 { margin: 4px 0 6px; font-size: 1rem; line-height: 1.4; }
+    .actu h3 { margin: 4px 0 6px; font-size: 1.05rem; line-height: 1.35; }
     .actu h3 a { color: var(--texte); text-decoration: none; }
     .actu h3 a:hover { text-decoration: underline; }
-    .actu p { margin: 0 0 6px; font-size: .93rem; }
-    .avertissement { font-size: .85rem; color: var(--doux); border: 1px dashed var(--bord); border-radius: 8px; padding: 10px 12px; }
+    .actu p { margin: 0 0 8px; font-size: .93rem; color: var(--doux); }
+    .chiffre-brief { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
+    .avertissement { font-size: .85rem; color: var(--doux); border: 1px dashed var(--bord-fort); border-radius: 12px; padding: 10px 14px; }
   </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
   <main class="page contenu">
     <div class="entete-brief">
-      <div>
-        <h1 id="titre">Brief du jour</h1>
-        <p class="doux" id="sous-titre" style="margin:0"></p>
-      </div>
-      <div><label for="historique" style="margin:0 0 4px">Briefs précédents</label><select id="historique"></select></div>
+      <div><label for="historique">Briefs précédents</label><select id="historique"></select></div>
     </div>
-    <div id="brief" style="margin-top:18px"><p class="doux">Chargement…</p></div>
+    <div id="brief"><p class="doux">Chargement…</p></div>
   </main>
   <script>
     const dateLongue = (jour) => new Date(jour + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-    const lienSujet = (id) => `/sujet?id=${encodeURIComponent(id)}`;
+
+    const majuscule = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
     function afficher(b) {
-      document.getElementById("titre").textContent = "Brief du " + dateLongue(b.jour);
-      document.getElementById("sous-titre").textContent = "Rédigé " + quand(b.genere_le || b.cree_le);
       const valeurs = b.marches ? [...(b.marches.valeurs || []), ...(b.marches.autres || [])].filter((v) => typeof v.variation === "number") : [];
-      let html = "";
+      let html = `<section class="hero" style="margin-bottom:20px">
+        <svg class="hero-deco" viewBox="0 0 400 260" aria-hidden="true"><circle cx="300" cy="90" r="120" fill="#3a49d6"/><circle cx="210" cy="190" r="70" fill="#5e6cf0"/>
+          <path d="M40 220 L120 170 L180 190 L260 110 L340 130 L400 60" fill="none" stroke="#9aa4ff" stroke-width="4" stroke-linecap="round"/></svg>
+        <div class="surtitre">Rédigé ${quand(b.genere_le || b.cree_le)}</div>
+        <h1>Brief du ${dateLongue(b.jour)}</h1>
+        <p>${echapper(b.synthese || "Brief produit sans synthèse (IA indisponible ce matin-là) : retrouvez ci-dessous les actualités majeures.")}</p>
+      </section>`;
 
-      if (b.synthese) html += `<section class="carte bloc"><h2>L'essentiel ce matin</h2><p class="synthese">${echapper(b.synthese)}</p></section>`;
+      if (b.chiffre_du_jour) {
+        const c = b.chiffre_du_jour;
+        html += `<section class="carte bloc"><h2>Le chiffre du jour</h2><div class="chiffre-brief">
+          <span class="chiffre-valeur">${echapper(c.valeur)}</span><span style="font-size:1.05rem">${echapper(c.libelle)}</span></div>
+          <p class="doux petit" style="margin:10px 0 0">${c.source ? "Source : " + echapper(c.source) + " · " : ""}<a href="${lienSujet(c.sujet_id)}">voir le sujet</a></p></section>`;
+      }
+
+      if (b.a_retenir && b.a_retenir.length) html += `<section class="carte bloc"><h2>À retenir pour mes rendez-vous clients</h2>
+        <ol class="retenir">${b.a_retenir.map((p, i) => `<li><span class="retenir-num">${i + 1}</span><span>${echapper(p.texte)} <a href="${lienSujet(p.sujet_id)}">Voir le sujet →</a></span></li>`).join("")}</ol></section>`;
+
+      html += `<section class="carte bloc"><h2>Les actualités majeures des dernières 24 heures</h2>
+        ${(b.actualites || []).length ? b.actualites.map((a) => {
+          const t = themeDe(a.categories);
+          return `<div class="actu">${picto(t.id)}<div style="min-width:0">
+            <div class="meta th-${t.id}"><span class="etiquette">${echapper((a.categories || [])[0] || t.nom)}</span><span class="niveau n${a.importance}">Importance ${a.importance}/5</span></div>
+            <h3><a href="${lienSujet(a.id)}">${echapper(a.titre)}</a></h3>
+            ${a.resume ? `<p>${echapper(a.resume)}</p>` : ""}
+            <div class="sources">${(a.sources || []).map((s) => `<a class="source" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">${echapper(s.nom)} ↗</a>`).join("")}</div>
+          </div></div>`;
+        }).join("") : `<p class="doux">Aucune actualité majeure sur la période.</p>`}
+      </section>`;
 
       html += `<section class="carte bloc"><h2>Marchés : clôtures de la veille</h2>
         ${b.commentaire_marches ? `<p style="margin:0">${echapper(b.commentaire_marches)}</p>` : ""}
         ${valeurs.length ? `<div class="mini-marches">${valeurs.map((v) =>
-            `<div><span>${echapper(v.nom.replace(/ \(≈ .*\)/, ""))}</span>${formatVariation(v.variation)}</div>`).join("")}</div>
-          <p class="doux" style="font-size:.8rem;margin:8px 0 0">Estimations via des fonds indiciels cotés à New York (voir la page Marchés). Séance asiatique de la nuit non disponible gratuitement.</p>`
+            `<div><span>${echapper(nomCourt(v))}</span>${formatVariation(v.variation)}</div>`).join("")}</div>
+          <p class="doux petit" style="margin:8px 0 0">Estimations via des fonds indiciels cotés à New York (voir la page Marchés).</p>`
           : `<p class="doux" style="margin:0">Aucun relevé de clôture disponible pour ce jour.</p>`}
       </section>`;
 
-      if (b.a_retenir && b.a_retenir.length) html += `<section class="carte bloc"><h2>À retenir pour mes rendez-vous clients</h2>
-        <ul class="retenir">${b.a_retenir.map((p) => `<li>${echapper(p.texte)} <a href="${lienSujet(p.sujet_id)}">Voir le sujet →</a></li>`).join("")}</ul></section>`;
-
-      html += `<section class="carte bloc"><h2>Les actualités majeures des dernières 24 heures</h2>
-        ${(b.actualites || []).length ? b.actualites.map((a) => `<div class="actu">
-          <div class="meta"><span class="niveau n${a.importance}">${a.importance}/5</span>${(a.categories || []).map((c) => `<span class="cat">${echapper(c)}</span>`).join("")}</div>
-          <h3><a href="${lienSujet(a.id)}">${echapper(a.titre)}</a></h3>
-          ${a.resume ? `<p>${echapper(a.resume)}</p>` : ""}
-          <div class="sources">${(a.sources || []).map((s) => `<a class="source" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">${echapper(s.nom)} ↗</a>`).join("")}</div>
-        </div>`).join("") : `<p class="doux">Aucune actualité majeure sur la période.</p>`}
-      </section>`;
-
-      html += `<section class="carte bloc"><h2>Agenda économique du jour</h2><p class="doux" style="margin:0">Non disponible : aucune source gratuite et fiable ne le fournit.</p></section>`;
-      html += `<p class="avertissement">${b.ia_modele ? "Synthèse et points à retenir rédigés par une IA" : "Brief produit sans synthèse (IA indisponible ce matin-là)"} à partir des résumés des sources et des relevés de marché.
+      html += `<p class="avertissement">${b.ia_modele ? "Synthèse, chiffre du jour et points à retenir rédigés par une IA" : "Brief produit sans synthèse (IA indisponible ce matin-là)"} à partir des résumés des sources et des relevés de marché.
         Vérifiez les points importants dans les articles originaux avant d'en faire état. Ce contenu est informatif et ne constitue pas un conseil en investissement.</p>`;
       document.getElementById("brief").innerHTML = html;
     }
@@ -81,7 +93,7 @@
       const choix = document.getElementById("historique");
       choix.innerHTML = r.jours.length ? r.jours.map((j) => `<option value="${j}">${dateLongue(j)}</option>`).join("") : "<option>Aucun</option>";
       if (!r.brief) {
-        document.getElementById("brief").innerHTML = `<div class="carte"><p><strong>Pas encore de brief.</strong></p>
+        document.getElementById("brief").innerHTML = `<div class="carte"><h1>Brief du jour</h1><p><strong>Pas encore de brief.</strong></p>
           <p class="doux">Le premier sera rédigé automatiquement demain matin vers 7 h, puis chaque jour, week-end compris.</p></div>`;
         return;
       }

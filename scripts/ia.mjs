@@ -114,8 +114,11 @@ async function appelSite(chemin, methode = "GET", corps) {
 }
 
 // ---------------------------------------------------------------- gestion du quota et du rythme
+const BUDGET_MS = 6 * 60 * 1000;   // 6 minutes au plus par passage
+
 export function creerGestionnaire(modeles, compteurs) {
   const dernierAppel = {};
+  const debut = Date.now();
   const epuise = new Set();
   const ajouts = {};
   let appels = 0;
@@ -128,6 +131,8 @@ export function creerGestionnaire(modeles, compteurs) {
     // Renvoie le modèle à utiliser, ou null s'il n'y a plus de quota.
     choisir(prefereFort) {
       if (appels >= MAX_APPELS_PAR_PASSAGE) return null;
+      // Budget de temps : on s'arrête à temps pour laisser passer les marchés et le brief (le reste attend le passage suivant).
+      if (Date.now() - debut > BUDGET_MS) return null;
       if (prefereFort && dispo(modeles.fort)) return modeles.fort;
       if (dispo(modeles.principal)) return modeles.principal;
       if (dispo(modeles.relais)) return modeles.relais;

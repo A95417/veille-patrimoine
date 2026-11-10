@@ -63,9 +63,11 @@ export async function routeLecture(chemin, url, db) {
     const limite = Math.min(Math.max(Number(p.get("limite")) || 30, 1), 60);
     const conditions = ["s.nb_articles > 0", "s.derniere_pub < ?"];
     const valeurs = [p.get("avant") || "9999"];
-    if (p.get("categorie")) {
-      conditions.push("EXISTS (SELECT 1 FROM sujet_categories c WHERE c.sujet_id = s.id AND c.categorie = ?)");
-      valeurs.push(p.get("categorie"));
+    // Une ou plusieurs catégories (un « thème » de l'accueil en regroupe plusieurs).
+    const categories = p.getAll("categorie").filter(Boolean).slice(0, 12);
+    if (categories.length) {
+      conditions.push(`EXISTS (SELECT 1 FROM sujet_categories c WHERE c.sujet_id = s.id AND c.categorie IN (${categories.map(() => "?").join(",")}))`);
+      valeurs.push(...categories);
     }
     if (p.get("source")) {
       conditions.push("EXISTS (SELECT 1 FROM articles a WHERE a.sujet_id = s.id AND a.source_id = ?)");
@@ -106,7 +108,14 @@ export async function routeLecture(chemin, url, db) {
       const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = ?").bind(cle).first();
       try { return l ? { ...JSON.parse(l.valeur), maj_le: l.maj_le } : null; } catch { return null; }
     };
-    return json({ direct: await lire("marches_direct"), autres: await lire("marches_autres"), cloture: await lire("marches_cloture") });
+    // Historique des clôtures (40 derniers jours) pour les mini-courbes.
+    const { results: points } = await db
+      .prepare("SELECT symbole, jour, cours FROM historique_marches WHERE jour >= ? ORDER BY jour")
+      .bind(new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10))
+      .all();
+    const historique = {};
+    for (const pt of points) (historique[pt.symbole] ||= []).push([pt.jour, pt.cours]);
+    return json({ direct: await lire("marches_direct"), autres: await lire("marches_autres"), cloture: await lire("marches_cloture"), historique });
   }
 
   // Détail d'un sujet : résumé complet et toutes ses sources.
@@ -149,6 +158,18 @@ export async function routeLecture(chemin, url, db) {
     let contenu = null;
     try { contenu = b ? JSON.parse(b.contenu) : null; } catch {}
     return json({ brief: b ? { jour: b.jour, cree_le: b.cree_le, ...contenu } : null, jours: jours.map((j) => j.jour) });
+  }
+
+  // Catégories des sujets des dernières 24 heures (graphique « Les thèmes du jour » ; regroupées en thèmes par la page).
+  if (chemin === "/api/themes") {
+    const depuis = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { results } = await db
+      .prepare(`SELECT s.categories FROM sujets s WHERE s.derniere_pub >= ? AND s.nb_articles > 0
+                 AND (s.importance IS NULL OR s.importance > 1) LIMIT 1000`)
+      .bind(depuis)
+      .all();
+    const sujets = results.map((r) => { try { return r.categories ? JSON.parse(r.categories) : []; } catch { return []; } });
+    return json({ sujets });
   }
 
   // Valeurs proposées dans les filtres.

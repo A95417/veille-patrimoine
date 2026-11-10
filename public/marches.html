@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 6.1 -->
+<!-- version 8.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -8,14 +8,17 @@
   <link rel="stylesheet" href="/style.css">
   <script src="/commun.js"></script>
   <style>
-    .grille-cotations { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin: 12px 0 20px; }
-    .cotation { background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 14px 16px; }
-    .cotation.baisse-forte { border-color: var(--ko); border-left: 5px solid var(--ko); }
+    .grille-cotations { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin: 12px 0 24px; }
+    .cotation { background: var(--carte); border: 1px solid var(--bord); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+    .cotation.baisse-forte { background: var(--ko-doux); border-color: var(--ko); }
     .cotation-nom { font-weight: 600; }
-    .cotation-via { font-size: .8rem; color: var(--doux); }
-    .cotation-chiffres { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; font-size: 1.25rem; }
-    .cotation-cours { font-size: .95rem; color: var(--doux); }
-    h2.groupe-titre { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 20px 0 0; }
+    .cotation-via { font-size: .78rem; color: var(--doux); }
+    .cotation-chiffres { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 6px; }
+    .cotation-chiffres .var-pos, .cotation-chiffres .var-neg { font-family: var(--titre); font-size: 1.45rem; }
+    .cotation-cours { font-size: .9rem; color: var(--doux); }
+    .pilule { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--fond); color: var(--doux); white-space: nowrap; }
+    .pilule.pos { background: var(--ok-doux); color: var(--ok); } .pilule.neg { background: var(--ko-doux); color: var(--ko); }
+    h2.groupe-titre { font-size: 1.15rem; margin: 22px 0 0; }
   </style>
 </head>
 <body>
@@ -47,10 +50,16 @@
     const INDICES = new Set(["SPY", "QQQ", "DIA", "FEZ", "EWQ", "EWJ"]);
     function tuile(v) {
       const cours = formatCours(v);
+      const v30 = variation30j(v.historique);
       return `<div class="cotation ${typeof v.variation === "number" && v.variation <= -2 ? "baisse-forte" : ""}">
         <div class="cotation-nom">${echapper(v.nom)}</div>
         <div class="cotation-via">${echapper(v.via || "")}</div>
         <div class="cotation-chiffres">${formatVariation(v.variation)}<span class="cotation-cours">${cours}</span></div>
+        ${sparkline(v.historique, 200, 38).replace('class="sparkline"', 'class="sparkline" style="width:100%"').replace(/width="200"/, 'width="100%" preserveAspectRatio="none"')}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span class="doux petit">30 derniers jours</span>
+          ${v30 == null ? '<span class="pilule">historique en cours</span>' : `<span class="pilule ${v30 < 0 ? "neg" : "pos"}">${v30 > 0 ? "+" : v30 < 0 ? "−" : ""}${Math.abs(v30).toFixed(1).replace(".", ",")} %</span>`}
+        </div>
       </div>`;
     }
     chargerEntete("/marches").then(async () => {
@@ -62,7 +71,7 @@
           return;
         }
         const maj = valeurs.reduce((m, v) => (v.maj_le > m ? v.maj_le : m), "");
-        info.innerHTML = `Variations du jour. Dernier relevé : <strong>${quand(maj)}</strong>.`;
+        info.innerHTML = `Variation du jour, et courbe des 30 derniers jours. Dernier relevé : <strong>${quand(maj)}</strong>.`;
         document.getElementById("indices").innerHTML = valeurs.filter((v) => INDICES.has(v.symbole)).map(tuile).join("");
         document.getElementById("autres").innerHTML = valeurs.filter((v) => !INDICES.has(v.symbole)).map(tuile).join("");
       } catch (e) {

@@ -56,7 +56,8 @@ const CONSIGNES_BRIEF = `${REGLES}
 TA TÂCHE : préparer le brief matinal des conseillers à partir UNIQUEMENT des éléments fournis (sujets déjà résumés et chiffres de marché).
 - "synthese" : 3 à 4 phrases qui donnent le panorama de la matinée (les faits les plus importants d'abord). Rien qui ne figure dans les éléments fournis.
 - "commentaire_marches" : 1 à 2 phrases qui décrivent les variations de marché fournies (sans les expliquer par des causes non fournies). Chaîne vide si aucun chiffre n'est fourni.
-- "a_retenir" : 3 à 5 points pour les rendez-vous clients de la journée. Chaque point : 1 à 2 phrases simples, prêtes à être dites, sans conseil personnalisé ni recommandation d'achat ou de vente, et rattaché au sujet dont il parle par son "sujet_id" (recopié exactement).`;
+- "a_retenir" : 3 à 5 points pour les rendez-vous clients de la journée. Chaque point : 1 à 2 phrases simples, prêtes à être dites, sans conseil personnalisé ni recommandation d'achat ou de vente, et rattaché au sujet dont il parle par son "sujet_id" (recopié exactement).
+- "chiffre_du_jour" : LE chiffre le plus utile pour un conseiller en patrimoine aujourd'hui, pris tel quel dans un résumé fourni (taux, montant, pourcentage, plafond…). Les variations de marché ne comptent pas. "valeur" : le chiffre exactement comme il est écrit, avec son unité (ex. « 1,6 % » ; une date comme « 31 décembre » n'est pas un chiffre). "libelle" : 6 à 14 mots qui disent ce qu'il mesure. "sujet_id" : le sujet d'où il vient. Si aucun résumé ne contient de chiffre utile, laisse "valeur" vide.`;
 
 const SCHEMA_BRIEF = {
   type: "OBJECT",
@@ -67,9 +68,26 @@ const SCHEMA_BRIEF = {
       type: "ARRAY",
       items: { type: "OBJECT", properties: { texte: { type: "STRING" }, sujet_id: { type: "STRING" } }, required: ["texte", "sujet_id"] },
     },
+    chiffre_du_jour: {
+      type: "OBJECT",
+      properties: { valeur: { type: "STRING" }, libelle: { type: "STRING" }, sujet_id: { type: "STRING" } },
+      required: ["valeur", "libelle", "sujet_id"],
+    },
   },
-  required: ["synthese", "commentaire_marches", "a_retenir"],
+  required: ["synthese", "commentaire_marches", "a_retenir", "chiffre_du_jour"],
 };
+
+// Garde-fou : le chiffre doit figurer mot pour mot dans le résumé du sujet cité (sinon on ne l'affiche pas).
+export function verifierChiffre(c, actualites) {
+  if (!c || !c.valeur || !/\d/.test(c.valeur) || !c.libelle) return null;
+  const sujet = actualites.find((a) => a.id === c.sujet_id);
+  if (!sujet) return null;
+  const norm = (t) => String(t).replace(/[\s\u00a0\u202f]+/g, " ").toLowerCase();
+  if (!norm(sujet.titre + " " + sujet.resume).includes(norm(c.valeur).trim())) return null;
+  const source = sujet.sources[0] || null;
+  return { valeur: c.valeur.trim().slice(0, 24), libelle: c.libelle.trim().slice(0, 140), sujet_id: sujet.id,
+           source: source ? source.nom : null };
+}
 
 const texteMarches = (m) => !m ? "(aucun relevé disponible)" :
   [...(m.valeurs || []), ...(m.autres || [])].filter((v) => typeof v.variation === "number")
@@ -87,7 +105,7 @@ export async function produireBrief(date = new Date()) {
   const marches = d.marches && Date.now() - new Date(d.marches.maj_le) < 18 * 3600 * 1000
     ? { maj_le: d.marches.maj_le, valeurs: d.marches.valeurs || [], autres: d.marches.autres || [] } : null;
 
-  const contenu = { jour, genere_le: new Date().toISOString(), marches, actualites, synthese: "", commentaire_marches: "", a_retenir: [], ia_modele: null };
+  const contenu = { jour, genere_le: new Date().toISOString(), marches, actualites, synthese: "", commentaire_marches: "", a_retenir: [], chiffre_du_jour: null, ia_modele: null };
 
   // Un seul appel à l'IA : le modèle le plus performant (quota réservé pour le brief), sinon un Flash-Lite.
   if (process.env.GEMINI_API_KEY && actualites.length) {
@@ -112,6 +130,7 @@ export async function produireBrief(date = new Date()) {
         contenu.synthese = r.donnees.synthese || "";
         contenu.commentaire_marches = marches ? r.donnees.commentaire_marches || "" : "";
         contenu.a_retenir = (r.donnees.a_retenir || []).filter((p) => p.texte && ids.has(p.sujet_id)).slice(0, 5);
+        contenu.chiffre_du_jour = verifierChiffre(r.donnees.chiffre_du_jour, actualites);
         contenu.ia_modele = modele;
         break;
       } catch (e) {

@@ -113,7 +113,16 @@ export async function routeRobot(request, env, chemin) {
     if (!cle) return json({ erreur: "Type de relevé inconnu." }, 400);
     await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)")
       .bind(cle, JSON.stringify(corps).slice(0, 20000), new Date().toISOString()).run();
+    // Les clôtures du matin alimentent aussi l'historique (mini-courbes sur 30 jours).
+    if (corps.type === "cloture") await ajouterHistorique(db, [...(corps.valeurs || []), ...(corps.autres || [])]
+      .map((v) => ({ symbole: v.symbole, jour: String(v.date || "").slice(0, 10), cours: v.cours_local ?? v.cours })));
     return json({ ok: true });
+  }
+
+  // 5 ter) Rattrapage de l'historique des cours (lancé une fois à la main).
+  if (chemin === "/api/robot/marches/historique" && request.method === "POST") {
+    const n = await ajouterHistorique(db, corps.points || []);
+    return json({ ok: true, points: n });
   }
 
   // ------------------------------------------------------------ Brief matinal (étape 7)
@@ -221,4 +230,16 @@ export async function routeRobot(request, env, chemin) {
   }
 
   return json({ erreur: "Adresse inconnue." }, 404);
+}
+
+// Enregistre des points { symbole, jour, cours } et efface ceux de plus de 120 jours.
+async function ajouterHistorique(db, points) {
+  const valides = points.filter((p) => p.symbole && /^\d{4}-\d{2}-\d{2}$/.test(p.jour) && typeof p.cours === "number" && isFinite(p.cours));
+  if (!valides.length) return 0;
+  const requete = db.prepare("INSERT OR REPLACE INTO historique_marches (symbole, jour, cours) VALUES (?, ?, ?)");
+  await db.batch([
+    ...valides.map((p) => requete.bind(String(p.symbole).slice(0, 20), p.jour, p.cours)),
+    db.prepare("DELETE FROM historique_marches WHERE jour < ?").bind(new Date(Date.now() - 120 * 86400000).toISOString().slice(0, 10)),
+  ]);
+  return valides.length;
 }
