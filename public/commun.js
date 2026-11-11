@@ -1,4 +1,4 @@
-// version 9.0
+// version 9.3
 // Outils partagés par toutes les pages.
 
 // Thème clair / sombre (mémorisé sur cet appareil uniquement).
@@ -271,25 +271,91 @@ function squelettes(n = 4) {
 }
 
 // Lecture à voix haute (synthèse vocale du navigateur, gratuite et sans envoi de données).
+// Les voix proposées par l'appareil : on classe d'abord les voix « naturelles » (neuronales), bien plus agréables.
+function voixFrancaises() {
+  if (!("speechSynthesis" in window)) return [];
+  const score = (v) => (/natural|neural|online/i.test(v.name) ? 0 : /premium|enhanced|améliorée|amelioree|google/i.test(v.name) ? 1 : 2)
+    + (v.lang.toLowerCase() === "fr-fr" ? 0 : 0.5);
+  return speechSynthesis.getVoices().filter((v) => v.lang && v.lang.toLowerCase().startsWith("fr")).sort((a, b) => score(a) - score(b));
+}
+const lecture = { phrases: [], i: 0, bouton: null, libelle: "", pause: false, gen: 0 };
+function reglageLecture(cle, defaut) { try { return localStorage.getItem(cle) || defaut; } catch { return defaut; } }
+function voixChoisie() {
+  const voix = voixFrancaises(), nom = reglageLecture("voix", "");
+  return voix.find((v) => v.name === nom) || voix[0] || null;
+}
+function direPhrase() {
+  const synth = speechSynthesis;
+  if (lecture.i >= lecture.phrases.length) { arreterLecture(); return; }
+  const u = new SpeechSynthesisUtterance(lecture.phrases[lecture.i]);
+  const v = voixChoisie();
+  u.lang = v ? v.lang : "fr-FR";
+  if (v) u.voice = v;
+  u.rate = Number(reglageLecture("vitesse", "1"));
+  const gen = lecture.gen;   // une phrase interrompue (pause, changement de voix) ne doit pas enchaîner sur la suivante
+  u.onend = () => { if (gen === lecture.gen && !lecture.pause && lecture.phrases.length) { lecture.i++; direPhrase(); } };
+  synth.speak(u);
+  const p = document.getElementById("lecteur-progres");
+  if (p) p.style.width = (lecture.i / lecture.phrases.length * 100) + "%";
+}
+function arreterLecture() {
+  lecture.phrases = []; lecture.pause = false; lecture.gen++;
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if (lecture.bouton) lecture.bouton.innerHTML = lecture.libelle;
+  document.getElementById("lecteur")?.remove();
+}
+function relancerPhrase() { lecture.gen++; speechSynthesis.cancel(); if (!lecture.pause && lecture.phrases.length) setTimeout(direPhrase, 60); }
+
+// Barre de lecture en bas de l'écran : choix de la voix, vitesse, pause, arrêt.
+function afficherLecteur() {
+  document.getElementById("lecteur")?.remove();
+  const voix = voixFrancaises(), choisie = voixChoisie();
+  const nomCourt = (v) => v.name.replace(/^(Microsoft|Google|Apple)\s+/i, "").replace(/\s*\(.*?\)\s*/g, " ").replace(/Online|Natural|-.*$/gi, "").trim()
+    + (/natural|neural|online/i.test(v.name) ? " · naturelle" : /premium|enhanced|améliorée/i.test(v.name) ? " · améliorée" : "");
+  const z = document.createElement("div");
+  z.id = "lecteur"; z.className = "lecteur"; z.setAttribute("role", "region"); z.setAttribute("aria-label", "Lecture à voix haute");
+  z.innerHTML = `<div class="lecteur-progres"><span id="lecteur-progres"></span></div>
+    <div class="lecteur-ligne">
+      <button type="button" class="icone-bouton" id="lecteur-pause" aria-label="Pause">${ICONE_PAUSE}</button>
+      <label class="sr" for="lecteur-voix">Voix</label>
+      <select id="lecteur-voix">${voix.length ? voix.map((v) => `<option value="${echapper(v.name)}" ${choisie && v.name === choisie.name ? "selected" : ""}>${echapper(nomCourt(v) || v.name)}</option>`).join("") : "<option>Voix par défaut</option>"}</select>
+      <label class="sr" for="lecteur-vitesse">Vitesse</label>
+      <select id="lecteur-vitesse">${["0.9", "1", "1.1", "1.25", "1.5"].map((x) => `<option value="${x}" ${reglageLecture("vitesse", "1") === x ? "selected" : ""}>× ${x.replace(".", ",")}</option>`).join("")}</select>
+      <button type="button" class="icone-bouton" id="lecteur-stop" aria-label="Arrêter la lecture"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg></button>
+    </div>
+    ${voix.some((v) => /natural|neural|online|premium|enhanced|améliorée/i.test(v.name)) ? "" : `<p class="lecteur-aide">Voix peu naturelle ? Les voix « naturelles » sont gratuites dans Microsoft Edge (ordinateur) ; sur iPhone : Réglages › Accessibilité › Contenu énoncé › Voix › Français, télécharger une voix « améliorée ».</p>`}`;
+  document.body.appendChild(z);
+  z.querySelector("#lecteur-voix").onchange = (e) => { try { localStorage.setItem("voix", e.target.value); } catch {} relancerPhrase(); };
+  z.querySelector("#lecteur-vitesse").onchange = (e) => { try { localStorage.setItem("vitesse", e.target.value); } catch {} relancerPhrase(); };
+  z.querySelector("#lecteur-stop").onclick = arreterLecture;
+  z.querySelector("#lecteur-pause").onclick = (e) => {
+    lecture.pause = !lecture.pause;
+    if (lecture.pause) { lecture.gen++; speechSynthesis.cancel(); e.currentTarget.innerHTML = ICONE_LECTURE; e.currentTarget.ariaLabel = "Reprendre"; }
+    else { e.currentTarget.innerHTML = ICONE_PAUSE; e.currentTarget.ariaLabel = "Pause"; direPhrase(); }
+  };
+}
+const ICONE_PAUSE = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>`;
+const ICONE_LECTURE = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z" fill="currentColor"/></svg>`;
+
+// Lecture à voix haute (synthèse vocale de l'appareil, gratuite et sans envoi de données).
 function lireAVoixHaute(texte, bouton) {
   if (!("speechSynthesis" in window)) { notifier("La lecture à voix haute n'est pas disponible sur ce navigateur.", true); return; }
-  const synth = speechSynthesis;
-  const libelle = bouton.dataset.libelle || bouton.innerHTML;
-  bouton.dataset.libelle = libelle;
-  if (synth.speaking) { synth.cancel(); bouton.innerHTML = libelle; return; }
-  const voix = synth.getVoices().filter((v) => v.lang && v.lang.toLowerCase().startsWith("fr"));
-  const meilleure = voix.find((v) => /natural|neural|premium|enhanced|google|amélie|thomas|denise|henri/i.test(v.name)) || voix[0];
-  // Découpage en phrases : certains navigateurs coupent les textes longs.
-  const phrases = texte.replace(/\s+/g, " ").match(/[^.!?;]+[.!?;]?/g) || [texte];
-  phrases.forEach((p, i) => {
-    const u = new SpeechSynthesisUtterance(p.trim());
-    u.lang = "fr-FR"; u.rate = 1.02;
-    if (meilleure) u.voice = meilleure;
-    if (i === phrases.length - 1) u.onend = u.onerror = () => { bouton.innerHTML = libelle; };
-    synth.speak(u);
-  });
+  if (lecture.phrases.length && lecture.bouton === bouton) { arreterLecture(); return; }
+  arreterLecture();
+  lecture.bouton = bouton; lecture.libelle = bouton.innerHTML;
+  // Découpage en phrases : certains navigateurs coupent les textes longs, et cela permet de changer de voix en cours de lecture.
+  lecture.phrases = (texte.replace(/\s+/g, " ").match(/[^.!?;]+[.!?;]?/g) || [texte]).map((p) => p.trim()).filter(Boolean);
+  lecture.i = 0;
   bouton.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg> Arrêter la lecture`;
+  const demarrer = () => { afficherLecteur(); direPhrase(); };
+  // Sur certains navigateurs, la liste des voix arrive un peu après le chargement de la page.
+  if (!speechSynthesis.getVoices().length) {
+    let fait = false;
+    speechSynthesis.onvoiceschanged = () => { if (!fait) { fait = true; demarrer(); } };
+    setTimeout(() => { if (!fait) { fait = true; demarrer(); } }, 700);
+  } else demarrer();
 }
+addEventListener("pagehide", () => { if ("speechSynthesis" in window) speechSynthesis.cancel(); });
 const ICONE_ECOUTE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg>`;
 
 // Texte du brief à lire à voix haute.

@@ -301,6 +301,17 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
   .grille-cartes { grid-template-columns: 1fr; }
 }
 
+/* ---------------------------------------------------------------- Barre de lecture à voix haute */
+.lecteur { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 55; width: min(560px, calc(100% - 24px));
+  background: var(--carte); border: 1px solid var(--bord-fort); border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.18); overflow: hidden; }
+.lecteur-progres { height: 4px; background: var(--fond); }
+.lecteur-progres span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+.lecteur-ligne { display: flex; gap: 8px; align-items: center; padding: 10px 12px; }
+.lecteur-ligne select { flex: 1; min-width: 0; }
+.lecteur-ligne #lecteur-vitesse { flex: 0 0 auto; width: auto; }
+.lecteur-aide { margin: 0; padding: 0 14px 10px; font-size: .78rem; color: var(--doux); line-height: 1.4; }
+@media print { .lecteur { display: none !important; } }
+
 /* ---------------------------------------------------------------- Jeux d'apprentissage */
 .jeu { display: flex; flex-direction: column; gap: 12px; }
 .jeu-progres { height: 6px; background: var(--fond); border-radius: 99px; overflow: hidden; }
