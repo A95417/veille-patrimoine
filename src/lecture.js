@@ -157,8 +157,9 @@ export async function routeLecture(chemin, url, db) {
     const { results: editions } = await db.prepare("SELECT jour, edition FROM briefs ORDER BY jour DESC, edition = 'soir' DESC LIMIT 200").all();
     let contenu = null;
     try { contenu = b ? JSON.parse(b.contenu) : null; } catch {}
+    const audio = b ? await db.prepare("SELECT duree FROM brief_audio WHERE jour = ? AND edition = ?").bind(b.jour, b.edition).first() : null;
     return json({
-      brief: b ? { ...contenu, jour: b.jour, edition: b.edition, cree_le: b.cree_le } : null,
+      brief: b ? { ...contenu, jour: b.jour, edition: b.edition, cree_le: b.cree_le, audio: audio ? { duree: audio.duree } : null } : null,
       editions,
       jours: [...new Set(editions.map((e) => e.jour))],
     });

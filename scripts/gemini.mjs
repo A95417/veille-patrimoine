@@ -67,3 +67,36 @@ export async function generer(modele, consignes, contenu, schema) {
   }
   return { quota: true };
 }
+
+// ---------------------------------------------------------------- Voix de synthèse (lecture du brief)
+// Modèle « TTS » le plus récent disponible avec la clé (Flash de préférence, sinon Flash-Lite).
+export async function choisirModeleVoix() {
+  const r = await fetch(`${API}/models?pageSize=200`, { headers: { "x-goog-api-key": CLE } });
+  if (!r.ok) throw new Error(`Liste des modèles impossible (HTTP ${r.status})`);
+  const { models = [] } = await r.json();
+  const tts = models.map((m) => m.name.replace(/^models\//, "")).filter((n) => /^gemini-\d.*tts/i.test(n));
+  tts.sort((a, b) => /lite/.test(a) - /lite/.test(b) || version(b) - version(a) || a.length - b.length);
+  return tts[0] || null;
+}
+
+// Renvoie l'audio brut (PCM 16 bits mono) lu par une voix naturelle, ou { quota: true }.
+export async function genererVoix(modele, texte, voix = "Charon") {
+  const corps = {
+    contents: [{ role: "user", parts: [{ text: texte }] }],
+    generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voix } } } },
+  };
+  for (let essai = 1; essai <= 2; essai++) {
+    const r = await fetch(`${API}/models/${modele}:generateContent`, {
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": CLE }, body: JSON.stringify(corps),
+    });
+    if (r.status === 429) return { quota: true, detail: (await r.text()).slice(0, 300) };
+    if (r.status >= 500 && essai === 1) { await pause(8000); continue; }
+    const t = await r.text();
+    if (!r.ok) throw new Error(`Voix ${modele} HTTP ${r.status} : ${t.slice(0, 300)}`);
+    const part = JSON.parse(t).candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+    if (!part) throw new Error("Réponse audio vide.");
+    const taux = Number((part.inlineData.mimeType || "").match(/rate=(\d+)/)?.[1]) || 24000;
+    return { pcm: Buffer.from(part.inlineData.data, "base64"), taux };
+  }
+  return { quota: true };
+}

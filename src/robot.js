@@ -117,6 +117,24 @@ export async function routeRobot(request, env, chemin) {
     return json({ ok: true });
   }
 
+  // Version audio d'un brief (MP3 en base64, produit par le robot).
+  if (chemin === "/api/robot/brief/audio" && request.method === "POST") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(corps.jour || "") || typeof corps.donnees !== "string" || corps.donnees.length > 1900000
+        || !/^audio\/(mpeg|mp4|ogg|wav)$/.test(corps.mime || "")) return json({ erreur: "Audio invalide." }, 400);
+    await db.prepare("INSERT OR REPLACE INTO brief_audio (jour, edition, mime, donnees, duree, cree_le) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(corps.jour, corps.edition === "soir" ? "soir" : "matin", corps.mime, corps.donnees, Number(corps.duree) || null, new Date().toISOString()).run();
+    await db.prepare("DELETE FROM brief_audio WHERE jour < ?").bind(new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)).run();
+    return json({ ok: true });
+  }
+  // Brief le plus récent (pour produire sa version audio après coup).
+  if (chemin === "/api/robot/brief/dernier" && request.method === "GET") {
+    const b = await db.prepare("SELECT jour, edition, contenu FROM briefs ORDER BY jour DESC, edition = 'soir' DESC LIMIT 1").first();
+    let contenu = null;
+    try { contenu = b ? JSON.parse(b.contenu) : null; } catch {}
+    const audio = b ? await db.prepare("SELECT 1 AS x FROM brief_audio WHERE jour = ? AND edition = ?").bind(b.jour, b.edition).first() : null;
+    return json({ brief: b ? { ...contenu, jour: b.jour, edition: b.edition } : null, audio: !!audio });
+  }
+
   // 5 bis) Date du dernier relevé de clôture (le robot ne le refait pas plusieurs fois le même matin).
   if (chemin === "/api/robot/marches/cloture" && request.method === "GET") {
     const l = await db.prepare("SELECT maj_le FROM etat WHERE cle = 'marches_cloture'").first();

@@ -16,6 +16,10 @@ on:
         description: "Test : forcer un brief (matin, soir, ou oui = selon l'heure) — laisser vide en temps normal"
         required: false
         default: ""
+      audio:
+        description: "Produire la version audio du dernier brief (oui) — laisser vide en temps normal"
+        required: false
+        default: ""
 
 permissions:
   contents: write   # pour la petite note quotidienne qui garde le robot actif
@@ -72,6 +76,16 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           BRIEF_FORCER: ${{ inputs.brief }}
+
+      # À la demande : version audio (voix naturelle) du dernier brief, s'il n'en a pas encore.
+      - name: Audio du dernier brief
+        if: ${{ always() && inputs.audio != '' }}
+        run: node scripts/audio.mjs | tee -a collecte.log
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AUDIO_FORCER: ${{ inputs.audio }}
 
       # GitHub met en pause les robots d'un dépôt sans activité pendant 60 jours.
       # Une fois par jour (vers 6 h, heure de Paris), le robot note son état dans le dépôt pour rester actif.

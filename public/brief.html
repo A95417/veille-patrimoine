@@ -139,7 +139,7 @@
       if ((b.quiz || []).length) quizInteractif(document.getElementById("quiz-brief"), b.quiz.map((q) => ({ ...q, lien: lienSujet(q.sujet_id) })),
         { cle: `actu:${b.jour}-${b.edition || "matin"}` });
       window.speechSynthesis?.cancel();
-      document.getElementById("btn-ecouter").onclick = (e) => lireAVoixHaute(texteBriefOral(b), e.currentTarget);
+      document.getElementById("btn-ecouter").onclick = (e) => ecouterBrief(b, e.currentTarget);
     }
 
     // Sommaire de la colonne de gauche : un lien par section, celui de la section visible est surligné.

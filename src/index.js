@@ -111,6 +111,25 @@ async function api(request, env, url) {
 
   if (chemin === "/api/moi" && methode === "GET") return json(moi);
 
+  // Version audio d'un brief (MP3). Gère les demandes partielles (Range), indispensables à Safari sur iPhone.
+  if (chemin === "/api/brief/audio" && methode === "GET") {
+    const ligne = await db.prepare("SELECT mime, donnees FROM brief_audio WHERE jour = ? AND edition = ?")
+      .bind(url.searchParams.get("jour") || "", url.searchParams.get("edition") === "soir" ? "soir" : "matin").first();
+    if (!ligne) return erreur("Pas de version audio pour ce brief.", 404);
+    const binaire = atob(ligne.donnees);
+    const octets = new Uint8Array(binaire.length);
+    for (let i = 0; i < binaire.length; i++) octets[i] = binaire.charCodeAt(i);
+    const entetes = { "Content-Type": ligne.mime, "Accept-Ranges": "bytes", "Cache-Control": "private, max-age=86400" };
+    const plage = /bytes=(\d*)-(\d*)/.exec(request.headers.get("Range") || "");
+    if (plage) {
+      const debut = plage[1] ? Number(plage[1]) : Math.max(0, octets.length - Number(plage[2]));
+      const fin = plage[1] && plage[2] ? Math.min(Number(plage[2]), octets.length - 1) : octets.length - 1;
+      if (debut >= octets.length || debut > fin) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${octets.length}` } });
+      return new Response(octets.slice(debut, fin + 1), { status: 206, headers: { ...entetes, "Content-Range": `bytes ${debut}-${fin}/${octets.length}` } });
+    }
+    return new Response(octets, { headers: entetes });
+  }
+
   // Actualités : fil filtrable, « À la une », détail d'un sujet, listes des filtres (voir lecture.js).
   if (methode === "GET") {
     const r = await routeLecture(chemin, url, db);

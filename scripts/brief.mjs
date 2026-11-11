@@ -9,6 +9,7 @@
 
 import { choisirModeles, generer, LIMITES } from "./gemini.mjs";
 import { REGLES } from "./ia.mjs";
+import { produireAudio } from "./audio.mjs";
 
 const SITE = (process.env.SITE_URL || "").replace(/\/$/, "");
 const JETON = process.env.ROBOT_TOKEN || "";
@@ -216,6 +217,8 @@ export async function produireBrief(date = new Date()) {
     `marchés ${marches ? "oui" : "non"}, IA ${contenu.ia_modele || "indisponible (brief sans synthèse)"}.`);
   if (contenu.synthese) console.log("Synthèse :", contenu.synthese);
   console.log(`Quiz : ${contenu.quiz.length} question(s) validée(s).`);
+  // Version audio (voix naturelle) : un échec ne bloque pas le brief, le site lira alors avec la voix de l'appareil.
+  try { await produireAudio({ ...contenu, jour, edition }); } catch (e) { console.error("Audio : échec,", e.message); }
   console.log("Chiffre du jour :", contenu.chiffre_du_jour ? `${contenu.chiffre_du_jour.valeur} — ${contenu.chiffre_du_jour.libelle}` : "aucun (rien de vérifiable)");
   return contenu;
 }

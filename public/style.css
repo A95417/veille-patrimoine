@@ -307,8 +307,9 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .lecteur-progres { height: 4px; background: var(--fond); }
 .lecteur-progres span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
 .lecteur-ligne { display: flex; gap: 8px; align-items: center; padding: 10px 12px; }
-.lecteur-ligne select { flex: 1; min-width: 0; }
+.lecteur-titre { flex: 1; min-width: 0; font-size: .9rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lecteur-ligne #lecteur-vitesse { flex: 0 0 auto; width: auto; }
+.lecteur-progres { cursor: pointer; height: 6px; }
 .lecteur-aide { margin: 0; padding: 0 14px 10px; font-size: .78rem; color: var(--doux); line-height: 1.4; }
 @media print { .lecteur { display: none !important; } }
 

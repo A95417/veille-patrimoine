@@ -254,7 +254,7 @@
         actions.innerHTML = `<a class="bouton" href="/brief?jour=${brief.jour}&edition=${brief.edition || "matin"}">${brief.edition === "soir" ? "Lire le point du soir" : "Lire le brief"} · ${minutes} min</a>
           <button type="button" class="bouton second" id="btn-ecouter">${ICONE_ECOUTE} Écouter</button>` +
           (nbPoints ? `<a class="bouton second" href="#rdv" onclick="if (innerWidth <= 760) { event.preventDefault(); document.getElementById('rdv-mobile').scrollIntoView({ behavior: 'smooth' }); }">${nbPoints} point${nbPoints > 1 ? "s" : ""} pour ${brief.edition === "soir" ? "demain" : "mes clients"}</a>` : "");
-        document.getElementById("btn-ecouter").onclick = (e) => lireAVoixHaute(texteBriefOral(brief), e.currentTarget);
+        document.getElementById("btn-ecouter").onclick = (e) => ecouterBrief(brief, e.currentTarget);
       } else {
         document.getElementById("hero-texte").textContent = "Le premier brief sera rédigé demain matin vers 7 h, puis chaque jour, week-end compris.";
         actions.innerHTML = "";
