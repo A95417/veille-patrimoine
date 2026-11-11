@@ -85,7 +85,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   (async () => {
     const { brief, audio } = await appelSite("/api/robot/brief/dernier");
     if (!brief) { console.log("Audio : aucun brief."); return; }
-    if (audio && !/^(oui|1|true)$/i.test(process.env.AUDIO_FORCER || "")) { console.log("Audio : déjà produit pour le dernier brief."); return; }
+    if (audio && !/^(oui|1|true)$/i.test(process.env.AUDIO_FORCER || "")) return;   // déjà produit : rien à faire
     await produireAudio(brief);
   })().catch((e) => { console.error("Échec de l'audio :", e.message); process.exit(1); });
 }
