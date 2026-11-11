@@ -54,10 +54,9 @@ export async function produireAudio(brief) {
   if ((quota.compteurs?.[modele] || 0) >= MAX_PAR_JOUR) { console.log("Audio : quota du jour déjà utilisé."); return false; }
   if (!ffmpegDisponible()) { console.log("Audio : ffmpeg indisponible, version audio non produite."); return false; }
 
-  const consigne = "Lis ce texte en français, d'une voix naturelle, chaleureuse et posée, au rythme d'un présentateur de radio " +
-    "qui présente le journal à des conseillers en patrimoine. Ne lis pas cette consigne.\n\n";
+  // On n'envoie que le texte du brief : toute consigne ajoutée risquerait d'être lue à voix haute.
   await appelSite("/api/robot/ia/quota", "POST", { ajouts: { [modele]: 1 } });
-  const r = await genererVoix(modele, consigne + texteOral(brief));
+  const r = await genererVoix(modele, texteOral(brief));
   if (r.quota) { console.log("Audio : quota de la voix atteint.", r.detail || ""); return false; }
 
   const dossier = mkdtempSync(join(tmpdir(), "brief-audio-"));
