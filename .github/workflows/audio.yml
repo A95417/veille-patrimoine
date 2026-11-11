@@ -1,0 +1,27 @@
+# Réenregistre la version audio du dernier brief (à la demande). Séparé de la collecte
+# pour ne pas être remplacé dans la file d'attente par les passages toutes les 15 minutes.
+name: Audio du brief
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: audio
+  cancel-in-progress: false
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Audio du dernier brief
+        run: node scripts/audio.mjs
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AUDIO_FORCER: oui
