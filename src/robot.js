@@ -173,7 +173,12 @@ export async function routeRobot(request, env, chemin) {
     // Pour le soir : la séance du jour (indices et autres marchés relevés pendant la séance de New York).
     const direct = edition === "soir" ? await lireEtat("marches_direct") : null;
     const autres = edition === "soir" ? await lireEtat("marches_autres") : null;
-    return json({ jour, edition, existe: !!existe, sujets, marches, direct, autres });
+    // Chiffres du jour des 3 briefs précédents (pour ne pas reprendre le même).
+    const { results: precedents } = await db
+      .prepare("SELECT contenu FROM briefs WHERE NOT (jour = ? AND edition = ?) ORDER BY jour DESC, edition = 'soir' DESC LIMIT 3")
+      .bind(jour, edition).all();
+    const chiffres_precedents = precedents.map((r) => { try { return JSON.parse(r.contenu).chiffre_du_jour; } catch { return null; } }).filter(Boolean);
+    return json({ jour, edition, existe: !!existe, sujets, marches, direct, autres, chiffres_precedents });
   }
 
   // 10) Enregistrer le brief du jour ; on ne garde que 3 mois d'historique.

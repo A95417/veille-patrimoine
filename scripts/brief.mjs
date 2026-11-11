@@ -88,7 +88,7 @@ TA TÂCHE : préparer le brief du soir des conseillers (« le point de la journ�
 - "a_retenir" : 3 à 5 points à garder en tête pour les rendez-vous clients de demain.`,
 };
 const CONSIGNES_FIN = ` Chaque point des "a_retenir" : 1 à 2 phrases simples, prêtes à être dites, sans conseil personnalisé ni recommandation d'achat ou de vente, et rattaché au sujet dont il parle par son "sujet_id" (recopié exactement).
-- "chiffre_du_jour" : LE chiffre le plus utile pour un conseiller en patrimoine aujourd'hui, pris tel quel dans un résumé fourni (taux, montant, pourcentage, plafond…). Les variations de marché ne comptent pas. "valeur" : le chiffre exactement comme il est écrit, avec son unité (ex. « 1,6 % » ; une date comme « 31 décembre » n'est pas un chiffre). "libelle" : 6 à 14 mots qui disent ce qu'il mesure. "sujet_id" : le sujet d'où il vient. Si aucun résumé ne contient de chiffre utile, laisse "valeur" vide.`;
+- "chiffre_du_jour" : LE chiffre le plus utile pour un conseiller en patrimoine aujourd'hui, pris tel quel dans un résumé fourni (taux, montant, pourcentage, plafond…). Les variations de marché ne comptent pas. "valeur" : le chiffre exactement comme il est écrit, avec son unité (ex. « 1,6 % » ; une date comme « 31 décembre » n'est pas un chiffre). "libelle" : 6 à 14 mots qui disent ce qu'il mesure. "sujet_id" : le sujet d'où il vient. Si aucun résumé ne contient de chiffre utile, laisse "valeur" vide. Ne reprends jamais un chiffre de la liste « CHIFFRES DÉJÀ PUBLIÉS » : choisis-en un autre, ou laisse "valeur" vide.`;
 
 const SCHEMA_BRIEF = {
   type: "OBJECT",
@@ -131,8 +131,11 @@ export function verifierQuiz(quiz, actualites) {
 }
 
 // Garde-fou : le chiffre doit figurer mot pour mot dans le résumé du sujet cité (sinon on ne l'affiche pas).
-export function verifierChiffre(c, actualites) {
+export function verifierChiffre(c, actualites, precedents = []) {
   if (!c || !c.valeur || !/\d/.test(c.valeur) || !c.libelle) return null;
+  // Pas deux fois le même chiffre d'affilée (même valeur, ou même sujet) : on n'affiche rien plutôt qu'une redite.
+  const compacte = (t) => String(t || "").replace(/[\s\u00a0\u202f]+/g, "").toLowerCase();
+  if (precedents.some((p) => p && (compacte(p.valeur) === compacte(c.valeur) || p.sujet_id === c.sujet_id))) return null;
   const sujet = actualites.find((a) => a.id === c.sujet_id);
   if (!sujet) return null;
   const norm = (t) => String(t).replace(/[\s\u00a0\u202f]+/g, " ").toLowerCase();
@@ -184,7 +187,9 @@ export async function produireBrief(date = new Date()) {
         ? `CHIFFRES DE MARCHÉ (clôtures de la veille, estimations via des fonds indiciels) :\n${texteMarches(marches)}\n\nSUJETS DES DERNIÈRES 24 HEURES`
         : `CHIFFRES DE MARCHÉ (séance du jour : Europe clôturée, New York en cours ; estimations via des fonds indiciels) :\n${texteMarches(marches)}\n\nSUJETS PARUS DEPUIS 7 H CE MATIN`) +
       ` (du plus important au moins important) :\n` +
-      actualites.map((a) => `SUJET id=${a.id} — importance ${a.importance}/5 — ${a.categories.join(", ")}\n  Titre : ${a.titre}\n  Résumé : ${a.resume}`).join("\n\n");
+      actualites.map((a) => `SUJET id=${a.id} — importance ${a.importance}/5 — ${a.categories.join(", ")}\n  Titre : ${a.titre}\n  Résumé : ${a.resume}`).join("\n\n") +
+      `\n\nCHIFFRES DÉJÀ PUBLIÉS (à ne pas reprendre) :\n` +
+      ((d.chiffres_precedents || []).map((c) => `- ${c.valeur} : ${c.libelle}`).join("\n") || "(aucun)");
     const ajouts = {};
     for (const modele of candidats) {
       try {
@@ -195,7 +200,7 @@ export async function produireBrief(date = new Date()) {
         contenu.synthese = r.donnees.synthese || "";
         contenu.commentaire_marches = marches ? r.donnees.commentaire_marches || "" : "";
         contenu.a_retenir = (r.donnees.a_retenir || []).filter((p) => p.texte && ids.has(p.sujet_id)).slice(0, 5);
-        contenu.chiffre_du_jour = verifierChiffre(r.donnees.chiffre_du_jour, actualites);
+        contenu.chiffre_du_jour = verifierChiffre(r.donnees.chiffre_du_jour, actualites, d.chiffres_precedents || []);
         contenu.quiz = verifierQuiz(r.donnees.quiz, actualites);
         contenu.ia_modele = modele;
         break;
