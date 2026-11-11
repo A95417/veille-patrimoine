@@ -13,14 +13,20 @@ const MAX_PAR_FLUX = 50;
 const SIMULTANES = 6;             // nombre de flux lus en même temps
 
 // ---------------------------------------------------------------- outils
-async function appelSite(chemin, methode = "GET", corps) {
+// Une erreur passagère du serveur (base de données momentanément indisponible) est retentée une fois, 5 secondes plus tard.
+async function appelSite(chemin, methode = "GET", corps, essai = 1) {
   const r = await fetch(SITE + chemin, {
     method: methode,
     headers: { Authorization: `Bearer ${JETON}`, "Content-Type": "application/json" },
     body: corps ? JSON.stringify(corps) : undefined,
   });
   const texte = await r.text();
-  if (!r.ok) throw new Error(`${chemin} → HTTP ${r.status} ${texte.slice(0, 200)}`);
+  if (r.status >= 500 && essai === 1) {
+    console.log(`${chemin} → HTTP ${r.status} ${texte.slice(0, 300)} ; nouvel essai dans 5 s.`);
+    await new Promise((ok) => setTimeout(ok, 5000));
+    return appelSite(chemin, methode, corps, 2);
+  }
+  if (!r.ok) throw new Error(`${chemin} → HTTP ${r.status} ${texte.slice(0, 300)}`);
   return JSON.parse(texte);
 }
 

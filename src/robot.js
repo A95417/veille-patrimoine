@@ -117,6 +117,12 @@ export async function routeRobot(request, env, chemin) {
     return json({ ok: true });
   }
 
+  // 5 bis) Date du dernier relevé de clôture (le robot ne le refait pas plusieurs fois le même matin).
+  if (chemin === "/api/robot/marches/cloture" && request.method === "GET") {
+    const l = await db.prepare("SELECT maj_le FROM etat WHERE cle = 'marches_cloture'").first();
+    return json({ maj_le: l ? l.maj_le : null });
+  }
+
   // 5 bis) Relevé des marchés (séance de New York) ou clôtures du matin (pour le brief).
   if (chemin === "/api/robot/marches" && request.method === "POST") {
     const cle = { cloture: "marches_cloture", indices: "marches_direct", autres: "marches_autres" }[corps.type];

@@ -307,6 +307,8 @@ export default {
       return securiser(reponse);
     } catch (e) {
       console.error(e);
+      // Pour le robot (routes protégées par jeton), on renvoie le détail : il apparaît dans les journaux GitHub.
+      if (url.pathname.startsWith("/api/robot/")) return securiser(erreur("Erreur interne : " + String(e && e.message || e).slice(0, 300), 500));
       return securiser(erreur("Erreur interne du serveur.", 500));
     }
   },

@@ -47,9 +47,15 @@ export function moment(date = new Date()) {
   return null;
 }
 
-async function cotations(symboles) {
+async function cotations(symboles, essai = 1) {
   const r = await fetch(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symboles.join(","))}&apikey=${CLE}`);
   const d = await r.json();
+  // Limite de 8 requêtes par minute atteinte (par exemple deux passages rapprochés) : on attend la minute suivante.
+  if (d.status === "error" && /current minute/i.test(d.message || "") && essai === 1) {
+    console.log("Twelve Data : limite par minute atteinte, nouvel essai dans 62 s.");
+    await pause(62000);
+    return cotations(symboles, 2);
+  }
   if (d.status === "error") throw new Error(`Twelve Data : ${d.message}`);
   const parSymbole = symboles.length === 1 ? { [symboles[0]]: d } : d;
   const res = {};
@@ -155,6 +161,18 @@ export async function releverMarches(quand = moment()) {
   if (!SITE || !JETON || !CLE) throw new Error("SITE_URL, ROBOT_TOKEN et TWELVEDATA_API_KEY doivent être définis.");
   if (!quand) { console.log("Marchés : hors des heures de relevé, rien à faire."); return null; }
   if (quand === "historique") return rattraperHistorique();
+  // Clôtures : un seul relevé par matin (la fenêtre 4 h 30 - 7 h 15 compte plusieurs passages du robot).
+  if (quand === "cloture" && !process.env.MARCHES_FORCER) {
+    try {
+      const r = await fetch(SITE + "/api/robot/marches/cloture", { headers: { Authorization: `Bearer ${JETON}` } });
+      const { maj_le } = r.ok ? await r.json() : {};
+      const jourParis = (d) => d.toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
+      if (maj_le && jourParis(new Date(maj_le)) === jourParis(new Date()) && heureParis(new Date(maj_le)).minutes >= 4 * 60 + 30) {
+        console.log("Marchés : clôtures déjà relevées ce matin, rien à faire.");
+        return null;
+      }
+    } catch {}
+  }
   const corps = { type: quand };
   if (quand === "indices" || quand === "cloture") Object.assign(corps, await releverIndices());
   if (quand === "cloture") await pause(62000);                    // minute suivante : quota de 8 requêtes/minute
