@@ -117,7 +117,8 @@
             <div class="actu-haut">${picto(t.id)}<div class="meta th-${t.id}"><span class="etiquette">${echapper((a.categories || [])[0] || t.nom)}</span><span class="niveau n${a.importance}">Importance ${a.importance}/5</span></div></div>
             <h3><a href="${lienSujet(a.id)}">${echapper(a.titre)}</a></h3>
             ${a.resume ? `<p>${echapper(a.resume)}</p>` : ""}
-            <div class="sources">${(a.sources || []).map((s) => `<a class="source" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">${echapper(s.nom)} ↗</a>`).join("")}</div>
+            <div class="sources">${(a.sources || []).map((s) => `<a class="source" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">${echapper(s.nom)} ↗</a>`).join("")}
+              <a class="source no-print" href="/linkedin?sujet=${encodeURIComponent(a.id)}" title="Préparer un post LinkedIn sur ce sujet">✏️ Post LinkedIn</a></div>
           </article>`;
         }).join("")}</div>` : `<p class="doux">Aucune actualité majeure sur la période.</p>`}
       </section>`;

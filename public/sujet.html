@@ -60,6 +60,7 @@
         <div class="barre-actions no-print">
           ${boutonFavori(s.id).replace('class="favori"', 'class="favori favori-large"').replace('aria-label="Ma sélection">', 'aria-label="Ma sélection">').replace("</svg></button>", '</svg><span>Ma sélection</span></button>')}
           ${d ? `<button type="button" class="bouton bouton-discret" id="btn-ecouter">${ICONE_ECOUTE} Écouter</button>` : ""}
+          <a class="bouton bouton-discret" href="/linkedin?sujet=${encodeURIComponent(s.id)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg> Préparer un post LinkedIn</a>
           <button type="button" class="bouton bouton-discret" id="btn-copier">Copier le résumé</button>
           ${d && d.parler_client ? `<button type="button" class="bouton bouton-discret" id="btn-client">Copier la phrase client</button>` : ""}
           ${navigator.share ? `<button type="button" class="bouton bouton-discret" id="btn-partager">Partager</button>` : ""}
