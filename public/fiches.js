@@ -398,7 +398,7 @@ const FICHES = [
     sousTitre: "Réduire son impôt en finançant l'économie ultramarine",
     theme: "fisc",
     duree: 6,
-    verifie: "10 novembre 2026",
+    verifie: "12 novembre 2026",
     recherche: "girardin",
     enUnePhrase: "On finance du matériel productif neuf utilisé en outre-mer et, l'année suivante, on obtient une réduction d'impôt supérieure à la somme versée — mais cette somme ne revient jamais.",
     chiffres: [
@@ -411,7 +411,7 @@ const FICHES = [
       { titre: "Le mécanisme", texte: "Via un « monteur », l'investisseur entre dans une société de portage qui achète du matériel neuf (engins, véhicules, équipements…) loué à une entreprise d'outre-mer. Le financement est complété par un crédit." },
       { titre: "Un apport à fonds perdus", texte: "Ce n'est pas un placement : la somme versée n'est pas récupérée. Le gain vient de l'écart entre la réduction d'impôt et l'apport." },
       { titre: "Un avantage « one shot »", texte: "On souscrit avant le 31 décembre d'une année ; la réduction s'applique sur l'impôt payé l'année suivante. Le montage doit être dimensionné à l'impôt réellement dû." },
-      { titre: "Dans le plafonnement des niches", texte: "Le plafond est porté à 18 000 € pour les investissements outre-mer ; seule une fraction de la réduction Girardin est retenue dans ce calcul, d'où une réduction possible plus élevée (calcul fourni par le monteur)." },
+      { titre: "Dans le plafonnement des niches", texte: "Le plafond est porté à 18 000 € pour les investissements outre-mer, et la réduction Girardin n'y compte que pour une fraction de son montant : 44 % pour une opération de plein droit, 34 % pour une opération avec agrément (BOFiP). Avec 18 000 € de plafond libre, une opération de plein droit permet ainsi jusqu'à environ 40 909 € de réduction (18 000 ÷ 0,44)." },
       { titre: "Le risque fiscal", texte: "Si le matériel n'est pas exploité 5 ans dans les conditions prévues (faillite de l'exploitant, non-conformité), le fisc peut reprendre la réduction. D'où l'importance du sérieux du monteur et des garanties (assurance « bonne fin »)." },
     ],
     schema: [
@@ -427,6 +427,7 @@ const FICHES = [
         lignes: [
           ["Nature", "Réduction d'impôt sur le revenu (article 199 undecies B du code général des impôts)"],
           ["Plafond des niches fiscales", "18 000 € par an en cas d'investissement outre-mer"],
+          ["Part de la réduction comptée dans ce plafond", "44 % (opération de plein droit) ou 34 % (opération avec agrément)"],
           ["Calendrier", "Souscription avant le 31 décembre N ; réduction sur l'impôt de N+1"],
           ["Durée d'engagement", "Exploitation du matériel pendant 5 ans"],
           ["Échéance du dispositif", "Investissements réalisés jusqu'au 31 décembre 2029"],
@@ -453,6 +454,7 @@ const FICHES = [
       { texte: "La réduction d'impôt s'applique l'année qui suit l'investissement.", vrai: true, explication: "Souscription en année N, réduction sur l'impôt de N+1." },
       { texte: "Le Girardin industriel entre dans le plafonnement des niches fiscales.", vrai: true, explication: "Oui, avec un plafond porté à 18 000 € pour l'outre-mer." },
       { texte: "Si l'exploitant fait faillite, la réduction reste acquise dans tous les cas.", vrai: false, explication: "Le fisc peut la reprendre si les conditions d'exploitation ne sont pas respectées ; d'où les garanties." },
+      { texte: "Une réduction Girardin de 10 000 € consomme 10 000 € du plafond des niches fiscales.", vrai: false, explication: "Elle n'y compte que pour 44 % (plein droit), soit 4 400 €, ou 34 % (avec agrément), soit 3 400 €." },
       { texte: "Le dispositif est intéressant pour un foyer peu imposé.", vrai: false, explication: "Il vise les foyers fortement imposés : la réduction est limitée à l'impôt dû." },
       { texte: "Le matériel financé doit être neuf et productif.", vrai: true, explication: "C'est une condition du dispositif." },
     ],
@@ -480,6 +482,7 @@ const FICHES = [
       { terme: "5 ans", definition: "Durée d'exploitation obligatoire" },
     ],
     liens: [
+      { type: "officiel", titre: "BOFiP : calcul du plafonnement global des avantages fiscaux (44 % / 34 %)", url: "https://bofip.impots.gouv.fr/bofip/7322-PGP.html/identifiant=BOI-IR-LIQ-20-20-10-30-20150618" },
       { type: "officiel", titre: "Espace particuliers (impots.gouv.fr)", url: "https://www.impots.gouv.fr/particulier" },
       { type: "guide", titre: "Guide Girardin industriel 2026 (cabinet de conseil, à recouper)", url: "https://www.hagnere-patrimoine.fr/ressources/blog/girardin-industriel-en-2026-qui-peut-en-profiter-6568eb6e" },
       { type: "video", titre: "Vidéos : comprendre le Girardin industriel", url: YT("Girardin industriel fonctionnement explication") },

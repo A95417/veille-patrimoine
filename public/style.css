@@ -1,4 +1,4 @@
-/* version 9.2 */
+/* version 9.3 */
 /* Styles communs du site Veille Patrimoine — design « Tableau de bord » */
 
 :root {
@@ -411,3 +411,29 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
   .hero-deco, .visuel { display: none !important; }
   a { color: #000; }
 }
+
+/* ---- Simulateurs et graphiques des fiches (outils-fiches.js) ---- */
+.simu-choix { margin: 12px 0 4px; }
+.simu-lib { display: block; font-weight: 600; font-size: .92rem; margin-bottom: 6px; }
+.simu-choix .puces { display: flex; gap: 6px; flex-wrap: wrap; }
+.g-barres { display: grid; gap: 8px; margin: 10px 0 4px; }
+.g-ligne { display: grid; grid-template-columns: minmax(90px, 130px) 1fr auto; gap: 10px; align-items: center; font-size: .9rem; }
+.g-piste { height: 14px; border-radius: 7px; background: color-mix(in srgb, var(--carte) 70%, transparent); overflow: hidden; }
+.g-barre { display: block; height: 100%; border-radius: 7px; transition: width .35s ease; }
+.g-val { white-space: nowrap; }
+.g-colonnes { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 6px; height: 210px; align-items: end; margin: 8px 0 4px; }
+.g-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; min-width: 0; }
+.g-col-barre { display: block; width: 100%; max-width: 56px; border-radius: 8px 8px 3px 3px; background: linear-gradient(180deg, var(--accent), var(--i3, var(--accent))); animation: monte .8s ease-out both; transform-origin: bottom; }
+.g-col.actif .g-col-barre { background: var(--ok); }
+.g-col-val { font-weight: 700; font-size: .82rem; }
+.g-col-lib { font-size: .72rem; color: var(--doux); text-align: center; line-height: 1.2; min-height: 2.4em; overflow-wrap: anywhere; }
+@keyframes monte { from { transform: scaleY(0); } }
+.g-camembert { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.g-legende { display: grid; gap: 6px; font-size: .9rem; }
+.g-legende i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+.qui-quoi { display: grid; gap: 8px; }
+.qq-ligne { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--carte); flex-wrap: wrap; }
+.qq-tag { font-weight: 700; font-size: .82rem; padding: 4px 10px; border-radius: 999px; }
+.qq-p { background: #dbeafe; color: #1e40af; } .qq-j { background: #fce7f3; color: #9d174d; } .qq-c { background: #dcfce7; color: #166534; } .qq-i { background: #fef3c7; color: #92400e; }
+@media (max-width: 560px) { .g-ligne { grid-template-columns: 84px 1fr; } .g-val { grid-column: 2; } .g-col-lib { font-size: .62rem; } .g-col-val { font-size: .7rem; } }
+@media (prefers-reduced-motion: reduce) { .g-col-barre { animation: none; } .couverture * { animation: none !important; } }

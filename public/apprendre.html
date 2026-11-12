@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 9.0 -->
+<!-- version 10.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -18,11 +18,26 @@
   <script src="/jeux.js"></script>
   <script src="/fiches.js"></script>
   <script src="/fiches-suite.js"></script>
+  <script src="/couvertures.js"></script>
+  <script src="/outils-fiches.js"></script>
   <style>
-    .grille-fiches { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-    .fiche-carte { position: relative; text-decoration: none; color: var(--texte); }
-    .fiche-carte h3 a::after { content: ""; position: absolute; inset: 0; }
-    .fiche-carte .sous { margin: 0; color: var(--doux); font-size: .92rem; }
+    .grille-fiches { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 18px; }
+    .fiche-carte { position: relative; display: flex; flex-direction: column; background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon); overflow: hidden;
+      transition: transform .2s ease, box-shadow .2s ease; }
+    .fiche-carte:hover, .fiche-carte:focus-within { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(20, 24, 60, .18); }
+    .fc-image { position: relative; aspect-ratio: 400 / 220; overflow: hidden; }
+    .fc-image .couverture { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: transform .5s ease; }
+    .fiche-carte:hover .couverture { transform: scale(1.06); }
+    .fc-voile { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 10, 28, 0) 40%, rgba(8, 10, 28, .78) 100%); pointer-events: none; }
+    .fc-titre { position: absolute; left: 16px; right: 16px; bottom: 12px; color: #fff; }
+    .fc-titre h3 { margin: 0; font-size: 1.22rem; line-height: 1.2; text-shadow: 0 2px 10px rgba(0, 0, 0, .45); }
+    .fc-titre h3 a { color: #fff; text-decoration: none; }
+    .fc-titre h3 a::after { content: ""; position: absolute; inset: -400px -40px -200px; }
+    .fc-duree { position: absolute; top: 12px; right: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, .92); color: #1b1f3b; font-size: .76rem; font-weight: 700; }
+    .fc-corps { padding: 14px 16px 16px; display: grid; gap: 10px; }
+    .fiche-carte .sous { margin: 0; color: var(--doux); font-size: .92rem; line-height: 1.45; }
+    .fc-corps .meta { margin: 0; }
+    .fc-ouvrir { color: var(--accent); font-weight: 600; font-size: .88rem; }
     .badge-prog { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: .78rem; font-weight: 600; background: var(--fond); color: var(--doux); }
     .badge-prog.maitrise { background: var(--ok-doux); color: var(--ok); }
     .badge-prog.encours { background: var(--accent-doux); color: var(--accent-fonce); }
@@ -32,7 +47,6 @@
     .deux-jeux .carte { margin: 0; }
     .deux-jeux h2 { display: flex; align-items: center; gap: 8px; }
     .parcours { margin-bottom: 30px; }
-    .fiche-carte .sujet-haut { background: var(--i0); }
     .jours-quiz { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
   </style>
 </head>
@@ -90,12 +104,12 @@
 
     async function afficherFiches(scores) {
       const carteFiche = (f) => `
-        <article class="sujet fiche-carte th-${f.theme}">
-          <div class="sujet-haut">${illustrationFiche(f, 120)}</div>
-          <div class="sujet-corps">
-            <div class="meta">${badge(scores["fiche:" + f.id])}<span>${f.duree} min</span><span id="actu-${f.id}"></span></div>
-            <h3><a href="/fiche?id=${f.id}">${echapper(f.titre)}</a></h3>
+        <article class="fiche-carte th-${f.theme}">
+          <div class="fc-image">${couvertureFiche(f)}<div class="fc-voile"></div><span class="fc-duree">${f.duree} min</span>
+            <div class="fc-titre"><h3><a href="/fiche?id=${f.id}">${echapper(f.titre)}</a></h3></div></div>
+          <div class="fc-corps">
             <p class="sous">${echapper(f.sousTitre)}</p>
+            <div class="meta">${badge(scores["fiche:" + f.id])}<span id="actu-${f.id}"></span>${(OUTILS_FICHES[f.id] || []).length ? `<span class="badge-prog">Simulateur</span>` : ""}</div>
           </div>
         </article>`;
       document.getElementById("fiches").outerHTML = PARCOURS.map((p) => {
