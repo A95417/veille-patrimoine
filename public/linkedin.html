@@ -1,0 +1,316 @@
+<!doctype html>
+<!-- version 1.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinkedIn · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <meta name="apple-mobile-web-app-title" content="Veille">
+  <script src="/commun.js"></script>
+  <script src="/fiches.js"></script>
+  <script src="/fiches-suite.js"></script>
+  <style>
+    .li-grille { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; }
+    .li-cote { position: sticky; top: 84px; display: grid; gap: 16px; }
+    @media (max-width: 1000px) { .li-grille { grid-template-columns: minmax(0, 1fr); } .li-cote { position: static; } }
+    .etape-titre { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: 1.15rem; }
+    .etape-titre .n { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-texte); display: grid; place-items: center; font-weight: 700; font-size: .95rem; flex: 0 0 30px; }
+    .onglets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .idees { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+    .choix-carte { text-align: left; border: 1.5px solid var(--bord); background: var(--carte); color: var(--texte); border-radius: 14px; padding: 14px; cursor: pointer; font: inherit; display: grid; gap: 6px; align-content: start; transition: border-color .15s, transform .15s; }
+    .choix-carte:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .choix-carte[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-doux); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+    .choix-carte strong { line-height: 1.35; }
+    .choix-carte .petit { color: var(--doux); line-height: 1.4; }
+    .tag { display: inline-block; width: fit-content; padding: 2px 9px; border-radius: 999px; background: var(--fond); color: var(--accent-fonce); font-size: .74rem; font-weight: 700; }
+    .liste-actus { display: grid; gap: 8px; max-height: 460px; overflow: auto; padding-right: 4px; }
+    .liste-actus .choix-carte { padding: 10px 12px; }
+    .approches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .reglages { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 12px; }
+    .reglages .simu-lib { margin-bottom: 6px; }
+    .selection { padding: 10px 14px; border-radius: 12px; background: var(--accent-doux); margin: 14px 0 0; font-size: .92rem; }
+    .alerte-donnees { font-size: .85rem; color: var(--ko); margin: 6px 0 0; }
+    textarea.post { width: 100%; min-height: 320px; font: inherit; line-height: 1.55; padding: 14px; border-radius: 12px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); resize: vertical; box-sizing: border-box; }
+    .accroches { display: grid; gap: 8px; margin-bottom: 14px; }
+    .accroches .choix-carte { padding: 10px 12px; }
+    #ctas .puce { white-space: normal; text-align: left; line-height: 1.35; height: auto; max-width: 100%; border-radius: 14px; }
+    .compteur { font-size: .85rem; color: var(--doux); margin: 6px 0 12px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .boite h3 { font-size: 1rem; margin: 0 0 10px; }
+    .boite ol, .boite ul { margin: 0; padding-left: 20px; line-height: 1.6; font-size: .92rem; }
+    .brouillon { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--bord); font-size: .9rem; }
+    .brouillon button { font-size: .8rem; }
+    .attente { display: flex; gap: 10px; align-items: center; color: var(--doux); }
+    .rond { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--accent-doux); border-top-color: var(--accent); animation: tourne 1s linear infinite; }
+    @keyframes tourne { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <section class="hero" style="margin-bottom:22px">
+      <svg class="hero-deco" viewBox="0 0 400 260" aria-hidden="true"><circle cx="300" cy="90" r="120" fill="#0a66c2"/><circle cx="210" cy="190" r="70" fill="#3a8be0"/>
+        <path d="M250 60h100a14 14 0 0114 14v52a14 14 0 01-14 14h-62l-24 20v-20h-14a14 14 0 01-14-14V74a14 14 0 0114-14z" fill="#fff" opacity=".92"/>
+        <path d="M262 84h76M262 100h60M262 116h40" stroke="#0a66c2" stroke-width="7" stroke-linecap="round"/></svg>
+      <div style="max-width:640px">
+        <div class="surtitre">LinkedIn · idées et rédaction</div>
+        <h1>Un post professionnel et court, en deux minutes.</h1>
+        <p>Choisissez un sujet (l'actualité du site, une fiche Apprendre ou votre propre thème), choisissez l'approche, et l'IA vous propose un post, des accroches et des hashtags. Vous gardez la main : tout est modifiable.</p>
+      </div>
+    </section>
+
+    <div class="li-grille">
+      <div style="display:grid;gap:18px;min-width:0">
+        <section class="carte">
+          <h2 class="etape-titre"><span class="n">1</span>Le sujet</h2>
+          <div class="onglets" role="tablist">
+            <button type="button" class="puce" data-onglet="idees" aria-pressed="true">Idées du moment</button>
+            <button type="button" class="puce" data-onglet="actus" aria-pressed="false">Actualités récentes</button>
+            <button type="button" class="puce" data-onglet="fiches" aria-pressed="false">Une fiche Apprendre</button>
+            <button type="button" class="puce" data-onglet="libre" aria-pressed="false">Sujet libre</button>
+          </div>
+          <div id="zone-sujet"><div class="attente"><span class="rond"></span>Recherche des sujets du moment…</div></div>
+          <div class="selection" id="selection" hidden></div>
+        </section>
+
+        <section class="carte">
+          <h2 class="etape-titre"><span class="n">2</span>L'approche</h2>
+          <div class="approches" id="approches"></div>
+          <div class="reglages">
+            <div><span class="simu-lib">Ton</span><div class="puces" id="tons">
+              <button type="button" class="puce" data-ton="sobre" aria-pressed="true">Sobre</button>
+              <button type="button" class="puce" data-ton="chaleureux" aria-pressed="false">Chaleureux</button>
+              <button type="button" class="puce" data-ton="expert" aria-pressed="false">Expert</button></div></div>
+            <div><span class="simu-lib">Longueur</span><div class="puces" id="longueurs">
+              <button type="button" class="puce" data-longueur="court" aria-pressed="true">Court (≈ 600 car.)</button>
+              <button type="button" class="puce" data-longueur="moyen" aria-pressed="false">Moyen (≈ 1 100 car.)</button></div></div>
+          </div>
+          <label for="consigne">Une précision pour l'IA (facultatif)</label>
+          <input id="consigne" maxlength="200" placeholder="Ex. : s'adresser aux chefs d'entreprise, finir par une invitation à échanger…">
+          <p class="alerte-donnees">N'indiquez jamais de nom ni d'information sur un client.</p>
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button type="button" class="bouton" id="btn-rediger">Rédiger le post</button>
+            <span class="doux petit" id="info-rediger"></span>
+          </div>
+        </section>
+
+        <section class="carte" id="resultat" hidden>
+          <h2 class="etape-titre"><span class="n">3</span>Votre post</h2>
+          <span class="simu-lib">Choisissez l'accroche (la première ligne, celle qui donne envie de cliquer sur « voir plus »)</span>
+          <div class="accroches" id="accroches"></div>
+          <span class="simu-lib">Conclusion</span>
+          <div class="puces" id="ctas" style="margin-bottom:14px"></div>
+          <span class="simu-lib">Hashtags (cliquez pour retirer ou remettre)</span>
+          <div class="puces" id="hashtags" style="margin-bottom:14px"></div>
+          <label for="post">Le post, modifiable</label>
+          <textarea class="post" id="post"></textarea>
+          <div class="compteur" id="compteur"></div>
+          <div class="actions">
+            <button type="button" class="bouton" id="btn-copier">Copier le post</button>
+            <a class="bouton bouton-discret" href="https://www.linkedin.com/feed/" target="_blank" rel="noopener noreferrer">Ouvrir LinkedIn ↗</a>
+            <button type="button" class="bouton bouton-discret" id="btn-brouillon">Garder en brouillon</button>
+            <button type="button" class="bouton bouton-discret" id="btn-autre">Une autre version</button>
+          </div>
+          <div id="verif" style="margin-top:16px"></div>
+        </section>
+      </div>
+
+      <aside class="li-cote">
+        <section class="carte boite">
+          <h3>La boîte à outils</h3>
+          <ol>
+            <li><strong>Une accroche</strong> courte : seules les premières lignes s'affichent avant « voir plus ».</li>
+            <li><strong>Le contexte</strong> en une ou deux phrases.</li>
+            <li><strong>Une seule idée clé</strong>, expliquée simplement.</li>
+            <li><strong>Une conclusion</strong> : une question ou une invitation à échanger.</li>
+            <li><strong>3 à 5 hashtags</strong> ciblés.</li>
+          </ol>
+        </section>
+        <section class="carte boite">
+          <h3>Avant de publier</h3>
+          <ul>
+            <li>Une information claire, exacte et non trompeuse.</li>
+            <li>Aucune promesse de rendement ; les risques sont mentionnés.</li>
+            <li>Pas de conseil personnalisé dans un post public.</li>
+            <li>Aucune donnée sur un client, même anonymisée de façon légère.</li>
+            <li>La source est citée et les chiffres vérifiés.</li>
+          </ul>
+        </section>
+        <section class="carte boite">
+          <h3>Mes brouillons</h3>
+          <div id="brouillons"><p class="doux petit" style="margin:0">Aucun brouillon pour l'instant.</p></div>
+          <p class="doux petit" style="margin:10px 0 0">Gardés sur cet appareil uniquement.</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <script>
+    const ICONES_APPROCHE = { decryptage: "🔎", pedagogie: "🎓", conseils: "✅", opinion: "💬", chiffre: "🔢", idee_recue: "💡", question: "❓" };
+    const NOMS_APPROCHE = { decryptage: "Décryptage", pedagogie: "Pédagogie", conseils: "Points d'attention", opinion: "Point de vue", chiffre: "Le chiffre clé", idee_recue: "Idée reçue", question: "Question au réseau" };
+    const etat = { donnees: null, onglet: "idees", choix: null, approche: "decryptage", ton: "sobre", longueur: "court", post: null, accroche: 0, cta: 0, tagsOff: new Set() };
+    const dateCourte = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+    function choisirSujet(choix) {
+      etat.choix = choix;
+      const z = document.getElementById("selection");
+      z.hidden = false;
+      z.innerHTML = `<strong>Sujet choisi :</strong> ${echapper(choix.libelle)}`;
+      document.querySelectorAll("#zone-sujet [data-choix]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.choix === choix.cle));
+    }
+    function choisirApproche(a) {
+      etat.approche = a;
+      document.querySelectorAll("#approches [data-approche]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.approche === a));
+    }
+
+    function afficherOnglet() {
+      const z = document.getElementById("zone-sujet"), d = etat.donnees;
+      document.querySelectorAll("[data-onglet]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.onglet === etat.onglet));
+      if (etat.onglet === "idees") {
+        if (!d.idees.length) { z.innerHTML = `<p class="doux">${d.ia ? "Les idées du moment arrivent dès que l'IA a analysé les dernières actualités. En attendant, choisissez une actualité récente." : "L'IA n'est pas encore configurée : choisissez une actualité récente."}</p>`; return; }
+        z.innerHTML = `<div class="idees">${d.idees.map((i, k) => `<button type="button" class="choix-carte" data-choix="idee-${k}" data-k="${k}" aria-pressed="false">
+          <span class="tag">${ICONES_APPROCHE[i.approche] || ""} ${NOMS_APPROCHE[i.approche] || ""}</span><strong>${echapper(i.titre)}</strong>
+          <span class="petit">${echapper(i.pourquoi)}</span><span class="petit">D'après : ${echapper(i.sujet.titre)}</span></button>`).join("")}</div>`;
+        z.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => {
+          const i = d.idees[Number(b.dataset.k)];
+          choisirSujet({ cle: "idee-" + b.dataset.k, type: "sujet", sujet_id: i.sujet_id, libelle: i.sujet.titre });
+          choisirApproche(i.approche);
+        });
+      } else if (etat.onglet === "actus") {
+        z.innerHTML = d.sujets.length ? `<div class="liste-actus">${d.sujets.map((s) => `<button type="button" class="choix-carte" data-choix="s-${s.id}" data-id="${s.id}" aria-pressed="false">
+          <strong>${echapper(s.titre)}</strong><span class="petit">${dateCourte(s.derniere_pub)} · ${echapper((s.categories || []).slice(0, 2).join(" · "))}${s.sources ? " · " + echapper(s.sources.split(",").slice(0, 2).join(", ")) : ""}</span></button>`).join("")}</div>`
+          : '<p class="doux">Pas d\'actualité importante sur les 4 derniers jours.</p>';
+        z.querySelectorAll("[data-id]").forEach((b) => b.onclick = () => {
+          const s = d.sujets.find((x) => x.id === b.dataset.id);
+          choisirSujet({ cle: "s-" + s.id, type: "sujet", sujet_id: s.id, libelle: s.titre });
+        });
+      } else if (etat.onglet === "fiches") {
+        z.innerHTML = `<p class="doux petit" style="margin-top:0">Contenu vérifié sur des sources officielles : idéal pour un post pédagogique.</p>
+          <div class="idees">${FICHES.map((f) => `<button type="button" class="choix-carte" data-choix="f-${f.id}" data-f="${f.id}" aria-pressed="false"><strong>${echapper(f.titre)}</strong><span class="petit">${echapper(f.sousTitre)}</span></button>`).join("")}</div>`;
+        z.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => {
+          const f = FICHES.find((x) => x.id === b.dataset.f);
+          choisirSujet({ cle: "f-" + f.id, type: "fiche", fiche: f, libelle: "Fiche « " + f.titre + " »" });
+          if (etat.approche === "decryptage") choisirApproche("pedagogie");
+        });
+      } else {
+        z.innerHTML = `<label for="theme">Votre thème</label><textarea id="theme" rows="3" maxlength="300" style="width:100%;box-sizing:border-box" placeholder="Ex. : pourquoi faire le point sur sa clause bénéficiaire après un mariage"></textarea>
+          <p class="alerte-donnees">Sans source, l'IA reste générale et n'écrit aucun chiffre. N'indiquez aucune donnée client.</p>`;
+        document.getElementById("theme").oninput = (e) => {
+          const t = e.target.value.trim();
+          if (t) choisirSujet({ cle: "libre", type: "libre", theme: t, libelle: t }); else { etat.choix = null; document.getElementById("selection").hidden = true; }
+        };
+      }
+      if (etat.choix) document.querySelectorAll("#zone-sujet [data-choix]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.choix === etat.choix.cle));
+    }
+
+    function texteFiche(f) {
+      return [f.enUnePhrase, ...f.chiffres.map((c) => c.valeur + " : " + c.libelle), ...f.essentiel.map((e) => e.titre + " : " + e.texte), "À éviter : " + f.pieges.join(" ; ")].join("\n");
+    }
+
+    // Assemble le post : accroche + corps + conclusion + hashtags.
+    function assembler() {
+      const p = etat.post;
+      const tags = p.hashtags.filter((h) => !etat.tagsOff.has(h));
+      const fin = p.appels_action[etat.cta] || "";
+      // La conclusion se place avant la mention « Source : … » si le corps en contient une.
+      const paras = p.corps.trim().split(/\n\s*\n/);
+      const source = /^source\s*:/i.test(paras[paras.length - 1] || "") ? paras.pop() : "";
+      document.getElementById("post").value = [p.accroches[etat.accroche] || "", ...paras, fin, source, tags.join(" ")].filter(Boolean).join("\n\n");
+      compter();
+    }
+    function compter() {
+      const n = document.getElementById("post").value.length;
+      document.getElementById("compteur").textContent = `${n.toLocaleString("fr-FR")} caractères${n > 3000 ? " — au-delà de la limite de LinkedIn (3 000)" : ""}`;
+    }
+
+    function afficherResultat(p) {
+      etat.post = p; etat.accroche = 0; etat.cta = 0; etat.tagsOff = new Set();
+      const z = document.getElementById("resultat"); z.hidden = false;
+      document.getElementById("accroches").innerHTML = p.accroches.map((a, k) => `<button type="button" class="choix-carte" data-a="${k}" aria-pressed="${k === 0}">${echapper(a)}</button>`).join("");
+      document.querySelectorAll("[data-a]").forEach((b) => b.onclick = () => { etat.accroche = Number(b.dataset.a); document.querySelectorAll("[data-a]").forEach((x) => x.setAttribute("aria-pressed", x === b)); assembler(); });
+      document.getElementById("ctas").innerHTML = [...p.appels_action.map((c, k) => `<button type="button" class="puce" data-cta="${k}" aria-pressed="${k === 0}">${echapper(c)}</button>`),
+        `<button type="button" class="puce" data-cta="-1" aria-pressed="false">Sans conclusion</button>`].join("");
+      document.querySelectorAll("[data-cta]").forEach((b) => b.onclick = () => { etat.cta = Number(b.dataset.cta); document.querySelectorAll("[data-cta]").forEach((x) => x.setAttribute("aria-pressed", x === b)); assembler(); });
+      document.getElementById("hashtags").innerHTML = p.hashtags.map((h) => `<button type="button" class="puce" data-h="${echapper(h)}" aria-pressed="true">${echapper(h)}</button>`).join("");
+      document.querySelectorAll("[data-h]").forEach((b) => b.onclick = () => {
+        const h = b.dataset.h; etat.tagsOff.has(h) ? etat.tagsOff.delete(h) : etat.tagsOff.add(h);
+        b.setAttribute("aria-pressed", !etat.tagsOff.has(h)); assembler();
+      });
+      document.getElementById("verif").innerHTML = (p.a_verifier.length ? `<div class="avertissement"><strong>À vérifier avant de publier :</strong><ul style="margin:6px 0 0;padding-left:20px">${p.a_verifier.map((x) => `<li>${echapper(x)}</li>`).join("")}</ul></div>` : "") +
+        (p.lien ? `<p class="doux petit" style="margin:10px 0 0">Article source : <a href="${echapper(p.lien.url)}" target="_blank" rel="noopener noreferrer">${echapper(p.lien.nom)} ↗</a></p>` : "");
+      assembler();
+      z.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    async function rediger() {
+      if (!etat.choix) { notifier("Choisissez d'abord un sujet (étape 1).", true); document.getElementById("zone-sujet").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      const b = document.getElementById("btn-rediger"), info = document.getElementById("info-rediger");
+      const corps = { approche: etat.approche, ton: etat.ton, longueur: etat.longueur, consigne: document.getElementById("consigne").value.trim() };
+      if (etat.choix.type === "sujet") corps.sujet_id = etat.choix.sujet_id;
+      else if (etat.choix.type === "fiche") corps.fiche = { titre: etat.choix.fiche.titre, contenu: texteFiche(etat.choix.fiche) };
+      else corps.theme = etat.choix.theme;
+      b.disabled = true; document.getElementById("btn-autre").disabled = true;
+      info.innerHTML = '<span class="attente"><span class="rond"></span>Rédaction en cours (10 à 20 secondes)…</span>';
+      try {
+        const p = await appelApi("/api/linkedin/rediger", "POST", corps);
+        info.textContent = `${p.restants} rédaction${p.restants > 1 ? "s" : ""} encore possible${p.restants > 1 ? "s" : ""} aujourd'hui.`;
+        afficherResultat(p);
+      } catch (e) { info.innerHTML = `<span style="color:var(--ko)">${echapper(e.message)}</span>`; }
+      finally { b.disabled = false; document.getElementById("btn-autre").disabled = false; }
+    }
+
+    // Brouillons (sur cet appareil).
+    const lireBrouillons = () => { try { return JSON.parse(localStorage.getItem("linkedin_brouillons") || "[]"); } catch { return []; } };
+    function afficherBrouillons() {
+      const l = lireBrouillons(), z = document.getElementById("brouillons");
+      if (!l.length) { z.innerHTML = '<p class="doux petit" style="margin:0">Aucun brouillon pour l\'instant.</p>'; return; }
+      z.innerHTML = l.map((x, k) => `<div class="brouillon"><span>${echapper(x.texte.split("\n")[0].slice(0, 70))}…<br><span class="doux petit">${new Date(x.le).toLocaleDateString("fr-FR")}</span></span>
+        <span style="display:flex;gap:4px"><button type="button" class="bouton bouton-discret" data-ouvrir="${k}">Ouvrir</button><button type="button" class="bouton bouton-discret" data-suppr="${k}" aria-label="Supprimer">✕</button></span></div>`).join("");
+      z.querySelectorAll("[data-ouvrir]").forEach((b) => b.onclick = () => {
+        const x = lireBrouillons()[Number(b.dataset.ouvrir)];
+        document.getElementById("resultat").hidden = false;
+        ["accroches", "ctas", "hashtags", "verif"].forEach((i) => document.getElementById(i).innerHTML = "");
+        document.getElementById("post").value = x.texte; compter();
+        document.getElementById("resultat").scrollIntoView({ behavior: "smooth" });
+      });
+      z.querySelectorAll("[data-suppr]").forEach((b) => b.onclick = () => {
+        const l2 = lireBrouillons(); l2.splice(Number(b.dataset.suppr), 1);
+        try { localStorage.setItem("linkedin_brouillons", JSON.stringify(l2)); } catch {}
+        afficherBrouillons();
+      });
+    }
+
+    chargerEntete("/linkedin").then(async () => {
+      document.getElementById("approches").innerHTML = Object.keys(NOMS_APPROCHE).map((a) => `<button type="button" class="choix-carte" data-approche="${a}" aria-pressed="${a === etat.approche}">
+        <strong>${ICONES_APPROCHE[a]} ${NOMS_APPROCHE[a]}</strong><span class="petit" data-desc="${a}"></span></button>`).join("");
+      document.querySelectorAll("[data-approche]").forEach((b) => b.onclick = () => choisirApproche(b.dataset.approche));
+      document.querySelectorAll("[data-ton]").forEach((b) => b.onclick = () => { etat.ton = b.dataset.ton; document.querySelectorAll("[data-ton]").forEach((x) => x.setAttribute("aria-pressed", x === b)); });
+      document.querySelectorAll("[data-longueur]").forEach((b) => b.onclick = () => { etat.longueur = b.dataset.longueur; document.querySelectorAll("[data-longueur]").forEach((x) => x.setAttribute("aria-pressed", x === b)); });
+      document.querySelectorAll("[data-onglet]").forEach((b) => b.onclick = () => { etat.onglet = b.dataset.onglet; afficherOnglet(); });
+      document.getElementById("btn-rediger").onclick = rediger;
+      document.getElementById("btn-autre").onclick = rediger;
+      document.getElementById("post").oninput = compter;
+      document.getElementById("btn-copier").onclick = () => copier(document.getElementById("post").value);
+      document.getElementById("btn-brouillon").onclick = () => {
+        const l = lireBrouillons(); l.unshift({ texte: document.getElementById("post").value, le: new Date().toISOString() });
+        try { localStorage.setItem("linkedin_brouillons", JSON.stringify(l.slice(0, 15))); notifier("Brouillon gardé sur cet appareil."); } catch { notifier("Impossible d'enregistrer sur cet appareil.", true); }
+        afficherBrouillons();
+      };
+      afficherBrouillons();
+      try {
+        etat.donnees = await appelApi("/api/linkedin/sujets");
+        Object.entries(etat.donnees.approches || {}).forEach(([a, t]) => { const el = document.querySelector(`[data-desc="${a}"]`); if (el) el.textContent = t.split(" : ")[1] || t; });
+        if (!etat.donnees.idees.length) etat.onglet = "actus";
+        afficherOnglet();
+      } catch (e) { document.getElementById("zone-sujet").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; }
+    });
+  </script>
+</body>
+</html>

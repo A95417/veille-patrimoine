@@ -35,7 +35,9 @@ jobs:
             SETUP_CODE
             ROBOT_TOKEN
             GH_DISPATCH_TOKEN
+            GEMINI_API_KEY
         env:
           SETUP_CODE: ${{ secrets.SETUP_CODE }}
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
           GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

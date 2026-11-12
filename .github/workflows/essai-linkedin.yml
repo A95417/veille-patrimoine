@@ -1,0 +1,26 @@
+# Vérifie la rubrique LinkedIn en ligne (idées du moment et, sur demande, une rédaction d'essai).
+name: Essai LinkedIn
+
+on:
+  workflow_dispatch:
+    inputs:
+      rediger:
+        description: "Rédiger aussi un post d'essai (oui) — consomme une rédaction"
+        required: false
+        default: "oui"
+
+jobs:
+  essai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Appeler le site
+        env:
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          REDIGER: ${{ inputs.rediger }}
+        run: |
+          curl -sS --max-time 120 -X POST "https://veille-patrimoine.veille-a95417.workers.dev/api/robot/linkedin/essai" \
+            -H "Authorization: Bearer $ROBOT_TOKEN" -H "Content-Type: application/json" \
+            -d "{\"rediger\": $([ "$REDIGER" = "oui" ] && echo true || echo false)}" | tee resultat.json
+          echo
+          grep -q '"nb_sujets"' resultat.json

@@ -8,6 +8,7 @@ import {
 } from "./auth.js";
 import { routeRobot } from "./robot.js";
 import { routeLecture, avecArticles, COLONNES } from "./lecture.js";
+import { routeLinkedin } from "./linkedin.js";
 
 // Pages et fichiers visibles sans être connecté.
 const PAGES_PUBLIQUES = new Set(["/connexion", "/installation", "/style.css", "/commun.js", "/favicon.ico",
@@ -128,6 +129,12 @@ async function api(request, env, url) {
       return new Response(octets.slice(debut, fin + 1), { status: 206, headers: { ...entetes, "Content-Range": `bytes ${debut}-${fin}/${octets.length}` } });
     }
     return new Response(octets, { headers: entetes });
+  }
+
+  // Rubrique LinkedIn : idées de posts et rédaction (voir linkedin.js).
+  if (chemin.startsWith("/api/linkedin/")) {
+    const r = await routeLinkedin(request, env, chemin, moi);
+    if (r) return r;
   }
 
   // Actualités : fil filtrable, « À la une », détail d'un sujet, listes des filtres (voir lecture.js).

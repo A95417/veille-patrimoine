@@ -1,3 +1,4 @@
+import { routeLinkedin } from "./linkedin.js";
 // Adresses réservées au robot de collecte (GitHub Actions).
 // Protégées par un jeton secret (ROBOT_TOKEN) : personne d'autre ne peut écrire dans la base.
 
@@ -263,6 +264,19 @@ export async function routeRobot(request, env, chemin) {
     }
     for (const lot of morceaux(ordres, 80)) await db.batch(lot);
     return json({ ok: true });
+  }
+
+  // 7 bis) Contrôle de la rubrique LinkedIn (idées + une rédaction d'essai), pour les vérifications automatiques.
+  if (chemin === "/api/robot/linkedin/essai" && request.method === "POST") {
+    const base = "https://site.local";
+    const idees = await (await routeLinkedin(new Request(base + "/api/linkedin/sujets"), env, "/api/linkedin/sujets", null)).json();
+    let post = null;
+    if (corps.rediger && idees.sujets?.length) {
+      const sujet = idees.idees?.[0]?.sujet_id || idees.sujets[0].id;
+      post = await (await routeLinkedin(new Request(base + "/api/linkedin/rediger", { method: "POST", body: JSON.stringify({ sujet_id: sujet, approche: idees.idees?.[0]?.approche || "decryptage", ton: "sobre", longueur: "court" }) }),
+        env, "/api/linkedin/rediger", null)).json();
+    }
+    return json({ nb_idees: idees.idees?.length || 0, nb_sujets: idees.sujets?.length || 0, ia: idees.ia, idees: idees.idees?.map((i) => i.titre), post });
   }
 
   // 8) Compteur de requêtes IA du jour (remis à zéro à minuit, heure de Californie, comme chez Google).
