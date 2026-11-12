@@ -297,9 +297,18 @@ function direPhrase() {
   if (p) p.style.width = (lecture.i / lecture.phrases.length * 100) + "%";
 }
 function arreterLecture() {
-  if (lecture.audio) { lecture.audio.pause(); lecture.audio.src = ""; lecture.audio = null; }
+  const a = lecture.audio; lecture.audio = null;
+  if (a) {
+    // On retire d'abord les écouteurs : vider la source déclenche un « error » qui relançait la voix de l'appareil.
+    a.onerror = a.onended = a.ontimeupdate = null;
+    a.pause(); a.removeAttribute("src"); try { a.load(); } catch {}
+  }
   lecture.phrases = []; lecture.pause = false; lecture.gen++;
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if ("speechSynthesis" in window) {
+    // Safari (iPhone) ignore parfois un seul cancel() : on insiste brièvement.
+    speechSynthesis.cancel();
+    setTimeout(() => { if (!lecture.phrases.length) speechSynthesis.cancel(); }, 120);
+  }
   if (lecture.bouton) lecture.bouton.innerHTML = lecture.libelle;
   document.getElementById("lecteur")?.remove();
 }
@@ -326,7 +335,7 @@ function afficherLecteur(audio) {
     try { localStorage.setItem("vitesse", e.target.value); } catch {}
     if (audio) audio.playbackRate = Number(e.target.value); else relancerPhrase();
   };
-  z.querySelector("#lecteur-stop").onclick = arreterLecture;
+  z.querySelector("#lecteur-stop").onclick = (e) => { e.preventDefault(); arreterLecture(); };
   if (audio) {
     const mmss = (t) => isFinite(t) ? `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}` : "";
     audio.ontimeupdate = () => {
@@ -380,7 +389,8 @@ function ecouterBrief(b, bouton) {
   lecture.audio = audio; lecture.bouton = bouton; lecture.libelle = bouton.innerHTML;
   bouton.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg> Arrêter la lecture`;
   afficherLecteur(audio);
-  audio.onerror = () => { arreterLecture(); lireAVoixHaute(texteBriefOral(b), bouton); };
+  // Vrai problème de chargement uniquement (pas un arrêt demandé) : repli sur la voix de l'appareil.
+  audio.onerror = () => { if (lecture.audio !== audio) return; arreterLecture(); lireAVoixHaute(texteBriefOral(b), bouton); };
   audio.play().catch(() => {});
 }
 const ICONE_ECOUTE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg>`;
