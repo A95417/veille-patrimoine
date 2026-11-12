@@ -167,7 +167,10 @@ export async function routeRobot(request, env, chemin) {
     const u = new URL(request.url).searchParams;
     const jour = u.get("jour") || "";
     const edition = u.get("edition") === "soir" ? "soir" : "matin";
-    const existe = await db.prepare("SELECT 1 AS x FROM briefs WHERE jour = ? AND edition = ?").bind(jour, edition).first();
+    const existe = await db.prepare("SELECT contenu FROM briefs WHERE jour = ? AND edition = ?").bind(jour, edition).first();
+    // Brief déjà enregistré mais sans synthèse (IA indisponible à ce moment-là) : le robot pourra le refaire.
+    let sansIA = false;
+    if (existe) { try { sansIA = !JSON.parse(existe.contenu).ia_modele; } catch { sansIA = false; } }
     // Matin : les dernières 24 heures. Soir : depuis 7 h ce matin (date fournie par le robot).
     const depuisDemande = u.get("depuis");
     const depuis = depuisDemande && !isNaN(new Date(depuisDemande)) ? new Date(depuisDemande).toISOString()
@@ -197,7 +200,7 @@ export async function routeRobot(request, env, chemin) {
       .prepare("SELECT contenu FROM briefs WHERE NOT (jour = ? AND edition = ?) ORDER BY jour DESC, edition = 'soir' DESC LIMIT 3")
       .bind(jour, edition).all();
     const chiffres_precedents = precedents.map((r) => { try { return JSON.parse(r.contenu).chiffre_du_jour; } catch { return null; } }).filter(Boolean);
-    return json({ jour, edition, existe: !!existe, sujets, marches, direct, autres, chiffres_precedents });
+    return json({ jour, edition, existe: !!existe, sans_ia: sansIA, sujets, marches, direct, autres, chiffres_precedents });
   }
 
   // 10) Enregistrer le brief du jour ; on ne garde que 3 mois d'historique.

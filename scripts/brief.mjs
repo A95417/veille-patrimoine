@@ -157,7 +157,10 @@ export async function produireBrief(date = new Date()) {
   if (!edition) { console.log("Brief : pas l'heure, rien à faire."); return null; }
   const depuis = edition === "soir" ? septHeuresParis(jour).toISOString() : "";
   const d = await appelSite(`/api/robot/brief/donnees?jour=${jour}&edition=${edition}${depuis ? "&depuis=" + encodeURIComponent(depuis) : ""}`);
-  if (d.existe && !FORCER) { console.log(`Brief du ${jour} (${edition}) : déjà rédigé.`); return null; }
+  // Un brief enregistré sans synthèse (IA surchargée) est retenté aux passages suivants de la fenêtre.
+  const rattrapage = d.existe && !FORCER && d.sans_ia === true;
+  if (d.existe && !FORCER && !rattrapage) { console.log(`Brief du ${jour} (${edition}) : déjà rédigé.`); return null; }
+  if (rattrapage) console.log(`Brief du ${jour} (${edition}) : rédigé sans synthèse, nouvel essai avec l'IA.`);
 
   const actualites = choisirActualites(d.sujets);
   const recent = (m, heures) => m && Date.now() - new Date(m.maj_le) < heures * 3600 * 1000;
@@ -212,6 +215,10 @@ export async function produireBrief(date = new Date()) {
     await appelSite("/api/robot/ia/quota", "POST", { ajouts });
   }
 
+  if (rattrapage && !contenu.ia_modele) {   // toujours pas d'IA : on garde le brief existant (et son audio)
+    console.log(`Brief du ${jour} (${edition}) : IA toujours indisponible, nouvel essai au prochain passage.`);
+    return null;
+  }
   await appelSite("/api/robot/brief", "POST", { jour, edition, contenu });
   console.log(`Brief du ${jour} (${edition}) enregistré : ${actualites.length} actualités, ${contenu.a_retenir.length} points à retenir, ` +
     `marchés ${marches ? "oui" : "non"}, IA ${contenu.ia_modele || "indisponible (brief sans synthèse)"}.`);
