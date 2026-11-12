@@ -60,7 +60,7 @@ async function modeles(env, db) {
   return choix;
 }
 
-async function appelGemini(env, modele, consignes, contenu, schema, temperature = 0.6) {
+async function appelGemini(env, modele, consignes, contenu, schema, temperature = 0.6, essai = 1) {
   const r = await fetch(`${API}/models/${modele}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
@@ -71,6 +71,10 @@ async function appelGemini(env, modele, consignes, contenu, schema, temperature 
     }),
   });
   if (r.status === 429) return { quota: true };
+  if (r.status >= 500 && essai < 3) {   // surcharge passagère chez Google : on patiente un peu et on réessaie
+    await new Promise((ok) => setTimeout(ok, 2500 * essai));
+    return appelGemini(env, modele, consignes, contenu, schema, temperature, essai + 1);
+  }
   if (!r.ok) return { erreur: `HTTP ${r.status} : ${(await r.text()).slice(0, 200)}` };
   const d = await r.json();
   const t = d.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
@@ -154,7 +158,7 @@ export async function routeLinkedin(request, env, chemin, moi) {
     let cache = await lireEtat(db, "linkedin_idees");
     const frais = cache && Date.now() - new Date(cache.maj_le) < DUREE_IDEES_MS;
     const echec = await lireEtat(db, "linkedin_idees_erreur");
-    const echecRecent = echec && Date.now() - new Date(echec.maj_le) < 3600e3;   // après un échec, on attend 1 h avant de réessayer
+    const echecRecent = echec && Date.now() - new Date(echec.maj_le) < 20 * 60e3;   // après un échec, on attend 20 min avant de réessayer
     if (!frais && !echecRecent && env.GEMINI_API_KEY && sujets.length >= 3) {
       const liste = sujets.slice(0, 20).map((s) => `[${s.id}] ${s.titre} — ${s.resume_court}`).join("\n");
       const r = await generer(env, db,
