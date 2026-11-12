@@ -276,7 +276,8 @@ export async function routeRobot(request, env, chemin) {
       post = await (await routeLinkedin(new Request(base + "/api/linkedin/rediger", { method: "POST", body: JSON.stringify({ sujet_id: sujet, approche: idees.idees?.[0]?.approche || "decryptage", ton: "sobre", longueur: "court" }) }),
         env, "/api/linkedin/rediger", null)).json();
     }
-    return json({ nb_idees: idees.idees?.length || 0, nb_sujets: idees.sujets?.length || 0, ia: idees.ia, idees: idees.idees?.map((i) => i.titre), post });
+    const diag = await db.prepare("SELECT valeur FROM etat WHERE cle = 'linkedin_idees_erreur'").first();
+    return json({ diagnostic: diag?.valeur || null, nb_idees: idees.idees?.filter((i) => !i.simple).length || 0, nb_sujets: idees.sujets?.length || 0, ia: idees.ia, idees: idees.idees?.map((i) => i.titre), post });
   }
 
   // 8) Compteur de requêtes IA du jour (remis à zéro à minuit, heure de Californie, comme chez Google).

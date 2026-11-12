@@ -151,19 +151,23 @@ export async function routeLinkedin(request, env, chemin, moi) {
     const sujets = await sujetsRecents(db);
     let cache = await lireEtat(db, "linkedin_idees");
     const frais = cache && Date.now() - new Date(cache.maj_le) < DUREE_IDEES_MS;
-    if (!frais && env.GEMINI_API_KEY && sujets.length >= 3) {
+    const echec = await lireEtat(db, "linkedin_idees_erreur");
+    const echecRecent = echec && Date.now() - new Date(echec.maj_le) < 3600e3;   // après un échec, on attend 1 h avant de réessayer
+    if (!frais && !echecRecent && env.GEMINI_API_KEY && sujets.length >= 3) {
       const liste = sujets.slice(0, 20).map((s) => `[${s.id}] ${s.titre} — ${s.resume_court}`).join("\n");
       const r = await generer(env, db,
         "Tu proposes à un conseiller en gestion de patrimoine des idées de posts LinkedIn à partir d'actualités. Choisis les 6 sujets les plus utiles pour son réseau (épargnants, chefs d'entreprise, familles), varie les approches, et n'invente rien : appuie-toi sur le texte fourni. Réponds en français.",
         `ACTUALITÉS (identifiant entre crochets) :\n${liste}`, SCHEMA_IDEES, "lite");
-      if (r.donnees) {
-        const ids = new Set(sujets.map((s) => s.id));
-        const idees = (r.donnees.idees || []).filter((i) => ids.has(i.sujet_id) && APPROCHES[i.approche]).slice(0, 6);
-        if (idees.length) { await ecrireEtat(db, "linkedin_idees", idees); cache = { valeur: idees, maj_le: new Date().toISOString() }; }
-      }
+      const ids = new Set(sujets.map((s) => s.id));
+      const idees = (r.donnees?.idees || []).map((i) => ({ ...i, sujet_id: String(i.sujet_id || "").replace(/[\[\]\s]/g, "") }))
+        .filter((i) => ids.has(i.sujet_id) && APPROCHES[i.approche]).slice(0, 6);
+      if (idees.length) { await ecrireEtat(db, "linkedin_idees", idees); await db.prepare("DELETE FROM etat WHERE cle = 'linkedin_idees_erreur'").run(); cache = { valeur: idees, maj_le: new Date().toISOString() }; }
+      else await ecrireEtat(db, "linkedin_idees_erreur", { erreur: r.erreur || null, brut: JSON.stringify(r.donnees || null).slice(0, 600) });
     }
     const parId = Object.fromEntries(sujets.map((s) => [s.id, s]));
-    const idees = (cache?.valeur || []).filter((i) => parId[i.sujet_id]).map((i) => ({ ...i, sujet: parId[i.sujet_id] }));
+    let idees = (cache?.valeur || []).filter((i) => parId[i.sujet_id]).map((i) => ({ ...i, sujet: parId[i.sujet_id] }));
+    // Sans idées de l'IA : les actualités les plus importantes, présentées telles quelles (rien d'inventé).
+    if (!idees.length) idees = sujets.slice(0, 6).map((s) => ({ sujet_id: s.id, titre: s.titre, approche: "decryptage", pourquoi: s.resume_court, sujet: s, simple: true }));
     return json({ idees, sujets, ia: !!env.GEMINI_API_KEY, approches: APPROCHES });
   }
 

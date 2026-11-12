@@ -176,8 +176,8 @@
       if (etat.onglet === "idees") {
         if (!d.idees.length) { z.innerHTML = `<p class="doux">${d.ia ? "Les idées du moment arrivent dès que l'IA a analysé les dernières actualités. En attendant, choisissez une actualité récente." : "L'IA n'est pas encore configurée : choisissez une actualité récente."}</p>`; return; }
         z.innerHTML = `<div class="idees">${d.idees.map((i, k) => `<button type="button" class="choix-carte" data-choix="idee-${k}" data-k="${k}" aria-pressed="false">
-          <span class="tag">${ICONES_APPROCHE[i.approche] || ""} ${NOMS_APPROCHE[i.approche] || ""}</span><strong>${echapper(i.titre)}</strong>
-          <span class="petit">${echapper(i.pourquoi)}</span><span class="petit">D'après : ${echapper(i.sujet.titre)}</span></button>`).join("")}</div>`;
+          <span class="tag">${i.simple ? "📰 À la une" : `${ICONES_APPROCHE[i.approche] || ""} ${NOMS_APPROCHE[i.approche] || ""}`}</span><strong>${echapper(i.titre)}</strong>
+          <span class="petit">${echapper(i.pourquoi)}</span>${i.simple ? "" : `<span class="petit">D'après : ${echapper(i.sujet.titre)}</span>`}</button>`).join("")}</div>`;
         z.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => {
           const i = d.idees[Number(b.dataset.k)];
           choisirSujet({ cle: "idee-" + b.dataset.k, type: "sujet", sujet_id: i.sujet_id, libelle: i.sujet.titre });
