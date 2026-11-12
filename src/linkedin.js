@@ -71,7 +71,7 @@ async function appelGemini(env, modele, consignes, contenu, schema, temperature 
     }),
   });
   if (r.status === 429) return { quota: true };
-  if (!r.ok) return { erreur: `HTTP ${r.status}` };
+  if (!r.ok) return { erreur: `HTTP ${r.status} : ${(await r.text()).slice(0, 200)}` };
   const d = await r.json();
   const t = d.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
   try { return { donnees: JSON.parse(t) }; } catch { return { erreur: "réponse illisible" }; }
@@ -83,12 +83,14 @@ async function generer(env, db, consignes, contenu, schema, preferer = "fort") {
   const lu = await lireEtat(db, "ia_quota");
   const compte = lu?.valeur?.jour === jourGoogle() ? lu.valeur.compteurs : {};
   const ordre = (preferer === "fort" && m.fort && (compte[m.fort] || 0) < 14 ? [m.fort, m.lite] : [m.lite, m.fort]).filter(Boolean);
+  const details = [];
   for (const modele of ordre) {
     await compterQuota(db, modele);
     const r = await appelGemini(env, modele, consignes, contenu, schema);
     if (r.donnees) return { ...r, modele };
+    details.push(`${modele} : ${r.quota ? "quota" : r.erreur}`);
   }
-  return { erreur: "L'IA est momentanément indisponible (quota gratuit atteint ou surcharge). Réessayez plus tard." };
+  return { erreur: "L'IA est momentanément indisponible (quota gratuit atteint ou surcharge). Réessayez plus tard.", details };
 }
 
 // Actualités récentes et importantes : la matière première des posts.
@@ -111,7 +113,7 @@ const SCHEMA_IDEES = {
         properties: {
           sujet_id: { type: "STRING" },
           titre: { type: "STRING", description: "Idée de post en une phrase accrocheuse (moins de 90 caractères)" },
-          approche: { type: "STRING", enum: Object.keys(APPROCHES) },
+          approche: { type: "STRING", description: "Une de ces valeurs exactement : " + Object.keys(APPROCHES).join(", ") },
           pourquoi: { type: "STRING", description: "Pourquoi ce sujet intéresse le réseau d'un CGP (une phrase)" },
         },
         required: ["sujet_id", "titre", "approche", "pourquoi"],
@@ -162,7 +164,7 @@ export async function routeLinkedin(request, env, chemin, moi) {
       const idees = (r.donnees?.idees || []).map((i) => ({ ...i, sujet_id: String(i.sujet_id || "").replace(/[\[\]\s]/g, "") }))
         .filter((i) => ids.has(i.sujet_id) && APPROCHES[i.approche]).slice(0, 6);
       if (idees.length) { await ecrireEtat(db, "linkedin_idees", idees); await db.prepare("DELETE FROM etat WHERE cle = 'linkedin_idees_erreur'").run(); cache = { valeur: idees, maj_le: new Date().toISOString() }; }
-      else await ecrireEtat(db, "linkedin_idees_erreur", { erreur: r.erreur || null, brut: JSON.stringify(r.donnees || null).slice(0, 600) });
+      else await ecrireEtat(db, "linkedin_idees_erreur", { erreur: r.erreur || null, details: r.details || null, brut: JSON.stringify(r.donnees || null).slice(0, 600) });
     }
     const parId = Object.fromEntries(sujets.map((s) => [s.id, s]));
     let idees = (cache?.valeur || []).filter((i) => parId[i.sujet_id]).map((i) => ({ ...i, sujet: parId[i.sujet_id] }));

@@ -268,6 +268,7 @@ export async function routeRobot(request, env, chemin) {
 
   // 7 bis) Contrôle de la rubrique LinkedIn (idées + une rédaction d'essai), pour les vérifications automatiques.
   if (chemin === "/api/robot/linkedin/essai" && request.method === "POST") {
+    await db.prepare("DELETE FROM etat WHERE cle IN ('linkedin_idees_erreur', 'linkedin_idees')").run();   // essai : on force un nouveau calcul
     const base = "https://site.local";
     const idees = await (await routeLinkedin(new Request(base + "/api/linkedin/sujets"), env, "/api/linkedin/sujets", null)).json();
     let post = null;
