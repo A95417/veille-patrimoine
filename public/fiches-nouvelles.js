@@ -485,12 +485,12 @@ FICHES.push(
     essentiel: [
       { titre: "Le prélèvement forfaitaire unique (PFU)", texte: "Par défaut, les revenus de placement et les plus-values de valeurs mobilières sont taxés à 12,8 % d'impôt plus les prélèvements sociaux, soit 31,4 % en 2026." },
       { titre: "L'option pour le barème", texte: "On peut choisir le barème progressif de l'impôt (case 2OP). Elle est globale (tous les revenus de placement et plus-values de l'année) et donne droit à l'abattement de 40 % sur les dividendes et à une CSG en partie déductible." },
-      { titre: "Un acompte prélevé à la source", texte: "La banque prélève un acompte d'impôt de 12,8 % au versement ; il est ensuite régularisé dans la déclaration. Dispense possible sous conditions de revenus." },
+      { titre: "Un acompte prélevé à la source", texte: "Sur les intérêts et les dividendes, la banque prélève un acompte d'impôt de 12,8 % au versement ; il est ensuite régularisé dans la déclaration. Les plus-values sur titres, elles, sont taxées après la déclaration. Dispense d'acompte possible sous conditions de revenus." },
       { titre: "Deux taux de prélèvements sociaux", texte: "18,6 % depuis 2026 pour la plupart des placements, mais 17,2 % pour l'assurance-vie, le PEL, le CEL, le plan d'épargne populaire, les revenus fonciers et les plus-values immobilières." },
       { titre: "Les placements exonérés", texte: "Les intérêts du livret A, du LDDS, du LEP et du livret jeune échappent aux prélèvements sociaux, et les livrets réglementés à l'impôt." },
     ],
     schema: [
-      { titre: "Revenu perçu", texte: "Intérêt, dividende, plus-value" },
+      { titre: "Revenu perçu", texte: "Intérêts, dividendes" },
       { titre: "Acompte à la source", texte: "12,8 % + 18,6 %" },
       { titre: "Déclaration", texte: "PFU par défaut, ou barème (case 2OP)" },
       { titre: "Régularisation", texte: "Le trop-perçu est remboursé" },
@@ -502,9 +502,9 @@ FICHES.push(
         lignes: [
           ["Livret A, LDDS, LEP, livret jeune", "Exonéré", "Exonéré"],
           ["Compte-titres (intérêts, dividendes, plus-values)", "12,8 % ou barème sur option", "18,6 %"],
-          ["PEA de plus de 5 ans", "Exonéré", "18,6 %"],
-          ["Assurance-vie", "12,8 % ou 7,5 % après 8 ans (abattement 4 600 / 9 200 €)", "17,2 %"],
-          ["PEL, CEL", "Selon la date d'ouverture", "17,2 %"],
+          ["PEA de plus de 5 ans", "Exonéré", "18,6 % (règles particulières pour certains gains antérieurs à 2018)"],
+          ["Assurance-vie", "12,8 %, ou 7,5 % après 8 ans jusqu'à 150 000 € de primes (abattement 4 600 / 9 200 €)", "17,2 %"],
+          ["PEL", "Ouvert avant 2018 : exonéré les 12 premières années ; depuis 2018 : 12,8 %", "17,2 %"],
         ],
         note: "Sources : Service-public (F2329, F34913, F35006, F2385). Le taux de 18,6 % s'applique aux revenus de placement perçus depuis le 1er janvier 2026.",
       },
@@ -527,7 +527,7 @@ FICHES.push(
       { texte: "En 2026, le PFU est de 30 %.", vrai: false, explication: "31,4 % : 12,8 % d'impôt + 18,6 % de prélèvements sociaux." },
       { texte: "L'option pour le barème peut être choisie revenu par revenu.", vrai: false, explication: "Elle est globale pour l'année." },
       { texte: "Les intérêts du livret A sont exonérés de prélèvements sociaux.", vrai: true, explication: "Comme ceux du LDDS, du LEP et du livret jeune." },
-      { texte: "Au barème, une partie de la CSG est déductible.", vrai: true, explication: "6,8 points de CSG, uniquement en cas d'option pour le barème." },
+      { texte: "Au barème, une partie de la CSG est déductible.", vrai: true, explication: "6,8 points de CSG, en principe seulement en cas d'option pour le barème." },
     ],
     quiz: [
       { question: "Taux des prélèvements sociaux sur des dividendes perçus en 2026 ?", choix: ["17,2 %", "18,6 %", "12,8 %", "30 %"], bonne: 1, explication: "18,6 % depuis le 1er janvier 2026." },
@@ -538,7 +538,7 @@ FICHES.push(
     cartes: [
       { recto: "PFU 2026", verso: "31,4 % = 12,8 % d'impôt + 18,6 % de prélèvements sociaux." },
       { recto: "Case 2OP", verso: "Option pour le barème : globale pour tous les revenus de placement de l'année." },
-      { recto: "Dispense d'acompte", verso: "Revenu fiscal de référence < 50 000 € (75 000 € couple), demande avant le 30 novembre." },
+      { recto: "Dispense d'acompte", verso: "Revenu fiscal de référence de l'avant-dernière année < 25 000 € (50 000 € couple) pour les intérêts, < 50 000 € (75 000 € couple) pour les dividendes ; demande avant le 30 novembre." },
     ],
     paires: [
       { terme: "PFU", definition: "Flat tax de 12,8 % + prélèvements sociaux" },

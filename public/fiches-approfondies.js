@@ -1506,6 +1506,8 @@ Object.assign(APPROFONDI, {
 });
 
 Object.assign(SRC, {
+  spPel: ["Service-public · Plan épargne logement", "https://www.service-public.gouv.fr/particuliers/vosdroits/F16140"],
+  simuRcm: ["impots.gouv.fr · Aide revenus de capitaux mobiliers 2026", "https://simulateur-ir-ifi.impots.gouv.fr/calcul_impot/2026/aides/capitaux_mobiliers.htm"],
   spPlacements: ["Service-public · Revenus d'épargne et de placement", "https://www.service-public.gouv.fr/particuliers/vosdroits/F34913"],
   valMob: ["impots.gouv.fr · Valeurs mobilières", "https://www.impots.gouv.fr/particulier/questions/jai-des-valeurs-mobilieres-comment-sont-elles-imposees"],
   brochurePv: ["impots.gouv.fr · Brochure IR 2026, plus-values", "https://www.impots.gouv.fr/www2/fichiers/documentation/brochure/ir_2026/pdf_som/09-plus_values_137a156.pdf"],
@@ -1520,15 +1522,15 @@ Object.assign(APPROFONDI, {
         points: [
           { t: "Elle se coche case 2OP de la déclaration ; si elle était cochée l'an passé, elle est pré-cochée.", s: SRC.valMob },
           { t: "Elle vaut pour tous les revenus de capitaux mobiliers et plus-values de valeurs mobilières de l'année, et ouvre l'abattement de 40 % sur les dividendes, la CSG en partie déductible et la déduction des frais.", s: SRC.spPlacements },
-          { t: "Pour les revenus 2026 et suivants, on peut y renoncer si elle se révèle défavorable.", s: SRC.spPlacements },
-          { t: "Au barème, 6,8 points de CSG sont déductibles du revenu de l'année suivante.", s: SRC.ps2026 },
+          { t: "Pour les revenus 2026 et suivants, on peut y renoncer si elle se révèle défavorable, dans le délai de réclamation ou lors d'un contrôle.", s: SRC.spPlacements },
+          { t: "Au barème, 6,8 points de CSG sont déductibles du revenu imposable de l'année où elle est payée (pour des dividendes de 2026 : revenus 2026 déclarés en 2027).", s: SRC.ps2026 },
         ],
       },
       {
         titre: "L'acompte et sa dispense", icone: "🧾",
         points: [
-          { t: "À l'encaissement, 31,4 % sont prélevés : 12,8 % d'acompte d'impôt et 18,6 % de prélèvements sociaux. L'acompte s'impute sur l'impôt ; l'excédent est remboursé.", s: SRC.valMob },
-          { t: "Dispense de l'acompte si le revenu fiscal de référence de l'avant-dernière année est inférieur à 50 000 € (75 000 € pour un couple) : demande à la banque avant le 30 novembre de l'année précédente.", s: SRC.spPlacements },
+          { t: "Sur les intérêts et dividendes, 31,4 % sont prélevés à l'encaissement : 12,8 % d'acompte d'impôt et 18,6 % de prélèvements sociaux. L'acompte s'impute sur l'impôt ; l'excédent est remboursé.", s: SRC.valMob },
+          { t: "Dispense de l'acompte si le revenu fiscal de référence de l'avant-dernière année est inférieur à 25 000 € (50 000 € pour un couple) pour les intérêts, ou à 50 000 € (75 000 €) pour les dividendes : demande à la banque avant le 30 novembre de l'année précédente.", s: SRC.simuRcm },
         ],
       },
       {
