@@ -64,7 +64,10 @@ async function modeles(env, db) {
 }
 
 async function appelGemini(env, modele, consignes, contenu, schema, temperature = 0.6, essai = 1) {
-  const r = await fetch(`${API}/models/${modele}:generateContent`, {
+  let r;
+  try {
+    r = await fetch(`${API}/models/${modele}:generateContent`, {
+    signal: AbortSignal.timeout(35000),   // au-delà, on passe au modèle suivant plutôt que de faire attendre
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify({
@@ -73,9 +76,10 @@ async function appelGemini(env, modele, consignes, contenu, schema, temperature 
       generationConfig: { temperature, responseMimeType: "application/json", responseSchema: schema, maxOutputTokens: 4096 },
     }),
   });
+  } catch (e) { return { erreur: e.name === "TimeoutError" ? "délai dépassé (35 s)" : e.message }; }
   if (r.status === 429) return { quota: true };
-  if (r.status >= 500 && essai < 3) {   // surcharge passagère chez Google : on patiente un peu et on réessaie
-    await new Promise((ok) => setTimeout(ok, 2500 * essai));
+  if (r.status >= 500 && essai < 2) {   // surcharge passagère chez Google : une nouvelle tentative, puis modèle suivant
+    await new Promise((ok) => setTimeout(ok, 2000));
     return appelGemini(env, modele, consignes, contenu, schema, temperature, essai + 1);
   }
   if (!r.ok) return { erreur: `HTTP ${r.status} : ${(await r.text()).slice(0, 200)}` };
@@ -93,9 +97,10 @@ async function generer(env, db, consignes, contenu, schema, preferer = "fort") {
   const details = [];
   for (const modele of ordre) {
     await compterQuota(db, modele);
+    const t = Date.now();
     const r = await appelGemini(env, modele, consignes, contenu, schema);
-    if (r.donnees) return { ...r, modele };
-    details.push(`${modele} : ${r.quota ? "quota" : r.erreur}`);
+    details.push(`${modele} : ${r.donnees ? "ok" : r.quota ? "quota" : r.erreur} en ${Math.round((Date.now() - t) / 1000)} s`);
+    if (r.donnees) return { ...r, modele, details };
   }
   return { erreur: "L'IA est momentanément indisponible (quota gratuit atteint ou surcharge). Réessayez plus tard.", details };
 }
@@ -287,7 +292,7 @@ export async function routeLinkedin(request, env, chemin, moi) {
       hashtags: (p.hashtags || []).map((h) => "#" + String(h).replace(/^#+/, "").replace(/\s+/g, "")).filter((h) => h.length > 1).slice(0, 5),
       appels_action: (p.appels_action || []).slice(0, 2),
       a_verifier: (p.a_verifier || []).slice(0, 5),
-      lien, modele: r.modele, restants: LIMITE_JOUR - compteur.n,
+      lien, modele: r.modele, restants: LIMITE_JOUR - compteur.n, ...(moi ? {} : { details: r.details }),
     });
   }
   return null;
