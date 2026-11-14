@@ -1,4 +1,4 @@
-// version 1.0 — Contenu approfondi des fiches « Apprendre ».
+// version 1.1 — Contenu approfondi des fiches « Apprendre ».
 // Chaque règle renvoie à sa source officielle (s: [nom, url]). Rien n'est ajouté sans source.
 // Lot 1 : donations, succession, démembrement, régimes matrimoniaux (vérifié le 14 novembre 2026).
 
@@ -13,6 +13,7 @@ const SRC = {
   cgi764: ["Légifrance · CGI art. 764 à 775", "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006197324"],
   ccConjoint: ["Légifrance · Code civil art. 756 à 767", "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000006070721/LEGISCTA000006150139/"],
   cgi751: ["Légifrance · CGI art. 751", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000027517865"],
+  bofipUsufruit: ["BOFiP · Usufruit temporaire", "https://bofip.impots.gouv.fr/bofip/2323-PGP.html/identifiant=BOI-ENR-DMTG-10-40-10-50-20131223"],
   cgi669: ["Légifrance · CGI art. 669", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006310173/"],
   bofipIfi: ["BOFiP · IFI et biens démembrés", "https://bofip.impots.gouv.fr/export/pdf/12307"],
   bofip990: ["BOFiP · Art. 990 I et démembrement", "https://bofip.impots.gouv.fr/bofip/1335-PGP.html/identifiant=BOI-TCAS-AUT-60-20230330"],
@@ -55,7 +56,7 @@ const APPROFONDI = {
       {
         titre: "Déclarer un don manuel", icone: "📝",
         points: [
-          { t: "Depuis le 1er janvier 2026, la déclaration en ligne est obligatoire ; le formulaire papier n° 2735 ne sert plus que dans des cas d'exonération.", s: SRC.donManuel },
+          { t: "Depuis le 1er janvier 2026, la déclaration en ligne est obligatoire ; le formulaire papier n° 2735 ne sert plus que si l'on est dispensé de la déclaration en ligne.", s: SRC.donManuel },
           { t: "Au-delà de 15 000 €, le formulaire n° 2734 permet de reporter le paiement des droits jusqu'au décès du donateur.", s: SRC.donManuel },
           { t: "C'est la date d'enregistrement qui fait courir le délai de 15 ans.", s: SRC.donManuel },
           { t: "Valeur retenue : la plus élevée entre la valeur au jour de la remise et celle au jour de la déclaration.", s: SRC.donManuel },
@@ -147,9 +148,9 @@ const APPROFONDI = {
         titre: "Calculer l'actif taxable", icone: "🧮",
         points: [
           { t: "Résidence principale : abattement de 20 % sur sa valeur si elle est occupée par le conjoint, le partenaire de PACS ou des enfants mineurs ou protégés (CGI art. 764 bis).", s: SRC.cgi764 },
-          { t: "Mobilier : forfait de 5 % de l'actif, sauf preuve contraire (CGI art. 764).", s: SRC.cgi764 },
+          { t: "Mobilier : à défaut d'inventaire ou de vente publique, il est évalué au minimum à 5 % des autres biens de la succession, sauf preuve contraire (CGI art. 764).", s: SRC.cgi764 },
           { t: "Frais funéraires déductibles dans la limite de 1 500 €.", s: SRC.calculSucc },
-          { t: "Certaines dettes ne sont pas déductibles (CGI art. 773), comme la dette de restitution d'un quasi-usufruit pour les successions ouvertes depuis le 29 décembre 2023 (art. 774 bis).", s: SRC.cgi764 },
+          { t: "Certaines dettes ne sont pas déductibles (CGI art. 773), comme, en principe, la dette de restitution d'une somme d'argent dont le défunt s'était réservé l'usufruit (quasi-usufruit), pour les successions ouvertes depuis le 29 décembre 2023 (art. 774 bis, avec des exceptions).", s: SRC.cgi764 },
         ],
       },
       {
@@ -163,9 +164,9 @@ const APPROFONDI = {
         titre: "Déclarer : délais et dispenses", icone: "📅",
         points: [
           { t: "Délai : 6 mois après le décès (12 mois si le décès a lieu à l'étranger).", s: SRC.spDeclSucc },
-          { t: "Pas de déclaration pour un enfant ou le conjoint si l'actif brut est inférieur à 50 000 € et sans donation non déclarée ; pour les autres héritiers, sous 3 000 €.", s: SRC.spDeclSucc },
+          { t: "Pas de déclaration pour les enfants, petits-enfants, parents, le conjoint ou le partenaire de PACS si l'actif brut est inférieur à 50 000 € et sans donation non déclarée ; pour les autres héritiers, sous 3 000 €.", s: SRC.spDeclSucc },
           { t: "En retard : intérêts de 0,20 % par mois, et majorations de 10 % à 80 %.", s: SRC.spDeclSucc },
-          { t: "Au-delà de 5 000 €, un acte de notoriété (chez le notaire) prouve la qualité d'héritier.", s: SRC.spDeclSucc },
+          { t: "À partir de 5 965 €, un acte de notoriété (chez le notaire) prouve la qualité d'héritier ; en dessous, une attestation signée par tous les héritiers suffit.", s: SRC.spDeclSucc },
         ],
       },
       {
@@ -217,7 +218,7 @@ const APPROFONDI = {
     ],
     cartes: [
       { recto: "Article 763 du Code civil", verso: "Le conjoint peut occuper gratuitement le logement pendant 1 an." },
-      { recto: "Forfait mobilier", verso: "5 % de l'actif, sauf preuve contraire (CGI art. 764)." },
+      { recto: "Forfait mobilier", verso: "Sans inventaire : au minimum 5 % des autres biens, sauf preuve contraire (CGI art. 764)." },
       { recto: "Pénalités de retard (succession)", verso: "0,20 % par mois, plus une majoration de 10 % à 80 %." },
     ],
     liens: [
@@ -235,15 +236,15 @@ const APPROFONDI = {
       {
         titre: "L'usufruit temporaire", icone: "⏳",
         points: [
-          { t: "Un usufruit à durée fixe vaut 23 % de la pleine propriété par période de 10 ans, sans fraction : 11 ans comptent comme 2 périodes, soit 46 %.", s: SRC.cgi669 },
-          { t: "Il ne peut pas dépasser la valeur de l'usufruit viager de l'usufruitier.", s: SRC.cgi669 },
+          { t: "Un usufruit à durée fixe vaut 23 % de la pleine propriété « pour chaque période de dix ans de la durée de l'usufruit, sans fraction et sans égard à l'âge de l'usufruitier » : 20 ans = 2 périodes = 46 %.", s: SRC.cgi669 },
+          { t: "Il ne peut pas dépasser la valeur de l'usufruit viager de l'usufruitier.", s: SRC.bofipUsufruit },
         ],
       },
       {
         titre: "La présomption de l'article 751", icone: "🔎",
         points: [
           { t: "Un bien dont le défunt avait l'usufruit et un héritier présomptif la nue-propriété est présumé faire partie de la succession : il est taxé en pleine propriété.", s: SRC.cgi751 },
-          { t: "Exception : un démembrement réalisé par donation régulière, ou plus de 3 mois avant le décès.", s: SRC.cgi751 },
+          { t: "Exception : le démembrement vient d'une donation régulière faite plus de 3 mois avant le décès (les deux conditions sont exigées ; pas de délai pour une donation par contrat de mariage). Un achat de nue-propriété n'entre pas dans l'exception.", s: SRC.cgi751 },
           { t: "La preuve contraire est possible, par exemple en prouvant une donation d'argent datée qui a financé la nue-propriété.", s: SRC.cgi751 },
         ],
       },
@@ -251,7 +252,7 @@ const APPROFONDI = {
         titre: "Démembrement et IFI", icone: "🏛️",
         points: [
           { t: "Principe : l'usufruitier déclare le bien en pleine propriété à l'IFI, le nu-propriétaire ne déclare rien.", s: SRC.bofipIfi },
-          { t: "Exceptions : usufruit légal du conjoint survivant, vente avec réserve d'usufruit à une personne hors article 751, don à l'État.", s: SRC.bofipIfi },
+          { t: "Exceptions : usufruit légal du conjoint survivant, vente avec réserve d'usufruit à une personne hors article 751, don de la nue-propriété à l'État, une collectivité, un établissement public ou une association ou fondation reconnue d'utilité publique.", s: SRC.bofipIfi },
           { t: "Une donation avec réserve d'usufruit n'est pas une exception : le parent reste imposé sur toute la valeur.", s: SRC.bofipIfi },
         ],
       },
@@ -266,10 +267,10 @@ const APPROFONDI = {
     ],
     cas: [
       {
-        titre: "Un usufruit de 12 ans", niveau: "Facile",
-        enonce: "Une mère donne pendant 12 ans l'usufruit d'un studio de 300 000 € à une association, puis le récupère.",
+        titre: "Un usufruit de 20 ans", niveau: "Facile",
+        enonce: "Une mère donne pendant 20 ans l'usufruit d'un studio de 300 000 € à une association, puis le récupère.",
         question: "Quelle valeur fiscale pour cet usufruit ?",
-        etapes: ["23 % par période de 10 ans, sans fraction.", "12 ans font 2 périodes.", "2 × 23 % = 46 % ; 300 000 × 46 % = 138 000 €."],
+        etapes: ["23 % par période de 10 ans, sans égard à l'âge.", "20 ans font 2 périodes.", "2 × 23 % = 46 % ; 300 000 × 46 % = 138 000 €."],
         reponse: "138 000 €.",
         s: SRC.cgi669,
       },
@@ -285,22 +286,21 @@ const APPROFONDI = {
         titre: "L'achat juste avant le décès", niveau: "Intermédiaire",
         enonce: "Un père achète un appartement : lui prend l'usufruit, son fils la nue-propriété, avec l'argent du père. Il décède 2 mois plus tard.",
         question: "Que se passe-t-il au décès ?",
-        etapes: ["Le fils est héritier présomptif et le père était usufruitier : article 751.", "Le démembrement a moins de 3 mois et ne vient pas d'une donation régulière.", "Le bien est présumé dans la succession, en pleine propriété."],
+        etapes: ["Le fils est héritier présomptif et le père était usufruitier : article 751.", "C'est un achat, pas une donation régulière de plus de 3 mois : l'exception ne joue pas.", "Le bien est présumé dans la succession, en pleine propriété."],
         reponse: "Il est taxé comme si le père le détenait en pleine propriété, sauf preuve contraire (par exemple une donation d'argent datée et déclarée).",
         s: SRC.cgi751,
       },
     ],
     vraiFaux: [
-      { texte: "Un usufruit temporaire de 15 ans vaut 34,5 %.", vrai: false, explication: "Sans fraction : 15 ans font 2 périodes de 10 ans, soit 46 %." },
       { texte: "Le nu-propriétaire déclare le bien à l'IFI.", vrai: false, explication: "C'est en principe l'usufruitier, en pleine propriété." },
     ],
     quiz: [
-      { question: "Combien vaut fiscalement un usufruit temporaire de 8 ans ?", choix: ["18,4 %", "23 %", "46 %", "Selon l'âge"], bonne: 1, explication: "23 % par période de 10 ans, toute période commencée comptant entière." },
+      { question: "Combien vaut fiscalement un usufruit temporaire de 10 ans ?", choix: ["10 %", "23 %", "46 %", "Selon l'âge"], bonne: 1, explication: "23 % par période de 10 ans, sans égard à l'âge de l'usufruitier (CGI art. 669)." },
       { question: "Que perd-on avec une clause « conjoint usufruitier, enfants nus-propriétaires » ?", choix: ["Rien", "La part d'abattement du conjoint, non reportée", "L'exonération du conjoint", "Le barème 669"], bonne: 1, explication: "L'abattement de 152 500 € est partagé ; la part du conjoint exonéré est perdue." },
     ],
     cartes: [
-      { recto: "Usufruit temporaire", verso: "23 % par période de 10 ans, sans fraction (CGI art. 669)." },
-      { recto: "Article 751 du CGI", verso: "Présomption de propriété du défunt usufruitier, sauf donation régulière ou démembrement de plus de 3 mois." },
+      { recto: "Usufruit temporaire", verso: "23 % par période de 10 ans, sans égard à l'âge (CGI art. 669)." },
+      { recto: "Article 751 du CGI", verso: "Présomption de propriété du défunt usufruitier, sauf donation régulière faite plus de 3 mois avant le décès." },
     ],
     liens: [
       { type: "officiel", titre: "Barème de l'usufruit, art. 669 (Légifrance)", url: SRC.cgi669[1] },
@@ -329,7 +329,7 @@ const APPROFONDI = {
         points: [
           { t: "Si l'argent propre d'un époux a profité à la communauté, la communauté lui doit une récompense (art. 1433).", s: SRC.ccCommu },
           { t: "À l'inverse, l'époux qui a tiré un profit personnel des biens communs doit récompense à la communauté (art. 1437).", s: SRC.ccCommu },
-          { t: "Montant : en principe le plus faible entre la dépense faite et le profit subsistant ; jamais moins que la dépense si elle était nécessaire (art. 1469).", s: SRC.ccCommu },
+          { t: "Montant : en principe le plus faible entre la dépense faite et le profit subsistant ; jamais moins que la dépense si elle était nécessaire ; jamais moins que le profit subsistant si l'argent a servi à acheter, conserver ou améliorer un bien encore présent (art. 1469).", s: SRC.ccCommu },
         ],
       },
       {
@@ -337,7 +337,7 @@ const APPROFONDI = {
         points: [
           { t: "Aucun époux ne peut vendre seul le logement de la famille ni ses meubles, même s'il en est seul propriétaire. L'autre peut demander l'annulation dans l'année où il l'apprend (art. 215).", s: SRC.cc215 },
           { t: "Les dettes pour l'entretien du ménage ou l'éducation des enfants engagent les deux époux solidairement (art. 220).", s: SRC.cc220 },
-          { t: "Sauf : dépenses manifestement excessives, achats à crédit et emprunts sans l'accord des deux (hors petites sommes pour la vie courante).", s: SRC.cc220 },
+          { t: "Sauf : dépenses manifestement excessives ; achats à tempérament sans l'accord des deux ; emprunts sans l'accord des deux, sauf petites sommes nécessaires à la vie courante.", s: SRC.cc220 },
         ],
       },
       {
@@ -381,7 +381,7 @@ const APPROFONDI = {
         titre: "L'héritage placé dans l'achat commun", niveau: "Piège",
         enonce: "Mariée sans contrat, Léa reçoit 80 000 € d'héritage et les utilise pour l'appartement acheté avec son mari, sans rien préciser dans l'acte.",
         question: "Son argent est-il perdu en cas de divorce ?",
-        etapes: ["L'héritage était un bien propre (art. 1405).", "Sans clause de remploi dans l'acte, l'appartement est commun.", "Mais la communauté a profité de son argent propre : elle lui doit une récompense (art. 1433)."],
+        etapes: ["L'héritage était un bien propre (art. 1405).", "Sans clause de remploi dans l'acte, l'appartement est commun.", "Mais la communauté a profité de son argent propre : elle lui doit une récompense (art. 1433).", "L'argent a servi à acheter un bien encore présent : la récompense ne peut pas être inférieure au profit subsistant, elle suit donc la valeur de l'appartement (art. 1469)."],
         reponse: "Non, elle a droit à une récompense, mais elle devra prouver l'origine des fonds. Le bon réflexe : faire déclarer l'origine de l'argent dans l'acte d'achat.",
         s: SRC.ccCommu,
       },
@@ -396,8 +396,8 @@ const APPROFONDI = {
     ],
     vraiFaux: [
       { texte: "En séparation de biens, un époux propriétaire peut vendre seul le logement familial.", vrai: false, explication: "Non : l'article 215 exige l'accord des deux époux, quel que soit le régime." },
-      { texte: "Une clause d'attribution intégrale est fiscalement une donation.", vrai: false, explication: "L'article 1525 dit le contraire." },
-      { texte: "Un achat à crédit sans l'accord du conjoint l'engage solidairement.", vrai: false, explication: "Les achats à tempérament sans l'accord des deux échappent à la solidarité (art. 220)." },
+      { texte: "Pour le Code civil, une clause d'attribution intégrale de la communauté est une donation.", vrai: false, explication: "L'article 1525 dit qu'elle n'est pas une donation, ni sur le fond ni sur la forme." },
+      { texte: "Un achat à tempérament sans l'accord du conjoint l'engage solidairement.", vrai: false, explication: "Les achats à tempérament sans l'accord des deux échappent à la solidarité (art. 220)." },
     ],
     quiz: [
       { question: "Comment garder propre un bien acheté avec un héritage ?", choix: ["Rien à faire", "Une déclaration de remploi dans l'acte d'achat", "Un testament", "Le déclarer aux impôts"], bonne: 1, explication: "Article 1434 du Code civil." },
