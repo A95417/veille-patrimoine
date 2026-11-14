@@ -1449,7 +1449,7 @@ Object.assign(APPROFONDI, {
         titre: "Le contenu d'un testament", icone: "📜",
         points: [
           { t: "Legs universel (tous les biens), à titre universel (une part ou une catégorie, comme l'immobilier) ou particulier (un bien précis).", s: SRC.spTestament },
-          { t: "Les légataires universels et à titre universel paient les dettes au prorata ; le légataire particulier non.", s: SRC.spTestament },
+          { t: "Les légataires universels et à titre universel paient les dettes de la succession ; le légataire particulier non.", s: SRC.spTestament },
           { t: "Le testament peut aussi désigner un exécuteur testamentaire, un tuteur pour les enfants, ou reconnaître un enfant (forme authentique obligatoire pour cela).", s: SRC.spTestament },
           { t: "Entre 16 et 18 ans, on ne peut léguer que la moitié de ses biens (sauf émancipation) ; un majeur sous tutelle a besoin de l'autorisation du juge ou du conseil de famille.", s: SRC.spTestament },
         ],
@@ -1459,13 +1459,13 @@ Object.assign(APPROFONDI, {
         points: [
           { t: "Le testateur révoque par déclaration devant notaire, par un nouveau testament, ou en détruisant son testament olographe.", s: SRC.spTestament },
           { t: "Après le décès, les héritiers peuvent agir en justice : 5 ans pour vice de forme, insanité d'esprit ou inexécution des charges ; 1 an pour ingratitude.", s: SRC.spTestament },
-          { t: "La donation au dernier vivant se révoque à tout moment, devant notaire ou par testament, sans prévenir le conjoint.", s: SRC.spDdv },
+          { t: "La donation au dernier vivant faite pendant le mariage se révoque à tout moment, devant notaire ou par testament, sans prévenir le conjoint.", s: SRC.spDdv },
         ],
       },
       {
         titre: "La donation au dernier vivant en pratique", icone: "💍",
         points: [
-          { t: "Réservée aux époux, par acte notarié (135,84 € TTC), pendant le mariage ou dans le contrat de mariage. Chacun signe son acte si elle est réciproque.", s: SRC.spDdv },
+          { t: "Réservée aux époux, par acte notarié (135,84 € TTC), en général pendant le mariage (elle peut aussi figurer dans le contrat de mariage). Chacun signe son acte si elle est réciproque.", s: SRC.spDdv },
           { t: "Avec des enfants, communs ou non : quotité disponible en pleine propriété, ou 1/4 en pleine propriété + 3/4 en usufruit, ou tout en usufruit (art. 1094-1).", s: SRC.cc10941 },
           { t: "Le conjoint peut cantonner son choix à certains biens ; ce n'est pas une donation aux autres héritiers (art. 1094-1).", s: SRC.cc10941 },
           { t: "Le notaire l'inscrit au fichier central des dernières volontés, sauf opposition.", s: SRC.spDdv },
@@ -1487,7 +1487,7 @@ Object.assign(APPROFONDI, {
         question: "Que représente chaque option pour l'épouse ?",
         etapes: ["Option 1 : quotité disponible avec 3 enfants = 1/4 en pleine propriété = 150 000 €.", "Option 2 : 150 000 € en pleine propriété + usufruit sur 450 000 €.", "Option 3 : usufruit sur 600 000 €.", "Valeur fiscale de l'usufruit à 72 ans : 30 % (CGI art. 669). Option 2 ≈ 150 000 + 135 000 = 285 000 € ; option 3 ≈ 180 000 €."],
         reponse: "L'option 2 est la plus large en valeur ; l'option 3 lui donne les revenus de tout. Aucun droit de succession pour elle dans tous les cas.",
-        s: SRC.cc10941,
+        s: SRC.cgi669,
       },
       {
         titre: "Le testament à deux", niveau: "Piège",
@@ -1501,6 +1501,75 @@ Object.assign(APPROFONDI, {
     liens: [
       { type: "officiel", titre: "Quotité disponible, art. 913 (Légifrance)", url: SRC.cc913[1] },
       { type: "officiel", titre: "Donation entre époux, art. 1094-1 (Légifrance)", url: SRC.cc10941[1] },
+    ],
+  },
+});
+
+Object.assign(SRC, {
+  spPlacements: ["Service-public · Revenus d'épargne et de placement", "https://www.service-public.gouv.fr/particuliers/vosdroits/F34913"],
+  valMob: ["impots.gouv.fr · Valeurs mobilières", "https://www.impots.gouv.fr/particulier/questions/jai-des-valeurs-mobilieres-comment-sont-elles-imposees"],
+  brochurePv: ["impots.gouv.fr · Brochure IR 2026, plus-values", "https://www.impots.gouv.fr/www2/fichiers/documentation/brochure/ir_2026/pdf_som/09-plus_values_137a156.pdf"],
+});
+
+Object.assign(APPROFONDI, {
+  "fiscalite-placements": {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "L'option pour le barème en détail", icone: "🔀",
+        points: [
+          { t: "Elle se coche case 2OP de la déclaration ; si elle était cochée l'an passé, elle est pré-cochée.", s: SRC.valMob },
+          { t: "Elle vaut pour tous les revenus de capitaux mobiliers et plus-values de valeurs mobilières de l'année, et ouvre l'abattement de 40 % sur les dividendes, la CSG en partie déductible et la déduction des frais.", s: SRC.spPlacements },
+          { t: "Pour les revenus 2026 et suivants, on peut y renoncer si elle se révèle défavorable.", s: SRC.spPlacements },
+          { t: "Au barème, 6,8 points de CSG sont déductibles du revenu de l'année suivante.", s: SRC.ps2026 },
+        ],
+      },
+      {
+        titre: "L'acompte et sa dispense", icone: "🧾",
+        points: [
+          { t: "À l'encaissement, 31,4 % sont prélevés : 12,8 % d'acompte d'impôt et 18,6 % de prélèvements sociaux. L'acompte s'impute sur l'impôt ; l'excédent est remboursé.", s: SRC.valMob },
+          { t: "Dispense de l'acompte si le revenu fiscal de référence de l'avant-dernière année est inférieur à 50 000 € (75 000 € pour un couple) : demande à la banque avant le 30 novembre de l'année précédente.", s: SRC.spPlacements },
+        ],
+      },
+      {
+        titre: "Plus-values sur titres", icone: "📈",
+        points: [
+          { t: "Abattements pour durée de détention : seulement au barème et pour des titres achetés avant le 1er janvier 2018 (50 % de 2 à 8 ans, 65 % au-delà).", s: SRC.brochurePv },
+          { t: "Les prélèvements sociaux portent sur toute la plus-value, avant abattement.", s: SRC.brochurePv },
+          { t: "Une moins-value s'impute sur les plus-values de même nature de l'année, puis des 10 années suivantes.", s: SRC.brochurePv },
+          { t: "Dirigeant qui part à la retraite : abattement fixe de 500 000 € sur la plus-value de cession de ses titres, pour les cessions jusqu'au 31 décembre 2031, sous conditions.", s: SRC.brochurePv },
+          { t: "Formulaire 2074 obligatoire sauf si une seule opération a été entièrement calculée par la banque.", s: SRC.brochurePv },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Tranche à 30 %", niveau: "Facile",
+        enonce: "Une cliente dans la tranche à 30 % perçoit 2 000 € de dividendes.",
+        question: "PFU ou barème ?",
+        etapes: ["PFU : 2 000 × 12,8 % = 256 €.", "Barème : 2 000 × 60 % × 30 % = 360 € (avant CSG déductible).", "Les prélèvements sociaux sont identiques."],
+        reponse: "Le PFU est plus avantageux (256 € contre environ 360 €).",
+        s: SRC.spPlacements,
+      },
+      {
+        titre: "Les vieux titres", niveau: "Intermédiaire",
+        enonce: "Un client dans la tranche à 11 % vend en 2026 des actions achetées en 2015, avec 10 000 € de plus-value.",
+        question: "Combien d'impôt avec chaque option ?",
+        etapes: ["PFU : 10 000 × 12,8 % = 1 280 €.", "Barème : titres achetés avant 2018 et détenus plus de 8 ans → abattement de 65 %.", "10 000 × 35 % × 11 % = 385 €.", "Prélèvements sociaux dans les deux cas : 10 000 × 18,6 % = 1 860 € (sur la plus-value avant abattement)."],
+        reponse: "385 € au barème contre 1 280 € au PFU, plus 1 860 € de prélèvements sociaux dans les deux cas.",
+        s: SRC.brochurePv,
+      },
+      {
+        titre: "L'option globale", niveau: "Piège",
+        enonce: "Un client dans la tranche à 30 % veut le barème pour ses 2 000 € de dividendes de PME achetées en 2012 (gros abattement) mais le PFU pour ses 5 000 € d'intérêts.",
+        question: "Est-ce possible ?",
+        etapes: ["L'option pour le barème est globale.", "Elle s'applique à tous ses revenus de placement et plus-values de l'année."],
+        reponse: "Non : c'est tout au barème ou tout au PFU. Il faut comparer le total des deux options.",
+        s: SRC.spPlacements,
+      },
+    ],
+    liens: [
+      { type: "officiel", titre: "Brochure IR 2026 : plus-values (impots.gouv.fr)", url: SRC.brochurePv[1] },
     ],
   },
 });

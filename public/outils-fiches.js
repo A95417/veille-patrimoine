@@ -346,6 +346,22 @@ const OUTILS_FICHES = {
     },
   ],
 
+  "fiscalite-placements": [
+    {
+      titre: "Calculateur : PFU ou barème pour des dividendes ?",
+      intro: "Taux 2026 publiés par Service-public : PFU de 12,8 % d'impôt, ou barème après l'abattement de 40 %. Prélèvements sociaux de 18,6 % dans les deux cas.",
+      html: () => ctl.curseur("di", "Dividendes perçus", 0, 50000, 100, 2000) + ctl.choix("tm", "Tranche marginale d'imposition", [["0", "0 %"], ["11", "11 %"], ["30", "30 %"], ["41", "41 %"], ["45", "45 %"]], "11") + ctl.resultat(),
+      init: (z) => brancher(z, { di: euros }, (v, r) => {
+        const pfu = v.di * .128, bareme = v.di * .6 * v.tm / 100, ps = v.di * .186;
+        const mieux = bareme < pfu ? "barème" : "PFU";
+        r.className = "simu-resultat " + (bareme < pfu ? "gain" : "perte");
+        r.innerHTML = `Impôt au PFU : <strong>${euros(pfu)}</strong> · au barème : <strong>${euros(bareme)}</strong><br>Prélèvements sociaux dans les deux cas : ${euros(ps)}<br><strong>Plus avantageux ici : ${mieux}</strong>` +
+          barres([{ libelle: "PFU", valeur: pfu, couleur: "#2c6e91" }, { libelle: "Barème", valeur: bareme, couleur: "#e0723b" }]) +
+          note("Estimation hors CSG déductible (qui avantage encore un peu le barème). L'option pour le barème est globale : elle vaut pour tous vos revenus de placement et plus-values de l'année.");
+      }),
+    },
+  ],
+
   "girardin-industriel": [
     {
       titre: "Simulateur : dimensionner un Girardin industriel",

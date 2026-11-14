@@ -111,6 +111,15 @@
       <g transform="translate(300 70)"><g class="anim-flotte"><path d="M0 70L30 0q6 10-4 28L6 74z" fill="#8a6a3a"/><path d="M30 0q14 22-8 44L10 64" fill="#d9b98a"/></g></g>
       <g transform="translate(96 150)"><g class="anim-balance"><circle cx="-12" cy="0" r="16" fill="none" stroke="#f2b632" stroke-width="6"/><circle cx="12" cy="0" r="16" fill="none" stroke="#d6d9e6" stroke-width="6"/></g></g>`,
 
+    "fiscalite-placements": (p) => `<defs>${ciel(p + "c", "#e6f0ff", "#bcd2f7")}</defs>
+      <rect width="400" height="220" fill="url(#${p}c)"/><rect y="190" width="400" height="30" fill="#3d5a98"/>
+      <g transform="translate(200 112)"><circle r="62" fill="#fff"/><path d="M0 0V-62A62 62 0 0128.6 55z" fill="#2c6e91"/><path d="M0 0L28.6 55A62 62 0 01-14 60.4z" fill="#e0723b"/><circle r="26" fill="#fff"/>
+        <text y="6" text-anchor="middle" font-size="17" font-family="Inter,sans-serif" font-weight="700" fill="#2c3e6b">31,4 %</text></g>
+      <g transform="translate(96 150)"><g class="anim-flotte">${pile(0, 0, 4, "#ffd45e", "#c98a12")}</g></g>
+      <g transform="translate(306 150)"><g class="anim-flotte-2">${pile(0, 0, 3, "#ffd45e", "#c98a12")}</g></g>
+      <rect x="72" y="40" width="64" height="22" rx="11" fill="#2c6e91"/><text x="104" y="55" text-anchor="middle" font-size="11" font-family="Inter,sans-serif" font-weight="700" fill="#fff">12,8 %</text>
+      <rect x="264" y="40" width="64" height="22" rx="11" fill="#e0723b"/><text x="296" y="55" text-anchor="middle" font-size="11" font-family="Inter,sans-serif" font-weight="700" fill="#fff">18,6 %</text>`,
+
     "produits-structures": (p) => `<defs>${ciel(p + "c", "#2a1457", "#6b3fc1")}${halo(p + "h", "#c7b2ff")}</defs>
       <rect width="400" height="220" fill="url(#${p}c)"/><circle cx="330" cy="40" r="80" fill="url(#${p}h)" opacity=".5"/>
       <path d="M0 190l70-60 50 30 70-80 60 50 60-60 90 70v80H0z" fill="#4a2a92"/><path d="M0 220v-24l90-30 80 22 90-34 140 30v36z" fill="#371f73"/>

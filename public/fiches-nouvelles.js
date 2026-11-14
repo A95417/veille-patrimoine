@@ -390,7 +390,7 @@ FICHES.push(
       { titre: "Les enfants ont une part protégée", texte: "C'est la réserve héréditaire. On ne transmet librement que la quotité disponible : la moitié avec 1 enfant, un tiers avec 2, un quart avec 3 ou plus." },
       { titre: "Le testament olographe", texte: "Entièrement écrit à la main, daté (jour, mois, année) et signé. Gratuit, mais mieux vaut le déposer chez un notaire pour qu'il soit retrouvé." },
       { titre: "Le testament authentique", texte: "Dicté à un notaire en présence de 2 témoins ou d'un 2e notaire. Plus sûr, il coûte environ 136 €." },
-      { titre: "La donation au dernier vivant", texte: "Acte notarié entre époux, qui ne porte que sur les biens laissés au décès. En présence d'enfants, le conjoint choisira entre trois options plus larges que ses droits légaux." },
+      { titre: "La donation au dernier vivant", texte: "Acte notarié entre époux, qui ne porte que sur les biens laissés au décès. En présence d'enfants, le conjoint choisira entre trois options, dont au moins une va au-delà de ses droits légaux (surtout avec des enfants d'une autre union, où la loi ne lui donne qu'un quart en pleine propriété)." },
       { titre: "Tout se révoque", texte: "Un testament ou une donation au dernier vivant peut être révoqué à tout moment. Le divorce révoque la donation au dernier vivant, sauf volonté contraire." },
     ],
     schema: [
@@ -432,13 +432,13 @@ FICHES.push(
     cas: {
       enonce: "Pierre, veuf, a deux enfants. Il veut léguer le maximum à sa nièce par testament.",
       question: "Quelle part peut-il lui laisser ?",
-      reponse: "Avec 2 enfants, la quotité disponible est d'un tiers : il peut léguer un tiers de ses biens à sa nièce. Les deux autres tiers reviennent à ses enfants (réserve). La nièce paiera des droits de succession de 55 % après un abattement de 7 967 €.",
+      reponse: "Avec 2 enfants, la quotité disponible est d'un tiers : il peut léguer un tiers de ses biens à sa nièce. Les deux autres tiers reviennent à ses enfants (réserve). Si c'est la fille de son frère ou de sa sœur, elle paiera 55 % de droits après un abattement de 7 967 €.",
     },
     vraiFaux: [
       { texte: "Un testament tapé à l'ordinateur puis signé est un testament olographe valable.", vrai: false, explication: "Il doit être entièrement écrit à la main." },
       { texte: "Deux époux peuvent rédiger un seul testament commun.", vrai: false, explication: "Le testament conjonctif est interdit : chacun écrit le sien." },
       { texte: "La donation au dernier vivant transmet des biens dès sa signature.", vrai: false, explication: "Elle ne porte que sur les biens laissés au décès." },
-      { texte: "Le divorce révoque la donation au dernier vivant.", vrai: true, explication: "Automatiquement, sauf si les époux décident de la maintenir." },
+      { texte: "Le divorce révoque la donation au dernier vivant.", vrai: true, explication: "Automatiquement, sauf si l'époux qui l'a consentie décide de la maintenir." },
     ],
     quiz: [
       { question: "Avec 3 enfants, quelle est la quotité disponible ?", choix: ["1/2", "1/3", "1/4", "Rien"], bonne: 2, explication: "Un quart des biens (Code civil, art. 913)." },
@@ -463,6 +463,94 @@ FICHES.push(
       { type: "officiel", titre: "Donation au dernier vivant (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2767" },
       { type: "officiel", titre: "Fichier des dernières volontés (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F15009" },
       { type: "video", titre: "Vidéos : testament et donation au dernier vivant", url: YT("donation au dernier vivant testament conjoint explication notaire") },
+    ],
+  },
+
+  // ------------------------------------------------------------------ FISCALITÉ DES PLACEMENTS
+  {
+    id: "fiscalite-placements",
+    titre: "La fiscalité des placements",
+    sousTitre: "Flat tax, barème et prélèvements sociaux en 2026",
+    theme: "fisc",
+    duree: 6,
+    verifie: "15 novembre 2026",
+    recherche: "flat tax",
+    enUnePhrase: "Intérêts, dividendes et plus-values de valeurs mobilières sont taxés par défaut à 31,4 % en 2026 (12,8 % d'impôt + 18,6 % de prélèvements sociaux), sauf à choisir le barème de l'impôt, plus intéressant pour les foyers peu imposés.",
+    chiffres: [
+      { valeur: "31,4 %", libelle: "de prélèvement forfaitaire unique en 2026 (12,8 % + 18,6 %)" },
+      { valeur: "18,6 %", libelle: "de prélèvements sociaux sur la plupart des placements depuis 2026" },
+      { valeur: "17,2 %", libelle: "maintenus pour l'assurance-vie, le PEL, le CEL et les revenus fonciers" },
+      { valeur: "40 %", libelle: "d'abattement sur les dividendes si l'on choisit le barème" },
+    ],
+    essentiel: [
+      { titre: "Le prélèvement forfaitaire unique (PFU)", texte: "Par défaut, les revenus de placement et les plus-values de valeurs mobilières sont taxés à 12,8 % d'impôt plus les prélèvements sociaux, soit 31,4 % en 2026." },
+      { titre: "L'option pour le barème", texte: "On peut choisir le barème progressif de l'impôt (case 2OP). Elle est globale (tous les revenus de placement et plus-values de l'année) et donne droit à l'abattement de 40 % sur les dividendes et à une CSG en partie déductible." },
+      { titre: "Un acompte prélevé à la source", texte: "La banque prélève un acompte d'impôt de 12,8 % au versement ; il est ensuite régularisé dans la déclaration. Dispense possible sous conditions de revenus." },
+      { titre: "Deux taux de prélèvements sociaux", texte: "18,6 % depuis 2026 pour la plupart des placements, mais 17,2 % pour l'assurance-vie, le PEL, le CEL, le plan d'épargne populaire, les revenus fonciers et les plus-values immobilières." },
+      { titre: "Les placements exonérés", texte: "Les intérêts du livret A, du LDDS, du LEP et du livret jeune échappent aux prélèvements sociaux, et les livrets réglementés à l'impôt." },
+    ],
+    schema: [
+      { titre: "Revenu perçu", texte: "Intérêt, dividende, plus-value" },
+      { titre: "Acompte à la source", texte: "12,8 % + 18,6 %" },
+      { titre: "Déclaration", texte: "PFU par défaut, ou barème (case 2OP)" },
+      { titre: "Régularisation", texte: "Le trop-perçu est remboursé" },
+    ],
+    fiscalite: [
+      {
+        titre: "Panorama 2026 (gains ou revenus)",
+        colonnes: ["Placement", "Impôt sur le revenu", "Prélèvements sociaux"],
+        lignes: [
+          ["Livret A, LDDS, LEP, livret jeune", "Exonéré", "Exonéré"],
+          ["Compte-titres (intérêts, dividendes, plus-values)", "12,8 % ou barème sur option", "18,6 %"],
+          ["PEA de plus de 5 ans", "Exonéré", "18,6 %"],
+          ["Assurance-vie", "12,8 % ou 7,5 % après 8 ans (abattement 4 600 / 9 200 €)", "17,2 %"],
+          ["PEL, CEL", "Selon la date d'ouverture", "17,2 %"],
+        ],
+        note: "Sources : Service-public (F2329, F34913, F35006, F2385). Le taux de 18,6 % s'applique aux revenus de placement perçus depuis le 1er janvier 2026.",
+      },
+    ],
+    pourQui: ["Un client non imposable ou dans la tranche à 11 % qui touche des dividendes : le barème est souvent plus favorable", "Un investisseur qui veut comparer les enveloppes (PEA, assurance-vie, compte-titres)"],
+    pasPourQui: ["Un client dans les tranches à 30 % et plus, pour qui le PFU est en général meilleur (sauf cas particulier)"],
+    pieges: [
+      "Cocher le barème pour un seul revenu : l'option vaut pour tous les revenus de placement et plus-values de l'année.",
+      "Appliquer 18,6 % de prélèvements sociaux à l'assurance-vie : elle reste à 17,2 %.",
+      "Oublier de demander la dispense d'acompte avant le 30 novembre pour l'année suivante.",
+      "Croire que les abattements pour durée de détention s'appliquent aux titres achetés depuis 2018 : seulement avant 2018, et au barème.",
+    ],
+    phraseClient: "Sur votre compte-titres, vous payez par défaut 31,4 % sur vos gains en 2026. Selon votre tranche d'impôt, il peut être plus intéressant de choisir le barème : on fait le calcul ensemble avant votre déclaration.",
+    cas: {
+      enonce: "Un retraité dans la tranche à 11 % perçoit 2 000 € de dividendes.",
+      question: "PFU ou barème ?",
+      reponse: "PFU : 2 000 × 12,8 % = 256 € d'impôt. Barème : 2 000 × 60 % (après l'abattement de 40 %) × 11 % = 132 €, et même un peu moins grâce à la CSG déductible. Les prélèvements sociaux (372 €) sont les mêmes. Le barème est plus avantageux.",
+    },
+    vraiFaux: [
+      { texte: "En 2026, le PFU est de 30 %.", vrai: false, explication: "31,4 % : 12,8 % d'impôt + 18,6 % de prélèvements sociaux." },
+      { texte: "L'option pour le barème peut être choisie revenu par revenu.", vrai: false, explication: "Elle est globale pour l'année." },
+      { texte: "Les intérêts du livret A sont exonérés de prélèvements sociaux.", vrai: true, explication: "Comme ceux du LDDS, du LEP et du livret jeune." },
+      { texte: "Au barème, une partie de la CSG est déductible.", vrai: true, explication: "6,8 points de CSG, uniquement en cas d'option pour le barème." },
+    ],
+    quiz: [
+      { question: "Taux des prélèvements sociaux sur des dividendes perçus en 2026 ?", choix: ["17,2 %", "18,6 %", "12,8 %", "30 %"], bonne: 1, explication: "18,6 % depuis le 1er janvier 2026." },
+      { question: "Quel placement reste à 17,2 % de prélèvements sociaux ?", choix: ["Le compte-titres", "Le PEA", "L'assurance-vie", "Les dividendes"], bonne: 2, explication: "Assurance-vie, PEL, CEL, PEP, revenus fonciers et plus-values immobilières." },
+      { question: "Abattement sur les dividendes au barème ?", choix: ["10 %", "30 %", "40 %", "50 %"], bonne: 2, explication: "40 %, seulement en cas d'option pour le barème." },
+      { question: "Pendant combien d'années une moins-value sur titres est-elle reportable ?", choix: ["5 ans", "6 ans", "10 ans", "Sans limite"], bonne: 2, explication: "Sur les plus-values de même nature des 10 années suivantes." },
+    ],
+    cartes: [
+      { recto: "PFU 2026", verso: "31,4 % = 12,8 % d'impôt + 18,6 % de prélèvements sociaux." },
+      { recto: "Case 2OP", verso: "Option pour le barème : globale pour tous les revenus de placement de l'année." },
+      { recto: "Dispense d'acompte", verso: "Revenu fiscal de référence < 50 000 € (75 000 € couple), demande avant le 30 novembre." },
+    ],
+    paires: [
+      { terme: "PFU", definition: "Flat tax de 12,8 % + prélèvements sociaux" },
+      { terme: "2OP", definition: "Case de l'option pour le barème" },
+      { terme: "2074", definition: "Déclaration des plus-values de titres" },
+      { terme: "40 %", definition: "Abattement sur dividendes au barème" },
+    ],
+    liens: [
+      { type: "officiel", titre: "Revenus d'épargne et de placement (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F34913" },
+      { type: "officiel", titre: "Prélèvements sociaux (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2329" },
+      { type: "officiel", titre: "Valeurs mobilières : comment sont-elles imposées ? (impots.gouv.fr)", url: "https://www.impots.gouv.fr/particulier/questions/jai-des-valeurs-mobilieres-comment-sont-elles-imposees" },
+      { type: "video", titre: "Vidéos : flat tax ou barème ?", url: YT("flat tax PFU option barème dividendes explication") },
     ],
   },
 );
