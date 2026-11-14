@@ -1221,3 +1221,127 @@ Object.assign(APPROFONDI, {
     ],
   },
 });
+
+Object.assign(SRC, {
+  spMeuble: ["Service-public · Revenus d'une location meublée", "https://www.service-public.gouv.fr/particuliers/vosdroits/F32744"],
+  faqLmnp: ["impots.gouv.fr · FAQ location meublée (2026)", "https://www.impots.gouv.fr/sites/default/files/media/1_metier/5_international/actualite/faq-lmnp-03_2026.pdf"],
+  tourisme: ["impots.gouv.fr · Meublés de tourisme", "https://www.impots.gouv.fr/particulier/questions/je-suis-proprietaire-dune-location-meublee-de-tourisme-quel-est-le-nouveau"],
+  spPv: ["Service-public · Plus-value immobilière", "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864"],
+  pvExo: ["impots.gouv.fr · Plus-values exonérées", "https://www.impots.gouv.fr/particulier/plus-values-exonerees"],
+});
+
+Object.assign(APPROFONDI, {
+  lmnp: {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "Démarrer : les formalités", icone: "📝",
+        points: [
+          { t: "Immatriculation gratuite sur le guichet unique des formalités d'entreprises, dans les 15 jours qui suivent la première location : elle donne un numéro SIRET.", s: SRC.spMeuble },
+          { t: "Micro-BIC : on déclare les recettes brutes avec le numéro SIRET. Régime réel : liasse 2031, puis report sur la 2042-C-PRO.", s: SRC.spMeuble },
+          { t: "La cotisation foncière des entreprises (CFE) peut être due selon la situation du bien : se renseigner auprès du service des impôts des entreprises.", s: SRC.spMeuble },
+        ],
+      },
+      {
+        titre: "Micro-BIC ou réel : les règles fines", icone: "⚖️",
+        points: [
+          { t: "L'option pour le réel se fait avant la date limite de déclaration et se renouvelle tacitement chaque année.", s: SRC.spMeuble },
+          { t: "Tolérance : la 1re ou la 2e année de dépassement du plafond, le micro-BIC continue de s'appliquer une année de plus.", s: SRC.spMeuble },
+          { t: "Un gîte rural ne relève du micro-BIC que s'il est classé meublé de tourisme.", s: SRC.spMeuble },
+          { t: "Meublés de tourisme : nouveaux plafonds depuis les revenus 2025 (loi du 19 novembre 2024), 15 000 € et 30 % pour les non classés.", s: SRC.tourisme },
+        ],
+      },
+      {
+        titre: "Louer une partie de sa résidence principale", icone: "🛏️",
+        points: [
+          { t: "Exonération possible jusqu'au 31 décembre 2026 si le loyer reste raisonnable : en 2026, 215 € par m² et par an en Île-de-France, 159 € ailleurs.", s: SRC.spMeuble },
+          { t: "Location occasionnelle à des personnes de passage : exonérée jusqu'à 760 € par an.", s: SRC.spMeuble },
+        ],
+      },
+      {
+        titre: "À la revente", icone: "🔑",
+        points: [
+          { t: "Le LMNP garde le régime des plus-values des particuliers, avec les abattements pour durée de détention.", s: SRC.spMeuble },
+          { t: "Ventes depuis le 15 février 2025 : les amortissements déduits au réel sont retirés du prix d'achat, ce qui augmente la plus-value. Les résidences pour étudiants ou seniors ne sont pas concernées.", s: SRC.faqLmnp },
+          { t: "Une SCI qui loue régulièrement en meublé passe à l'impôt sur les sociétés.", s: SRC.faqLmnp },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Classé ou pas classé ?", niveau: "Facile",
+        enonce: "Deux propriétaires encaissent chacun 12 000 € de location saisonnière. L'un a fait classer son meublé de tourisme, l'autre non.",
+        question: "Quel montant est imposable pour chacun, au micro-BIC ?",
+        etapes: ["Classé : abattement de 50 % → 6 000 €.", "Non classé : abattement de 30 % → 8 400 €."],
+        reponse: "6 000 € contre 8 400 € : le classement fait baisser la base de 2 400 €.",
+        s: SRC.tourisme,
+      },
+      {
+        titre: "LMNP ou LMP ?", niveau: "Intermédiaire",
+        enonce: "Un couple encaisse 30 000 € de loyers meublés par an. Ses salaires s'élèvent à 80 000 €.",
+        question: "Est-il loueur professionnel ?",
+        etapes: ["Recettes > 23 000 € : la première condition du LMNP n'est pas remplie.", "Mais les recettes (30 000 €) sont inférieures aux autres revenus (80 000 €).", "Il suffit d'une des deux conditions pour rester LMNP."],
+        reponse: "Non, il reste LMNP : les loyers sont inférieurs à ses autres revenus.",
+        s: SRC.spMeuble,
+      },
+      {
+        titre: "La revente après le réel", niveau: "Piège",
+        enonce: "Un studio loué meublé à l'année (hors résidence services) a été acheté 200 000 €. Au régime réel, 40 000 € d'amortissements ont été déduits. Il est revendu 260 000 € en 2026.",
+        question: "Sur quelle plus-value brute part-on (hors forfaits) ?",
+        etapes: ["Vente après le 15 février 2025 : les amortissements sont réintégrés.", "Prix d'achat retenu : 200 000 − 40 000 = 160 000 €.", "Plus-value brute : 260 000 − 160 000 = 100 000 €."],
+        reponse: "100 000 € au lieu de 60 000 €. Ensuite s'appliquent les abattements pour durée de détention.",
+        s: SRC.faqLmnp,
+      },
+    ],
+    liens: [
+      { type: "officiel", titre: "Location meublée (Service-public)", url: SRC.spMeuble[1] },
+      { type: "officiel", titre: "FAQ location meublée 2026 (impots.gouv.fr)", url: SRC.faqLmnp[1] },
+    ],
+  },
+
+  "plus-values-immobilieres": {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "Bien calculer les prix", icone: "🧮",
+        points: [
+          { t: "Prix de vente : celui de l'acte, diminué de certains frais justifiés (diagnostics obligatoires…) et augmenté des sommes perçues en plus.", s: SRC.spPv },
+          { t: "Bien reçu par donation ou succession : le prix d'achat est la valeur retenue pour les droits de donation ou de succession.", s: SRC.spPv },
+          { t: "Une moins-value n'est en principe pas imputable.", s: SRC.spPv },
+        ],
+      },
+      {
+        titre: "Les exonérations à connaître", icone: "🛡️",
+        points: [
+          { t: "Résidence principale : y compris si on a déménagé, à condition de l'avoir habitée jusqu'à la mise en vente et de vendre dans un délai normal (en général environ un an).", s: SRC.pvExo },
+          { t: "Première vente d'un logement autre que la résidence principale : exonérée si on n'a pas été propriétaire de sa résidence principale dans les 4 ans et qu'on rachète sa résidence principale dans les 24 mois. Une seule fois.", s: SRC.spPv },
+          { t: "Retraités ou invalides modestes, non soumis à l'IFI : pour une vente en 2026, revenu fiscal de référence 2024 sous 12 793 € pour une part, plus 3 428 € par demi-part.", s: SRC.spPv },
+          { t: "Expropriation : exonérée si au moins 90 % de l'indemnité est réinvestie dans les 12 mois.", s: SRC.pvExo },
+          { t: "Abattement exceptionnel de 60 % ou 70 % (jusqu'à 85 %) dans certaines zones, pour une promesse signée entre 2024 et fin 2027, hors vente à un proche.", s: SRC.spPv },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Vendre 6 mois plus tard ?", niveau: "Intermédiaire",
+        enonce: "Un client détient un appartement depuis 21 ans et 6 mois. La plus-value brute est de 100 000 €.",
+        question: "Combien gagne-t-il en attendant d'atteindre 22 ans pleins ?",
+        etapes: ["À 21 ans : abattement impôt 16 × 6 % = 96 % → base 4 000 € → 760 € d'impôt.", "À 22 ans : abattement de 100 % → 0 € d'impôt.", "Prélèvements sociaux : 26,4 % d'abattement à 21 ans (base 73 600 € → 12 659 €), 28 % à 22 ans (base 72 000 € → 12 384 €)."],
+        reponse: "Environ 1 035 € d'économie (760 € d'impôt + 275 € de prélèvements sociaux).",
+        s: SRC.spPv,
+      },
+      {
+        titre: "Le studio hérité", niveau: "Piège",
+        enonce: "Une cliente revend 180 000 € un studio hérité il y a 3 ans. Il avait été déclaré 170 000 € dans la succession ; son père l'avait acheté 60 000 €.",
+        question: "Quelle plus-value brute (hors frais) ?",
+        etapes: ["Pour un bien hérité, le prix d'achat est la valeur déclarée dans la succession.", "180 000 − 170 000 = 10 000 €.", "Et non 120 000 € en partant du prix payé par le père."],
+        reponse: "10 000 € de plus-value brute.",
+        s: SRC.spPv,
+      },
+    ],
+    liens: [
+      { type: "officiel", titre: "Plus-value immobilière (Service-public)", url: SRC.spPv[1] },
+      { type: "officiel", titre: "Plus-values exonérées (impots.gouv.fr)", url: SRC.pvExo[1] },
+    ],
+  },
+});

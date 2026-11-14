@@ -78,6 +78,23 @@
       ${personne(292, 196, 1, "#2c6e91", "#f3c9a0")}${personne(318, 196, .9, "#e0723b", "#fde6c8")}${personne(272, 196, .7, "#f2b53a", "#fde6c8")}
       <g class="anim-flotte"><rect x="282" y="112" width="34" height="9" rx="4.5" fill="#a63d2a"/><circle cx="282" cy="116.5" r="8" fill="none" stroke="#a63d2a" stroke-width="5"/></g>`,
 
+    lmnp: (p) => `<defs>${ciel(p + "c", "#e9e4ff", "#c9bdf5")}${halo(p + "h", "#fff3c4")}</defs>
+      <rect width="400" height="220" fill="url(#${p}c)"/><rect y="168" width="400" height="52" fill="#a58fe0"/>
+      <rect x="236" y="44" width="64" height="74" rx="4" fill="#fff" opacity=".85"/><path d="M268 44v74M236 81h64" stroke="#c9bdf5" stroke-width="4"/>
+      <g transform="translate(110 0)"><circle cx="0" cy="66" r="40" fill="url(#${p}h)" class="anim-pulse"/><path d="M-14 50h28l10 26h-48z" fill="#ffd45e"/><rect x="-2" y="76" width="4" height="78" fill="#5a4a8a"/><rect x="-16" y="152" width="32" height="6" rx="3" fill="#5a4a8a"/></g>
+      <rect x="150" y="120" width="140" height="44" rx="12" fill="#e0723b"/><rect x="142" y="110" width="20" height="58" rx="8" fill="#c95f2b"/><rect x="278" y="110" width="20" height="58" rx="8" fill="#c95f2b"/>
+      <rect x="160" y="102" width="56" height="26" rx="8" fill="#f2b53a"/><rect x="222" y="102" width="56" height="26" rx="8" fill="#f2b53a"/>
+      <rect x="150" y="164" width="8" height="12" fill="#5a4a8a"/><rect x="282" y="164" width="8" height="12" fill="#5a4a8a"/>
+      <g transform="translate(320 150)"><g class="anim-flotte"><circle r="11" fill="none" stroke="#5a4a8a" stroke-width="5"/><rect x="9" y="-3.5" width="30" height="7" rx="3.5" fill="#5a4a8a"/><rect x="30" y="0" width="5" height="9" fill="#5a4a8a"/></g></g>`,
+
+    "plus-values-immobilieres": (p) => `<defs>${ciel(p + "c", "#d7f5e8", "#9fdcc0")}</defs>
+      <rect width="400" height="220" fill="url(#${p}c)"/><rect y="190" width="400" height="30" fill="#3f8f5f"/>
+      <path d="M120 120l50-38 50 38v70H120z" fill="#fff"/><path d="M110 126l60-50 60 50" fill="none" stroke="#2a8a50" stroke-width="8" stroke-linejoin="round"/>
+      <rect x="160" y="150" width="22" height="40" rx="2" fill="#2a8a50"/><rect x="134" y="132" width="18" height="16" rx="2" fill="#bfe9d3"/><rect x="190" y="132" width="18" height="16" rx="2" fill="#bfe9d3"/>
+      <g class="anim-vague"><path d="M240 170l26-24 22 14 42-46" fill="none" stroke="#e0723b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M314 108h20v20" fill="none" stroke="#e0723b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <g class="anim-flotte">${piece(270, 70, 10)}</g><g class="anim-flotte-2">${piece(92, 80, 8)}</g>
+      <rect x="244" y="182" width="110" height="26" rx="13" fill="#fff"/><text x="299" y="200" text-anchor="middle" font-size="12" font-family="Inter,sans-serif" font-weight="700" fill="#2a8a50">19 % + 17,2 %</text>`,
+
     "produits-structures": (p) => `<defs>${ciel(p + "c", "#2a1457", "#6b3fc1")}${halo(p + "h", "#c7b2ff")}</defs>
       <rect width="400" height="220" fill="url(#${p}c)"/><circle cx="330" cy="40" r="80" fill="url(#${p}h)" opacity=".5"/>
       <path d="M0 190l70-60 50 30 70-80 60 50 60-60 90 70v80H0z" fill="#4a2a92"/><path d="M0 220v-24l90-30 80 22 90-34 140 30v36z" fill="#371f73"/>

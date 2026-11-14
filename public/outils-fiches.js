@@ -306,6 +306,27 @@ const OUTILS_FICHES = {
     },
   ],
 
+  "plus-values-immobilieres": [
+    {
+      titre: "Calculateur : impôt sur une plus-value immobilière",
+      intro: "Règles publiées par Service-public : forfaits de 7,5 % (frais) et 15 % (travaux, après 5 ans), abattements pour durée de détention, 19 % + 17,2 %.",
+      html: () => ctl.curseur("pa", "Prix d'achat", 20000, 2000000, 5000, 200000) + ctl.curseur("pv", "Prix de vente", 20000, 3000000, 5000, 320000) +
+        ctl.curseur("an", "Années pleines de détention", 0, 35, 1, 12) + ctl.choix("fo", "Forfaits frais et travaux ?", [["1", "Oui"], ["0", "Non"]], "1") + ctl.resultat(),
+      init: (z) => brancher(z, { pa: euros, pv: euros, an: (x) => x + " an" + (x > 1 ? "s" : "") }, (v, r) => {
+        const majore = v.pa * (1 + (v.fo === 1 ? .075 + (v.an > 5 ? .15 : 0) : 0));
+        const brute = v.pv - majore;
+        const abIr = v.an < 6 ? 0 : v.an >= 22 ? 1 : (v.an - 5) * .06;
+        const abPs = v.an < 6 ? 0 : v.an <= 21 ? (v.an - 5) * .0165 : v.an >= 30 ? 1 : .28 + (v.an - 22) * .09;
+        if (brute <= 0) { r.className = "simu-resultat gain"; r.innerHTML = "<strong>Pas de plus-value</strong> : pas d'impôt." + note("Une moins-value n'est en principe pas imputable."); return; }
+        const ir = brute * (1 - abIr) * .19, ps = brute * (1 - abPs) * .172;
+        r.className = "simu-resultat perte";
+        r.innerHTML = `Plus-value brute : <strong>${euros(brute)}</strong><br>Impôt (abattement ${pct(abIr)}) : <strong>${euros(ir)}</strong> · Prélèvements sociaux (abattement ${pct(abPs)}) : <strong>${euros(ps)}</strong><br><strong>Total : ${euros(ir + ps)}</strong>` +
+          barres([{ libelle: "Impôt 19 %", valeur: ir, couleur: "#e0723b" }, { libelle: "Prél. sociaux", valeur: ps, couleur: "#2c6e91" }]) +
+          note((brute * (1 - abIr) > 50000 ? "Plus-value imposable supérieure à 50 000 € : une surtaxe de 2 % à 6 % s'ajoute (non calculée ici). " : "") + "Hors résidence principale et cas d'exonération. Le notaire fait le calcul définitif.");
+      }),
+    },
+  ],
+
   "girardin-industriel": [
     {
       titre: "Simulateur : dimensionner un Girardin industriel",
