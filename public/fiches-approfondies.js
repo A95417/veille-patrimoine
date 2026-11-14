@@ -1,4 +1,4 @@
-// version 1.1 — Contenu approfondi des fiches « Apprendre ».
+// version 1.2 — Contenu approfondi des fiches « Apprendre ».
 // Chaque règle renvoie à sa source officielle (s: [nom, url]). Rien n'est ajouté sans source.
 // Lot 1 : donations, succession, démembrement, régimes matrimoniaux (vérifié le 14 novembre 2026).
 
@@ -417,3 +417,419 @@ const APPROFONDI = {
     ],
   },
 };
+
+// ====================================================================== LOT 2 : ÉPARGNE (vérifié le 14 novembre 2026)
+Object.assign(SRC, {
+  avRachat: ["Service-public · Assurance-vie : imposition des gains", "https://www.service-public.gouv.fr/particuliers/vosdroits/F35006"],
+  avPartiel: ["BOFiP · Rachat partiel d'assurance-vie", "https://bofip.impots.gouv.fr/bofip/3951-PGP.html/identifiant=BOI-RPPM-RCM-20-10-20-50-20191220"],
+  avDeces: ["impots.gouv.fr · Bénéficiaire d'une assurance-vie", "https://www.impots.gouv.fr/particulier/questions/je-suis-beneficiaire-dune-assurance-vie-comment-la-declarer"],
+  ps2026: ["Service-public · Prélèvements sociaux", "https://www.service-public.gouv.fr/particuliers/vosdroits/F2329"],
+  per: ["Service-public · PER individuel", "https://www.service-public.gouv.fr/particuliers/vosdroits/F36526"],
+  pea: ["Service-public · PEA", "https://www.service-public.gouv.fr/particuliers/vosdroits/F2385"],
+  peaBofip: ["BOFiP · Régime fiscal du PEA", "https://bofip.impots.gouv.fr/bofip/1560-PGP.html/identifiant=BOI-RPPM-RCM-40-50-30-20261026"],
+  peaRetraits: ["BOFiP · Retraits et clôture du PEA", "https://bofip.impots.gouv.fr/bofip/2221-PGP.html/identifiant=BOI-ANNX-000072-20240730"],
+  scpiAmf: ["AMF · Investir dans une SCPI", "https://www.amf-france.org/sites/institutionnel/files/private/2023-12/2023_investir_dans_une_scpi.pdf"],
+  scpiRetrait: ["AMF · SCPI : retrait ou ordre de vente", "https://www.amf-france.org/en/news-publications/news/scpis-unlike-orders-sell-units-redemption-requests-do-note-have-validity-period-and-do-not-have-be"],
+  scpiDelai: ["AMF · Médiateur : délai de retrait", "https://www.amf-france.org/en/amf-ombudsman/ombudsman-online-diary/latest/scpi-redemption-request-even-if-order-may-be-executed-within-indefinite-period-time"],
+  psNote: ["AMF · Note sur les produits structurés", "https://www.amf-france.org/sites/institutionnel/files/private/2026-06/note_explicative_-_produits_structures.pdf"],
+  psEtude: ["AMF-ACPR · Étude produits structurés (juin 2026)", "https://www.amf-france.org/sites/institutionnel/files/private/2026-06/Etude-du-pole-commun-amf-acpr-sur-la-distribution-les-frais-et-les-performances-des-produits-structures-juin_0.pdf"],
+});
+
+Object.assign(APPROFONDI, {
+  // ------------------------------------------------------------------ ASSURANCE-VIE
+  "assurance-vie": {
+    verifie: "14 novembre 2026",
+    remplacer: {
+      cas: {
+        enonce: "Mme Martin, 72 ans, veuve, veut placer 100 000 € sur une assurance-vie au profit de ses deux enfants.",
+        question: "Comment sera taxé ce capital à son décès ?",
+        reponse: "Versements faits après 70 ans : abattement global de 30 500 €. Les 69 500 € restants (34 750 € par enfant) sont ajoutés à la succession, mais chaque enfant garde son abattement de 100 000 € s'il n'a pas déjà été utilisé par des donations ou le reste de l'héritage. Les intérêts produits d'ici là sont exonérés. Les contrats alimentés avant 70 ans gardent leurs 152 500 € par enfant.",
+      },
+    },
+    blocs: [
+      {
+        titre: "Rachat : combien de gains dans mon retrait ?", icone: "🧮",
+        points: [
+          { t: "Chaque retrait contient des versements et des gains. Gains du retrait = retrait − (versements × retrait ÷ valeur du contrat).", s: SRC.avPartiel },
+          { t: "Après plusieurs retraits, on ne compte que les versements qui n'ont pas encore été remboursés.", s: SRC.avPartiel },
+        ],
+      },
+      {
+        titre: "Le prélèvement à la source, puis la déclaration", icone: "🧾",
+        points: [
+          { t: "Au retrait, l'assureur prélève un acompte sur les gains : 12,8 % avant 8 ans, 7,5 % après 8 ans. Le calcul définitif se fait dans la déclaration de revenus, et le trop-perçu est remboursé.", s: SRC.avRachat },
+          { t: "Après 8 ans, l'abattement de 4 600 € (9 200 € pour un couple) vaut pour l'ensemble des contrats d'une même personne.", s: SRC.avRachat },
+          { t: "Le taux de 7,5 % dépend du total des versements non remboursés sur tous les contrats, comparé à 150 000 € ; la fraction qui dépasse est imposée à 12,8 %.", s: SRC.avRachat },
+          { t: "Dispense de l'acompte si le revenu fiscal de référence de l'avant-dernière année est inférieur à 25 000 € (50 000 € pour un couple) : demande à faire avant le 30 novembre de l'année précédente.", s: SRC.avRachat },
+          { t: "Prélèvements sociaux : 17,2 % pour l'assurance-vie, alors que la plupart des placements passent à 18,6 % en 2026.", s: SRC.ps2026 },
+        ],
+      },
+      {
+        titre: "Au décès : les règles à connaître", icone: "📜",
+        points: [
+          { t: "Les versements faits jusqu'au 12 octobre 1998 inclus sont exonérés.", s: SRC.avDeces },
+          { t: "Exonérés : conjoint, partenaire de PACS, et frère ou sœur célibataire, veuf, divorcé ou séparé, de plus de 50 ans (ou invalide), ayant vécu 5 ans avec le défunt.", s: SRC.avDeces },
+          { t: "Le capital revient dans la succession si aucun bénéficiaire n'est désigné.", s: SRC.avDeces },
+          { t: "Versements après 70 ans : le bénéficiaire dépose le formulaire 2705-A dans les 6 mois, un par assureur. L'assureur ne paie qu'au vu de ce formulaire traité.", s: SRC.avDeces },
+          { t: "Pour savoir si l'on est bénéficiaire d'un contrat, on peut interroger l'AGIRA (avec l'acte de décès).", s: SRC.avDeces },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Un retrait après 10 ans", niveau: "Facile",
+        enonce: "Paul, célibataire, a un contrat de 10 ans en unités de compte : 100 000 € de valeur, dont 80 000 € de versements. Il retire 10 000 €.",
+        question: "Combien d'impôt et de prélèvements sociaux ?",
+        etapes: ["Versements contenus dans le retrait : 80 000 × 10 000 ÷ 100 000 = 8 000 €.", "Gains du retrait : 10 000 − 8 000 = 2 000 €.", "Contrat de plus de 8 ans : abattement de 4 600 € pour un célibataire, donc 0 € d'impôt.", "Prélèvements sociaux : 2 000 × 17,2 % = 344 €."],
+        reponse: "0 € d'impôt (l'acompte de 7,5 % prélevé sera remboursé via la déclaration) et 344 € de prélèvements sociaux.",
+        s: SRC.avPartiel,
+      },
+      {
+        titre: "Décès à 78 ans, versements avant 70 ans", niveau: "Piège",
+        enonce: "Une mère a versé sur son contrat entre 50 et 65 ans. Elle décède à 78 ans. Son fils unique reçoit 400 000 €.",
+        question: "Quel régime s'applique : 152 500 € ou 30 500 € ?",
+        etapes: ["Ce qui compte, c'est l'âge au moment des versements, pas l'âge au décès.", "Versements avant 70 ans : abattement de 152 500 € pour le fils.", "Part taxable : 400 000 − 152 500 = 247 500 €.", "Taux de 20 % (sous 700 000 €) : 247 500 × 20 % = 49 500 €."],
+        reponse: "49 500 € de prélèvement. Le régime des 30 500 € ne concerne que les versements faits après 70 ans.",
+        s: SRC.avDeces,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Sur un retrait, l'assureur prélève un acompte même si les gains seront couverts par l'abattement.", vrai: true, explication: "L'acompte est régularisé dans la déclaration de revenus, et le trop-perçu est remboursé (Service-public)." },
+      { texte: "En 2026, les gains d'assurance-vie supportent 18,6 % de prélèvements sociaux.", vrai: false, explication: "L'assurance-vie reste à 17,2 % (Service-public)." },
+      { texte: "Sans bénéficiaire désigné, le capital revient dans la succession.", vrai: true, explication: "Il est alors taxé selon les règles des successions." },
+    ],
+    quiz: [
+      { question: "Contrat de 50 000 €, dont 40 000 € versés. Retrait de 5 000 €. Gains contenus ?", choix: ["500 €", "1 000 €", "4 000 €", "5 000 €"], bonne: 1, explication: "5 000 − 40 000 × 5 000 ÷ 50 000 = 5 000 − 4 000 = 1 000 €." },
+      { question: "Quel formulaire pour des versements faits après 70 ans ?", choix: ["2735", "2705-A", "2042", "2074"], bonne: 1, explication: "Le 2705-A, à déposer dans les 6 mois, un par assureur." },
+      { question: "Les versements faits jusqu'à quelle date sont exonérés au décès ?", choix: ["31 décembre 1991", "12 octobre 1998", "27 septembre 2017", "1er janvier 2026"], bonne: 1, explication: "Jusqu'au 12 octobre 1998 inclus." },
+    ],
+    cartes: [
+      { recto: "Gains d'un retrait", verso: "Retrait − versements × (retrait ÷ valeur du contrat)." },
+      { recto: "AGIRA", verso: "Organisme à interroger pour savoir si l'on est bénéficiaire d'un contrat." },
+      { recto: "Formulaire 2705-A", verso: "Déclaration des capitaux décès issus de versements après 70 ans, dans les 6 mois." },
+    ],
+    liens: [
+      { type: "officiel", titre: "Imposition des gains (Service-public)", url: SRC.avRachat[1] },
+      { type: "officiel", titre: "Bénéficiaire d'une assurance-vie (impots.gouv.fr)", url: SRC.avDeces[1] },
+      { type: "officiel", titre: "Calcul d'un rachat partiel (BOFiP)", url: SRC.avPartiel[1] },
+    ],
+  },
+
+  // ------------------------------------------------------------------ PER
+  per: {
+    verifie: "14 novembre 2026",
+    blocs: [
+      {
+        titre: "Les 7 cas de déblocage anticipé", icone: "🔓",
+        points: [
+          { t: "Achat de la résidence principale (sauf l'épargne issue des versements obligatoires).", s: SRC.per },
+          { t: "Décès du conjoint ou du partenaire de PACS.", s: SRC.per },
+          { t: "Invalidité de 2e ou 3e catégorie du titulaire, de ses enfants, de son conjoint ou partenaire de PACS.", s: SRC.per },
+          { t: "Affection grave, handicap ou accident d'une particulière gravité d'un enfant à charge.", s: SRC.per },
+          { t: "Surendettement (la commission écrit à l'organisme).", s: SRC.per },
+          { t: "Fin des droits au chômage, ou fin d'un mandat social depuis 2 ans sans contrat de travail ni retraite.", s: SRC.per },
+          { t: "Cessation d'une activité non salariée après une liquidation judiciaire.", s: SRC.per },
+        ],
+      },
+      {
+        titre: "La sortie, ligne par ligne", icone: "🎯",
+        points: [
+          { t: "Versements déduits, sortie en capital : la part de versements est imposée au barème (sans abattement de 10 % ni prélèvements sociaux) ; les gains à 31,4 % (12,8 % + 18,6 %).", s: SRC.per },
+          { t: "Versements non déduits, sortie en capital : la part de versements est exonérée ; seuls les gains sont taxés à 31,4 %.", s: SRC.per },
+          { t: "Versements déduits, sortie en rente : imposée comme une pension de retraite, avec l'abattement de 10 %.", s: SRC.per },
+          { t: "Versements non déduits, sortie en rente : seule une fraction est imposable, selon l'âge au premier versement : 70 % avant 50 ans, 50 % de 50 à 59 ans, 40 % de 60 à 69 ans, 30 % après 69 ans.", s: SRC.per },
+          { t: "Pour ne pas déduire, il faut le signaler au gestionnaire à chaque versement.", s: SRC.per },
+        ],
+      },
+      {
+        titre: "Transférer son PER", icone: "🔀",
+        points: [
+          { t: "D'un PER vers un autre PER : gratuit après 5 ans de détention ; sinon, frais de 1 % au maximum.", s: SRC.per },
+          { t: "D'un ancien produit (Perp, Madelin, Perco…) vers un PER : frais jusqu'à 5 % s'il a moins de 10 ans ; transfert en 4 mois au plus.", s: SRC.per },
+        ],
+      },
+      {
+        titre: "Au décès du titulaire", icone: "🕊️",
+        points: [
+          { t: "PER d'assurance, décès avant 70 ans : 152 500 € d'abattement par bénéficiaire, puis 20 % jusqu'à 700 000 € et 31,25 % au-delà.", s: SRC.per },
+          { t: "PER d'assurance, décès après 70 ans : droits de succession après un abattement global de 30 500 €.", s: SRC.per },
+          { t: "PER bancaire (compte-titres) : l'épargne entre dans la succession.", s: SRC.per },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Acheter sa résidence principale", niveau: "Facile",
+        enonce: "Inès, 34 ans, a 25 000 € sur son PER individuel, tout en versements volontaires. Elle achète sa première résidence principale.",
+        question: "Peut-elle récupérer son épargne ?",
+        etapes: ["L'achat de la résidence principale fait partie des cas de déblocage anticipé.", "Seule l'épargne issue des versements obligatoires reste bloquée.", "Ses versements sont volontaires."],
+        reponse: "Oui, elle peut tout débloquer. La sortie est taxée comme une sortie en capital.",
+        s: SRC.per,
+      },
+      {
+        titre: "Sortie en capital, déduit ou pas ?", niveau: "Intermédiaire",
+        enonce: "À la retraite, Karim sort son PER en capital : 50 000 € de versements et 20 000 € de gains.",
+        question: "Comment est-ce taxé s'il avait déduit ses versements ? Et sinon ?",
+        etapes: ["Gains, dans les deux cas : 20 000 × 31,4 % = 6 280 €.", "Versements déduits : les 50 000 € s'ajoutent à ses revenus, au barème.", "Versements non déduits : les 50 000 € sont exonérés."],
+        reponse: "Gains : 6 280 € dans tous les cas. Les 50 000 € sont imposés au barème s'il les avait déduits, exonérés sinon.",
+        s: SRC.per,
+      },
+      {
+        titre: "Décès à 72 ans", niveau: "Piège",
+        enonce: "Un client a ouvert un PER d'assurance à 50 ans et y a versé jusqu'à 62 ans. Il décède à 72 ans, encore en phase d'épargne.",
+        question: "Ses enfants ont-ils 152 500 € d'abattement chacun, comme en assurance-vie ?",
+        etapes: ["Pour le PER d'assurance, Service-public retient l'âge au décès du titulaire.", "Décès après 70 ans : abattement global de 30 500 €.", "Le reste suit les droits de succession."],
+        reponse: "Non : 30 500 € au total, puis droits de succession. Bien comparer avec l'assurance-vie, où l'âge des versements compte.",
+        s: SRC.per,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Le surendettement permet de débloquer un PER.", vrai: true, explication: "C'est l'un des 7 cas de déblocage anticipé." },
+      { texte: "Transférer un PER de 3 ans vers un autre PER est toujours gratuit.", vrai: false, explication: "Avant 5 ans, des frais de 1 % au maximum peuvent s'appliquer." },
+    ],
+    quiz: [
+      { question: "Versements non déduits, rente commencée à 63 ans : quelle fraction est imposable ?", choix: ["30 %", "40 %", "50 %", "70 %"], bonne: 1, explication: "40 % de 60 à 69 ans." },
+      { question: "Taux sur les gains d'une sortie en capital en 2026 ?", choix: ["17,2 %", "30 %", "31,4 %", "12,8 %"], bonne: 2, explication: "12,8 % d'impôt + 18,6 % de prélèvements sociaux." },
+      { question: "Frais maximum pour transférer un PER de moins de 5 ans ?", choix: ["0 %", "1 %", "3 %", "5 %"], bonne: 1, explication: "1 % ; gratuit après 5 ans." },
+    ],
+    cartes: [
+      { recto: "Déblocage anticipé", verso: "7 cas : résidence principale, décès du conjoint, invalidité, accident grave d'un enfant, surendettement, fin de chômage, liquidation judiciaire." },
+      { recto: "Rente, versements non déduits", verso: "Fraction imposable : 70 / 50 / 40 / 30 % selon l'âge au premier versement." },
+    ],
+    liens: [{ type: "officiel", titre: "PER individuel (Service-public)", url: SRC.per[1] }],
+  },
+
+  // ------------------------------------------------------------------ PEA
+  pea: {
+    verifie: "14 novembre 2026",
+    blocs: [
+      {
+        titre: "Qui peut ouvrir, et combien ?", icone: "👤",
+        points: [
+          { t: "Un seul PEA classique par personne majeure domiciliée fiscalement en France, jamais joint. Chaque époux peut avoir le sien.", s: SRC.pea },
+          { t: "Plafonds de versements : 150 000 € pour le PEA, 225 000 € pour le PEA-PME-ETI, et 225 000 € au total pour les deux.", s: SRC.pea },
+          { t: "Un jeune majeur rattaché au foyer de ses parents peut ouvrir un PEA plafonné à 20 000 € (pas de PEA-PME-ETI).", s: SRC.pea },
+        ],
+      },
+      {
+        titre: "Ce qu'on peut y mettre", icone: "🧺",
+        points: [
+          { t: "Actions de sociétés de l'Union européenne (hors actions de préférence), parts de SARL, et fonds investis à plus de 75 % en titres éligibles.", s: SRC.pea },
+          { t: "Interdit de détenir, avec sa famille, plus de 25 % des droits d'une société via le PEA.", s: SRC.pea },
+          { t: "Titres non cotés : l'exonération de leurs revenus est limitée à 10 % du montant investi ; au-delà, ils sont imposés chaque année.", s: SRC.peaBofip },
+        ],
+      },
+      {
+        titre: "Retirer avant 5 ans sans clôturer", icone: "⏱️",
+        points: [
+          { t: "En principe, tout retrait avant 5 ans clôture le plan.", s: SRC.pea },
+          { t: "Exceptions : licenciement, invalidité, mise à la retraite anticipée (du titulaire ou de son conjoint), titres d'une société en liquidation, ou création / reprise d'entreprise avec réinvestissement sous 3 mois.", s: SRC.pea },
+          { t: "Après un tel retrait, plus aucun versement n'est possible.", s: SRC.pea },
+          { t: "Fiscalité : création ou reprise d'entreprise, gains exonérés d'impôt ; licenciement, invalidité, retraite anticipée ou liquidation, gains imposés. Les prélèvements sociaux sont dus dans tous les cas.", s: SRC.peaRetraits },
+        ],
+      },
+      {
+        titre: "Rente et décès", icone: "🕊️",
+        points: [
+          { t: "Après 5 ans, une sortie en rente viagère est exonérée d'impôt ; une fraction (70, 50, 40 ou 30 % selon l'âge) supporte les prélèvements sociaux.", s: SRC.pea },
+          { t: "Au décès, le plan est clôturé : les gains sont exonérés d'impôt même avant 5 ans, seuls les prélèvements sociaux sont dus, et la valeur entre dans la succession.", s: SRC.pea },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Le plafond d'une famille", niveau: "Intermédiaire",
+        enonce: "Un couple marié et leur fils étudiant de 21 ans, rattaché à leur foyer fiscal.",
+        question: "Combien la famille peut-elle verser au maximum sur des PEA ?",
+        etapes: ["Chaque époux : 225 000 € au total (PEA + PEA-PME-ETI), dont 150 000 € au plus sur le PEA.", "Deux époux : 2 × 225 000 = 450 000 €.", "Le fils rattaché : PEA plafonné à 20 000 €, sans PEA-PME-ETI."],
+        reponse: "470 000 € de versements (hors gains).",
+        s: SRC.pea,
+      },
+      {
+        titre: "Licencié à 3 ans", niveau: "Piège",
+        enonce: "Ludovic est licencié. Son PEA a 3 ans. Il retire 10 000 €.",
+        question: "Son PEA est-il clôturé ? Ses gains sont-ils exonérés ?",
+        etapes: ["Le licenciement est une exception : le plan reste ouvert.", "Mais il ne pourra plus faire de versements.", "Les gains de ce retrait sont imposés, plus les prélèvements sociaux."],
+        reponse: "Plan maintenu, mais versements bloqués et gains imposés. Seule la création ou reprise d'entreprise exonère d'impôt avant 5 ans.",
+        s: SRC.peaRetraits,
+      },
+      {
+        titre: "Décès à 2 ans", niveau: "Facile",
+        enonce: "Le titulaire d'un PEA de 2 ans décède.",
+        question: "Les gains sont-ils taxés à l'impôt ?",
+        etapes: ["Le décès clôture le plan.", "Les gains sont exonérés d'impôt, même avant 5 ans.", "Seuls les prélèvements sociaux sont dus ; la valeur entre dans la succession."],
+        reponse: "Pas d'impôt sur le revenu, seulement les prélèvements sociaux. La valeur du PEA est soumise aux droits de succession.",
+        s: SRC.pea,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Un couple marié peut ouvrir un PEA commun.", vrai: false, explication: "Le PEA est personnel ; chaque époux ouvre le sien." },
+      { texte: "Après 5 ans, un retrait partiel ne clôture pas le PEA.", vrai: true, explication: "Et les versements restent possibles." },
+    ],
+    quiz: [
+      { question: "Plafond de versements cumulés PEA + PEA-PME-ETI par personne ?", choix: ["150 000 €", "225 000 €", "300 000 €", "375 000 €"], bonne: 1, explication: "225 000 €, dont 150 000 € au plus sur le PEA classique." },
+      { question: "Quel retrait avant 5 ans est exonéré d'impôt ?", choix: ["Licenciement", "Invalidité", "Création ou reprise d'entreprise", "Aucun"], bonne: 2, explication: "Les fonds doivent être réinvestis dans les 3 mois." },
+    ],
+    cartes: [
+      { recto: "PEA d'un jeune rattaché", verso: "Plafond de 20 000 € tant qu'il est rattaché au foyer de ses parents." },
+      { recto: "Règle des 25 %", verso: "Pas plus de 25 % des droits d'une société, avec sa famille, dans un PEA." },
+    ],
+    liens: [
+      { type: "officiel", titre: "Le PEA (Service-public)", url: SRC.pea[1] },
+      { type: "officiel", titre: "Retraits et clôture (BOFiP)", url: SRC.peaRetraits[1] },
+    ],
+  },
+
+  // ------------------------------------------------------------------ SCPI
+  scpi: {
+    verifie: "14 novembre 2026",
+    blocs: [
+      {
+        titre: "Les 3 risques à dire au client", icone: "⚠️",
+        points: [
+          { t: "Capital non garanti : le prix de revente peut être inférieur au prix d'achat.", s: SRC.scpiAmf },
+          { t: "Revenus non garantis : ils baissent si des locataires partent ou si les relocations sont moins favorables.", s: SRC.scpiAmf },
+          { t: "Liquidité limitée : revendre peut prendre plusieurs semaines, voire plusieurs mois. L'AMF conseille un horizon long, de 10 à 20 ans.", s: SRC.scpiAmf },
+        ],
+      },
+      {
+        titre: "Les frais en clair", icone: "💸",
+        points: [
+          { t: "Frais de souscription : entre 5 et 12 % selon l'AMF.", s: SRC.scpiAmf },
+          { t: "Frais de gestion : 8 à 10 % des revenus chaque année.", s: SRC.scpiAmf },
+          { t: "En SCPI à capital variable, le prix de retrait = prix de souscription − commission de souscription.", s: SRC.scpiRetrait },
+        ],
+      },
+      {
+        titre: "Revendre : retrait ou ordre de vente ?", icone: "🚪",
+        points: [
+          { t: "Capital variable : on dépose une demande de retrait, exécutée seulement s'il y a de nouvelles souscriptions en face, dans l'ordre d'arrivée.", s: SRC.scpiRetrait },
+          { t: "Une demande de retrait n'expire pas. La renouveler fait perdre sa place dans la file.", s: SRC.scpiRetrait },
+          { t: "Capital fixe : on passe un ordre de vente sur le marché secondaire, valable 12 mois, prolongeable de 12 mois sur demande.", s: SRC.scpiRetrait },
+          { t: "Si des retraits en attente depuis plus de 12 mois atteignent 10 % des parts, la société de gestion doit prévenir l'AMF et réunir une assemblée dans les 2 mois.", s: SRC.scpiRetrait },
+          { t: "Une vente de gré à gré (trouver soi-même un acheteur) reste possible, sous réserve d'une clause d'agrément.", s: SRC.scpiRetrait },
+        ],
+      },
+      {
+        titre: "À vérifier avant d'investir", icone: "🔍",
+        points: [
+          { t: "Type d'immeubles, qualité et diversification du parc, régularité des revenus, stabilité du taux d'occupation.", s: SRC.scpiAmf },
+          { t: "Le bulletin trimestriel indique le nombre de parts en attente de retrait : un bon indicateur de liquidité.", s: SRC.scpiRetrait },
+          { t: "Avoir déjà une épargne de précaution et n'investir que de l'argent inutile avant plusieurs années.", s: SRC.scpiAmf },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Revendre tout de suite", niveau: "Facile",
+        enonce: "Un client achète 10 000 € de parts d'une SCPI à capital variable avec 10 % de commission de souscription. Il veut sortir 3 mois plus tard, prix inchangé.",
+        question: "Combien récupère-t-il, au mieux ?",
+        etapes: ["Prix de retrait = prix de souscription − commission.", "10 000 − 10 % = 9 000 €.", "Et seulement si de nouveaux souscripteurs prennent le relais."],
+        reponse: "Au mieux 9 000 €, soit 1 000 € de perte. Une SCPI ne se garde pas 3 mois.",
+        s: SRC.scpiRetrait,
+      },
+      {
+        titre: "Relancer sa demande", niveau: "Piège",
+        enonce: "Six mois après sa demande de retrait, une cliente veut la refaire « pour relancer la société de gestion ».",
+        question: "Bonne idée ?",
+        etapes: ["Une demande de retrait n'a pas de durée de validité.", "La renouveler fait perdre son rang dans la file d'attente.", "Mieux vaut suivre le bulletin trimestriel et appeler la société de gestion."],
+        reponse: "Non : elle repasserait en fin de file. Sa demande reste valable tant qu'elle ne la révoque pas.",
+        s: SRC.scpiRetrait,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Un ordre de vente de parts de SCPI à capital fixe est valable sans limite de durée.", vrai: false, explication: "12 mois, prolongeable de 12 mois sur demande expresse." },
+      { texte: "Une demande de retrait complète garantit un remboursement rapide.", vrai: false, explication: "Non : il faut des souscriptions en contrepartie ; le délai peut être indéterminé (médiateur de l'AMF)." },
+    ],
+    quiz: [
+      { question: "Frais de gestion annuels d'une SCPI selon l'AMF ?", choix: ["1 à 2 % du capital", "8 à 10 % des revenus", "5 à 12 % des revenus", "Aucun"], bonne: 1, explication: "8 à 10 % des revenus ; les 5 à 12 % sont les frais d'entrée." },
+      { question: "Que se passe-t-il si les retraits bloqués depuis plus de 12 mois atteignent 10 % des parts ?", choix: ["Rien", "La SCPI est dissoute", "L'AMF est prévenue et une assemblée est convoquée", "Les parts sont rachetées par l'État"], bonne: 2, explication: "Assemblée générale extraordinaire dans les 2 mois." },
+    ],
+    cartes: [
+      { recto: "Demande de retrait", verso: "SCPI à capital variable : pas de durée de validité, exécutée s'il y a des souscriptions en face." },
+      { recto: "Ordre de vente", verso: "SCPI à capital fixe : valable 12 mois, prolongeable 12 mois." },
+    ],
+    liens: [
+      { type: "officiel", titre: "Investir dans une SCPI (AMF)", url: SRC.scpiAmf[1] },
+      { type: "officiel", titre: "Retrait ou ordre de vente (AMF)", url: SRC.scpiRetrait[1] },
+      { type: "officiel", titre: "Délai de retrait non garanti (médiateur AMF)", url: SRC.scpiDelai[1] },
+    ],
+  },
+
+  // ------------------------------------------------------------------ PRODUITS STRUCTURÉS
+  "produits-structures": {
+    verifie: "14 novembre 2026",
+    blocs: [
+      {
+        titre: "Le vocabulaire, version AMF", icone: "📖",
+        points: [
+          { t: "Produit structuré : placement dont la valeur dépend d'un ou plusieurs sous-jacents, selon une formule fixée à l'avance.", s: SRC.psNote },
+          { t: "Autocall : le produit s'arrête tout seul avant l'échéance si un seuil est atteint à une date d'observation ; le capital est remboursé avec les gains prévus.", s: SRC.psNote },
+          { t: "Barrière : à l'échéance, si elle n'a pas été franchie, le capital est rendu (hors frais de l'enveloppe) ; si elle l'a été, la perte égale la baisse de l'indice, jusqu'à la perte totale.", s: SRC.psNote },
+          { t: "Indice à décrément : un indice dividendes réinvestis dont on retire chaque année un montant fixe. La performance peut en être nettement réduite.", s: SRC.psNote },
+          { t: "Selon la situation de l'émetteur, l'investisseur peut perdre une partie ou la totalité de son capital.", s: SRC.psNote },
+        ],
+      },
+      {
+        titre: "Ce que dit l'étude AMF-ACPR de juin 2026", icone: "📊",
+        points: [
+          { t: "La très grande majorité des produits sont des autocalls.", s: SRC.psEtude },
+          { t: "Fin 2024 : 74 % offrent une protection du capital, dont 14 % totale et inconditionnelle ; 26 % n'en offrent aucune.", s: SRC.psEtude },
+          { t: "Sur 2022-2024, durée moyenne avant rappel : environ 2 ans, pour une échéance théorique de 8 à 12 ans (marchés haussiers).", s: SRC.psEtude },
+          { t: "Coût d'entrée total moyen : 5,83 % (de 1,20 % à 13,16 %), dont 3,95 % en moyenne pour un CIF-CGP.", s: SRC.psEtude },
+          { t: "Sur 2022-2024, retard de 2,4 points par rapport à des fonds indiciels sur les mêmes sous-jacents (échantillon de 65 produits).", s: SRC.psEtude },
+        ],
+      },
+      {
+        titre: "Ce que l'AMF attend du conseiller", icone: "✅",
+        points: [
+          { t: "Définir son propre marché cible au lieu de recopier celui du producteur.", s: SRC.psEtude },
+          { t: "Tester les connaissances du client par de vraies questions techniques, pas par une auto-évaluation.", s: SRC.psEtude },
+          { t: "Annoncer les coûts avant la souscription, en montant total : seuls 13 % des prestataires contrôlés le faisaient correctement.", s: SRC.psEtude },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "La barrière franchie", niveau: "Facile",
+        enonce: "Autocall de 50 000 €, barrière à −40 %. Jamais rappelé. À l'échéance, l'indice a baissé de 45 % depuis le lancement.",
+        question: "Que récupère le client ?",
+        etapes: ["La baisse (−45 %) dépasse la barrière (−40 %) : la protection saute.", "La perte égale la baisse de l'indice : 45 %.", "50 000 × 55 % = 27 500 €."],
+        reponse: "27 500 € (hors frais de l'enveloppe). La barrière protège d'une baisse modérée, pas d'une forte baisse.",
+        s: SRC.psNote,
+      },
+      {
+        titre: "Le coût d'entrée", niveau: "Intermédiaire",
+        enonce: "Un client place 50 000 € dans un produit structuré dont le coût d'entrée est égal à la moyenne de l'étude AMF-ACPR.",
+        question: "Combien de frais à l'entrée ?",
+        etapes: ["Coût d'entrée moyen : 5,83 %.", "50 000 × 5,83 % = 2 915 €."],
+        reponse: "Environ 2 915 €, à annoncer au client en montant total avant la souscription.",
+        s: SRC.psEtude,
+      },
+      {
+        titre: "Comparer avec le CAC 40", niveau: "Piège",
+        enonce: "Un client compare son produit, indexé sur un indice à décrément, avec la hausse du CAC 40 publiée dans la presse.",
+        question: "La comparaison est-elle juste ?",
+        etapes: ["Un indice à décrément part des dividendes réinvestis puis retire un montant fixe.", "Ce n'est pas le même indice que le CAC 40 classique.", "L'AMF note que cela complique la comparaison."],
+        reponse: "Non : il faut comparer à l'indice exact du produit, indiqué dans sa documentation.",
+        s: SRC.psNote,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Un produit structuré à barrière garantit le capital.", vrai: false, explication: "Seulement si la barrière n'est pas franchie, et sous réserve de la solidité de l'émetteur." },
+      { texte: "En 2022-2024, les autocalls ont souvent été remboursés bien avant leur échéance.", vrai: true, explication: "Environ 2 ans en moyenne, contre 8 à 12 ans théoriques (étude AMF-ACPR)." },
+    ],
+    quiz: [
+      { question: "Quel est le coût d'entrée moyen relevé par l'AMF-ACPR en 2026 ?", choix: ["0,56 %", "2,69 %", "5,83 %", "13,16 %"], bonne: 2, explication: "5,83 % en moyenne, de 1,20 % à 13,16 %." },
+      { question: "Barrière à −30 %, baisse de 35 % à l'échéance : perte ?", choix: ["0 %", "5 %", "30 %", "35 %"], bonne: 3, explication: "La barrière est franchie : la perte égale la baisse de l'indice." },
+    ],
+    cartes: [
+      { recto: "Indice à décrément", verso: "Indice dividendes réinvestis moins un montant fixe chaque année." },
+      { recto: "Coût d'entrée moyen (AMF-ACPR 2026)", verso: "5,83 %, de 1,20 % à 13,16 %." },
+    ],
+    liens: [
+      { type: "officiel", titre: "Note explicative produits structurés (AMF)", url: SRC.psNote[1] },
+      { type: "officiel", titre: "Étude frais et performances (AMF-ACPR, 2026)", url: SRC.psEtude[1] },
+    ],
+  },
+});
