@@ -18,6 +18,7 @@
   <script src="/jeux.js"></script>
   <script src="/fiches.js"></script>
   <script src="/fiches-suite.js"></script>
+  <script src="/fiches-nouvelles.js"></script>
   <script src="/couvertures.js"></script>
   <script src="/outils-fiches.js"></script>
   <style>
@@ -94,11 +95,12 @@
       return p >= 0.8 ? `<span class="badge-prog maitrise">Maîtrisé · ${Math.round(p * 100)} %</span>` : `<span class="badge-prog encours">En cours · ${Math.round(p * 100)} %</span>`;
     }
 
-    // Les fiches sont rangées en trois parcours.
+    // Les fiches sont rangées en parcours.
     const PARCOURS = [
       { titre: "Épargne et placements", texte: "Les enveloppes et supports du quotidien", ids: ["assurance-vie", "per", "pea", "scpi", "produits-structures"] },
       { titre: "Famille et transmission", texte: "Le couple, la donation, la succession", ids: ["regimes-matrimoniaux", "demembrement", "donations", "succession"] },
       { titre: "Fiscalité et chef d'entreprise", texte: "Impôts patrimoniaux et transmission d'entreprise", ids: ["ifi", "girardin-industriel", "apport-cession", "pacte-dutreil"] },
+      { titre: "Immobilier", texte: "Détenir, louer et revendre la pierre", ids: ["scpi", "sci"] },
     ];
     const maitrisee = (scores, f) => { const s = scores["fiche:" + f.id]; return s && s.score / s.total >= 0.8; };
 

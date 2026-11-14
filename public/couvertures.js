@@ -69,6 +69,15 @@
       <rect y="198" width="400" height="22" fill="#6fae5a"/>
       <g class="anim-flotte">${piece(180, 34 + 0, 9)}</g><g class="anim-flotte-2">${piece(296, 92, 8)}</g>`,
 
+    sci: (p) => `<defs>${ciel(p + "c", "#fde3c8", "#f7b98a")}${halo(p + "h", "#fff6e0")}</defs>
+      <rect width="400" height="220" fill="url(#${p}c)"/><circle cx="330" cy="46" r="64" fill="url(#${p}h)"/><circle cx="330" cy="46" r="18" fill="#ffd45e" class="anim-pulse"/>
+      <rect y="196" width="400" height="24" fill="#c9754a"/>
+      <path d="M150 92l60-44 60 44v104H150z" fill="#fff7ee"/><path d="M140 98l70-54 70 54" fill="none" stroke="#a63d2a" stroke-width="9" stroke-linejoin="round"/>
+      ${fenetres(166, 104, 3, 3, 16, 16, 30, 28, "#ffd9a8", "#ffefc2")}<rect x="196" y="164" width="28" height="32" rx="3" fill="#a63d2a"/>
+      <g transform="translate(104 132)"><g class="anim-balance"><circle r="30" fill="#2c6e91"/><path d="M0 0V-30A30 30 0 0126 15z" fill="#f2b53a"/><path d="M0 0L26 15A30 30 0 01-26 15z" fill="#e0723b"/><circle r="9" fill="#fde3c8"/></g></g>
+      ${personne(292, 196, 1, "#2c6e91", "#f3c9a0")}${personne(318, 196, .9, "#e0723b", "#fde6c8")}${personne(272, 196, .7, "#f2b53a", "#fde6c8")}
+      <g class="anim-flotte"><rect x="282" y="112" width="34" height="9" rx="4.5" fill="#a63d2a"/><circle cx="282" cy="116.5" r="8" fill="none" stroke="#a63d2a" stroke-width="5"/></g>`,
+
     "produits-structures": (p) => `<defs>${ciel(p + "c", "#2a1457", "#6b3fc1")}${halo(p + "h", "#c7b2ff")}</defs>
       <rect width="400" height="220" fill="url(#${p}c)"/><circle cx="330" cy="40" r="80" fill="url(#${p}h)" opacity=".5"/>
       <path d="M0 190l70-60 50 30 70-80 60 50 60-60 90 70v80H0z" fill="#4a2a92"/><path d="M0 220v-24l90-30 80 22 90-34 140 30v36z" fill="#371f73"/>

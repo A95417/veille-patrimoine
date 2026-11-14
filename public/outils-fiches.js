@@ -291,6 +291,21 @@ const OUTILS_FICHES = {
     },
   ],
 
+  sci: [
+    {
+      titre: "Calculateur : droits sur une vente de parts",
+      intro: "Taux publiés par Service-public : 5 % pour une SCI à prépondérance immobilière, sinon 3 % après un abattement de 23 000 € au prorata des parts cédées.",
+      html: () => ctl.curseur("px", "Prix de vente des parts", 0, 1000000, 5000, 120000) + ctl.curseur("pc", "Part du capital vendue", 1, 100, 1, 100) +
+        ctl.choix("im", "Plus de 50 % de l'actif en immobilier non affecté à l'exploitation ?", [["1", "Oui"], ["0", "Non"]], "1") + ctl.resultat(),
+      init: (z) => brancher(z, { px: euros, pc: (x) => x + " %" }, (v, r) => {
+        const droits = v.im === 1 ? v.px * .05 : Math.max(0, v.px - 23000 * v.pc / 100) * .03;
+        r.className = "simu-resultat perte";
+        r.innerHTML = `<strong>Droits estimés : ${euros(droits)}</strong> ` + (v.im === 1 ? "(5 % du prix)." : `(3 % après ${euros(23000 * v.pc / 100)} d'abattement).`) +
+          note("Estimation pédagogique, à confirmer avec le notaire ou l'avocat qui rédige l'acte.");
+      }),
+    },
+  ],
+
   "girardin-industriel": [
     {
       titre: "Simulateur : dimensionner un Girardin industriel",

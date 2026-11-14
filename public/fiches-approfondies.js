@@ -1,4 +1,4 @@
-// version 1.5 — Contenu approfondi des fiches « Apprendre ».
+// version 1.6 — Contenu approfondi des fiches « Apprendre ».
 // Chaque règle renvoie à sa source officielle (s: [nom, url]). Rien n'est ajouté sans source.
 // Lot 1 : donations, succession, démembrement, régimes matrimoniaux (vérifié le 14 novembre 2026).
 
@@ -1126,5 +1126,94 @@ Object.assign(APPROFONDI, {
       { question: "Taux de rétrocession au locataire pour un programme de 200 000 € ?", choix: ["44 %", "56 %", "66 %", "100 %"], bonne: 1, explication: "56 % sous 300 000 € par exploitant, 66 % au-delà." },
     ],
     liens: [{ type: "officiel", titre: "Article 199 undecies B du CGI (Légifrance)", url: SRC.cgi199[1] }],
+  },
+});
+
+// ====================================================================== NOUVELLES FICHES (vérifié le 15 novembre 2026)
+Object.assign(SRC, {
+  spSci: ["Service-public · SCI : ce qu'il faut savoir", "https://entreprendre.service-public.gouv.fr/vosdroits/F38553"],
+  sciMeuble: ["impots.gouv.fr · Les SCI", "https://www.impots.gouv.fr/particulier/les-sci"],
+  sciPv: ["impots.gouv.fr · Plus-value d'une SCI à l'IR", "https://www.impots.gouv.fr/particulier/questions/la-societe-civile-immobiliere-imposee-limpot-sur-le-revenu-dont-je-suis"],
+  sciLivret: ["impots.gouv.fr · Livret fiscal des sociétés civiles", "https://www.impots.gouv.fr/sites/default/files/media/1_metier/2_professionnel/EV/1_creation_entreprise/livret_fiscal/nid_12250_sci_livret_fiscal_createur_dentreprise.pdf"],
+  cc1857: ["Légifrance · Code civil art. 1857", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006444321"],
+});
+
+Object.assign(APPROFONDI, {
+  sci: {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "Créer et faire vivre la SCI", icone: "🏗️",
+        points: [
+          { t: "Au moins 2 associés, personnes physiques ou sociétés ; possible entre époux, quel que soit leur régime matrimonial.", s: SRC.spSci },
+          { t: "Capital libre (1 € minimum), en argent ou en biens ; les apports en industrie (son travail) n'entrent pas dans le capital.", s: SRC.spSci },
+          { t: "Un ou plusieurs gérants, associés ou non. Sauf clause contraire, nommés et révoqués à la majorité des parts ; ils rendent compte au moins une fois par an.", s: SRC.spSci },
+          { t: "Les décisions qui dépassent les pouvoirs du gérant se prennent à l'unanimité, sauf autre majorité prévue par les statuts, avec un procès-verbal.", s: SRC.spSci },
+        ],
+      },
+      {
+        titre: "La responsabilité des associés", icone: "⚖️",
+        points: [
+          { t: "Les associés répondent indéfiniment des dettes, à proportion de leur part dans le capital à la date où la dette est exigible (art. 1857).", s: SRC.cc1857 },
+          { t: "Non solidaire et subsidiaire : chacun pour sa part, et le créancier doit d'abord agir contre la société.", s: SRC.spSci },
+        ],
+      },
+      {
+        titre: "Les déclarations fiscales", icone: "🧾",
+        points: [
+          { t: "SCI à l'impôt sur le revenu : déclaration 2072 chaque année ; chaque associé reporte sa quote-part sur sa déclaration 2044.", s: SRC.sciLivret },
+          { t: "SCI à l'impôt sur les sociétés : déclaration 2065 et comptabilité commerciale ; un déficit ne se déduit pas des revenus des associés.", s: SRC.sciMeuble },
+          { t: "Location meublée : c'est une activité commerciale. La SCI reste à l'impôt sur le revenu si ces recettes ne dépassent pas 10 % du total.", s: SRC.sciMeuble },
+          { t: "Contribution sur les revenus locatifs de 2,5 % si au moins un associé est à l'impôt sur les sociétés, pour des locaux dans un immeuble de plus de 15 ans (hors loyers soumis à TVA).", s: SRC.sciLivret },
+        ],
+      },
+      {
+        titre: "Vendre un bien ou des parts", icone: "🔑",
+        points: [
+          { t: "SCI à l'impôt sur le revenu qui vend un immeuble : régime des plus-values des particuliers, imposé chez chaque associé au prorata de ses parts (19 % + 17,2 %, abattements pour durée de détention).", s: SRC.sciPv },
+          { t: "Le notaire dépose la déclaration 2048-IMM et paie l'impôt ; chaque associé reporte sa quote-part sur sa déclaration de revenus.", s: SRC.sciPv },
+          { t: "L'associé qui occupe gratuitement le logement comme résidence principale peut bénéficier de l'exonération, au prorata de sa participation.", s: SRC.sciPv },
+          { t: "Vente de parts : accord de tous les associés en principe, sauf pour une cession gratuite à un ascendant ou un descendant ; les statuts peuvent prévoir autre chose.", s: SRC.spSci },
+        ],
+      },
+      {
+        titre: "Transmettre avec une SCI", icone: "🎁",
+        points: [
+          { t: "On peut donner des parts petit à petit aux enfants : 100 000 € d'abattement par parent et par enfant, renouvelable tous les 15 ans.", s: SRC.spSci },
+          { t: "À l'IFI, les parts de SCI sont taxables pour la valeur de l'immobilier qu'elles représentent.", s: SRC.ifiBiens },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Vendre ses parts", niveau: "Facile",
+        enonce: "Marc vend à sa sœur toutes ses parts d'une SCI qui ne détient que des appartements loués, pour 120 000 €.",
+        question: "Combien de droits d'enregistrement ?",
+        etapes: ["L'actif est composé à plus de 50 % d'immobilier non affecté à une exploitation : SCI à prépondérance immobilière.", "Taux : 5 % du prix.", "120 000 × 5 % = 6 000 €."],
+        reponse: "6 000 €. Et la sœur doit être agréée par les associés, sauf clause contraire.",
+        s: SRC.spSci,
+      },
+      {
+        titre: "Les loyers gardés dans la SCI", niveau: "Intermédiaire",
+        enonce: "SCI à l'impôt sur le revenu, deux associés à 50 %. Elle a 20 000 € de revenu foncier net, entièrement gardé pour rembourser l'emprunt.",
+        question: "Combien chaque associé déclare-t-il ?",
+        etapes: ["Les bénéfices sont imposés chez les associés, même s'ils ne sont pas distribués.", "Quote-part de chacun : 50 %.", "20 000 × 50 % = 10 000 €."],
+        reponse: "10 000 € chacun en revenus fonciers, alors qu'ils n'ont rien touché. À anticiper dans le budget du client.",
+        s: SRC.spSci,
+      },
+      {
+        titre: "Le meublé qui change tout", niveau: "Piège",
+        enonce: "Une SCI à l'impôt sur le revenu encaisse 40 000 € de loyers nus et décide de louer un studio meublé pour 8 000 € par an.",
+        question: "La SCI reste-t-elle à l'impôt sur le revenu ?",
+        etapes: ["Recettes totales : 48 000 €.", "Part du meublé : 8 000 ÷ 48 000 ≈ 16,7 %.", "Au-delà de 10 %, l'activité commerciale n'est plus accessoire."],
+        reponse: "Non : elle bascule à l'impôt sur les sociétés, avec déclaration 2065 et comptabilité commerciale.",
+        s: SRC.sciMeuble,
+      },
+    ],
+    liens: [
+      { type: "officiel", titre: "SCI : ce qu'il faut savoir (Service-public)", url: SRC.spSci[1] },
+      { type: "officiel", titre: "SCI et location meublée (impots.gouv.fr)", url: SRC.sciMeuble[1] },
+      { type: "officiel", titre: "Responsabilité des associés, art. 1857 (Légifrance)", url: SRC.cc1857[1] },
+    ],
   },
 });
