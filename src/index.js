@@ -9,10 +9,11 @@ import {
 import { routeRobot } from "./robot.js";
 import { routeLecture, avecArticles, COLONNES } from "./lecture.js";
 import { routeLinkedin } from "./linkedin.js";
+import { routeNotifications } from "./notifications.js";
 
 // Pages et fichiers visibles sans être connecté.
 const PAGES_PUBLIQUES = new Set(["/connexion", "/installation", "/style.css", "/commun.js", "/favicon.ico",
-  "/manifest.webmanifest", "/icone-192.png", "/icone-512.png", "/apple-touch-icon.png", "/icone.svg"]);
+  "/manifest.webmanifest", "/icone-192.png", "/icone-512.png", "/apple-touch-icon.png", "/icone.svg", "/sw.js"]);
 
 const json = (donnees, statut = 200, entetes = {}) =>
   new Response(JSON.stringify(donnees), {
@@ -132,6 +133,11 @@ async function api(request, env, url) {
   }
 
   // Rubrique LinkedIn : idées de posts et rédaction (voir linkedin.js).
+  if (chemin.startsWith("/api/push/")) {
+    const r = await routeNotifications(request, env, chemin, moi);
+    if (r) return r;
+  }
+
   if (chemin.startsWith("/api/linkedin/")) {
     const r = await routeLinkedin(request, env, chemin, moi);
     if (r) return r;

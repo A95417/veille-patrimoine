@@ -226,6 +226,15 @@ export async function produireBrief(date = new Date()) {
   console.log(`Brief du ${jour} (${edition}) enregistré : ${actualites.length} actualités, ${contenu.a_retenir.length} points à retenir, ` +
     `marchés ${marches ? "oui" : "non"}, IA ${contenu.ia_modele || "indisponible (brief sans synthèse)"}.`);
   if (contenu.synthese) console.log("Synthèse :", contenu.synthese);
+  // Notification aux abonnés (une seule fois par édition : pas lors d'un rattrapage ni d'un lancement forcé).
+  if (!rattrapage && !FORCER) {
+    try {
+      const premiere = (contenu.synthese || "").split(/(?<=[.!?])\s+/)[0] || `${actualites.length} actualités à connaître.`;
+      const r = await appelSite("/api/robot/push/envoyer", "POST", { edition, titre: edition === "soir" ? "🌙 Le point du soir est prêt" : "☀️ Le brief du matin est prêt",
+        corps: premiere.slice(0, 170), url: `/brief?jour=${jour}&edition=${edition}` });
+      console.log(`Notifications : ${r.envoyes}/${r.abonnes} envoyée(s).`);
+    } catch (e) { console.error("Notifications : échec,", e.message); }
+  }
   console.log(`Quiz : ${contenu.quiz.length} question(s) validée(s).`);
   // Version audio (voix naturelle) : un échec ne bloque pas le brief, le site lira alors avec la voix de l'appareil.
   try { await produireAudio({ ...contenu, jour, edition }); } catch (e) { console.error("Audio : échec,", e.message); }

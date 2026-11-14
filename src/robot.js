@@ -1,4 +1,5 @@
 import { routeLinkedin } from "./linkedin.js";
+import { envoyerATous } from "./notifications.js";
 // Adresses réservées au robot de collecte (GitHub Actions).
 // Protégées par un jeton secret (ROBOT_TOKEN) : personne d'autre ne peut écrire dans la base.
 
@@ -217,6 +218,13 @@ export async function routeRobot(request, env, chemin) {
   }
 
   // Schémas du brief (un par actualité), ajoutés au contenu d'un brief existant.
+  // Notification « le brief est prêt » à tous les abonnés de l'édition.
+  if (chemin === "/api/robot/push/envoyer" && request.method === "POST") {
+    const edition = corps.edition === "soir" ? "soir" : "matin";
+    const message = { titre: String(corps.titre || "").slice(0, 80), corps: String(corps.corps || "").slice(0, 180), url: String(corps.url || "/brief").slice(0, 200) };
+    return json(await envoyerATous(db, edition, message, new URL(request.url).origin));
+  }
+
   if (chemin === "/api/robot/brief/schemas" && request.method === "POST") {
     const edition = corps.edition === "soir" ? "soir" : "matin";
     const b = await db.prepare("SELECT contenu FROM briefs WHERE jour = ? AND edition = ?").bind(corps.jour || "", edition).first();

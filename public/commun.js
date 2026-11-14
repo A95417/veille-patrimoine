@@ -534,3 +534,41 @@ async function chargerEntete(pageActive) {
   document.getElementById("btn-deconnexion-2").onclick = deconnecter;
   return moi;
 }
+
+// ---------------------------------------------------------------- Notifications (brief prêt à 7 h et 18 h)
+const estIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const estInstallee = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+// « ok » | « ios-installer » (iPhone : il faut d'abord ajouter l'appli à l'écran d'accueil) | « refuse » | « non-supporte »
+function supportNotifications() {
+  if (estIOS() && !estInstallee()) return "ios-installer";
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return "non-supporte";
+  if (Notification.permission === "denied") return "refuse";
+  return "ok";
+}
+const cleB64 = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+async function abonnementActuel() {
+  if (supportNotifications() !== "ok") return null;
+  const reg = await navigator.serviceWorker.register("/sw.js");
+  return reg.pushManager.getSubscription();
+}
+async function etatNotifications() {
+  const a = await abonnementActuel().catch(() => null);
+  if (!a) return { abonne: false, editions: [] };
+  return appelApi("/api/push/etat", "POST", { endpoint: a.endpoint });
+}
+async function activerNotifications(editions = ["matin", "soir"]) {
+  const s = supportNotifications();
+  if (s !== "ok") throw new Error(s === "refuse" ? "Les notifications sont bloquées pour ce site : autorisez-les dans les réglages du navigateur." : "Notifications non disponibles sur cet appareil.");
+  if (await Notification.requestPermission() !== "granted") throw new Error("Autorisation refusée.");
+  const reg = await navigator.serviceWorker.register("/sw.js");
+  await navigator.serviceWorker.ready;
+  let a = await reg.pushManager.getSubscription();
+  if (!a) a = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cleB64((await appelApi("/api/push/cle")).cle) });
+  return appelApi("/api/push/abonnement", "POST", { abonnement: a.toJSON(), editions });
+}
+async function desactiverNotifications() {
+  const a = await abonnementActuel().catch(() => null);
+  if (!a) return;
+  await appelApi("/api/push/desabonnement", "POST", { endpoint: a.endpoint }).catch(() => {});
+  await a.unsubscribe().catch(() => {});
+}

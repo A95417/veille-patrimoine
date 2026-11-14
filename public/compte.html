@@ -37,6 +37,20 @@
         <div class="reglage"><span>Mode clair ou sombre</span><button type="button" class="bouton bouton-discret" onclick="basculerTheme()">Basculer</button></div>
       </section>
 
+      <section class="carte" id="bloc-notif">
+        <h2 style="margin:0 0 6px;font-size:1.1rem">🔔 Notifications</h2>
+        <p class="doux" style="margin:0 0 10px" id="notif-etat">Vérification…</p>
+        <div id="notif-reglages" hidden>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:500;margin:6px 0"><input type="checkbox" id="n-matin" style="width:auto" checked> Brief du matin (vers 7 h)</label>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:500;margin:6px 0 12px"><input type="checkbox" id="n-soir" style="width:auto" checked> Point du soir (vers 18 h)</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="bouton" id="btn-notif">Activer les notifications</button>
+            <button type="button" class="bouton bouton-discret" id="btn-notif-test" hidden>Envoyer une notification d'essai</button>
+            <button type="button" class="bouton bouton-discret" id="btn-notif-off" hidden>Désactiver sur cet appareil</button>
+          </div>
+        </div>
+      </section>
+
       <section class="carte">
         <h2 style="margin:0 0 6px;font-size:1.1rem">Changer mon mot de passe</h2>
         <form id="form-mdp">
@@ -59,6 +73,30 @@
       document.getElementById("email").textContent = moi.email + (moi.role === "admin" ? " · administrateur" : "");
       document.getElementById("avatar").textContent = nom.split(/[\s@.]+/).filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
     });
+    // Notifications
+    const $n = (id) => document.getElementById(id);
+    async function majNotif() {
+      const s = supportNotifications();
+      if (s === "ios-installer") { $n("notif-etat").innerHTML = "Sur iPhone, ajoutez d'abord l'application à l'écran d'accueil : bouton <strong>Partager</strong> puis <strong>« Sur l'écran d'accueil »</strong>. Ouvrez-la ensuite depuis son icône et revenez ici."; return; }
+      if (s === "non-supporte") { $n("notif-etat").textContent = "Ce navigateur ne permet pas les notifications."; return; }
+      if (s === "refuse") { $n("notif-etat").textContent = "Les notifications sont bloquées pour ce site : autorisez-les dans les réglages du navigateur, puis revenez ici."; return; }
+      $n("notif-reglages").hidden = false;
+      const e = await etatNotifications().catch(() => ({ abonne: false, editions: [] }));
+      $n("notif-etat").textContent = e.abonne ? "Activées sur cet appareil." : "Recevez une notification dès que le brief est prêt.";
+      if (e.abonne) { $n("n-matin").checked = e.editions.includes("matin"); $n("n-soir").checked = e.editions.includes("soir"); }
+      $n("btn-notif").textContent = e.abonne ? "Enregistrer mes choix" : "Activer les notifications";
+      $n("btn-notif-test").hidden = $n("btn-notif-off").hidden = !e.abonne;
+    }
+    $n("btn-notif").onclick = async () => {
+      const editions = [["matin", "n-matin"], ["soir", "n-soir"]].filter(([, id]) => $n(id).checked).map(([e]) => e);
+      if (!editions.length) { notifier("Choisissez au moins une édition.", true); return; }
+      try { await activerNotifications(editions); notifier("Notifications activées."); } catch (err) { notifier(err.message, true); }
+      majNotif();
+    };
+    $n("btn-notif-test").onclick = async () => { try { await appelApi("/api/push/test", "POST", {}); notifier("Notification d'essai envoyée."); } catch (err) { notifier(err.message, true); } };
+    $n("btn-notif-off").onclick = async () => { await desactiverNotifications(); notifier("Notifications désactivées sur cet appareil."); majNotif(); };
+    majNotif();
+
     document.getElementById("btn-sortir").onclick = async () => { await appelApi("/api/deconnexion", "POST", {}); location.href = "/connexion"; };
     document.getElementById("form-mdp").addEventListener("submit", async (e) => {
       e.preventDefault();

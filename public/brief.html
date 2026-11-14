@@ -152,6 +152,8 @@
     .terme { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted; text-decoration-color: var(--accent); text-underline-offset: 3px; }
     .hero .terme { text-decoration-color: rgba(255,255,255,.7); }
     .bulle-terme { position: absolute; z-index: 120; max-width: min(320px, calc(100vw - 24px)); background: var(--texte); color: var(--carte); padding: 10px 12px; border-radius: 12px; font-size: .88rem; line-height: 1.45; box-shadow: 0 10px 30px rgba(0,0,0,.25); display: grid; gap: 4px; }
+    .bandeau-notif { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 12px 16px; border-radius: 14px; background: var(--accent-doux); margin: -12px 0 24px; font-size: .92rem; }
+    .bandeau-notif span { flex: 1 1 220px; }
     .avertissement { font-size: .85rem; color: var(--doux); border: 1px dashed var(--bord-fort); border-radius: 12px; padding: 10px 14px; }
   </style>
 </head>
@@ -250,6 +252,7 @@
       document.getElementById("brief").innerHTML = `<nav class="barre-sections no-print" id="barre-sections" aria-label="Sections du brief"></nav>` + html;
       construireSommaire();
       activerGlossaire(document.getElementById("brief"));
+      proposerNotifications();
       // Filtre par thème
       document.querySelectorAll("[data-filtre]").forEach((f) => f.onclick = () => {
         document.querySelectorAll("[data-filtre]").forEach((x) => x.setAttribute("aria-pressed", x === f));
@@ -293,6 +296,23 @@
         const actif = document.querySelector("#barre-sections a.actif"); if (actif) actif.scrollIntoView({ block: "nearest", inline: "center" });
       }, { rootMargin: "-90px 0px -55% 0px" });
       sections.forEach((x) => observateur.observe(x));
+    }
+
+    // Proposition discrète d'activer les notifications (une fois refusée, on ne la remontre pas avant 30 jours).
+    async function proposerNotifications() {
+      let plusTard = 0; try { plusTard = Number(localStorage.getItem("notif_plus_tard") || 0); } catch {}
+      if (Date.now() - plusTard < 30 * 86400e3) return;
+      const s = supportNotifications();
+      if (s === "non-supporte" || s === "refuse") return;
+      if (s === "ok" && (await etatNotifications().catch(() => ({ abonne: true }))).abonne) return;
+      const h = document.getElementById("b-synthese"); if (!h || document.getElementById("bandeau-notif")) return;
+      h.insertAdjacentHTML("afterend", `<div class="bandeau-notif no-print" id="bandeau-notif"><span>🔔 ${s === "ios-installer"
+        ? "Pour être prévenu à 7 h et 18 h : ajoutez l'application à l'écran d'accueil (Partager → « Sur l'écran d'accueil »), puis activez les notifications dans Mon compte."
+        : "Être prévenu dès que le brief est prêt, à 7 h et 18 h ?"}</span>
+        ${s === "ok" ? '<button type="button" class="bouton" id="notif-oui">Activer</button>' : ""}<button type="button" class="bouton bouton-discret" id="notif-non">Plus tard</button></div>`);
+      document.getElementById("notif-non").onclick = () => { try { localStorage.setItem("notif_plus_tard", String(Date.now())); } catch {} document.getElementById("bandeau-notif").remove(); };
+      const oui = document.getElementById("notif-oui");
+      if (oui) oui.onclick = async () => { try { await activerNotifications(); notifier("Notifications activées."); document.getElementById("bandeau-notif").remove(); } catch (e) { notifier(e.message, true); } };
     }
 
     let editions = [];
