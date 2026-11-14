@@ -19,7 +19,7 @@ const PICTOS_SCHEMA = {
   retraite: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 };
 const pictoSchema = (nom, taille = 22) => `<svg width="${taille}" height="${taille}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PICTOS_SCHEMA[nom] || PICTOS_SCHEMA.graphique}</svg>`;
-const typoFr = (t) => String(t || "").replace(/(\d)[   ]?(%|€)/g, "$1 $2");
+const typoFr = (t) => String(t || "").replace(/ milliards? d['’]euros/g, "\u202fMd€").replace(/ millions? d['’]euros/g, "\u202fM€").replace(/(\d) euros\b/g, "$1\u202f€").replace(/(\d)[   ]?(%|€)/g, "$1 $2");
 
 // Le schéma d'une actualité (HTML, aux couleurs de son thème).
 function schemaActu(s) {

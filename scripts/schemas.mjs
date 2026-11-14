@@ -34,7 +34,7 @@ const SCHEMA = {
           modele: { type: "STRING", description: "chiffre, avant_apres, etapes ou points" },
           icone: { type: "STRING", description: "Une icône parmi : " + ICONES.join(", ") },
           titre: { type: "STRING", description: "Ce que montre le schéma, 45 caractères maximum" },
-          chiffre: { type: "STRING", description: "modèle chiffre : le chiffre exactement comme il est écrit dans le résumé, avec son unité" },
+          chiffre: { type: "STRING", description: "modèle chiffre : le chiffre exactement comme il est écrit dans le résumé, avec son unité (une fourchette s'écrit « 25 000 à 30 000 euros »)" },
           legende: { type: "STRING", description: "modèle chiffre : ce que mesure le chiffre, 60 caractères maximum" },
           avant_titre: { type: "STRING", description: "modèle avant_apres : 1 à 3 mots (ex. « Aujourd'hui »)" },
           avant: { type: "STRING", description: "modèle avant_apres : 50 caractères maximum" },
@@ -55,7 +55,8 @@ Pour CHAQUE sujet fourni, propose un schéma :
 - "avant_apres" si l'actualité décrit un changement (règle, taux, prix, situation) ;
 - "etapes" si elle décrit un calendrier ou une procédure (ce qui va se passer ensuite) ;
 - "points" sinon (2 ou 3 idées clés).
-Règles impératives : textes très courts et simples ; n'utilise QUE les informations du titre et du résumé du sujet ; aucun chiffre, aucune date, aucun nom qui n'y figure ; pas de conseil. En français.`;
+Règles impératives : textes très courts et simples ; n'utilise QUE les informations du titre et du résumé du sujet ; aucun chiffre, aucune date, aucun nom qui n'y figure ; pas de conseil. En français.
+Respecte le sens exact : ce qui est proposé, envisagé, en débat ou attendu doit rester présenté comme tel (« projet », « proposition », « envisagé », « attendu ») et jamais comme décidé. Une fourchette reste une fourchette (« entre 25 000 et 30 000 € »). Pas de majuscules d'insistance.`;
 
 // Garde-fou : tout chiffre affiché doit figurer dans le titre ou le résumé du sujet.
 export function verifierSchema(s, sujet) {
@@ -68,7 +69,7 @@ export function verifierSchema(s, sujet) {
     modele: MODELES.includes(s.modele) ? s.modele : "points",
     icone: ICONES.includes(s.icone) ? s.icone : "graphique",
     titre: sur(s.titre) ? court(s.titre, 60) : "",
-    chiffre: court(s.chiffre, 16), legende: sur(s.legende) ? court(s.legende, 80) : "",
+    chiffre: court(s.chiffre, 32), legende: sur(s.legende) ? court(s.legende, 80) : "",
     avant_titre: court(s.avant_titre, 24), avant: sur(s.avant) ? court(s.avant, 70) : "",
     apres_titre: court(s.apres_titre, 24), apres: sur(s.apres) ? court(s.apres, 70) : "",
     elements: (Array.isArray(s.elements) ? s.elements : []).map((e) => court(e, 60)).filter((e) => e && sur(e)).slice(0, 3),
