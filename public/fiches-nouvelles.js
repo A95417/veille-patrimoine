@@ -282,4 +282,91 @@ FICHES.push(
       { type: "video", titre: "Vidéos : calculer une plus-value immobilière", url: YT("plus-value immobilière calcul abattement durée de détention") },
     ],
   },
+
+  // ------------------------------------------------------------------ ÉPARGNE SALARIALE
+  {
+    id: "epargne-salariale",
+    titre: "L'épargne salariale",
+    sousTitre: "Intéressement, participation, PEE, PER collectif",
+    theme: "epargne",
+    duree: 7,
+    verifie: "15 novembre 2026",
+    recherche: "épargne salariale",
+    enUnePhrase: "L'entreprise partage une partie de ses résultats (intéressement, participation) et peut compléter l'épargne du salarié (abondement) : placées sur un plan, ces sommes échappent à l'impôt sur le revenu en échange d'un blocage.",
+    chiffres: [
+      { valeur: "36 045 €", libelle: "de prime d'intéressement ou de participation au maximum par salarié en 2026" },
+      { valeur: "15 jours", libelle: "pour choisir entre toucher la prime ou la placer" },
+      { valeur: "5 ans", libelle: "de blocage sur le PEE (jusqu'à la retraite sur le PER collectif)" },
+      { valeur: "× 3", libelle: "l'abondement peut aller jusqu'à 3 fois le versement du salarié, dans un plafond" },
+    ],
+    essentiel: [
+      { titre: "L'intéressement", texte: "Facultatif : une prime liée à des objectifs de performance, plafonnée à 36 045 € par salarié en 2026 et à 20 % de la masse salariale." },
+      { titre: "La participation", texte: "Obligatoire dans les entreprises qui ont employé au moins 50 salariés sans interruption sur les 5 dernières années, selon une formule légale." },
+      { titre: "Toucher ou placer", texte: "Touchée tout de suite, la prime est imposable. Placée dans les 15 jours sur un PEE ou un PER collectif, elle est exonérée d'impôt sur le revenu (CSG et CRDS restent dues)." },
+      { titre: "Le PEE", texte: "Ouvert à tous les salariés (3 mois d'ancienneté au plus). Bloqué 5 ans, avec de nombreux cas de déblocage anticipé. Les gains sont exonérés d'impôt, seuls les prélèvements sociaux sont dus." },
+      { titre: "Le PER collectif", texte: "Bloqué jusqu'à la retraite, avec moins de cas de déblocage. Sortie en capital ou en rente ; l'épargne issue de l'intéressement et de la participation sort sans impôt." },
+    ],
+    schema: [
+      { titre: "Prime", texte: "Intéressement ou participation" },
+      { titre: "15 jours pour choisir", texte: "Toucher (imposable) ou placer" },
+      { titre: "Plan", texte: "PEE (5 ans) ou PER collectif (retraite)" },
+      { titre: "Abondement", texte: "L'entreprise complète" },
+    ],
+    fiscalite: [
+      {
+        titre: "PEE ou PER collectif",
+        colonnes: ["Point", "PEE", "PER collectif"],
+        lignes: [
+          ["Blocage", "5 ans à compter de chaque versement", "Jusqu'à la retraite"],
+          ["Abondement maximum (2026)", "3 fois le versement, 3 844,80 € (6 920,64 € en titres de l'entreprise)", "3 fois le versement, 7 690 €"],
+          ["Versements volontaires", "25 % de la rémunération annuelle brute", "Sans plafond ; déductibles dans la limite du plafond retraite"],
+          ["À la sortie", "Exonéré d'impôt ; prélèvements sociaux sur les gains", "Capital issu de l'épargne salariale exonéré ; gains à 31,4 %"],
+        ],
+      },
+    ],
+    pourQui: ["Un salarié qui reçoit de l'intéressement ou de la participation et n'a pas besoin de cet argent tout de suite", "Un salarié imposé à 30 % ou plus : placer la prime évite l'impôt", "Un dirigeant de PME de moins de 250 salariés (il peut adhérer au PEE)"],
+    pasPourQui: ["Un salarié qui a besoin de l'argent à court terme sans cas de déblocage", "Une épargne de précaution (le blocage reste la règle)"],
+    pieges: [
+      "Laisser passer les 15 jours sans choisir : la participation va pour moitié sur le PER collectif, bloquée jusqu'à la retraite.",
+      "Croire que le PER collectif se débloque comme le PEE : le mariage ou la naissance d'un 3e enfant ne le permettent pas.",
+      "Oublier les 6 mois pour demander un déblocage anticipé après certains événements (mariage, naissance…).",
+      "Ne pas verser assez pour toucher tout l'abondement proposé par l'entreprise.",
+    ],
+    phraseClient: "Si vous placez votre prime sur le plan d'épargne de l'entreprise, vous ne payez pas d'impôt dessus, l'entreprise peut la compléter, et vous pouvez la récupérer avant 5 ans dans de nombreuses situations, comme l'achat de votre résidence principale.",
+    cas: {
+      enonce: "Clara, imposée à 30 %, reçoit 3 000 € d'intéressement.",
+      question: "Toucher ou placer sur le PEE ?",
+      reponse: "Touchée, la prime s'ajoute à ses revenus : environ 900 € d'impôt (3 000 × 30 %). Placée sur le PEE dans les 15 jours, elle est exonérée d'impôt sur le revenu. La CSG et la CRDS sont dues dans les deux cas.",
+    },
+    vraiFaux: [
+      { texte: "La participation est obligatoire dans toutes les entreprises.", vrai: false, explication: "Seulement à partir de 50 salariés employés sans interruption sur les 5 dernières années." },
+      { texte: "Placée sur un PEE, la prime d'intéressement échappe à la CSG et à la CRDS.", vrai: false, explication: "Elle échappe à l'impôt sur le revenu, pas à la CSG et à la CRDS." },
+      { texte: "Le mariage permet de débloquer un PEE.", vrai: true, explication: "Demande à faire dans les 6 mois." },
+      { texte: "Le mariage permet de débloquer un PER collectif.", vrai: false, explication: "Ce n'est pas un cas de déblocage du PER collectif." },
+    ],
+    quiz: [
+      { question: "Plafond individuel de l'intéressement en 2026 ?", choix: ["3 844,80 €", "7 690 €", "36 045 €", "47 100 €"], bonne: 2, explication: "36 045 € (75 % du plafond de la Sécurité sociale)." },
+      { question: "Combien de temps pour choisir entre toucher et placer la prime ?", choix: ["8 jours", "15 jours", "1 mois", "6 mois"], bonne: 1, explication: "15 jours." },
+      { question: "Versements volontaires maximum sur un PEE ?", choix: ["10 % du salaire", "25 % de la rémunération annuelle brute", "36 045 €", "Sans limite"], bonne: 1, explication: "25 % de la rémunération annuelle brute par an." },
+      { question: "Abondement maximum sur un PER collectif en 2026 ?", choix: ["3 844,80 €", "6 920,64 €", "7 690 €", "36 045 €"], bonne: 2, explication: "3 fois le versement du salarié, dans la limite de 7 690 €." },
+    ],
+    cartes: [
+      { recto: "Abondement", verso: "Complément versé par l'entreprise, jusqu'à 3 fois le versement du salarié, dans un plafond." },
+      { recto: "Participation par défaut", verso: "Sans choix du salarié : la moitié va sur le PER collectif." },
+      { recto: "Délai de déblocage anticipé (PEE)", verso: "6 mois après l'événement, sauf exceptions (fin de contrat, décès, invalidité…)." },
+    ],
+    paires: [
+      { terme: "PEE", definition: "Bloqué 5 ans" },
+      { terme: "PER collectif", definition: "Bloqué jusqu'à la retraite" },
+      { terme: "Intéressement", definition: "Lié à des objectifs, facultatif" },
+      { terme: "Participation", definition: "Obligatoire à partir de 50 salariés" },
+    ],
+    liens: [
+      { type: "officiel", titre: "Plan d'épargne entreprise (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2142" },
+      { type: "officiel", titre: "Intéressement (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2140" },
+      { type: "officiel", titre: "Participation (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2141" },
+      { type: "officiel", titre: "Déblocage anticipé (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F31622" },
+      { type: "video", titre: "Vidéos : comprendre l'épargne salariale", url: YT("épargne salariale PEE intéressement participation abondement explication") },
+    ],
+  },
 );

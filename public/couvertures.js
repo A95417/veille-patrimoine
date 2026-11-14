@@ -95,6 +95,14 @@
       <g class="anim-flotte">${piece(270, 70, 10)}</g><g class="anim-flotte-2">${piece(92, 80, 8)}</g>
       <rect x="244" y="182" width="110" height="26" rx="13" fill="#fff"/><text x="299" y="200" text-anchor="middle" font-size="12" font-family="Inter,sans-serif" font-weight="700" fill="#2a8a50">19 % + 17,2 %</text>`,
 
+    "epargne-salariale": (p) => `<defs>${ciel(p + "c", "#dff1ff", "#a9d4f5")}${halo(p + "h", "#fff3c4")}</defs>
+      <rect width="400" height="220" fill="url(#${p}c)"/><rect y="186" width="400" height="34" fill="#3a6ea5"/>
+      <rect x="236" y="44" width="80" height="142" fill="#2c4f7c"/>${fenetres(246, 54, 4, 8, 10, 10, 17, 16, "#bfe0ff", "#ffe27a")}
+      <rect x="320" y="90" width="50" height="96" fill="#4a77a8"/>${fenetres(328, 100, 3, 5, 8, 8, 14, 16, "#d6ecff")}
+      <g transform="translate(130 150)"><ellipse cx="0" cy="30" rx="60" ry="10" fill="#2c4f7c" opacity=".3"/><path d="M-50 0a50 36 0 01100 0v16a50 20 0 01-100 0z" fill="#f2b53a"/><ellipse cx="0" cy="0" rx="50" ry="20" fill="#ffd45e"/><rect x="-14" y="-6" width="28" height="6" rx="3" fill="#c98a12"/></g>
+      <g class="anim-flotte">${piece(130, 92, 10)}</g><g class="anim-flotte-2">${piece(170, 70, 8)}${piece(96, 74, 7)}</g>
+      ${personne(196, 186, .9, "#e0723b", "#f3c9a0")}`,
+
     "produits-structures": (p) => `<defs>${ciel(p + "c", "#2a1457", "#6b3fc1")}${halo(p + "h", "#c7b2ff")}</defs>
       <rect width="400" height="220" fill="url(#${p}c)"/><circle cx="330" cy="40" r="80" fill="url(#${p}h)" opacity=".5"/>
       <path d="M0 190l70-60 50 30 70-80 60 50 60-60 90 70v80H0z" fill="#4a2a92"/><path d="M0 220v-24l90-30 80 22 90-34 140 30v36z" fill="#371f73"/>

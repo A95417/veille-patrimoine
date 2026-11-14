@@ -1345,3 +1345,80 @@ Object.assign(APPROFONDI, {
     ],
   },
 });
+
+Object.assign(SRC, {
+  spPee: ["Service-public · Plan d'épargne entreprise", "https://www.service-public.gouv.fr/particuliers/vosdroits/F2142"],
+  spInter: ["Service-public · Intéressement", "https://www.service-public.gouv.fr/particuliers/vosdroits/F2140"],
+  spPartic: ["Service-public · Participation", "https://www.service-public.gouv.fr/particuliers/vosdroits/F2141"],
+  spDeblocage: ["Service-public · Déblocage anticipé", "https://www.service-public.gouv.fr/particuliers/vosdroits/F31622"],
+  spPerco: ["Service-public · PER d'entreprise collectif", "https://www.service-public.gouv.fr/particuliers/vosdroits/F36526/1"],
+});
+
+Object.assign(APPROFONDI, {
+  "epargne-salariale": {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "Participation : la formule et le défaut", icone: "🧮",
+        points: [
+          { t: "Formule légale : réserve = ½ × (bénéfice net − 5 % des capitaux propres) × (salaires ÷ valeur ajoutée). Un accord peut prévoir mieux, jamais moins.", s: SRC.spPartic },
+          { t: "Sans choix du salarié, la moitié de sa participation est placée sur le PER collectif ; l'autre moitié selon l'accord.", s: SRC.spPartic },
+          { t: "Sans accord de participation, les sommes vont sur un compte bloqué pendant 8 ans.", s: SRC.spPartic },
+        ],
+      },
+      {
+        titre: "Intéressement : les règles", icone: "🎯",
+        points: [
+          { t: "Plafond global : 20 % des salaires bruts versés. Sans demande de versement immédiat, la prime va sur le PEE s'il existe.", s: SRC.spInter },
+          { t: "Entreprises de 11 à 49 salariés bénéficiaires 3 années de suite (bénéfice net ≥ 1 % du chiffre d'affaires) : elles doivent mettre en place un dispositif de partage de la valeur (expérimentation).", s: SRC.spInter },
+        ],
+      },
+      {
+        titre: "Débloquer un PEE avant 5 ans", icone: "🔓",
+        points: [
+          { t: "Mariage ou PACS ; naissance ou adoption d'un 3e enfant ; divorce ou séparation avec garde d'un enfant ; violences conjugales.", s: SRC.spDeblocage },
+          { t: "Invalidité ou décès (salarié, conjoint, partenaire, enfants pour l'invalidité) ; fin du contrat de travail ; surendettement ; activité d'aidant familial.", s: SRC.spDeblocage },
+          { t: "Création ou reprise d'entreprise ; achat ou agrandissement de la résidence principale, ou sa rénovation énergétique ; achat d'un véhicule propre ou d'un vélo électrique neuf.", s: SRC.spDeblocage },
+          { t: "Demande dans les 6 mois de l'événement, sauf fin de contrat, décès, invalidité, violences conjugales, surendettement et aidant (pas de délai).", s: SRC.spDeblocage },
+        ],
+      },
+      {
+        titre: "Le PER collectif en détail", icone: "🏦",
+        points: [
+          { t: "Frais de gestion pris en charge par l'employeur tant que le salarié est dans l'entreprise.", s: SRC.spPerco },
+          { t: "Jusqu'à 10 jours de repos non pris par an peuvent y être versés (sans compte épargne-temps).", s: SRC.spPerco },
+          { t: "Gestion pilotée « équilibré horizon retraite » par défaut : plus de risque loin de la retraite, moins en s'en approchant.", s: SRC.spPerco },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Toucher tout l'abondement", niveau: "Facile",
+        enonce: "L'entreprise abonde le PEE à 300 % (3 € pour 1 € versé). Le salarié verse 2 000 €.",
+        question: "Combien d'abondement ?",
+        etapes: ["300 % de 2 000 € = 6 000 €.", "Mais le plafond 2026 est de 3 844,80 € (hors titres de l'entreprise)."],
+        reponse: "3 844,80 €. Verser 1 281,60 € suffit pour toucher le maximum.",
+        s: SRC.spPee,
+      },
+      {
+        titre: "Le choix oublié", niveau: "Intermédiaire",
+        enonce: "Tom reçoit 4 000 € de participation et ne répond pas dans les 15 jours. Son entreprise a un accord de participation et un PER collectif.",
+        question: "Où va son argent ?",
+        etapes: ["Sans choix, la moitié va sur le PER collectif : 2 000 €.", "L'autre moitié est placée selon l'accord.", "La part sur le PER est bloquée jusqu'à la retraite (sauf cas de déblocage)."],
+        reponse: "2 000 € bloqués jusqu'à la retraite, 2 000 € selon l'accord. Dans tous les cas, pas d'impôt sur le revenu.",
+        s: SRC.spPartic,
+      },
+      {
+        titre: "Le mariage et le PER collectif", niveau: "Piège",
+        enonce: "Léa se marie et veut récupérer son épargne salariale : 8 000 € sur le PEE, 5 000 € sur le PER collectif.",
+        question: "Que peut-elle débloquer ?",
+        etapes: ["Le mariage est un cas de déblocage du PEE (demande dans les 6 mois).", "Ce n'est pas un cas de déblocage du PER collectif."],
+        reponse: "Les 8 000 € du PEE seulement.",
+        s: SRC.spDeblocage,
+      },
+    ],
+    liens: [
+      { type: "officiel", titre: "PER d'entreprise collectif (Service-public)", url: SRC.spPerco[1] },
+    ],
+  },
+});

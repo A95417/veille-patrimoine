@@ -327,6 +327,24 @@ const OUTILS_FICHES = {
     },
   ],
 
+  "epargne-salariale": [
+    {
+      titre: "Calculateur : l'abondement du PEE",
+      intro: "Plafonds 2026 publiés par Service-public : 3 fois le versement, dans la limite de 3 844,80 € (6 920,64 € en titres de l'entreprise).",
+      html: () => ctl.curseur("ve", "Votre versement sur le PEE", 0, 10000, 50, 1000) + ctl.choix("ta", "Taux d'abondement de l'entreprise", [["50", "50 %"], ["100", "100 %"], ["200", "200 %"], ["300", "300 %"]], "100") +
+        ctl.choix("ti", "Investi en titres de l'entreprise ?", [["0", "Non"], ["1", "Oui"]], "0") + ctl.resultat(),
+      init: (z) => brancher(z, { ve: euros }, (v, r) => {
+        const plafond = v.ti === 1 ? 6920.64 : 3844.80;
+        const ab = Math.min(v.ve * v.ta / 100, plafond, v.ve * 3);
+        const optimal = plafond / (v.ta / 100);
+        r.className = "simu-resultat gain";
+        r.innerHTML = `Abondement : <strong>${euros(ab)}</strong> · Total placé : <strong>${euros(v.ve + ab)}</strong><br>` +
+          (ab >= plafond - 0.01 ? "Vous touchez le maximum." : `Pour toucher le maximum, il faudrait verser ${euros(optimal)}.`) +
+          note("L'abondement est exonéré d'impôt sur le revenu dans ces plafonds, mais soumis à la CSG et à la CRDS. Le taux réel dépend du règlement du plan.");
+      }),
+    },
+  ],
+
   "girardin-industriel": [
     {
       titre: "Simulateur : dimensionner un Girardin industriel",
