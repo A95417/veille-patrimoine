@@ -103,6 +103,14 @@
       <g class="anim-flotte">${piece(130, 92, 10)}</g><g class="anim-flotte-2">${piece(170, 70, 8)}${piece(96, 74, 7)}</g>
       ${personne(196, 186, .9, "#e0723b", "#f3c9a0")}`,
 
+    "testament-ddv": (p) => `<defs>${ciel(p + "c", "#f7ecd9", "#e8cfa6")}${halo(p + "h", "#fff8e6")}</defs>
+      <rect width="400" height="220" fill="url(#${p}c)"/><circle cx="200" cy="100" r="110" fill="url(#${p}h)" opacity=".7"/>
+      <rect y="192" width="400" height="28" fill="#b98a52"/>
+      <g transform="translate(200 108)"><rect x="-70" y="-62" width="140" height="124" rx="6" fill="#fffaf0"/><rect x="-80" y="-70" width="160" height="16" rx="8" fill="#e3c38f"/><rect x="-80" y="54" width="160" height="16" rx="8" fill="#e3c38f"/>
+        <path d="M-50 -34h100M-50 -16h86M-50 2h100M-50 20h70" stroke="#c9a46a" stroke-width="5" stroke-linecap="round"/><path d="M8 40q10-12 18 0t18-4" fill="none" stroke="#6E0B1F" stroke-width="3" stroke-linecap="round"/></g>
+      <g transform="translate(300 70)"><g class="anim-flotte"><path d="M0 70L30 0q6 10-4 28L6 74z" fill="#8a6a3a"/><path d="M30 0q14 22-8 44L10 64" fill="#d9b98a"/></g></g>
+      <g transform="translate(96 150)"><g class="anim-balance"><circle cx="-12" cy="0" r="16" fill="none" stroke="#f2b632" stroke-width="6"/><circle cx="12" cy="0" r="16" fill="none" stroke="#d6d9e6" stroke-width="6"/></g></g>`,
+
     "produits-structures": (p) => `<defs>${ciel(p + "c", "#2a1457", "#6b3fc1")}${halo(p + "h", "#c7b2ff")}</defs>
       <rect width="400" height="220" fill="url(#${p}c)"/><circle cx="330" cy="40" r="80" fill="url(#${p}h)" opacity=".5"/>
       <path d="M0 190l70-60 50 30 70-80 60 50 60-60 90 70v80H0z" fill="#4a2a92"/><path d="M0 220v-24l90-30 80 22 90-34 140 30v36z" fill="#371f73"/>

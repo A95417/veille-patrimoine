@@ -1226,6 +1226,7 @@ Object.assign(SRC, {
   spMeuble: ["Service-public · Revenus d'une location meublée", "https://www.service-public.gouv.fr/particuliers/vosdroits/F32744"],
   faqLmnp: ["impots.gouv.fr · FAQ location meublée (2026)", "https://www.impots.gouv.fr/sites/default/files/media/1_metier/5_international/actualite/faq-lmnp-03_2026.pdf"],
   tourisme: ["impots.gouv.fr · Meublés de tourisme", "https://www.impots.gouv.fr/particulier/questions/je-suis-proprietaire-dune-location-meublee-de-tourisme-quel-est-le-nouveau"],
+  cgi150VB: ["Légifrance · CGI art. 150 VB", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051202577"],
   spPv: ["Service-public · Plus-value immobilière", "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864"],
   pvExo: ["impots.gouv.fr · Plus-values exonérées", "https://www.impots.gouv.fr/particulier/plus-values-exonerees"],
 });
@@ -1254,7 +1255,7 @@ Object.assign(APPROFONDI, {
       {
         titre: "Louer une partie de sa résidence principale", icone: "🛏️",
         points: [
-          { t: "Exonération possible jusqu'au 31 décembre 2026 si le loyer reste raisonnable : en 2026, 215 € par m² et par an en Île-de-France, 159 € ailleurs.", s: SRC.spMeuble },
+          { t: "Exonération possible jusqu'au 31 décembre 2026 si les pièces louées sont la résidence principale du locataire et que le loyer reste raisonnable : en 2026, 215 € par m² et par an en Île-de-France, 159 € ailleurs.", s: SRC.spMeuble },
           { t: "Location occasionnelle à des personnes de passage : exonérée jusqu'à 760 € par an.", s: SRC.spMeuble },
         ],
       },
@@ -1262,7 +1263,7 @@ Object.assign(APPROFONDI, {
         titre: "À la revente", icone: "🔑",
         points: [
           { t: "Le LMNP garde le régime des plus-values des particuliers, avec les abattements pour durée de détention.", s: SRC.spMeuble },
-          { t: "Ventes depuis le 15 février 2025 : les amortissements déduits au réel sont retirés du prix d'achat, ce qui augmente la plus-value. Les résidences pour étudiants ou seniors ne sont pas concernées.", s: SRC.faqLmnp },
+          { t: "Ventes depuis le 15 février 2025 : les amortissements déduits au réel sont retirés du prix d'achat, ce qui augmente la plus-value. Ne sont pas concernées notamment les résidences pour étudiants ou seniors, les EHPAD et autres établissements médico-sociaux.", s: SRC.cgi150VB },
           { t: "Une SCI qui loue régulièrement en meublé passe à l'impôt sur les sociétés.", s: SRC.faqLmnp },
         ],
       },
@@ -1315,9 +1316,9 @@ Object.assign(APPROFONDI, {
         points: [
           { t: "Résidence principale : y compris si on a déménagé, à condition de l'avoir habitée jusqu'à la mise en vente et de vendre dans un délai normal (en général environ un an).", s: SRC.pvExo },
           { t: "Première vente d'un logement autre que la résidence principale : exonérée si on n'a pas été propriétaire de sa résidence principale dans les 4 ans et qu'on rachète sa résidence principale dans les 24 mois. Une seule fois.", s: SRC.spPv },
-          { t: "Retraités ou invalides modestes, non soumis à l'IFI : pour une vente en 2026, revenu fiscal de référence 2024 sous 12 793 € pour une part, plus 3 428 € par demi-part.", s: SRC.spPv },
+          { t: "Retraités ou invalides modestes, non soumis à l'IFI : pour une vente en 2026, revenu fiscal de référence 2024 ne dépassant pas 12 793 € pour une part, plus 3 428 € par demi-part.", s: SRC.spPv },
           { t: "Expropriation : exonérée si au moins 90 % de l'indemnité est réinvestie dans les 12 mois.", s: SRC.pvExo },
-          { t: "Abattement exceptionnel de 60 % ou 70 % (jusqu'à 85 %) dans certaines zones, pour une promesse signée entre 2024 et fin 2027, hors vente à un proche.", s: SRC.spPv },
+          { t: "Abattement exceptionnel (promesse signée entre 2024 et fin 2027) si l'acheteur s'engage à démolir puis reconstruire des logements collectifs achevés dans les 4 ans : 70 % dans des opérations d'urbanisme ou de revitalisation, 60 % en zones A, A bis et B1, 85 % si au moins la moitié de la surface est en logement social ou intermédiaire. Exclu en cas de vente à un proche ou à une société dont le vendeur ou ses proches sont associés.", s: SRC.spPv },
         ],
       },
     ],
@@ -1361,24 +1362,24 @@ Object.assign(APPROFONDI, {
       {
         titre: "Participation : la formule et le défaut", icone: "🧮",
         points: [
-          { t: "Formule légale : réserve = ½ × (bénéfice net − 5 % des capitaux propres) × (salaires ÷ valeur ajoutée). Un accord peut prévoir mieux, jamais moins.", s: SRC.spPartic },
-          { t: "Sans choix du salarié, la moitié de sa participation est placée sur le PER collectif ; l'autre moitié selon l'accord.", s: SRC.spPartic },
+          { t: "Formule légale : réserve = ½ × (bénéfice net − 5 % des capitaux propres) × (salaires ÷ valeur ajoutée). Un accord peut prévoir une autre formule, à condition qu'elle donne au moins autant.", s: SRC.spPartic },
+          { t: "Avec un accord de participation et un PER collectif, sans choix du salarié, la moitié de sa participation est placée sur le PER collectif ; l'autre moitié selon l'accord.", s: SRC.spPartic },
           { t: "Sans accord de participation, les sommes vont sur un compte bloqué pendant 8 ans.", s: SRC.spPartic },
         ],
       },
       {
         titre: "Intéressement : les règles", icone: "🎯",
         points: [
-          { t: "Plafond global : 20 % des salaires bruts versés. Sans demande de versement immédiat, la prime va sur le PEE s'il existe.", s: SRC.spInter },
-          { t: "Entreprises de 11 à 49 salariés bénéficiaires 3 années de suite (bénéfice net ≥ 1 % du chiffre d'affaires) : elles doivent mettre en place un dispositif de partage de la valeur (expérimentation).", s: SRC.spInter },
+          { t: "Plafond global : 20 % des salaires bruts versés. Sans demande de versement immédiat, la prime va sur le PEE s'il existe, sinon sur un PEG ou un PEI.", s: SRC.spInter },
+          { t: "Entreprises de 11 à moins de 50 salariés (hors entreprises individuelles) avec un bénéfice net fiscal d'au moins 1 % du chiffre d'affaires 3 exercices de suite : depuis les exercices ouverts en 2025, elles doivent mettre en place participation, intéressement, abondement ou prime de partage de la valeur (expérimentation).", s: SRC.spInter },
         ],
       },
       {
         titre: "Débloquer un PEE avant 5 ans", icone: "🔓",
         points: [
           { t: "Mariage ou PACS ; naissance ou adoption d'un 3e enfant ; divorce ou séparation avec garde d'un enfant ; violences conjugales.", s: SRC.spDeblocage },
-          { t: "Invalidité ou décès (salarié, conjoint, partenaire, enfants pour l'invalidité) ; fin du contrat de travail ; surendettement ; activité d'aidant familial.", s: SRC.spDeblocage },
-          { t: "Création ou reprise d'entreprise ; achat ou agrandissement de la résidence principale, ou sa rénovation énergétique ; achat d'un véhicule propre ou d'un vélo électrique neuf.", s: SRC.spDeblocage },
+          { t: "Invalidité ou décès (salarié, conjoint, partenaire, enfants pour l'invalidité) ; fin du contrat de travail, fin de mandat social ou cessation d'activité d'entrepreneur individuel ; surendettement ; activité d'aidant familial.", s: SRC.spDeblocage },
+          { t: "Création ou reprise d'entreprise, acquisition de parts de SCOP ; achat ou agrandissement de la résidence principale, sa rénovation énergétique ou sa remise en état après une catastrophe naturelle ; achat d'un véhicule propre ou d'un vélo électrique neuf.", s: SRC.spDeblocage },
           { t: "Demande dans les 6 mois de l'événement, sauf fin de contrat, décès, invalidité, violences conjugales, surendettement et aidant (pas de délai).", s: SRC.spDeblocage },
         ],
       },
@@ -1404,7 +1405,7 @@ Object.assign(APPROFONDI, {
         titre: "Le choix oublié", niveau: "Intermédiaire",
         enonce: "Tom reçoit 4 000 € de participation et ne répond pas dans les 15 jours. Son entreprise a un accord de participation et un PER collectif.",
         question: "Où va son argent ?",
-        etapes: ["Sans choix, la moitié va sur le PER collectif : 2 000 €.", "L'autre moitié est placée selon l'accord.", "La part sur le PER est bloquée jusqu'à la retraite (sauf cas de déblocage)."],
+        etapes: ["Avec un accord et un PER collectif, sans choix, la moitié va sur le PER collectif : 2 000 €.", "L'autre moitié est placée selon l'accord.", "La part sur le PER est bloquée jusqu'à la retraite (sauf cas de déblocage)."],
         reponse: "2 000 € bloqués jusqu'à la retraite, 2 000 € selon l'accord. Dans tous les cas, pas d'impôt sur le revenu.",
         s: SRC.spPartic,
       },
@@ -1419,6 +1420,87 @@ Object.assign(APPROFONDI, {
     ],
     liens: [
       { type: "officiel", titre: "PER d'entreprise collectif (Service-public)", url: SRC.spPerco[1] },
+    ],
+  },
+});
+
+Object.assign(SRC, {
+  spTestament: ["Service-public · Faire un testament", "https://www.service-public.gouv.fr/particuliers/vosdroits/F770"],
+  spDdv: ["Service-public · Donation au dernier vivant", "https://www.service-public.gouv.fr/particuliers/vosdroits/F2767"],
+  spFcddv: ["Service-public · Fichier des dernières volontés", "https://www.service-public.gouv.fr/particuliers/vosdroits/F15009"],
+  cc913: ["Légifrance · Code civil art. 913", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000043982288"],
+  cc9141: ["Légifrance · Code civil art. 914-1", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006433720"],
+  cc10941: ["Légifrance · Code civil art. 1094-1", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006435800"],
+});
+
+Object.assign(APPROFONDI, {
+  "testament-ddv": {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "Réserve et quotité disponible", icone: "⚖️",
+        points: [
+          { t: "Les donations et legs ne peuvent dépasser la moitié des biens avec 1 enfant, le tiers avec 2, le quart avec 3 ou plus (art. 913).", s: SRC.cc913 },
+          { t: "Sans descendant, le conjoint non divorcé est lui aussi protégé : les libéralités ne peuvent dépasser les trois quarts des biens (art. 914-1).", s: SRC.cc9141 },
+          { t: "Un héritier lésé dans sa réserve peut agir en réduction.", s: SRC.spTestament },
+        ],
+      },
+      {
+        titre: "Le contenu d'un testament", icone: "📜",
+        points: [
+          { t: "Legs universel (tous les biens), à titre universel (une part ou une catégorie, comme l'immobilier) ou particulier (un bien précis).", s: SRC.spTestament },
+          { t: "Les légataires universels et à titre universel paient les dettes au prorata ; le légataire particulier non.", s: SRC.spTestament },
+          { t: "Le testament peut aussi désigner un exécuteur testamentaire, un tuteur pour les enfants, ou reconnaître un enfant (forme authentique obligatoire pour cela).", s: SRC.spTestament },
+          { t: "Entre 16 et 18 ans, on ne peut léguer que la moitié de ses biens (sauf émancipation) ; un majeur sous tutelle a besoin de l'autorisation du juge ou du conseil de famille.", s: SRC.spTestament },
+        ],
+      },
+      {
+        titre: "Révoquer ou contester", icone: "🔄",
+        points: [
+          { t: "Le testateur révoque par déclaration devant notaire, par un nouveau testament, ou en détruisant son testament olographe.", s: SRC.spTestament },
+          { t: "Après le décès, les héritiers peuvent agir en justice : 5 ans pour vice de forme, insanité d'esprit ou inexécution des charges ; 1 an pour ingratitude.", s: SRC.spTestament },
+          { t: "La donation au dernier vivant se révoque à tout moment, devant notaire ou par testament, sans prévenir le conjoint.", s: SRC.spDdv },
+        ],
+      },
+      {
+        titre: "La donation au dernier vivant en pratique", icone: "💍",
+        points: [
+          { t: "Réservée aux époux, par acte notarié (135,84 € TTC), pendant le mariage ou dans le contrat de mariage. Chacun signe son acte si elle est réciproque.", s: SRC.spDdv },
+          { t: "Avec des enfants, communs ou non : quotité disponible en pleine propriété, ou 1/4 en pleine propriété + 3/4 en usufruit, ou tout en usufruit (art. 1094-1).", s: SRC.cc10941 },
+          { t: "Le conjoint peut cantonner son choix à certains biens ; ce n'est pas une donation aux autres héritiers (art. 1094-1).", s: SRC.cc10941 },
+          { t: "Le notaire l'inscrit au fichier central des dernières volontés, sauf opposition.", s: SRC.spDdv },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Le testament tapé", niveau: "Facile",
+        enonce: "Mme Durand a tapé son testament sur ordinateur, l'a imprimé, daté et signé à la main.",
+        question: "Est-il valable comme testament olographe ?",
+        etapes: ["Un testament olographe doit être entièrement écrit à la main.", "Même en partie, un texte tapé ne convient pas."],
+        reponse: "Non. Elle doit le réécrire entièrement à la main, ou passer chez le notaire (testament authentique).",
+        s: SRC.spTestament,
+      },
+      {
+        titre: "Comparer les options", niveau: "Intermédiaire",
+        enonce: "Paul décède en laissant 600 000 €, son épouse de 72 ans et 3 enfants communs. Il avait fait une donation au dernier vivant.",
+        question: "Que représente chaque option pour l'épouse ?",
+        etapes: ["Option 1 : quotité disponible avec 3 enfants = 1/4 en pleine propriété = 150 000 €.", "Option 2 : 150 000 € en pleine propriété + usufruit sur 450 000 €.", "Option 3 : usufruit sur 600 000 €.", "Valeur fiscale de l'usufruit à 72 ans : 30 % (CGI art. 669). Option 2 ≈ 150 000 + 135 000 = 285 000 € ; option 3 ≈ 180 000 €."],
+        reponse: "L'option 2 est la plus large en valeur ; l'option 3 lui donne les revenus de tout. Aucun droit de succession pour elle dans tous les cas.",
+        s: SRC.cc10941,
+      },
+      {
+        titre: "Le testament à deux", niveau: "Piège",
+        enonce: "Un couple marié veut écrire un seul testament, signé par les deux, pour se protéger l'un l'autre.",
+        question: "Bonne idée ?",
+        etapes: ["Le testament conjonctif (à deux sur le même acte) est interdit.", "Chacun doit écrire le sien.", "Pour protéger le conjoint, la donation au dernier vivant est souvent l'outil adapté."],
+        reponse: "Non : chacun son testament, ou deux donations au dernier vivant chez le notaire.",
+        s: SRC.spTestament,
+      },
+    ],
+    liens: [
+      { type: "officiel", titre: "Quotité disponible, art. 913 (Légifrance)", url: SRC.cc913[1] },
+      { type: "officiel", titre: "Donation entre époux, art. 1094-1 (Légifrance)", url: SRC.cc10941[1] },
     ],
   },
 });

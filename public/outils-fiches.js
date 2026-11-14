@@ -322,7 +322,7 @@ const OUTILS_FICHES = {
         r.className = "simu-resultat perte";
         r.innerHTML = `Plus-value brute : <strong>${euros(brute)}</strong><br>Impôt (abattement ${pct(abIr)}) : <strong>${euros(ir)}</strong> · Prélèvements sociaux (abattement ${pct(abPs)}) : <strong>${euros(ps)}</strong><br><strong>Total : ${euros(ir + ps)}</strong>` +
           barres([{ libelle: "Impôt 19 %", valeur: ir, couleur: "#e0723b" }, { libelle: "Prél. sociaux", valeur: ps, couleur: "#2c6e91" }]) +
-          note((brute * (1 - abIr) > 50000 ? "Plus-value imposable supérieure à 50 000 € : une surtaxe de 2 % à 6 % s'ajoute (non calculée ici). " : "") + "Hors résidence principale et cas d'exonération. Le notaire fait le calcul définitif.");
+          note((brute * (1 - abIr) > 50000 ? "Plus-value imposable supérieure à 50 000 € : une surtaxe de 2 % à 6 % s'ajoute (non calculée ici). " : "") + "Hors résidence principale et cas d'exonération. Pour un bien reçu par donation ou succession, le forfait de 7,5 % ne s'applique pas (frais réels seulement). Le notaire fait le calcul définitif.");
       }),
     },
   ],
@@ -338,9 +338,10 @@ const OUTILS_FICHES = {
         const ab = Math.min(v.ve * v.ta / 100, plafond, v.ve * 3);
         const optimal = plafond / (v.ta / 100);
         r.className = "simu-resultat gain";
-        r.innerHTML = `Abondement : <strong>${euros(ab)}</strong> · Total placé : <strong>${euros(v.ve + ab)}</strong><br>` +
-          (ab >= plafond - 0.01 ? "Vous touchez le maximum." : `Pour toucher le maximum, il faudrait verser ${euros(optimal)}.`) +
-          note("L'abondement est exonéré d'impôt sur le revenu dans ces plafonds, mais soumis à la CSG et à la CRDS. Le taux réel dépend du règlement du plan.");
+        const eurosC = (n) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+        r.innerHTML = `Abondement : <strong>${eurosC(ab)}</strong> · Total placé : <strong>${eurosC(v.ve + ab)}</strong><br>` +
+          (ab >= plafond - 0.01 ? "Vous touchez le maximum." : `Pour toucher le maximum, il faudrait verser ${eurosC(optimal)}.`) +
+          note("L'abondement est exonéré d'impôt sur le revenu dans ces plafonds, mais soumis à la CSG et à la CRDS. Vos versements volontaires sont limités à 25 % de votre rémunération annuelle brute. Le taux réel dépend du règlement du plan.");
       }),
     },
   ],

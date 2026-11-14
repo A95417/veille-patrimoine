@@ -118,11 +118,11 @@ FICHES.push(
       { valeur: "15 jours", libelle: "pour s'immatriculer après la première location (guichet unique, gratuit)" },
     ],
     essentiel: [
-      { titre: "Non professionnel ou professionnel ?", texte: "On est LMNP si les recettes du foyer sont inférieures à 23 000 € par an, ou si elles sont inférieures aux autres revenus du foyer. Sinon, on devient loueur professionnel (LMP)." },
+      { titre: "Non professionnel ou professionnel ?", texte: "On est LMNP si les recettes du foyer sont inférieures à 23 000 € par an, ou si elles sont inférieures aux autres revenus d'activité du foyer (salaires, BIC, BNC…). Sinon, on devient loueur professionnel (LMP)." },
       { titre: "Le micro-BIC", texte: "Aucune charge déduite : un abattement forfaitaire s'applique (50 % ou 30 % selon le type de location), dans la limite d'un plafond de recettes." },
       { titre: "Le régime réel", texte: "On déduit les charges réelles et l'amortissement du bien et du mobilier. Une option possible sous les plafonds du micro-BIC, renouvelée tacitement chaque année." },
       { titre: "Les déficits restent dans la case meublé", texte: "En LMNP, un déficit ne s'impute que sur les revenus de location meublée non professionnelle de la même année et des 10 années suivantes." },
-      { titre: "Revente : attention aux amortissements", texte: "Depuis le 15 février 2025, les amortissements déduits au régime réel sont retirés du prix d'achat pour calculer la plus-value, sauf résidences pour étudiants ou seniors." },
+      { titre: "Revente : attention aux amortissements", texte: "Depuis le 15 février 2025, les amortissements déduits au régime réel sont retirés du prix d'achat pour calculer la plus-value, sauf résidences pour étudiants ou seniors, EHPAD et autres établissements médico-sociaux." },
     ],
     schema: [
       { titre: "Location meublée", texte: "Revenus en BIC" },
@@ -139,7 +139,7 @@ FICHES.push(
           ["Meublé de tourisme classé, chambres d'hôtes", "77 700 €", "83 600 €", "50 %"],
           ["Meublé de tourisme non classé", "15 000 €", "15 000 €", "30 %"],
         ],
-        note: "Au-delà du plafond, le régime réel s'applique. Sous 305 € de recettes, aucun impôt n'est dû (Service-public).",
+        note: "Au-delà du plafond, le régime réel s'applique (sauf tolérance d'un an). Sous 305 € de recettes, aucun impôt n'est dû (Service-public).",
       },
       {
         titre: "LMNP ou LMP : ce qui change",
@@ -175,10 +175,10 @@ FICHES.push(
       { question: "Plafond du micro-BIC en 2026 pour une location meublée classique ?", choix: ["15 000 €", "23 000 €", "77 700 €", "83 600 €"], bonne: 3, explication: "83 600 € pour les revenus 2026 (77 700 € pour 2025)." },
       { question: "Quel formulaire au régime réel ?", choix: ["2044", "2031", "2072", "2048-IMM"], bonne: 1, explication: "La liasse 2031, puis report sur la 2042-C-PRO." },
       { question: "Pendant combien d'années un déficit LMNP est-il reportable ?", choix: ["5 ans", "6 ans", "10 ans", "Sans limite"], bonne: 2, explication: "10 ans, sur les revenus de même nature." },
-      { question: "Quelles résidences échappent à la réintégration des amortissements ?", choix: ["Aucune", "Résidences pour étudiants ou seniors", "Meublés de tourisme", "Résidences secondaires"], bonne: 1, explication: "Les résidences gérées pour étudiants ou seniors." },
+      { question: "Quelles résidences échappent à la réintégration des amortissements ?", choix: ["Aucune", "Résidences pour étudiants ou seniors, EHPAD", "Meublés de tourisme", "Résidences secondaires"], bonne: 1, explication: "Les résidences pour étudiants ou seniors, les EHPAD et autres établissements médico-sociaux." },
     ],
     cartes: [
-      { recto: "LMNP", verso: "Recettes < 23 000 € ou inférieures aux autres revenus du foyer." },
+      { recto: "LMNP", verso: "Recettes < 23 000 € ou inférieures aux autres revenus d'activité du foyer." },
       { recto: "Micro-BIC (meublé classique)", verso: "Abattement de 50 %, plafond de 83 600 € en 2026." },
       { recto: "Réintégration des amortissements", verso: "Ventes depuis le 15 février 2025 : ils diminuent le prix d'achat retenu." },
     ],
@@ -304,7 +304,7 @@ FICHES.push(
       { titre: "La participation", texte: "Obligatoire dans les entreprises qui ont employé au moins 50 salariés sans interruption sur les 5 dernières années, selon une formule légale." },
       { titre: "Toucher ou placer", texte: "Touchée tout de suite, la prime est imposable. Placée dans les 15 jours sur un PEE ou un PER collectif, elle est exonérée d'impôt sur le revenu (CSG et CRDS restent dues)." },
       { titre: "Le PEE", texte: "Ouvert à tous les salariés (3 mois d'ancienneté au plus). Bloqué 5 ans, avec de nombreux cas de déblocage anticipé. Les gains sont exonérés d'impôt, seuls les prélèvements sociaux sont dus." },
-      { titre: "Le PER collectif", texte: "Bloqué jusqu'à la retraite, avec moins de cas de déblocage. Sortie en capital ou en rente ; l'épargne issue de l'intéressement et de la participation sort sans impôt." },
+      { titre: "Le PER collectif", texte: "Bloqué jusqu'à la retraite, avec moins de cas de déblocage. Sortie en capital ou en rente ; en capital, les sommes issues de l'intéressement, de la participation et de l'abondement sont exonérées, les gains taxés à 31,4 %." },
     ],
     schema: [
       { titre: "Prime", texte: "Intéressement ou participation" },
@@ -319,15 +319,15 @@ FICHES.push(
         lignes: [
           ["Blocage", "5 ans à compter de chaque versement", "Jusqu'à la retraite"],
           ["Abondement maximum (2026)", "3 fois le versement, 3 844,80 € (6 920,64 € en titres de l'entreprise)", "3 fois le versement, 7 690 €"],
-          ["Versements volontaires", "25 % de la rémunération annuelle brute", "Sans plafond ; déductibles dans la limite du plafond retraite"],
+          ["Versements volontaires", "25 % de la rémunération annuelle brute", "Déductibles dans la limite du plafond épargne retraite"],
           ["À la sortie", "Exonéré d'impôt ; prélèvements sociaux sur les gains", "Capital issu de l'épargne salariale exonéré ; gains à 31,4 %"],
         ],
       },
     ],
-    pourQui: ["Un salarié qui reçoit de l'intéressement ou de la participation et n'a pas besoin de cet argent tout de suite", "Un salarié imposé à 30 % ou plus : placer la prime évite l'impôt", "Un dirigeant de PME de moins de 250 salariés (il peut adhérer au PEE)"],
+    pourQui: ["Un salarié qui reçoit de l'intéressement ou de la participation et n'a pas besoin de cet argent tout de suite", "Un salarié imposé à 30 % ou plus : placer la prime évite l'impôt", "Un dirigeant d'entreprise de moins de 250 salariés, avec au moins un salarié (il peut adhérer au PEE)"],
     pasPourQui: ["Un salarié qui a besoin de l'argent à court terme sans cas de déblocage", "Une épargne de précaution (le blocage reste la règle)"],
     pieges: [
-      "Laisser passer les 15 jours sans choisir : la participation va pour moitié sur le PER collectif, bloquée jusqu'à la retraite.",
+      "Laisser passer les 15 jours sans choisir : s'il existe un accord de participation et un PER collectif, la moitié de la participation va sur le PER collectif, bloquée jusqu'à la retraite.",
       "Croire que le PER collectif se débloque comme le PEE : le mariage ou la naissance d'un 3e enfant ne le permettent pas.",
       "Oublier les 6 mois pour demander un déblocage anticipé après certains événements (mariage, naissance…).",
       "Ne pas verser assez pour toucher tout l'abondement proposé par l'entreprise.",
@@ -336,7 +336,7 @@ FICHES.push(
     cas: {
       enonce: "Clara, imposée à 30 %, reçoit 3 000 € d'intéressement.",
       question: "Toucher ou placer sur le PEE ?",
-      reponse: "Touchée, la prime s'ajoute à ses revenus : environ 900 € d'impôt (3 000 × 30 %). Placée sur le PEE dans les 15 jours, elle est exonérée d'impôt sur le revenu. La CSG et la CRDS sont dues dans les deux cas.",
+      reponse: "Touchée, la prime est imposée comme un salaire : après l'abattement de 10 % et la CSG déductible, environ 750 à 800 € d'impôt. Placée sur le PEE dans les 15 jours, elle est exonérée d'impôt sur le revenu. La CSG et la CRDS sont dues dans les deux cas.",
     },
     vraiFaux: [
       { texte: "La participation est obligatoire dans toutes les entreprises.", vrai: false, explication: "Seulement à partir de 50 salariés employés sans interruption sur les 5 dernières années." },
@@ -352,7 +352,7 @@ FICHES.push(
     ],
     cartes: [
       { recto: "Abondement", verso: "Complément versé par l'entreprise, jusqu'à 3 fois le versement du salarié, dans un plafond." },
-      { recto: "Participation par défaut", verso: "Sans choix du salarié : la moitié va sur le PER collectif." },
+      { recto: "Participation par défaut", verso: "Sans choix du salarié, avec un accord de participation et un PER collectif : la moitié va sur le PER collectif." },
       { recto: "Délai de déblocage anticipé (PEE)", verso: "6 mois après l'événement, sauf exceptions (fin de contrat, décès, invalidité…)." },
     ],
     paires: [
@@ -367,6 +367,102 @@ FICHES.push(
       { type: "officiel", titre: "Participation (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2141" },
       { type: "officiel", titre: "Déblocage anticipé (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F31622" },
       { type: "video", titre: "Vidéos : comprendre l'épargne salariale", url: YT("épargne salariale PEE intéressement participation abondement explication") },
+    ],
+  },
+
+  // ------------------------------------------------------------------ TESTAMENT ET DONATION AU DERNIER VIVANT
+  {
+    id: "testament-ddv",
+    titre: "Testament et donation au dernier vivant",
+    sousTitre: "Choisir qui reçoit quoi, et protéger son conjoint",
+    theme: "transmission",
+    duree: 7,
+    verifie: "15 novembre 2026",
+    recherche: "testament",
+    enUnePhrase: "Le testament permet de répartir la part de ses biens dont on dispose librement ; la donation au dernier vivant permet d'augmenter ce que recevra son époux ou son épouse au décès.",
+    chiffres: [
+      { valeur: "1/2 · 1/3 · 1/4", libelle: "la part librement transmissible avec 1, 2, ou 3 enfants et plus" },
+      { valeur: "3", libelle: "options pour le conjoint grâce à la donation au dernier vivant" },
+      { valeur: "≈ 136 €", libelle: "pour un testament chez le notaire ou une donation au dernier vivant (hors inscription au fichier)" },
+      { valeur: "18 €", libelle: "pour interroger le fichier des dernières volontés après un décès" },
+    ],
+    essentiel: [
+      { titre: "Les enfants ont une part protégée", texte: "C'est la réserve héréditaire. On ne transmet librement que la quotité disponible : la moitié avec 1 enfant, un tiers avec 2, un quart avec 3 ou plus." },
+      { titre: "Le testament olographe", texte: "Entièrement écrit à la main, daté (jour, mois, année) et signé. Gratuit, mais mieux vaut le déposer chez un notaire pour qu'il soit retrouvé." },
+      { titre: "Le testament authentique", texte: "Dicté à un notaire en présence de 2 témoins ou d'un 2e notaire. Plus sûr, il coûte environ 136 €." },
+      { titre: "La donation au dernier vivant", texte: "Acte notarié entre époux, qui ne porte que sur les biens laissés au décès. En présence d'enfants, le conjoint choisira entre trois options plus larges que ses droits légaux." },
+      { titre: "Tout se révoque", texte: "Un testament ou une donation au dernier vivant peut être révoqué à tout moment. Le divorce révoque la donation au dernier vivant, sauf volonté contraire." },
+    ],
+    schema: [
+      { titre: "Patrimoine", texte: "Réserve des enfants + quotité disponible" },
+      { titre: "Testament", texte: "Répartit la quotité disponible" },
+      { titre: "Donation au dernier vivant", texte: "Élargit les droits du conjoint" },
+      { titre: "Au décès", texte: "Le conjoint choisit son option" },
+    ],
+    fiscalite: [
+      {
+        titre: "Les trois options du conjoint (donation au dernier vivant, avec enfants)",
+        colonnes: ["Option", "Ce que reçoit le conjoint"],
+        lignes: [
+          ["1", "La quotité disponible ordinaire en pleine propriété (1/2, 1/3 ou 1/4 selon le nombre d'enfants)"],
+          ["2", "1/4 en pleine propriété et 3/4 en usufruit"],
+          ["3", "La totalité en usufruit"],
+        ],
+        note: "Le conjoint peut aussi n'accepter qu'une partie des biens (cantonnement), sauf volonté contraire. Il est exonéré de droits de succession.",
+      },
+      {
+        titre: "Les formes de testament",
+        colonnes: ["Forme", "Comment", "Coût indicatif"],
+        lignes: [
+          ["Olographe", "Écrit en entier à la main, daté et signé", "Gratuit (ouverture : 31,69 € TTC)"],
+          ["Authentique", "Dicté au notaire, 2 témoins ou 2 notaires", "135,83 € TTC"],
+          ["Mystique", "Remis fermé au notaire devant 2 témoins", "135,83 € TTC"],
+        ],
+      },
+    ],
+    pourQui: ["Un couple marié qui veut protéger le survivant au-delà de ses droits légaux", "Une personne qui veut avantager un proche, une association ou un filleul dans la limite de la quotité disponible", "Une famille recomposée qui veut organiser la transmission"],
+    pasPourQui: ["Déshériter un enfant : la réserve héréditaire le protège", "Un testament écrit à deux : il est interdit (testament conjonctif)"],
+    pieges: [
+      "Taper son testament à l'ordinateur : un testament olographe doit être entièrement manuscrit.",
+      "Oublier la date complète (jour, mois, année).",
+      "Garder son testament dans un tiroir : sans dépôt chez un notaire ni inscription au fichier central, il risque de ne jamais être retrouvé.",
+      "Croire qu'un testament peut priver un enfant de sa part : il peut l'attaquer en réduction.",
+    ],
+    phraseClient: "Sans rien faire, votre conjoint aura des droits limités. Avec une donation au dernier vivant, faite chez le notaire pour environ 136 €, il pourra choisir au moment venu ce qui lui convient le mieux, et vous pouvez la révoquer à tout moment.",
+    cas: {
+      enonce: "Pierre, veuf, a deux enfants. Il veut léguer le maximum à sa nièce par testament.",
+      question: "Quelle part peut-il lui laisser ?",
+      reponse: "Avec 2 enfants, la quotité disponible est d'un tiers : il peut léguer un tiers de ses biens à sa nièce. Les deux autres tiers reviennent à ses enfants (réserve). La nièce paiera des droits de succession de 55 % après un abattement de 7 967 €.",
+    },
+    vraiFaux: [
+      { texte: "Un testament tapé à l'ordinateur puis signé est un testament olographe valable.", vrai: false, explication: "Il doit être entièrement écrit à la main." },
+      { texte: "Deux époux peuvent rédiger un seul testament commun.", vrai: false, explication: "Le testament conjonctif est interdit : chacun écrit le sien." },
+      { texte: "La donation au dernier vivant transmet des biens dès sa signature.", vrai: false, explication: "Elle ne porte que sur les biens laissés au décès." },
+      { texte: "Le divorce révoque la donation au dernier vivant.", vrai: true, explication: "Automatiquement, sauf si les époux décident de la maintenir." },
+    ],
+    quiz: [
+      { question: "Avec 3 enfants, quelle est la quotité disponible ?", choix: ["1/2", "1/3", "1/4", "Rien"], bonne: 2, explication: "Un quart des biens (Code civil, art. 913)." },
+      { question: "Combien de témoins pour un testament authentique devant un seul notaire ?", choix: ["0", "1", "2", "4"], bonne: 2, explication: "2 témoins, ou un second notaire." },
+      { question: "Laquelle n'est PAS une option de la donation au dernier vivant ?", choix: ["Totalité en usufruit", "1/4 en pleine propriété et 3/4 en usufruit", "Quotité disponible en pleine propriété", "Totalité en pleine propriété malgré les enfants"], bonne: 3, explication: "La pleine propriété de tout n'est possible que si les enfants l'acceptent." },
+      { question: "Combien coûte l'interrogation du fichier des dernières volontés en métropole ?", choix: ["Gratuit", "18 €", "135,83 €", "300 €"], bonne: 1, explication: "18 € TTC, avec l'acte de décès." },
+    ],
+    cartes: [
+      { recto: "Réserve héréditaire", verso: "Part minimale protégée des enfants : on ne peut pas les en priver." },
+      { recto: "Quotité disponible", verso: "1/2 (1 enfant), 1/3 (2 enfants), 1/4 (3 et plus)." },
+      { recto: "Cantonnement", verso: "Le conjoint accepte seulement une partie de ce qu'on lui a donné, sans que ce soit une donation aux enfants." },
+      { recto: "FCDDV", verso: "Fichier central des dispositions de dernières volontés : il signale l'existence d'un testament confié à un notaire." },
+    ],
+    paires: [
+      { terme: "Olographe", definition: "Écrit à la main, daté, signé" },
+      { terme: "Authentique", definition: "Reçu par un notaire" },
+      { terme: "Legs universel", definition: "Tous les biens" },
+      { terme: "Legs particulier", definition: "Un bien précis" },
+    ],
+    liens: [
+      { type: "officiel", titre: "Faire un testament (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F770" },
+      { type: "officiel", titre: "Donation au dernier vivant (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2767" },
+      { type: "officiel", titre: "Fichier des dernières volontés (Service-public)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F15009" },
+      { type: "video", titre: "Vidéos : testament et donation au dernier vivant", url: YT("donation au dernier vivant testament conjoint explication notaire") },
     ],
   },
 );
