@@ -223,6 +223,7 @@ export async function routeRobot(request, env, chemin) {
     if (!b) return json({ erreur: "Brief introuvable." }, 404);
     const contenu = JSON.parse(b.contenu);
     contenu.schemas = corps.schemas && typeof corps.schemas === "object" ? corps.schemas : {};
+    if (Array.isArray(corps.essentiel)) contenu.essentiel = corps.essentiel.slice(0, 3); else delete contenu.essentiel;
     await db.prepare("UPDATE briefs SET contenu = ? WHERE jour = ? AND edition = ?").bind(JSON.stringify(contenu), corps.jour, edition).run();
     return json({ ok: true, n: Object.keys(contenu.schemas).length });
   }

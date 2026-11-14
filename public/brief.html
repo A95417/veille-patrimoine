@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 10.0 — schémas, graphique des marchés, mode Express -->
+<!-- version 11.0 — essentiel en puces, incontournables, barre de sections, progression, glossaire, filtre, importance -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -17,6 +17,7 @@
   <script src="/commun.js"></script>
   <script src="/jeux.js"></script>
   <script src="/schemas-brief.js"></script>
+  <script src="/glossaire.js"></script>
   <style>
     .brief-page { max-width: 1320px; }
     .brief-grille { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; align-items: start; }
@@ -33,9 +34,10 @@
     .sommaire a:hover { color: var(--texte); }
     .sommaire a.actif { color: var(--accent-fonce); border-left-color: var(--accent); font-weight: 600; }
     #brief > section { margin-bottom: 28px; scroll-margin-top: 90px; }
+    @media (max-width: 1000px) { #brief > section { scroll-margin-top: 70px; } }
     #brief .carte { padding: 28px 32px; }
     @media (max-width: 1000px) {
-      .brief-grille { grid-template-columns: 1fr; gap: 18px; }
+      .brief-grille { grid-template-columns: minmax(0, 1fr); gap: 18px; }
       .brief-nav { position: static; flex-direction: row; flex-wrap: wrap; align-items: end; gap: 12px; }
       .brief-nav .bloc-sommaire { display: none; }
       .onglets { flex-direction: row; }
@@ -108,10 +110,53 @@
     .ex-fin { display: flex; gap: 10px; flex-wrap: wrap; }
     .express .schema { pointer-events: none; }
     @media (max-width: 560px) { .gm-ligne { grid-template-columns: 84px 1fr 58px; gap: 8px; font-size: .85rem; } .sch-aa { grid-template-columns: 1fr; } .sch-fleche { transform: rotate(90deg); justify-self: center; } }
+    /* 1. L'essentiel en puces */
+    .essentiel { list-style: none; margin: 4px 0 18px; padding: 0; display: grid; gap: 10px; max-width: 760px; position: relative; }
+    .essentiel li { display: flex; gap: 12px; align-items: center; font-size: 1.08rem; line-height: 1.4; }
+    .essentiel .ess-ic { flex: 0 0 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; }
+    .synthese-complete summary { cursor: pointer; font-size: .88rem; opacity: .85; margin-bottom: 14px; }
+    .synthese-complete p { margin: 0 0 16px; max-width: 760px; }
+    /* 2. Incontournables + liste compacte */
+    .actus.incontournables { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .compactes { display: grid; gap: 8px; margin-top: 18px; }
+    .compacte { border: 1px solid var(--bord); border-radius: 14px; background: var(--carte); }
+    .compacte > summary { list-style: none; cursor: pointer; display: flex; gap: 12px; align-items: center; padding: 12px 16px; }
+    .compacte > summary::-webkit-details-marker { display: none; }
+    .compacte > summary h3 { margin: 0; font-size: .98rem; line-height: 1.35; flex: 1; font-weight: 600; }
+    .compacte > summary::after { content: "+"; font-size: 1.2rem; color: var(--doux); flex: 0 0 auto; }
+    .compacte[open] > summary::after { content: "−"; }
+    .compacte-detail { padding: 0 16px 14px; display: grid; gap: 10px; }
+    .compacte-detail p { margin: 0; font-size: .93rem; line-height: 1.55; color: var(--doux); }
+    .titre-liste { margin: 26px 0 0; font-size: 1rem; color: var(--doux); font-weight: 600; }
+    /* 7. Importance : un point de couleur */
+    .imp { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px; display: inline-block; background: var(--bord-fort); }
+    .imp.n3 { background: #f2b632; } .imp.n4 { background: #ef7d22; } .imp.n5 { background: var(--ko); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ko) 25%, transparent); }
+    .imp-libelle { font-size: .75rem; font-weight: 700; color: var(--ko); }
+    /* 6. Filtre par thème */
+    .filtre-actus { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 0 14px; padding-bottom: 2px; }
+    .filtre-actus::-webkit-scrollbar { display: none; }
+    .filtre-actus .puce { flex: 0 0 auto; }
+    /* 3 + 4. Barre de sections (téléphone) et progression */
+    .progression { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0; z-index: 60; transition: width .1s linear; }
+    .barre-sections { display: none; }
+    .reste { font-size: .8rem; color: var(--doux); white-space: nowrap; }
+    @media (max-width: 1000px) {
+      .barre-sections { display: flex; gap: 6px; align-items: center; position: sticky; top: 0; z-index: 30; margin: 0 0 16px; padding: 10px 2px;
+        background: color-mix(in srgb, var(--fond) 92%, transparent); backdrop-filter: blur(8px); overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--bord); }
+      .barre-sections::-webkit-scrollbar { display: none; }
+      .barre-sections a { flex: 0 0 auto; text-decoration: none; padding: 7px 12px; border-radius: 999px; font-size: .85rem; color: var(--doux); background: var(--carte); border: 1px solid var(--bord); }
+      .barre-sections a.actif { background: var(--accent); color: var(--accent-texte); border-color: var(--accent); font-weight: 600; }
+      .barre-sections .reste { margin-left: 4px; }
+    }
+    /* 5. Glossaire */
+    .terme { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+    .hero .terme { text-decoration-color: rgba(255,255,255,.7); }
+    .bulle-terme { position: absolute; z-index: 120; max-width: min(320px, calc(100vw - 24px)); background: var(--texte); color: var(--carte); padding: 10px 12px; border-radius: 12px; font-size: .88rem; line-height: 1.45; box-shadow: 0 10px 30px rgba(0,0,0,.25); display: grid; gap: 4px; }
     .avertissement { font-size: .85rem; color: var(--doux); border: 1px dashed var(--bord-fort); border-radius: 12px; padding: 10px 14px; }
   </style>
 </head>
 <body>
+  <div class="progression" id="progression" aria-hidden="true"></div>
   <header class="entete" id="entete"></header>
   <main class="page brief-page">
     <div class="brief-grille">
@@ -136,14 +181,33 @@
 
     const majuscule = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
+    // Une actualité : grande carte (incontournable) ou ligne compacte dépliable.
+    function carteActu(a, b, grande) {
+      const t = themeDe(a.categories), s = (b.schemas || {})[a.id], n = a.importance || 0;
+      const imp = `<span class="imp n${n}" title="Importance ${n}/5" aria-label="Importance ${n} sur 5"></span>${n >= 5 ? '<span class="imp-libelle">Majeur</span>' : ""}`;
+      const resume = a.resume ? `<p class="${grande && a.resume.length > 220 ? "resume-long" : ""}">${echapper(a.resume)}</p>${grande && a.resume.length > 220 ? '<button type="button" class="lire-suite no-print">Lire la suite</button>' : ""}` : "";
+      const sources = `<div class="sources">${(a.sources || []).map((x) => `<a class="source" href="${echapper(x.lien)}" target="_blank" rel="noopener noreferrer">${echapper(x.nom)} ↗</a>`).join("")}
+        <a class="source no-print" href="/linkedin?sujet=${encodeURIComponent(a.id)}" title="Préparer un post LinkedIn sur ce sujet">✏️ Post LinkedIn</a></div>`;
+      if (grande) return `<article class="actu th-${t.id}" data-theme="${t.id}">
+        <div class="actu-haut">${picto(t.id)}<div class="meta th-${t.id}"><span class="etiquette">${echapper((a.categories || [])[0] || t.nom)}</span></div>${imp}</div>
+        <h3><a href="${lienSujet(a.id)}">${echapper(a.titre)}</a></h3>${schemaActu(s)}${resume}${sources}</article>`;
+      return `<details class="compacte th-${t.id}" data-theme="${t.id}"><summary>${imp}<h3>${echapper(a.titre)}</h3></summary>
+        <div class="compacte-detail"><div class="meta th-${t.id}"><span class="etiquette">${echapper((a.categories || [])[0] || t.nom)}</span></div>${schemaActu(s)}${resume}
+        <a href="${lienSujet(a.id)}" class="petit">Voir le sujet complet →</a>${sources}</div></details>`;
+    }
+
     function afficher(b) {
+      const puces = (b.essentiel && b.essentiel.length) ? b.essentiel
+        : (b.synthese || "").split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý])/).filter(Boolean).slice(0, 3).map((t) => ({ icone: "graphique", texte: t }));
       const valeurs = b.marches ? [...(b.marches.valeurs || []), ...(b.marches.autres || [])].filter((v) => typeof v.variation === "number") : [];
       let html = `<section class="hero" id="b-synthese">
         <svg class="hero-deco" viewBox="0 0 400 260" aria-hidden="true"><circle cx="300" cy="90" r="120" fill="#3a49d6"/><circle cx="210" cy="190" r="70" fill="#5e6cf0"/>
           <path d="M40 220 L120 170 L180 190 L260 110 L340 130 L400 60" fill="none" stroke="#9aa4ff" stroke-width="4" stroke-linecap="round"/></svg>
         <div class="surtitre">${b.edition === "soir" ? "Le point du soir · actualités parues depuis 7 h" : "Le brief du matin · les dernières 24 heures"} · rédigé ${quand(b.genere_le || b.cree_le)}</div>
         <h1>${b.edition === "soir" ? "Le point de la journée" : "Brief du matin"} · ${dateLongue(b.jour)}</h1>
-        <p>${echapper(b.synthese || "Brief produit sans synthèse (IA indisponible ce matin-là) : retrouvez ci-dessous les actualités majeures.")}</p>
+        ${puces.length ? `<ul class="essentiel">${puces.map((e) => `<li><span class="ess-ic">${pictoSchema(e.icone, 20)}</span><span>${echapper(typoFr(e.texte))}</span></li>`).join("")}</ul>
+          ${b.essentiel && b.synthese ? `<details class="synthese-complete"><summary>Lire la synthèse complète</summary><p>${echapper(b.synthese)}</p></details>` : ""}`
+          : `<p>${echapper(b.synthese || "Brief produit sans synthèse (IA indisponible ce matin-là) : retrouvez ci-dessous les actualités majeures.")}</p>`}
         <div class="actions-hero no-print">
           <button type="button" class="bouton bouton-express" id="btn-express">⚡ Version Express · 1 min</button>
           <button type="button" class="bouton second" id="btn-ecouter">${ICONE_ECOUTE} Écouter le brief</button>
@@ -161,18 +225,15 @@
       if (b.a_retenir && b.a_retenir.length) html += `<section class="carte bloc" id="b-retenir"><h2>${b.edition === "soir" ? "À garder en tête pour demain" : "À retenir pour mes rendez-vous clients"}</h2>
         <ol class="retenir">${b.a_retenir.map((p, i) => `<li><span class="retenir-num">${i + 1}</span><span>${echapper(p.texte)}</span><a href="${lienSujet(p.sujet_id)}">Voir le sujet →</a></li>`).join("")}</ol></section>`;
 
+      // Les 3 incontournables en grand, les autres en liste compacte (triées par importance).
+      const actus = [...(b.actualites || [])].map((a, i) => ({ a, i })).sort((x, y) => (y.a.importance || 0) - (x.a.importance || 0) || x.i - y.i).map((x) => x.a);
+      const themes = [...new Map(actus.map((a) => { const t = themeDe(a.categories); return [t.id, t]; })).values()];
       html += `<section id="b-actus"><div class="titre-section"><h2>${b.edition === "soir" ? "Les actualités majeures de la journée" : "Les actualités majeures des dernières 24 heures"}</h2></div>
-        ${(b.actualites || []).length ? `<div class="actus">${b.actualites.map((a) => {
-          const t = themeDe(a.categories);
-          return `<article class="actu th-${t.id}">
-            <div class="actu-haut">${picto(t.id)}<div class="meta th-${t.id}"><span class="etiquette">${echapper((a.categories || [])[0] || t.nom)}</span><span class="niveau n${a.importance}">Importance ${a.importance}/5</span></div></div>
-            <h3><a href="${lienSujet(a.id)}">${echapper(a.titre)}</a></h3>
-            ${schemaActu((b.schemas || {})[a.id])}
-            ${a.resume ? `<p class="${a.resume.length > 220 ? "resume-long" : ""}">${echapper(a.resume)}</p>${a.resume.length > 220 ? '<button type="button" class="lire-suite no-print">Lire la suite</button>' : ""}` : ""}
-            <div class="sources">${(a.sources || []).map((s) => `<a class="source" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">${echapper(s.nom)} ↗</a>`).join("")}
-              <a class="source no-print" href="/linkedin?sujet=${encodeURIComponent(a.id)}" title="Préparer un post LinkedIn sur ce sujet">✏️ Post LinkedIn</a></div>
-          </article>`;
-        }).join("")}</div>` : `<p class="doux">Aucune actualité majeure sur la période.</p>`}
+        ${themes.length > 1 ? `<div class="filtre-actus no-print" role="group" aria-label="Filtrer par thème"><button type="button" class="puce" data-filtre="" aria-pressed="true">Toutes · ${actus.length}</button>
+          ${themes.map((t) => `<button type="button" class="puce" data-filtre="${t.id}" aria-pressed="false">${echapper(t.nom)} · ${actus.filter((a) => themeDe(a.categories).id === t.id).length}</button>`).join("")}</div>` : ""}
+        ${actus.length ? `<div class="actus incontournables">${actus.slice(0, 3).map((a) => carteActu(a, b, true)).join("")}</div>
+          ${actus.length > 3 ? `<p class="titre-liste" id="titre-liste">Les autres actualités · touchez pour déplier</p><div class="compactes">${actus.slice(3).map((a) => carteActu(a, b, false)).join("")}</div>` : ""}`
+          : `<p class="doux">Aucune actualité majeure sur la période.</p>`}
       </section>`;
 
       html += `<section class="carte bloc" id="b-marches"><h2>${b.edition === "soir" ? "Marchés : la séance du jour" : "Marchés : clôtures de la veille"}</h2>
@@ -186,8 +247,18 @@
 
       html += `<p class="avertissement">${b.ia_modele ? "Synthèse, chiffre du jour et points à retenir rédigés par une IA" : "Brief produit sans synthèse (IA indisponible ce matin-là)"} à partir des résumés des sources et des relevés de marché.
         Vérifiez les points importants dans les articles originaux avant d'en faire état. Ce contenu est informatif et ne constitue pas un conseil en investissement.</p>`;
-      document.getElementById("brief").innerHTML = html;
+      document.getElementById("brief").innerHTML = `<nav class="barre-sections no-print" id="barre-sections" aria-label="Sections du brief"></nav>` + html;
       construireSommaire();
+      activerGlossaire(document.getElementById("brief"));
+      // Filtre par thème
+      document.querySelectorAll("[data-filtre]").forEach((f) => f.onclick = () => {
+        document.querySelectorAll("[data-filtre]").forEach((x) => x.setAttribute("aria-pressed", x === f));
+        document.querySelectorAll("#b-actus [data-theme]").forEach((c) => { c.hidden = !!f.dataset.filtre && c.dataset.theme !== f.dataset.filtre; });
+        const tl = document.getElementById("titre-liste"); if (tl) tl.hidden = ![...document.querySelectorAll(".compacte")].some((c) => !c.hidden);
+      });
+      // Temps de lecture total (environ 200 mots par minute), pour la barre de progression.
+      tempsTotal = Math.max(1, Math.round(document.getElementById("brief").innerText.split(/\s+/).length / 200));
+      majProgression();
       if ((b.quiz || []).length) quizInteractif(document.getElementById("quiz-brief"), b.quiz.map((q) => ({ ...q, lien: lienSujet(q.sujet_id) })),
         { cle: `actu:${b.jour}-${b.edition || "matin"}` });
       window.speechSynthesis?.cancel();
@@ -199,15 +270,27 @@
 
     // Sommaire de la colonne de gauche : un lien par section, celui de la section visible est surligné.
     const NOMS = { "b-synthese": "L'essentiel", "b-chiffre": "Le chiffre du jour", "b-retenir": "À retenir", "b-actus": "Les actualités", "b-marches": "Les marchés", "b-quiz": "Testez-vous" };
+    const NOMS_COURTS = { "b-synthese": "Essentiel", "b-chiffre": "Chiffre", "b-retenir": "Rendez-vous", "b-actus": "Actus", "b-marches": "Marchés", "b-quiz": "Quiz" };
+    let tempsTotal = 1;
+    function majProgression() {
+      const h = document.documentElement.scrollHeight - innerHeight, p = h > 0 ? Math.min(1, scrollY / h) : 1;
+      document.getElementById("progression").style.width = (p * 100).toFixed(1) + "%";
+      const reste = Math.ceil(tempsTotal * (1 - p)), txt = p > 0.97 ? "Terminé ✓" : `≈ ${reste} min restante${reste > 1 ? "s" : ""}`;
+      document.querySelectorAll(".reste").forEach((r) => r.textContent = txt);
+    }
+    addEventListener("scroll", () => requestAnimationFrame(majProgression), { passive: true });
     let observateur = null;
     function construireSommaire() {
       const sections = [...document.querySelectorAll("#brief > section[id]")];
-      document.getElementById("sommaire").innerHTML = sections.map((x) => `<li><a href="#${x.id}" data-cible="${x.id}">${NOMS[x.id] || ""}</a></li>`).join("");
+      document.getElementById("sommaire").innerHTML = sections.map((x) => `<li><a href="#${x.id}" data-cible="${x.id}">${NOMS[x.id] || ""}</a></li>`).join("") + `<li style="padding:10px 14px"><span class="reste"></span></li>`;
+      const barre = document.getElementById("barre-sections");
+      if (barre) barre.innerHTML = sections.map((x) => `<a href="#${x.id}" data-cible="${x.id}">${NOMS_COURTS[x.id] || ""}</a>`).join("") + `<span class="reste"></span>`;
       observateur?.disconnect();
       observateur = new IntersectionObserver((entrees) => {
         const visible = entrees.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
         if (!visible) return;
-        document.querySelectorAll("#sommaire a").forEach((a) => a.classList.toggle("actif", a.dataset.cible === visible.target.id));
+        document.querySelectorAll("#sommaire a, #barre-sections a").forEach((a) => a.classList.toggle("actif", a.dataset.cible === visible.target.id));
+        const actif = document.querySelector("#barre-sections a.actif"); if (actif) actif.scrollIntoView({ block: "nearest", inline: "center" });
       }, { rootMargin: "-90px 0px -55% 0px" });
       sections.forEach((x) => observateur.observe(x));
     }

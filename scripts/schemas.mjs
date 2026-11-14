@@ -25,6 +25,14 @@ export const ICONES = ["maison", "euro", "famille", "banque", "graphique", "cale
 const SCHEMA = {
   type: "OBJECT",
   properties: {
+    essentiel: {
+      type: "ARRAY",
+      description: "L'essentiel du brief en 3 puces très courtes, tirées de la SYNTHÈSE (du plus important au moins important)",
+      items: { type: "OBJECT", properties: {
+        icone: { type: "STRING", description: "Une icône parmi : " + ICONES.join(", ") },
+        texte: { type: "STRING", description: "Une idée, 80 caractères maximum, sans jargon" },
+      }, required: ["icone", "texte"] },
+    },
     schemas: {
       type: "ARRAY",
       items: {
@@ -46,7 +54,7 @@ const SCHEMA = {
       },
     },
   },
-  required: ["schemas"],
+  required: ["essentiel", "schemas"],
 };
 
 const CONSIGNES = `Tu prépares des schémas très simples pour aider un conseiller en gestion de patrimoine à comprendre chaque actualité d'un coup d'œil.
@@ -57,6 +65,13 @@ Pour CHAQUE sujet fourni, propose un schéma :
 - "points" sinon (2 ou 3 idées clés).
 Règles impératives : textes très courts et simples ; n'utilise QUE les informations du titre et du résumé du sujet ; aucun chiffre, aucune date, aucun nom qui n'y figure ; pas de conseil. En français.
 Respecte le sens exact : ce qui est proposé, envisagé, en débat ou attendu doit rester présenté comme tel (« projet », « proposition », « envisagé », « attendu ») et jamais comme décidé. Une fourchette reste une fourchette (« entre 25 000 et 30 000 € »). Pas de majuscules d'insistance.`;
+
+// Vrai si tous les nombres du texte figurent dans la référence.
+export function chiffresOk(t, reference) {
+  const norm = (x) => String(x || "").replace(/[\s\u00a0\u202f]+/g, " ").toLowerCase();
+  const ref = norm(reference);
+  return (String(t || "").match(/\d[\d\s\u00a0\u202f.,]*/g) || []).every((n) => ref.includes(norm(n).trim()));
+}
 
 // Garde-fou : tout chiffre affiché doit figurer dans le titre ou le résumé du sujet.
 export function verifierSchema(s, sujet) {
@@ -92,7 +107,8 @@ export async function produireSchemas(brief) {
     if ((quota.compteurs?.[modele] || 0) >= 460) continue;
     await appelSite("/api/robot/ia/quota", "POST", { ajouts: { [modele]: 1 } });
     try {
-      const r = await generer(modele, CONSIGNES, `SUJETS (identifiant entre crochets) :\n\n${entree}`, SCHEMA);
+      const r = await generer(modele, CONSIGNES + `\nEnfin, "essentiel" : la SYNTHÈSE résumée en exactement 3 puces très courtes (une idée chacune), sans rien ajouter.`,
+        `SYNTHÈSE DU BRIEF :\n${brief.synthese || "(aucune)"}\n\nSUJETS (identifiant entre crochets) :\n\n${entree}`, SCHEMA);
       if (r.quota) continue;
       const parId = Object.fromEntries(actus.map((a) => [a.id, a]));
       const schemas = {};
@@ -100,7 +116,12 @@ export async function produireSchemas(brief) {
         const v = verifierSchema(s, parId[String(s.sujet_id || "").replace(/[[\]\s]/g, "")]);
         if (v) schemas[String(s.sujet_id).replace(/[[\]\s]/g, "")] = v;
       }
-      await appelSite("/api/robot/brief/schemas", "POST", { jour: brief.jour, edition: brief.edition || "matin", schemas });
+      // L'essentiel : chaque chiffre doit figurer dans la synthèse ou un titre.
+      const ref = actus.map((a) => a.titre).join(" ") + " " + (brief.synthese || "");
+      const essentiel = (r.donnees.essentiel || []).map((e) => ({ icone: ICONES.includes(e.icone) ? e.icone : "graphique", texte: String(e.texte || "").trim().slice(0, 100) }))
+        .filter((e) => e.texte && chiffresOk(e.texte, ref)).slice(0, 3);
+      await appelSite("/api/robot/brief/schemas", "POST", { jour: brief.jour, edition: brief.edition || "matin", schemas, essentiel: brief.synthese && essentiel.length === 3 ? essentiel : null });
+      if (essentiel.length) console.log("  L'essentiel :", essentiel.map((e) => e.texte).join(" | "));
       console.log(`Schémas du brief ${brief.jour} (${brief.edition}) : ${Object.keys(schemas).length}/${actus.length} (${modele}).`);
       for (const [id, v] of Object.entries(schemas))
         console.log(`  - ${v.modele} · ${v.titre} · ${v.chiffre ? v.chiffre + " " + v.legende : v.modele === "avant_apres" ? v.avant + " → " + v.apres : v.elements.join(" | ")}`);
