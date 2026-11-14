@@ -1561,7 +1561,7 @@ Object.assign(APPROFONDI, {
       },
       {
         titre: "L'option globale", niveau: "Piège",
-        enonce: "Un client dans la tranche à 30 % veut le barème pour ses 2 000 € de dividendes de PME achetées en 2012 (gros abattement) mais le PFU pour ses 5 000 € d'intérêts.",
+        enonce: "Un client dans la tranche à 30 % veut le barème pour la plus-value de ses actions achetées en 2012 (abattement de 65 % au barème) mais le PFU pour ses 5 000 € d'intérêts.",
         question: "Est-ce possible ?",
         etapes: ["L'option pour le barème est globale.", "Elle s'applique à tous ses revenus de placement et plus-values de l'année."],
         reponse: "Non : c'est tout au barème ou tout au PFU. Il faut comparer le total des deux options.",
