@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 9.0 -->
+<!-- version 10.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -15,13 +15,23 @@
   <meta name="theme-color" content="#3a49d6">
   <meta name="apple-mobile-web-app-title" content="Veille">
   <script src="/commun.js"></script>
+  <script src="/fiches.js" defer></script>
+  <script src="/fiches-suite.js" defer></script>
+  <script src="/couvertures.js" defer></script>
   <style>
-    .haut { display: flex; flex-wrap: wrap; gap: 26px; margin-bottom: 30px; }
+    .haut { display: flex; flex-wrap: wrap; gap: 26px; margin-bottom: 30px; align-items: stretch; }
     .haut .hero { flex: 999 1 560px; min-width: 0; }
-    .haut .chiffre { flex: 1 1 300px; min-width: 0; margin: 0; justify-content: space-between; }
+    .haut #rdv { flex: 1 1 300px; min-width: 0; max-width: 420px; margin: 0; }
+    .colonne-cote .chiffre { margin: 0; }
+    .deux-colonnes > .colonne-cote { position: static; max-height: none; overflow: visible; }   /* la colonne défile avec la page : rien n'est coupé */
     .chiffre-libelle { font-size: 1rem; line-height: 1.45; margin: 0; }
     .stat-grille { display: flex; gap: 22px; flex-wrap: wrap; }
-    .filtres { margin-bottom: 30px; display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; }
+    .filtres { margin: 0 0 18px; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; }
+    .filtres-ligne { display: flex; gap: 10px; align-items: center; min-width: 0; }
+    .filtres-ligne .puces { flex: 1; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .filtres-ligne .puces::-webkit-scrollbar { display: none; }
+    .puce .nb { opacity: .7; font-weight: 500; margin-left: 2px; }
+    .plus-filtres { flex: 0 0 auto; }
     .filtres-bas { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
     .plus-filtres summary { cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--accent); }
     .plus-filtres-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; align-items: end; }
@@ -32,27 +42,43 @@
     .rdv-num { flex: 0 0 26px; height: 26px; border-radius: 8px; background: var(--accent-doux); color: var(--accent-fonce);
                font-weight: 600; display: grid; place-items: center; font-size: .8rem; }
     .rdv a { font-size: .82rem; white-space: nowrap; }
-    .anneau { display: flex; align-items: center; gap: 16px; }
-    .legende { display: flex; flex-direction: column; gap: 4px; font-size: .88rem; min-width: 0; }
-    .anneau { flex-wrap: wrap; }
-    .legende button { white-space: nowrap; }
-    .legende button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 6px; }
-    .legende button:hover, .legende button:focus-visible { background: var(--fond); }
-    #rdv-mobile { display: none; margin-bottom: 22px; }
+    .bloc-reglages { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin-top: 10px; }
+    .bloc-reglages .puces { flex-wrap: wrap; }
+    .encart h2 { display: flex; align-items: center; gap: 8px; }
+    .encart .petit-titre { font-weight: 600; line-height: 1.35; margin: 0 0 8px; display: block; color: var(--texte); text-decoration: none; }
+    .encart .petit-titre:hover { color: var(--accent); }
+    .fiche-jour { display: block; border-radius: 12px; overflow: hidden; aspect-ratio: 400 / 170; margin-bottom: 12px; position: relative; }
+    .fiche-jour .couverture { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .encart-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     @media (max-width: 760px) {
-      #rdv-mobile:not([hidden]) { display: block; }
-      #rdv { display: none; }
-      .filtres .puces { min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -18px; padding: 0 18px; }
-      .filtres .puces::-webkit-scrollbar { display: none; }
-      .filtres-bas { flex-direction: column; align-items: stretch; gap: 10px; min-width: 0; }
-      .filtres { min-width: 0; overflow: hidden; }
+      .haut { gap: 16px; margin-bottom: 18px; }
+      .haut #rdv { max-width: none; }
+      .actions-hero { gap: 8px; }
+      .actions-hero .bouton { padding: 9px 14px; font-size: .92rem; }
+      /* Ordre sur téléphone : repères (chiffre, marchés) avant les actualités, encarts après. */
+      .deux-colonnes { display: flex; flex-direction: column; align-items: stretch; gap: 18px; }
+      .colonne-principale { flex: 0 0 auto; width: 100%; }
+      .deux-colonnes > .colonne-cote { display: contents; }
+      .colonne-cote > .chiffre, .colonne-cote > #marches { order: 1; }
+      .colonne-principale { order: 2; }
+      .colonne-cote > .encart { order: 3; }
+      /* Cartes « À la une » compactes : petite vignette à gauche. */
+      #cartes { grid-template-columns: 1fr; gap: 10px; }
+      #cartes .sujet { flex-direction: row; }
+      #cartes .sujet-haut { flex: 0 0 92px; }
+      #cartes .visuel { height: 100% !important; min-height: 92px; }
+      #cartes .credit, #cartes .sujet-haut .favori { display: none; }
+      #cartes .sujet-corps { padding: 10px 12px; gap: 6px; }
+      #cartes .sujet h3 { font-size: .98rem; }
+      #cartes .resume { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .88rem; margin: 0; }
+      #cartes .sources { font-size: .78rem; }
+      #cartes .sources .source:nth-child(n+2) { display: none; }
     }
     .hero-nouv { display: inline-block; margin: -4px 0 14px; padding: 4px 12px; border-radius: 999px; background: var(--encre-2);
       color: #fff; font-size: .88rem; font-weight: 500; }
     .bandeau-nouveautes { display: block; width: 100%; margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; border: 0; cursor: pointer;
       background: var(--accent); color: var(--accent-texte); font: inherit; font-weight: 600; }
     .bandeau-nouveautes:hover { filter: brightness(1.08); }
-    .legende .carre { width: 10px; height: 10px; border-radius: 3px; background: var(--i2); flex: 0 0 auto; }
   </style>
 </head>
 <body>
@@ -75,36 +101,32 @@
         <p id="hero-texte">Chargement du brief…</p>
         <div class="actions-hero" id="hero-actions"></div>
       </div>
-      <div class="carte chiffre" id="chiffre">
-        <div class="surtitre" style="margin:0">Le chiffre du jour</div>
-        <div class="chiffre-valeur">&nbsp;</div>
-      </div>
-    </section>
-
-    <section class="carte" id="rdv-mobile" hidden>
-      <h2 class="titre-rdv">Pour vos rendez-vous</h2>
-      <ol class="rdv" id="rdv-liste-mobile"></ol>
-    </section>
-
-    <section class="carte filtres" id="filtres" aria-label="Filtres">
-      <div class="puces" id="f-themes"><span class="puce-libelle">Thèmes</span></div>
-      <div class="filtres-bas">
-        <div class="puces" id="f-importance"><span class="puce-libelle">Importance</span></div>
-        <div class="puces" id="f-periode"><span class="puce-libelle">Période</span></div>
-      </div>
-      <details class="plus-filtres" id="plus-filtres">
-        <summary>Plus de filtres (source, catégorie précise)</summary>
-        <div class="plus-filtres-grille">
-          <div><label for="f-source">Source</label><select id="f-source"><option value="">Toutes les sources</option></select></div>
-          <div><label for="f-categorie">Catégorie précise</label><select id="f-categorie"><option value="">Toutes</option></select></div>
-          <button class="bouton bouton-discret" type="button" id="f-effacer">Effacer les filtres</button>
-        </div>
-      </details>
+      <section class="carte" id="rdv" hidden>
+        <h2 class="titre-rdv">Pour vos rendez-vous</h2>
+        <ol class="rdv" id="rdv-liste"></ol>
+      </section>
     </section>
 
     <div class="deux-colonnes">
       <div class="colonne-principale">
         <div class="titre-section"><h2 id="titre-une">À la une</h2><span class="doux petit" id="info-maj"></span></div>
+        <section class="carte filtres" id="filtres" aria-label="Filtres">
+          <div class="filtres-ligne">
+            <div class="puces" id="f-themes"></div>
+            <details class="plus-filtres" id="plus-filtres"><summary>Filtres</summary></details>
+          </div>
+          <div id="reglages" hidden>
+            <div class="bloc-reglages">
+              <div class="puces" id="f-importance"><span class="puce-libelle">Importance</span></div>
+              <div class="puces" id="f-periode"><span class="puce-libelle">Période</span></div>
+            </div>
+            <div class="plus-filtres-grille">
+              <div><label for="f-source">Source</label><select id="f-source"><option value="">Toutes les sources</option></select></div>
+              <div><label for="f-categorie">Catégorie précise</label><select id="f-categorie"><option value="">Toutes</option></select></div>
+              <button class="bouton bouton-discret" type="button" id="f-effacer">Effacer les filtres</button>
+            </div>
+          </div>
+        </section>
         <button type="button" class="bandeau-nouveautes" id="nouveautes" hidden></button>
         <div class="grille-cartes" id="cartes"></div>
         <div id="bloc-lignes" hidden style="margin-top:26px">
@@ -117,31 +139,23 @@
       </div>
 
       <aside class="colonne-cote">
-        <section class="carte" id="rdv" hidden>
-          <h2 class="titre-rdv">Pour vos rendez-vous</h2>
-          <ol class="rdv" id="rdv-liste"></ol>
-        </section>
-        <section class="carte" id="themes" hidden>
-          <h2>Les thèmes du jour</h2>
-          <div class="anneau"><div id="anneau"></div><div class="legende" id="legende"></div></div>
-          <p class="doux petit" style="margin:10px 0 0">Sujets des dernières 24 heures. Un clic sur un thème filtre la liste.</p>
-        </section>
+        <div class="carte chiffre" id="chiffre">
+          <div class="surtitre" style="margin:0">Le chiffre du jour</div>
+          <div class="chiffre-valeur">&nbsp;</div>
+        </div>
         <section class="carte" id="marches" hidden>
           <div class="titre-section" style="margin-bottom:6px"><h2 style="margin:0">Marchés en bref</h2><a href="/marches" class="petit">Détails →</a></div>
           <div id="marches-liste"></div>
           <p class="doux petit" style="margin:8px 0 0" id="marches-info"></p>
         </section>
-        <details class="carte">
-          <summary style="cursor:pointer;font-weight:600">Mon compte : changer mon mot de passe</summary>
-          <form id="form-mdp">
-            <label for="actuel">Mot de passe actuel</label>
-            <input id="actuel" type="password" autocomplete="current-password" required>
-            <label for="nouveau">Nouveau mot de passe (10 caractères minimum)</label>
-            <input id="nouveau" type="password" autocomplete="new-password" minlength="10" required>
-            <button class="bouton bouton-large" type="submit">Enregistrer</button>
-            <div class="message" id="msg-mdp" role="alert"></div>
-          </form>
-        </details>
+        <section class="carte encart" id="encart-linkedin" hidden>
+          <h2>✏️ Idée de post LinkedIn</h2>
+          <div id="linkedin-idee"></div>
+        </section>
+        <section class="carte encart" id="encart-fiche" hidden>
+          <h2>🎓 À réviser aujourd'hui</h2>
+          <div id="fiche-jour"></div>
+        </section>
       </aside>
     </div>
   </main>
@@ -160,13 +174,18 @@
         `<button type="button" class="puce" data-v="${echapper(v)}" aria-pressed="${filtres[cle] === v}">${echapper(nom)}</button>`).join("");
       conteneur.querySelectorAll(".puce").forEach((b) => b.onclick = () => changer({ [cle]: b.dataset.v, ...(cle === "theme" ? { categorie: "" } : {}) }));
     }
+    let COMPTES = {};   // nombre de sujets des dernières 24 h par thème
     function dessinerFiltres() {
-      puces(document.getElementById("f-themes"), "theme", [["", "Tous"], ...THEMES.map((t) => [t.id, t.nom])]);
+      const z = document.getElementById("f-themes");
+      z.innerHTML = [["", "Tous"], ...THEMES.map((t) => [t.id, t.nom])].map(([v, nom]) =>
+        `<button type="button" class="puce" data-v="${echapper(v)}" aria-pressed="${filtres.theme === v}">${echapper(nom)}${v && COMPTES[v] ? ` <span class="nb">${COMPTES[v]}</span>` : ""}</button>`).join("");
+      z.querySelectorAll(".puce").forEach((b) => b.onclick = () => changer({ theme: b.dataset.v, categorie: "" }));
       puces(document.getElementById("f-importance"), "importance", IMPORTANCES);
       puces(document.getElementById("f-periode"), "periode", PERIODES);
       document.getElementById("f-source").value = filtres.source;
       document.getElementById("f-categorie").value = filtres.categorie;
-      if (filtres.source || filtres.categorie) document.getElementById("plus-filtres").open = true;
+      const actifs = [filtres.importance, filtres.periode, filtres.source, filtres.categorie].filter(Boolean).length;
+      document.querySelector("#plus-filtres summary").textContent = actifs ? `Filtres (${actifs})` : "Filtres";
       const t = THEMES.find((x) => x.id === filtres.theme);
       document.getElementById("titre-une").textContent = filtres.categorie || (t ? t.nom : "À la une");
     }
@@ -232,7 +251,7 @@
     const dateLongue = (jour) => new Date(jour + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     const majuscule = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
-    async function chargerBrief(nbSujets24h) {
+    async function chargerBrief(marchesPromesse) {
       let brief = null;
       try { brief = (await appelApi("/api/brief")).brief; } catch {}
       const h = Number(new Date().toLocaleTimeString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }));
@@ -253,7 +272,7 @@
         const nbPoints = (brief.a_retenir || []).length;
         actions.innerHTML = `<a class="bouton" href="/brief?jour=${brief.jour}&edition=${brief.edition || "matin"}">${brief.edition === "soir" ? "Lire le point du soir" : "Lire le brief"} · ${minutes} min</a>
           <button type="button" class="bouton second" id="btn-ecouter">${ICONE_ECOUTE} Écouter</button>` +
-          (nbPoints ? `<a class="bouton second" href="#rdv" onclick="if (innerWidth <= 760) { event.preventDefault(); document.getElementById('rdv-mobile').scrollIntoView({ behavior: 'smooth' }); }">${nbPoints} point${nbPoints > 1 ? "s" : ""} pour ${brief.edition === "soir" ? "demain" : "mes clients"}</a>` : "");
+          `<a class="bouton second" href="/linkedin">✏️ Post LinkedIn</a>`;
         document.getElementById("btn-ecouter").onclick = (e) => ecouterBrief(brief, e.currentTarget);
       } else {
         document.getElementById("hero-texte").textContent = "Le premier brief sera rédigé demain matin vers 7 h, puis chaque jour, week-end compris.";
@@ -265,58 +284,77 @@
       const htmlPoints = points.map((p, i) =>
         `<li><span class="rdv-num">${i + 1}</span><span>${echapper(p.texte)} <a href="${lienSujet(p.sujet_id)}">Voir →</a></span></li>`).join("");
       document.querySelectorAll(".titre-rdv").forEach((h) => h.textContent = brief && brief.edition === "soir" ? "Pour vos rendez-vous de demain" : "Pour vos rendez-vous");
-      for (const [bloc, liste] of [["rdv", "rdv-liste"], ["rdv-mobile", "rdv-liste-mobile"]]) {
-        document.getElementById(bloc).hidden = !points.length;
-        document.getElementById(liste).innerHTML = htmlPoints;
-      }
+      document.getElementById("rdv").hidden = !points.length;
+      document.getElementById("rdv-liste").innerHTML = htmlPoints;
 
-      // Chiffre du jour : extrait par l'IA d'un résumé, vérifié mot pour mot. Sinon, l'activité des 24 dernières heures.
+      // Chiffre du jour : extrait par l'IA d'un résumé, vérifié mot pour mot.
+      // Sans chiffre vérifié : le plus fort mouvement de marché du jour (une donnée réelle).
       const c = estDuJour && brief.chiffre_du_jour;
       const zone = document.getElementById("chiffre");
-      zone.innerHTML = c
-        ? `<div class="surtitre" style="margin:0">Le chiffre du jour</div>
+      if (c) {
+        zone.innerHTML = `<div class="surtitre" style="margin:0">Le chiffre du jour</div>
            <div class="chiffre-valeur">${echapper(c.valeur)}</div>
            <p class="chiffre-libelle">${echapper(c.libelle)}</p>
-           <p class="doux petit" style="margin:0">${c.source ? "Source : " + echapper(c.source) + " · " : ""}chiffre repéré par l'IA · <a href="${lienSujet(c.sujet_id)}">voir le sujet</a></p>`
-        : `<div class="surtitre" style="margin:0">Ces dernières 24 heures</div>
-           <div class="chiffre-valeur">${nbSujets24h ?? "–"}</div>
-           <p class="chiffre-libelle">sujets suivis par le robot, toutes sources confondues.</p>
-           <p class="doux petit" style="margin:0">Le chiffre clé du jour s'affiche ici avec le brief de 7 h.</p>`;
+           <p class="doux petit" style="margin:0">${c.source ? "Source : " + echapper(c.source) + " · " : ""}<a href="${lienSujet(c.sujet_id)}">voir le sujet</a></p>`;
+        return;
+      }
+      const valeurs = (await marchesPromesse.catch(() => [])).filter((v) => typeof v.variation === "number" && Date.now() - new Date(v.maj_le) < 4 * 86400e3);
+      const m = valeurs.sort((x, y) => Math.abs(y.variation) - Math.abs(x.variation))[0];
+      zone.hidden = !m;
+      if (m) zone.innerHTML = `<div class="surtitre" style="margin:0">Le mouvement du jour</div>
+           <div class="chiffre-valeur" style="color:${m.variation < 0 ? "var(--ko)" : "var(--ok)"}">${m.variation > 0 ? "+" : ""}${String(m.variation).replace(".", ",")} %</div>
+           <p class="chiffre-libelle">${echapper(nomCourt(m))} : la plus forte variation parmi les marchés suivis.</p>
+           <p class="doux petit" style="margin:0">Relevé ${quand(m.maj_le)} · <a href="/marches">voir les marchés</a></p>`;
     }
 
-    // ------------------------------------------------------------ Les thèmes du jour (anneau)
-    async function chargerThemes() {
+    // ------------------------------------------------------------ Nombre de sujets des dernières 24 h par thème (affiché dans les filtres)
+    async function chargerComptes() {
       const { sujets } = await appelApi("/api/themes");
-      const compte = {};
-      for (const cats of sujets) { const t = themeDe(cats); compte[t.id] = (compte[t.id] || 0) + 1; }
-      const lignes = [...THEMES, THEME_AUTRE].filter((t) => compte[t.id]).map((t) => ({ ...t, n: compte[t.id] })).sort((a, b) => b.n - a.n);
-      const total = lignes.reduce((s, l) => s + l.n, 0);
-      document.getElementById("themes").hidden = !total;
-      if (!total) return sujets.length;
-      let cumul = 0;
-      const arcs = lignes.map((l) => {
-        const part = l.n / total * 100;
-        const arc = `<circle class="th-${l.id}" cx="21" cy="21" r="15.9" fill="none" style="stroke:var(--i2)" stroke-width="6"
-          stroke-dasharray="${Math.max(part - 0.8, 0.5).toFixed(2)} ${(100 - Math.max(part - 0.8, 0.5)).toFixed(2)}" stroke-dashoffset="${(25 - cumul).toFixed(2)}"/>`;
-        cumul += part;
-        return arc;
-      }).join("");
-      document.getElementById("anneau").innerHTML = `<svg viewBox="0 0 42 42" width="112" height="112" role="img" aria-label="Répartition des ${total} sujets des dernières 24 heures par thème">
-        ${arcs}<text x="21" y="23.6" text-anchor="middle" font-size="8" font-weight="600" fill="currentColor" style="font-family:var(--titre)">${total}</text></svg>`;
-      document.getElementById("legende").innerHTML = lignes.map((l) =>
-        `<button type="button" class="th-${l.id}" data-theme="${l.id === "autre" ? "" : l.id}"><span class="carre"></span>${echapper(l.nom)} · ${l.n}</button>`).join("");
-      document.querySelectorAll("#legende button").forEach((b) => b.onclick = () => {
-        changer({ theme: b.dataset.theme, categorie: "" });
-        document.getElementById("filtres").scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-      return sujets.length;
+      COMPTES = {};
+      for (const cats of sujets) { const t = themeDe(cats); COMPTES[t.id] = (COMPTES[t.id] || 0) + 1; }
+      dessinerFiltres();
+    }
+
+    // ------------------------------------------------------------ Idée de post LinkedIn
+    async function chargerLinkedin() {
+      try {
+        const { idees } = await appelApi("/api/linkedin/sujets");
+        const i = idees.find((x) => !x.simple) || idees[0];
+        if (!i) return;
+        document.getElementById("linkedin-idee").innerHTML = `<a class="petit-titre" href="/linkedin?sujet=${encodeURIComponent(i.sujet_id)}&approche=${encodeURIComponent(i.approche || "")}">${echapper(i.titre)}</a>
+          <p class="doux petit" style="margin:0 0 12px">${echapper(i.pourquoi || "")}</p>
+          <div class="encart-actions"><a class="bouton" href="/linkedin?sujet=${encodeURIComponent(i.sujet_id)}&approche=${encodeURIComponent(i.approche || "")}">Préparer ce post</a>
+          <a class="bouton bouton-discret" href="/linkedin">Autres idées</a></div>`;
+        document.getElementById("encart-linkedin").hidden = false;
+      } catch {}
+    }
+
+    // ------------------------------------------------------------ Fiche à réviser : celle dont l'actualité parle le plus, sinon une fiche du jour
+    const sansAccents = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    function chargerFiche(sujets) {
+      if (typeof FICHES === "undefined" || !FICHES.length) return;
+      let meilleure = null, max = 0;
+      for (const f of FICHES) {
+        const mot = new RegExp("\\b" + sansAccents(f.recherche).replace(/\s+/g, "[\\s-]+") + "\\b");
+        const n = sujets.filter((s) => mot.test(sansAccents((s.titre_fr || s.titre) + " " + (s.resume_court || "")))).length;
+        if (n > max) { max = n; meilleure = f; }
+      }
+      const jour = aujourdhui();
+      const f = meilleure || FICHES[[...jour].reduce((a, ch) => a + ch.charCodeAt(0), 0) % FICHES.length];
+      document.getElementById("fiche-jour").innerHTML = `<a class="fiche-jour" href="/fiche?id=${f.id}" aria-label="${echapper(f.titre)}">${typeof couvertureFiche === "function" ? couvertureFiche(f) : ""}</a>
+        <a class="petit-titre" href="/fiche?id=${f.id}">${echapper(f.titre)}</a>
+        <p class="doux petit" style="margin:0 0 12px">${max ? `${max} actualité${max > 1 ? "s" : ""} récente${max > 1 ? "s" : ""} en parle${max > 1 ? "nt" : ""}.` : echapper(f.sousTitre)}</p>
+        <div class="encart-actions"><a class="bouton" href="/fiche?id=${f.id}">Ouvrir la fiche</a><a class="bouton bouton-discret" href="/apprendre#defi">Défi du jour</a></div>`;
+      document.getElementById("encart-fiche").hidden = false;
     }
 
     // ------------------------------------------------------------ Marchés en bref
     const EN_BREF = ["EWQ", "FEZ", "SPY", "XAU/USD", "BTC/USD", "EUR/USD"];
+    let promesseMarches = null;
     async function chargerMarches() {
       try {
-        const valeurs = await donneesMarches();
+        promesseMarches = donneesMarches();
+        const valeurs = await promesseMarches;
         const choisis = EN_BREF.map((s) => valeurs.find((v) => v.symbole === s)).filter(Boolean);
         document.getElementById("marches").hidden = !choisis.length;
         if (!choisis.length) return;
@@ -342,8 +380,9 @@
 
     function rafraichir() {
       chargerAlertes().catch(() => {});
-      chargerThemes().then((n) => chargerBrief(n)).catch(() => chargerBrief(null));
+      chargerComptes().catch(() => {});
       chargerMarches();
+      chargerBrief(promesseMarches || Promise.resolve([])).catch(() => {});
     }
     document.getElementById("cartes").innerHTML = squelettes(4);
     chargerEntete("/").then(async () => {
@@ -351,8 +390,11 @@
       rafraichir();
       await chargerListes().catch(() => {});
       dessinerFiltres();
-      charger(false);
+      await charger(false).catch(() => {});
+      chargerLinkedin();
+      appelApi("/api/actualites?limite=40").then((r) => chargerFiche(r.sujets)).catch(() => chargerFiche([]));
     });
+    document.getElementById("plus-filtres").addEventListener("toggle", (e) => { document.getElementById("reglages").hidden = !e.target.open; });
     // Toutes les 2 minutes : les nouveaux sujets sont signalés par un bandeau (la liste ne bouge pas pendant la lecture).
     async function verifierNouveautes() {
       if (document.hidden) return;
@@ -369,18 +411,6 @@
     setInterval(verifierNouveautes, 2 * 60 * 1000);
     setInterval(() => { if (!document.hidden) { chargerAlertes().catch(() => {}); chargerMarches(); } }, 10 * 60 * 1000);
 
-    document.getElementById("form-mdp").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const msg = document.getElementById("msg-mdp");
-      try {
-        await appelApi("/api/moi/mot-de-passe", "POST", {
-          actuel: document.getElementById("actuel").value,
-          nouveau: document.getElementById("nouveau").value,
-        });
-        e.target.reset();
-        afficherMessage(msg, "Mot de passe modifié.", "ok");
-      } catch (err) { afficherMessage(msg, err.message, "ko"); }
-    });
   </script>
 </body>
 </html>

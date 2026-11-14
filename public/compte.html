@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- version 1.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mon compte · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <meta name="apple-mobile-web-app-title" content="Veille">
+  <script src="/commun.js"></script>
+  <style>
+    .compte { max-width: 620px; display: grid; gap: 18px; }
+    .identite { display: flex; gap: 14px; align-items: center; }
+    .identite .avatar { width: 54px; height: 54px; border-radius: 50%; background: var(--accent); color: var(--accent-texte); display: grid; place-items: center; font-weight: 700; font-size: 1.2rem; flex: 0 0 54px; }
+    .identite p { margin: 2px 0 0; color: var(--doux); }
+    .reglage { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--bord); flex-wrap: wrap; }
+    .reglage:last-child { border-bottom: 0; }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <h1 style="margin:6px 0 18px">Mon compte</h1>
+    <div class="compte">
+      <section class="carte"><div class="identite"><span class="avatar" id="avatar"></span><div><strong id="nom">…</strong><p id="email"></p></div></div></section>
+
+      <section class="carte">
+        <h2 style="margin:0 0 6px;font-size:1.1rem">Affichage</h2>
+        <div class="reglage"><span>Taille du texte</span><button type="button" class="bouton bouton-discret" onclick="changerTaille()">Changer la taille</button></div>
+        <div class="reglage"><span>Mode clair ou sombre</span><button type="button" class="bouton bouton-discret" onclick="basculerTheme()">Basculer</button></div>
+      </section>
+
+      <section class="carte">
+        <h2 style="margin:0 0 6px;font-size:1.1rem">Changer mon mot de passe</h2>
+        <form id="form-mdp">
+          <label for="actuel">Mot de passe actuel</label>
+          <input id="actuel" type="password" autocomplete="current-password" required>
+          <label for="nouveau">Nouveau mot de passe (10 caractères minimum)</label>
+          <input id="nouveau" type="password" autocomplete="new-password" minlength="10" required>
+          <button class="bouton bouton-large" type="submit">Enregistrer</button>
+          <div class="message" id="msg-mdp" role="alert"></div>
+        </form>
+      </section>
+
+      <section class="carte"><button type="button" class="bouton bouton-discret" id="btn-sortir" style="color:var(--ko)">Se déconnecter</button></section>
+    </div>
+  </main>
+  <script>
+    chargerEntete("/compte").then((moi) => {
+      const nom = moi.nom || moi.email;
+      document.getElementById("nom").textContent = nom;
+      document.getElementById("email").textContent = moi.email + (moi.role === "admin" ? " · administrateur" : "");
+      document.getElementById("avatar").textContent = nom.split(/[\s@.]+/).filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
+    });
+    document.getElementById("btn-sortir").onclick = async () => { await appelApi("/api/deconnexion", "POST", {}); location.href = "/connexion"; };
+    document.getElementById("form-mdp").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("msg-mdp");
+      try {
+        await appelApi("/api/moi/mot-de-passe", "POST", {
+          actuel: document.getElementById("actuel").value,
+          nouveau: document.getElementById("nouveau").value,
+        });
+        e.target.reset();
+        afficherMessage(msg, "Mot de passe modifié.", "ok");
+      } catch (err) { afficherMessage(msg, err.message, "ko"); }
+    });
+  </script>
+</body>
+</html>

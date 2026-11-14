@@ -490,11 +490,38 @@ async function chargerEntete(pageActive) {
         <button class="icone-bouton" type="button" onclick="basculerTheme()" title="Mode clair / sombre" aria-label="Basculer le mode clair ou sombre">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg>
         </button>
-        <button class="icone-bouton" type="button" id="btn-deconnexion" title="Se déconnecter" aria-label="Se déconnecter">
+        <a class="icone-bouton ${pageActive === "/compte" ? "actif" : ""}" href="/compte" title="Mon compte" aria-label="Mon compte">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+        </a>
+        <button class="icone-bouton bouton-deconnexion" type="button" id="btn-deconnexion" title="Se déconnecter" aria-label="Se déconnecter">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>
         </button>
       </div>
     </div>`;
+  // Sur téléphone : barre d'onglets fixe en bas de l'écran (les rubriques restent toujours à portée du pouce).
+  const ICO = {
+    "/": '<path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z"/>',
+    "/brief": '<path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/>',
+    "/apprendre": '<path d="M3 8l9-4 9 4-9 4z"/><path d="M7 10v5c3 2 7 2 10 0v-5"/>',
+    "/linkedin": '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+    plus: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  };
+  const principaux = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "LinkedIn"]];
+  const autres = [["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
+  const dansPlus = autres.some(([h]) => h === pageActive);
+  const svg = (k) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
+  document.getElementById("onglets-bas")?.remove();
+  document.body.insertAdjacentHTML("beforeend", `<nav class="onglets-bas" id="onglets-bas" aria-label="Menu">
+    ${principaux.map(([h, n]) => `<a href="${h}" class="${h === pageActive ? "actif" : ""}" ${h === pageActive ? 'aria-current="page"' : ""}>${svg(h)}<span>${n}</span></a>`).join("")}
+    <button type="button" id="btn-plus" class="${dansPlus ? "actif" : ""}" aria-expanded="false" aria-controls="menu-plus">${svg("plus")}<span>Plus</span></button>
+    <div class="menu-plus" id="menu-plus" hidden>
+      ${autres.map(([h, n]) => `<a href="${h}" class="${h === pageActive ? "actif" : ""}">${n}</a>`).join("")}
+      <button type="button" id="btn-deconnexion-2">Se déconnecter</button>
+    </div></nav>`);
+  document.body.classList.add("avec-onglets");
+  const plus = document.getElementById("btn-plus"), menu = document.getElementById("menu-plus");
+  plus.onclick = (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; plus.setAttribute("aria-expanded", !menu.hidden); };
+  document.addEventListener("click", (e) => { if (!menu.hidden && !menu.contains(e.target)) { menu.hidden = true; plus.setAttribute("aria-expanded", "false"); } });
   // Raccourci clavier : « / » place le curseur dans la recherche.
   document.addEventListener("keydown", (e) => {
     if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
@@ -502,9 +529,8 @@ async function chargerEntete(pageActive) {
     }
   });
   chargerFavoris();
-  document.getElementById("btn-deconnexion").onclick = async () => {
-    await appelApi("/api/deconnexion", "POST", {});
-    location.href = "/connexion";
-  };
+  const deconnecter = async () => { await appelApi("/api/deconnexion", "POST", {}); location.href = "/connexion"; };
+  document.getElementById("btn-deconnexion").onclick = deconnecter;
+  document.getElementById("btn-deconnexion-2").onclick = deconnecter;
   return moi;
 }

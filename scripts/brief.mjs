@@ -89,7 +89,7 @@ TA TÂCHE : préparer le brief du soir des conseillers (« le point de la journ�
 - "a_retenir" : 3 à 5 points à garder en tête pour les rendez-vous clients de demain.`,
 };
 const CONSIGNES_FIN = ` Chaque point des "a_retenir" : 1 à 2 phrases simples, prêtes à être dites, sans conseil personnalisé ni recommandation d'achat ou de vente, et rattaché au sujet dont il parle par son "sujet_id" (recopié exactement).
-- "chiffre_du_jour" : LE chiffre le plus utile pour un conseiller en patrimoine aujourd'hui, pris tel quel dans un résumé fourni (taux, montant, pourcentage, plafond…). Les variations de marché ne comptent pas. "valeur" : le chiffre exactement comme il est écrit, avec son unité (ex. « 1,6 % » ; une date comme « 31 décembre » n'est pas un chiffre). "libelle" : 6 à 14 mots qui disent ce qu'il mesure. "sujet_id" : le sujet d'où il vient. Si aucun résumé ne contient de chiffre utile, laisse "valeur" vide. Ne reprends jamais un chiffre de la liste « CHIFFRES DÉJÀ PUBLIÉS » : choisis-en un autre, ou laisse "valeur" vide.`;
+- "chiffres_candidats" : jusqu'à 3 chiffres utiles pour un conseiller en patrimoine aujourd'hui, du plus utile au moins utile, chacun pris tel quel dans un résumé fourni (taux, montant, pourcentage, plafond…), et chacun tiré d'un sujet différent. Les variations de marché ne comptent pas. "valeur" : le chiffre exactement comme il est écrit dans le résumé, avec son unité (ex. « 1,6 % » ; une date comme « 31 décembre » n'est pas un chiffre). "libelle" : 6 à 14 mots qui disent ce qu'il mesure. "sujet_id" : le sujet d'où il vient. Liste vide si aucun résumé ne contient de chiffre utile. N'inclus jamais un chiffre de la liste « CHIFFRES DÉJÀ PUBLIÉS ».`;
 
 const SCHEMA_BRIEF = {
   type: "OBJECT",
@@ -100,10 +100,9 @@ const SCHEMA_BRIEF = {
       type: "ARRAY",
       items: { type: "OBJECT", properties: { texte: { type: "STRING" }, sujet_id: { type: "STRING" } }, required: ["texte", "sujet_id"] },
     },
-    chiffre_du_jour: {
-      type: "OBJECT",
-      properties: { valeur: { type: "STRING" }, libelle: { type: "STRING" }, sujet_id: { type: "STRING" } },
-      required: ["valeur", "libelle", "sujet_id"],
+    chiffres_candidats: {
+      type: "ARRAY",
+      items: { type: "OBJECT", properties: { valeur: { type: "STRING" }, libelle: { type: "STRING" }, sujet_id: { type: "STRING" } }, required: ["valeur", "libelle", "sujet_id"] },
     },
     quiz: {
       type: "ARRAY",
@@ -117,7 +116,7 @@ const SCHEMA_BRIEF = {
       },
     },
   },
-  required: ["synthese", "commentaire_marches", "a_retenir", "chiffre_du_jour", "quiz"],
+  required: ["synthese", "commentaire_marches", "a_retenir", "chiffres_candidats", "quiz"],
 };
 
 // Garde-fou du quiz : 4 choix distincts, une bonne réponse valide, un sujet existant.
@@ -204,7 +203,11 @@ export async function produireBrief(date = new Date()) {
         contenu.synthese = r.donnees.synthese || "";
         contenu.commentaire_marches = marches ? r.donnees.commentaire_marches || "" : "";
         contenu.a_retenir = (r.donnees.a_retenir || []).filter((p) => p.texte && ids.has(p.sujet_id)).slice(0, 5);
-        contenu.chiffre_du_jour = verifierChiffre(r.donnees.chiffre_du_jour, actualites, d.chiffres_precedents || []);
+        // Plusieurs candidats : on garde le premier qui passe les contrôles (présent mot pour mot, pas déjà publié).
+        const candidats = (r.donnees.chiffres_candidats || []).slice(0, 3);
+        contenu.chiffre_du_jour = null;
+        for (const c of candidats) { contenu.chiffre_du_jour = verifierChiffre(c, actualites, d.chiffres_precedents || []); if (contenu.chiffre_du_jour) break; }
+        if (!contenu.chiffre_du_jour && candidats.length) console.log("Chiffres proposés mais non retenus :", candidats.map((c) => c.valeur).join(" | "));
         contenu.quiz = verifierQuiz(r.donnees.quiz, actualites);
         contenu.ia_modele = modele;
         break;

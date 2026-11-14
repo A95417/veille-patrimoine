@@ -71,9 +71,9 @@
     .gros-bouton { font-size: 1.02rem; padding: 12px 22px; }
     .barre-mobile { display: none; }
     @media (max-width: 760px) {
-      .barre-mobile:not([hidden]) { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--carte); border-top: 1px solid var(--bord); box-shadow: 0 -6px 18px rgba(0,0,0,.08); }
+      .barre-mobile:not([hidden]) { display: flex; position: fixed; left: 0; right: 0; bottom: calc(66px + env(safe-area-inset-bottom)); z-index: 40; padding: 10px 16px; background: var(--carte); border-top: 1px solid var(--bord); box-shadow: 0 -6px 18px rgba(0,0,0,.08); }
       .barre-mobile .bouton { flex: 1; justify-content: center; }
-      body.avec-barre { padding-bottom: 80px; }
+      body.avec-barre { padding-bottom: 150px; }
       .bouton-bureau { display: none !important; }
     }
 
@@ -503,7 +503,8 @@
         const id = q.get("sujet");
         let titre = etat.donnees.sujets.find((s) => s.id === id)?.titre;
         if (!titre) titre = await appelApi("/api/sujet?id=" + encodeURIComponent(id)).then((s) => s.titre_fr || s.titre).catch(() => null);
-        if (titre) { choisirSujet({ type: "sujet", sujet_id: id, libelle: titre }); allerA(2); }
+        const appr = q.get("approche");
+        if (titre) { choisirSujet({ type: "sujet", sujet_id: id, libelle: titre }, NOMS[appr] ? appr : null); allerA(2); }
         history.replaceState(null, "", "/linkedin");
       } else if (q.get("fiche")) {
         choisirFiche(q.get("fiche")); if (etat.choix) allerA(2);
