@@ -20,7 +20,10 @@ export const APPROCHES = {
   question: "Question au réseau : présenter le sujet en quelques lignes et inviter à l'échange.",
 };
 const TONS = { sobre: "sobre et professionnel", chaleureux: "chaleureux et accessible", expert: "expert et précis" };
-const LONGUEURS = { court: "entre 500 et 750 caractères", moyen: "entre 900 et 1 300 caractères" };
+const LONGUEURS = {
+  court: "TRÈS COURT : 250 à 400 caractères au total, accroche comprise. Accroche + 2 ou 3 phrases courtes + conclusion. Pas de liste, pas de paragraphe de contexte.",
+  moyen: "COURT : 500 à 800 caractères au total, accroche comprise. Une seule idée développée en 3 ou 4 paragraphes d'une ou deux lignes.",
+};
 
 const jourParis = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
 const jourGoogle = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
@@ -135,8 +138,26 @@ const SCHEMA_POST = {
     hashtags: { type: "ARRAY", items: { type: "STRING" }, description: "3 à 5 hashtags sans espace, commençant par #" },
     appels_action: { type: "ARRAY", items: { type: "STRING" }, description: "2 phrases de conclusion possibles (question ou invitation)" },
     a_verifier: { type: "ARRAY", items: { type: "STRING" }, description: "Points factuels du post à vérifier avant publication" },
+    visuel: {
+      type: "OBJECT",
+      description: "Contenu de l'image qui résume le post. Textes très courts. Uniquement des informations présentes dans le post et la source.",
+      properties: {
+        modele: { type: "STRING", description: "Le schéma le plus parlant : chiffre (un chiffre clé), points (3 points à retenir), comparaison (avant / après ou A / B), etapes (2 à 4 étapes), question (une question forte)" },
+        surtitre: { type: "STRING", description: "Thème en 1 à 3 mots (ex. « Transmission »)" },
+        titre: { type: "STRING", description: "Titre de l'image, 60 caractères maximum" },
+        chiffre: { type: "STRING", description: "modèle chiffre : le chiffre exactement comme dans la source, avec son unité" },
+        chiffre_legende: { type: "STRING", description: "modèle chiffre : ce que mesure le chiffre, 70 caractères maximum" },
+        points: { type: "ARRAY", items: { type: "STRING" }, description: "modèles points et etapes : 2 à 4 éléments de 55 caractères maximum" },
+        gauche_titre: { type: "STRING", description: "modèle comparaison : titre de la colonne de gauche (2 à 3 mots)" },
+        gauche: { type: "ARRAY", items: { type: "STRING" }, description: "modèle comparaison : 1 à 3 lignes de 40 caractères maximum" },
+        droite_titre: { type: "STRING" },
+        droite: { type: "ARRAY", items: { type: "STRING" } },
+        conclusion: { type: "STRING", description: "Message final de l'image, 70 caractères maximum" },
+      },
+      required: ["modele", "surtitre", "titre", "conclusion"],
+    },
   },
-  required: ["accroches", "corps", "hashtags", "appels_action", "a_verifier"],
+  required: ["accroches", "corps", "hashtags", "appels_action", "a_verifier", "visuel"],
 };
 
 const CONSIGNES_POST = `Tu aides un conseiller en gestion de patrimoine (CGP) français à rédiger un post LinkedIn.
@@ -147,7 +168,36 @@ Règles impératives :
 - Aucune donnée personnelle, aucun client réel.
 - Pas plus de 2 émojis, sobres, et aucun si le ton est « expert ».
 - Si la source vient de la presse, termine le corps par « Source : » suivi du nom du média.
-- Respecte l'approche, le ton et la longueur demandés (la longueur inclut l'accroche).`;
+- Respecte l'approche, le ton et la longueur demandés : la LONGUEUR est une contrainte stricte. Sur LinkedIn, les textes longs ne sont pas lus : chaque mot doit compter.
+- Une seule idée par post. Accroche percutante (moins de 100 caractères), sans point d'exclamation en série.
+- Le « visuel » résume le post en un coup d'œil : textes très courts, aucun chiffre ni fait absent de la source.`;
+
+// Le visuel ne doit contenir aucun chiffre absent de la source : un élément douteux est retiré (ou le modèle change).
+const MODELES = ["chiffre", "points", "comparaison", "etapes", "question"];
+export function nettoyerVisuel(v, reference) {
+  if (!v || typeof v !== "object") return null;
+  const norm = (t) => String(t || "").replace(/[\s\u00a0\u202f]+/g, " ").toLowerCase();
+  const ref = norm(reference);
+  const sur = (t) => !/\d/.test(t) || (String(t).match(/\d[\d\s\u00a0\u202f.,]*(?:\s?%|\s?€|\s?ans?)?/g) || []).every((n) => ref.includes(norm(n).trim()));
+  const court = (t, n) => String(t || "").trim().slice(0, n);
+  const liste = (l, n, m) => (Array.isArray(l) ? l : []).map((x) => court(x, m)).filter((x) => x && sur(x)).slice(0, n);
+  const out = {
+    modele: MODELES.includes(v.modele) ? v.modele : "points",
+    surtitre: court(v.surtitre, 30), titre: sur(v.titre) ? court(v.titre, 70) : "",
+    chiffre: court(v.chiffre, 16), chiffre_legende: sur(v.chiffre_legende) ? court(v.chiffre_legende, 80) : "",
+    points: liste(v.points, 4, 70),
+    gauche_titre: court(v.gauche_titre, 24), gauche: liste(v.gauche, 3, 48),
+    droite_titre: court(v.droite_titre, 24), droite: liste(v.droite, 3, 48),
+    conclusion: sur(v.conclusion) ? court(v.conclusion, 80) : "",
+  };
+  // Le chiffre clé doit figurer mot pour mot dans la source.
+  if (!out.chiffre || !/\d/.test(out.chiffre) || !ref.includes(norm(out.chiffre).trim())) { out.chiffre = ""; out.chiffre_legende = ""; }
+  if (out.modele === "chiffre" && !out.chiffre) out.modele = out.points.length >= 2 ? "points" : "question";
+  if ((out.modele === "points" || out.modele === "etapes") && out.points.length < 2) out.modele = "question";
+  if (out.modele === "comparaison" && (!out.gauche.length || !out.droite.length)) out.modele = out.points.length >= 2 ? "points" : "question";
+  if (!out.titre) out.titre = court(v.surtitre, 60) || "À retenir";
+  return out;
+}
 
 export async function routeLinkedin(request, env, chemin, moi) {
   const db = env.DB;
@@ -175,6 +225,22 @@ export async function routeLinkedin(request, env, chemin, moi) {
     // Sans idées de l'IA : les actualités les plus importantes, présentées telles quelles (rien d'inventé).
     if (!idees.length) idees = sujets.slice(0, 6).map((s) => ({ sujet_id: s.id, titre: s.titre, approche: "decryptage", pourquoi: s.resume_court, sujet: s, simple: true }));
     return json({ idees, sujets, ia: !!env.GEMINI_API_KEY, approches: APPROCHES });
+  }
+
+  // Signature des visuels (nom du conseiller + cabinet), propre à chaque utilisateur.
+  if (chemin === "/api/linkedin/signature") {
+    const cle = "signature:" + (moi?.id ?? "robot");
+    if (request.method === "GET") {
+      const s = await lireEtat(db, cle);
+      return json(s?.valeur || { nom: moi?.nom || "", cabinet: "" });
+    }
+    if (request.method === "POST") {
+      let d = {};
+      try { d = await request.json(); } catch {}
+      const v = { nom: String(d.nom || "").trim().slice(0, 60), cabinet: String(d.cabinet || "").trim().slice(0, 60) };
+      await ecrireEtat(db, cle, v);
+      return json(v);
+    }
   }
 
   // Rédaction d'un post.
@@ -215,6 +281,7 @@ export async function routeLinkedin(request, env, chemin, moi) {
     await ecrireEtat(db, cleJour, compteur);
     const p = r.donnees;
     return json({
+      visuel: nettoyerVisuel(p.visuel, source + "\n" + (p.corps || "") + "\n" + (p.accroches || []).join("\n")),
       accroches: (p.accroches || []).slice(0, 3),
       corps: String(p.corps || ""),
       hashtags: (p.hashtags || []).map((h) => "#" + String(h).replace(/^#+/, "").replace(/\s+/g, "")).filter((h) => h.length > 1).slice(0, 5),

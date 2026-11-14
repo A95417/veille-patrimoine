@@ -277,7 +277,7 @@ export async function routeRobot(request, env, chemin) {
     let post = null;
     if (corps.rediger && idees.sujets?.length) {
       const sujet = idees.idees?.[0]?.sujet_id || idees.sujets[0].id;
-      post = await (await routeLinkedin(new Request(base + "/api/linkedin/rediger", { method: "POST", body: JSON.stringify({ sujet_id: sujet, approche: idees.idees?.[0]?.approche || "decryptage", ton: "sobre", longueur: "court" }) }),
+      post = await (await routeLinkedin(new Request(base + "/api/linkedin/rediger", { method: "POST", body: JSON.stringify({ sujet_id: sujet, approche: idees.idees?.[0]?.approche || "decryptage", ton: "sobre", longueur: corps.longueur || "court" }) }),
         env, "/api/linkedin/rediger", null)).json();
     }
     const diag = await db.prepare("SELECT valeur FROM etat WHERE cle = 'linkedin_idees_erreur'").first();

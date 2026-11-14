@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 2.0 — parcours guidé en 3 étapes -->
+<!-- version 3.0 — posts très courts + visuels aux couleurs du cabinet -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -17,6 +17,7 @@
   <script src="/commun.js"></script>
   <script src="/fiches.js"></script>
   <script src="/fiches-suite.js"></script>
+  <script src="/visuels-linkedin.js"></script>
   <style>
     .li-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 16px; }
     .li-tete h1 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
@@ -99,6 +100,15 @@
     .attente { display: flex; gap: 12px; align-items: center; color: var(--doux); padding: 30px 0; justify-content: center; }
     .rond { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--accent-doux); border-top-color: var(--accent); animation: tourne 1s linear infinite; }
     @keyframes tourne { to { transform: rotate(360deg); } }
+    .visuels { border-top: 1px solid var(--bord); margin-top: 18px; padding-top: 16px; }
+    .visuels-tete { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+    .visuels-tete h3 { margin: 0; font-size: 1.05rem; }
+    .visuels-grille { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+    @media (max-width: 700px) { .visuels-grille { grid-template-columns: minmax(0, 1fr); } }
+    .visuel-zone img { width: 100%; height: auto; display: block; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+    .carrousel { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
+    .carrousel img { flex: 0 0 82%; width: 82%; scroll-snap-align: start; }
+    .visuel-reglages input, .visuel-reglages textarea { width: 100%; box-sizing: border-box; }
     .reprise { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; border: 1px dashed var(--bord-fort); margin-bottom: 14px; font-size: .92rem; }
   </style>
 </head>
@@ -150,8 +160,8 @@
               <button type="button" class="puce" data-ton="chaleureux" aria-pressed="false">Chaleureux</button>
               <button type="button" class="puce" data-ton="expert" aria-pressed="false">Expert</button></div></div>
             <div><span class="simu-lib">Longueur</span><div class="puces" id="longueurs">
-              <button type="button" class="puce" data-longueur="court" aria-pressed="true">Court · ≈ 600 caractères</button>
-              <button type="button" class="puce" data-longueur="moyen" aria-pressed="false">Moyen · ≈ 1 100</button></div></div>
+              <button type="button" class="puce" data-longueur="court" aria-pressed="true">Très court · 3 à 5 lignes</button>
+              <button type="button" class="puce" data-longueur="moyen" aria-pressed="false">Court · ≈ 700 caractères</button></div></div>
           </div>
           <details class="precision"><summary>Ajouter une précision pour l'IA (facultatif)</summary>
             <input id="consigne" maxlength="200" style="margin-top:8px" placeholder="Ex. : s'adresser aux chefs d'entreprise">
@@ -179,6 +189,31 @@
               <textarea class="post" id="post"></textarea>
               <div class="compteur" id="compteur"></div>
             </div>
+            <section class="visuels" id="visuels" hidden>
+              <div class="visuels-tete"><h3>L'image du post</h3>
+                <div class="puces" role="group" aria-label="Format"><button type="button" class="puce" data-format="image" aria-pressed="true">Image</button><button type="button" class="puce" data-format="carrousel" aria-pressed="false">Carrousel</button></div></div>
+              <p class="doux petit" style="margin:0 0 12px" id="visuels-aide">Une image au format portrait (1080 × 1350), aux couleurs du cabinet.</p>
+              <div class="visuels-grille">
+                <div class="visuel-zone" id="visuel-zone"><div class="attente"><span class="rond"></span>Création de l'image…</div></div>
+                <div class="visuel-reglages">
+                  <span class="bloc-lib">Schéma</span>
+                  <div class="puces" id="modeles"></div>
+                  <div class="actions" style="margin:14px 0 6px">
+                    <button type="button" class="bouton" id="btn-png">Télécharger l'image</button>
+                    <button type="button" class="bouton bouton-discret" id="btn-partager-img" hidden>Partager</button>
+                  </div>
+                  <details class="precision"><summary>Modifier les textes de l'image</summary>
+                    <label for="v-titre" class="bloc-lib" style="margin-top:10px">Titre</label><input id="v-titre" maxlength="80">
+                    <label for="v-points" class="bloc-lib" style="margin-top:10px">Points (un par ligne)</label><textarea id="v-points" rows="4" style="width:100%;box-sizing:border-box"></textarea>
+                    <label for="v-conclusion" class="bloc-lib" style="margin-top:10px">Message final</label><input id="v-conclusion" maxlength="90">
+                    <p class="alerte-donnees">Tout chiffre ajouté à la main doit être vérifié.</p></details>
+                  <details class="precision" id="bloc-signature"><summary>Signature : <span id="signature-resume"></span></summary>
+                    <label for="sig-nom" class="bloc-lib" style="margin-top:10px">Nom du conseiller</label><input id="sig-nom" maxlength="60" placeholder="Prénom Nom">
+                    <label for="sig-cabinet" class="bloc-lib" style="margin-top:10px">Cabinet</label><input id="sig-cabinet" maxlength="60" placeholder="Nom du cabinet">
+                    <p style="margin:10px 0 0"><button type="button" class="bouton bouton-discret" id="btn-signature">Enregistrer ma signature</button></p></details>
+                </div>
+              </div>
+            </section>
             <div id="verif"></div>
             <div class="perso" id="perso">
               <h3 style="margin:0;font-size:1.05rem">Personnaliser</h3>
@@ -345,7 +380,7 @@
       $("p3-attente").hidden = false; $("p3-contenu").hidden = true; $("p3-erreur").hidden = true;
       try {
         const p = await appelApi("/api/linkedin/rediger", "POST", corps);
-        etat.post = p; etat.accroche = 0; etat.cta = 0; etat.tagsOff = []; etat.modifie = false;
+        etat.post = p; etat.visuel = p.visuel || null; etat.accroche = 0; etat.cta = 0; etat.tagsOff = []; etat.modifie = false;
         etat.texte = construire();
         afficherResultat();
         if (p.restants <= 5) notifier(`Encore ${p.restants} rédaction${p.restants > 1 ? "s" : ""} possible${p.restants > 1 ? "s" : ""} aujourd'hui.`);
@@ -394,9 +429,44 @@
       const vp = $("voir-plus"); if (vp) vp.onclick = () => afficherApercu(true);
     }
 
+    // ---------------------------------------------------------------- Visuels (image ou carrousel aux couleurs du cabinet)
+    const NOMS_MODELES = { chiffre: "Chiffre clé", points: "3 points", etapes: "Étapes", comparaison: "Avant / après", question: "Question" };
+    let signature = { nom: "", cabinet: "" }, formatVisuel = "image", derniersVisuels = [], minuteur = null;
+    function modelesPossibles(v) {
+      return Object.keys(NOMS_MODELES).filter((m) => m === "question" || (m === "chiffre" && v.chiffre) || ((m === "points" || m === "etapes") && v.points.length >= 2) || (m === "comparaison" && v.gauche.length && v.droite.length));
+    }
+    async function afficherVisuel() {
+      const v = etat.visuel, zone = $("visuel-zone");
+      $("visuels").hidden = !v;
+      if (!v) return;
+      $("modeles").innerHTML = modelesPossibles(v).map((m) => `<button type="button" class="puce" data-modele="${m}" aria-pressed="${m === v.modele}">${NOMS_MODELES[m]}</button>`).join("");
+      $("modeles").querySelectorAll("[data-modele]").forEach((b) => b.onclick = () => { v.modele = b.dataset.modele; sauver(); afficherVisuel(); });
+      document.querySelectorAll("[data-format]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.format === formatVisuel));
+      $("btn-png").textContent = formatVisuel === "image" ? "Télécharger l'image" : "Télécharger le carrousel (PDF)";
+      $("visuels-aide").textContent = formatVisuel === "image" ? "Une image au format portrait (1080 × 1350), aux couleurs du cabinet." : "Un document PDF à publier sur LinkedIn (« Ajouter un document ») : il s'affiche en pages que l'on fait défiler.";
+      $("signature-resume").textContent = [signature.nom, signature.cabinet].filter(Boolean).join(" · ") || "à compléter";
+      const sig = { nom: signature.nom || etat.moi?.nom || "", cabinet: signature.cabinet };
+      const donnees = { ...v, source: etat.post?.lien?.nom || "" };
+      try {
+        derniersVisuels = formatVisuel === "image" ? [await dessinerVisuel(donnees, sig)] : await dessinerCarrousel(donnees, sig);
+        zone.innerHTML = formatVisuel === "image" ? `<img alt="Aperçu de l'image du post" src="${derniersVisuels[0].toDataURL("image/png")}">`
+          : `<div class="carrousel">${derniersVisuels.map((c, i) => `<img alt="Page ${i + 1}" src="${c.toDataURL("image/jpeg", 0.85)}">`).join("")}</div>`;
+      } catch (e) { zone.innerHTML = `<p class="message ko">Image impossible à créer : ${echapper(e.message)}</p>`; }
+      $("btn-partager-img").hidden = !(navigator.canShare && navigator.canShare({ files: [new File([""], "x.png", { type: "image/png" })] }));
+    }
+    function remplirTextesVisuel() {
+      const v = etat.visuel; if (!v) return;
+      $("v-titre").value = v.titre || ""; $("v-points").value = (v.points || []).join("\n"); $("v-conclusion").value = v.conclusion || "";
+    }
+    async function fichierVisuel() {
+      if (formatVisuel === "image") return new File([await versBlob(derniersVisuels[0])], "post-linkedin.png", { type: "image/png" });
+      return new File([await carrouselPdf(derniersVisuels)], "carrousel-linkedin.pdf", { type: "application/pdf" });
+    }
+
     function afficherResultat() {
       const p = etat.post;
       $("p3-contenu").hidden = false;
+      remplirTextesVisuel(); afficherVisuel();
       const avecPerso = !!p;
       $("perso").querySelectorAll("#bloc-accroches, #bloc-ctas, #bloc-tags, #btn-autre").forEach((e) => e.hidden = !avecPerso);
       if (avecPerso) {
@@ -489,6 +559,22 @@
       };
       $("btn-nouveau").onclick = () => { effacerEnCours(); Object.assign(etat, { choix: null, post: null, texte: "", modifie: false }); $("zone-edition").hidden = true; allerA(1); };
       $("btn-brouillons").onclick = () => { const p = $("panneau-brouillons"); p.hidden = !p.hidden; };
+      // Visuels : format, textes, signature, téléchargement et partage.
+      appelApi("/api/linkedin/signature").then((s) => { signature = s; $("sig-nom").value = s.nom || ""; $("sig-cabinet").value = s.cabinet || ""; if (etat.visuel) afficherVisuel(); }).catch(() => {});
+      document.querySelectorAll("[data-format]").forEach((b) => b.onclick = () => { formatVisuel = b.dataset.format; afficherVisuel(); });
+      const majTextes = () => {
+        if (!etat.visuel) return;
+        etat.visuel.titre = $("v-titre").value.trim(); etat.visuel.conclusion = $("v-conclusion").value.trim();
+        etat.visuel.points = $("v-points").value.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 4);
+        clearTimeout(minuteur); minuteur = setTimeout(() => { sauver(); afficherVisuel(); }, 400);
+      };
+      ["v-titre", "v-points", "v-conclusion"].forEach((id) => $(id).oninput = majTextes);
+      $("btn-signature").onclick = async () => {
+        try { signature = await appelApi("/api/linkedin/signature", "POST", { nom: $("sig-nom").value, cabinet: $("sig-cabinet").value }); notifier("Signature enregistrée."); $("bloc-signature").open = false; afficherVisuel(); }
+        catch (e) { notifier(e.message, true); }
+      };
+      $("btn-png").onclick = async () => { const f = await fichierVisuel(); telechargerBlob(f, f.name); };
+      $("btn-partager-img").onclick = async () => { const f = await fichierVisuel(); try { await navigator.share({ files: [f], text: etat.texte }); } catch {} };
       const enCours = lireEnCours();   // lu avant le premier enregistrement automatique
       afficherBrouillons();
       allerA(1);
