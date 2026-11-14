@@ -70,7 +70,7 @@
     chargerEntete("/compte").then((moi) => {
       const nom = moi.nom || moi.email;
       document.getElementById("nom").textContent = nom;
-      document.getElementById("email").textContent = moi.email + (moi.role === "admin" ? " · administrateur" : "");
+      document.getElementById("email").innerHTML = `Identifiant de connexion : <strong>${echapper(moi.identifiant || "—")}</strong><br>${echapper(moi.email)}${moi.role === "admin" ? " · administrateur" : ""}`;
       document.getElementById("avatar").textContent = nom.split(/[\s@.]+/).filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
     });
     // Notifications

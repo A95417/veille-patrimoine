@@ -20,8 +20,9 @@
     <form class="carte carte-etroite" id="formulaire">
       <h1>Veille Patrimoine</h1>
       <p class="doux">Accès réservé. Connectez-vous avec le compte créé par votre administrateur.</p>
-      <label for="email">E-mail</label>
-      <input id="email" type="email" autocomplete="username" required>
+      <label for="identifiant">Identifiant</label>
+      <input id="identifiant" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex. a.shehram" required>
+      <p class="doux petit" style="margin:-4px 0 10px">Initiale du nom + « . » + prénom. L'adresse e-mail fonctionne aussi.</p>
       <label for="mdp">Mot de passe</label>
       <input id="mdp" type="password" autocomplete="current-password" required>
       <button class="bouton bouton-large" id="bouton" type="submit">Se connecter</button>
@@ -37,7 +38,7 @@
       afficherMessage(message, "");
       try {
         await appelApi("/api/connexion", "POST", {
-          email: document.getElementById("email").value,
+          identifiant: document.getElementById("identifiant").value,
           mot_de_passe: document.getElementById("mdp").value,
         });
         location.href = "/";

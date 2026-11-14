@@ -10,6 +10,7 @@ import { routeRobot } from "./robot.js";
 import { routeLecture, avecArticles, COLONNES } from "./lecture.js";
 import { routeLinkedin } from "./linkedin.js";
 import { routeNotifications } from "./notifications.js";
+import { normaliser, identifiantValide, decouperNom, proposerIdentifiant, identifiantLibre, assurerIdentifiants } from "./identifiants.js";
 
 // Pages et fichiers visibles sans être connecté.
 const PAGES_PUBLIQUES = new Set(["/connexion", "/installation", "/style.css", "/commun.js", "/favicon.ico",
@@ -75,9 +76,11 @@ async function api(request, env, url) {
     if (!String(d.nom || "").trim()) return erreur("Indiquez votre nom.");
     if (String(d.mot_de_passe || "").length < LONGUEUR_MIN_MDP)
       return erreur(`Le mot de passe doit faire au moins ${LONGUEUR_MIN_MDP} caractères.`);
+    const { prenom, nom } = decouperNom(d.nom);
     const r = await db
-      .prepare("INSERT INTO utilisateurs (email, nom, hash, role, cree_le, derniere_connexion) VALUES (?, ?, ?, 'admin', ?, ?)")
-      .bind(email, String(d.nom).trim(), await hacherMotDePasse(d.mot_de_passe), new Date().toISOString(), new Date().toISOString())
+      .prepare("INSERT INTO utilisateurs (email, nom, hash, role, cree_le, derniere_connexion, identifiant) VALUES (?, ?, ?, 'admin', ?, ?, ?)")
+      .bind(email, String(d.nom).trim(), await hacherMotDePasse(d.mot_de_passe), new Date().toISOString(), new Date().toISOString(),
+        proposerIdentifiant(prenom, nom) || normaliser(email.split("@")[0]))
       .run();
     const { jeton, dureeMs } = await creerSession(db, r.meta.last_row_id);
     return json({ ok: true }, 200, { "Set-Cookie": cookieSession(jeton, dureeMs) });
@@ -85,17 +88,21 @@ async function api(request, env, url) {
 
   if (chemin === "/api/connexion" && methode === "POST") {
     const d = await lireJson(request);
-    const email = normaliserEmail(d.email);
-    if (!email || !d.mot_de_passe) return erreur("Indiquez votre e-mail et votre mot de passe.");
-    if (await tropDeTentatives(db, email))
+    // Identifiant (« a.shehram ») ou, en secours, l'adresse e-mail.
+    const saisie = String(d.identifiant ?? d.email ?? "").trim();
+    if (!saisie || !d.mot_de_passe) return erreur("Indiquez votre identifiant et votre mot de passe.");
+    const parEmail = saisie.includes("@");
+    const cle = parEmail ? normaliserEmail(saisie) : normaliser(saisie);   // clé du compteur d'essais ratés
+    if (await tropDeTentatives(db, cle))
       return erreur("Trop d'essais ratés. Réessayez dans 15 minutes.", 429);
-    const u = await db.prepare("SELECT id, hash, actif FROM utilisateurs WHERE email = ?").bind(email).first();
+    if (!parEmail) await assurerIdentifiants(db);
+    const u = await db.prepare(`SELECT id, hash, actif FROM utilisateurs WHERE ${parEmail ? "email" : "identifiant"} = ?`).bind(cle).first();
     const bon = u ? await verifierMotDePasse(d.mot_de_passe, u.hash) : false;
     if (!u || !bon || !u.actif) {
-      await noterTentative(db, email);
-      return erreur("E-mail ou mot de passe incorrect.", 401);
+      await noterTentative(db, cle);
+      return erreur("Identifiant ou mot de passe incorrect.", 401);
     }
-    await effacerTentatives(db, email);
+    await effacerTentatives(db, cle);
     await db.prepare("UPDATE utilisateurs SET derniere_connexion = ? WHERE id = ?")
       .bind(new Date().toISOString(), u.id).run();
     const { jeton, dureeMs } = await creerSession(db, u.id);
@@ -224,9 +231,16 @@ async function api(request, env, url) {
       return json({ collecte, totaux, declencheur });
     }
 
+    if (chemin === "/api/admin/identifiant" && methode === "POST") {   // proposition d'identifiant pendant la saisie
+      const d = await lireJson(request);
+      const base = proposerIdentifiant(d.prenom, d.nom);
+      return json({ identifiant: base ? await identifiantLibre(db, base) : "" });
+    }
+
     if (chemin === "/api/admin/utilisateurs" && methode === "GET") {
+      await assurerIdentifiants(db);
       const { results } = await db
-        .prepare("SELECT id, email, nom, role, actif, cree_le, derniere_connexion FROM utilisateurs ORDER BY id")
+        .prepare("SELECT id, email, nom, identifiant, role, actif, cree_le, derniere_connexion FROM utilisateurs ORDER BY id")
         .all();
       return json(results);
     }
@@ -235,16 +249,37 @@ async function api(request, env, url) {
       const d = await lireJson(request);
       const email = normaliserEmail(d.email);
       if (!emailValide(email)) return erreur("Adresse e-mail invalide.");
+      if (d.prenom !== undefined) {   // nouveau formulaire : prénom et nom séparés
+        if (!String(d.prenom || "").trim() || !String(d.nom_famille || "").trim()) return erreur("Indiquez le prénom et le nom du collègue.");
+        d.nom = `${String(d.prenom).trim()} ${String(d.nom_famille).trim().toUpperCase()}`;
+      }
       if (!String(d.nom || "").trim()) return erreur("Indiquez le nom du collègue.");
+      let identifiant = normaliser(d.identifiant);
+      if (identifiant) {
+        if (!identifiantValide(identifiant)) return erreur("Identifiant invalide : lettres minuscules, chiffres, points et tirets uniquement.");
+        if (await db.prepare("SELECT id FROM utilisateurs WHERE identifiant = ?").bind(identifiant).first()) return erreur(`L'identifiant « ${identifiant} » est déjà pris.`);
+      } else {
+        const { prenom, nom } = d.prenom !== undefined ? { prenom: d.prenom, nom: d.nom_famille } : decouperNom(d.nom);
+        identifiant = await identifiantLibre(db, proposerIdentifiant(prenom, nom) || normaliser(email.split("@")[0]));
+      }
       if (String(d.mot_de_passe || "").length < LONGUEUR_MIN_MDP)
         return erreur(`Le mot de passe provisoire doit faire au moins ${LONGUEUR_MIN_MDP} caractères.`);
       const existe = await db.prepare("SELECT id FROM utilisateurs WHERE email = ?").bind(email).first();
       if (existe) return erreur("Un compte existe déjà avec cette adresse.");
       await db
-        .prepare("INSERT INTO utilisateurs (email, nom, hash, role, cree_le) VALUES (?, ?, ?, 'collegue', ?)")
-        .bind(email, String(d.nom).trim(), await hacherMotDePasse(d.mot_de_passe), new Date().toISOString())
+        .prepare("INSERT INTO utilisateurs (email, nom, hash, role, cree_le, identifiant) VALUES (?, ?, ?, 'collegue', ?, ?)")
+        .bind(email, String(d.nom).trim(), await hacherMotDePasse(d.mot_de_passe), new Date().toISOString(), identifiant)
         .run();
-      return json({ ok: true });
+      return json({ ok: true, identifiant });
+    }
+
+    const mi = chemin.match(/^\/api\/admin\/utilisateurs\/(\d+)\/identifiant$/);
+    if (mi && methode === "POST") {
+      const d = await lireJson(request), identifiant = normaliser(d.identifiant);
+      if (!identifiantValide(identifiant)) return erreur("Identifiant invalide : lettres minuscules, chiffres, points et tirets uniquement.");
+      if (await db.prepare("SELECT id FROM utilisateurs WHERE identifiant = ? AND id != ?").bind(identifiant, Number(mi[1])).first()) return erreur(`L'identifiant « ${identifiant} » est déjà pris.`);
+      await db.prepare("UPDATE utilisateurs SET identifiant = ? WHERE id = ?").bind(identifiant, Number(mi[1])).run();
+      return json({ ok: true, identifiant });
     }
 
     const m = chemin.match(/^\/api\/admin\/utilisateurs\/(\d+)\/(activer|desactiver|reinitialiser)$/);

@@ -78,14 +78,14 @@ export async function utilisateurConnecte(request, db) {
   if (!jeton || !/^[0-9a-f]{64}$/.test(jeton)) return null;
   const ligne = await db
     .prepare(
-      `SELECT u.id, u.email, u.nom, u.role, u.actif, s.expire_le
+      `SELECT u.id, u.email, u.nom, u.identifiant, u.role, u.actif, s.expire_le
          FROM sessions s JOIN utilisateurs u ON u.id = s.utilisateur_id
         WHERE s.id_hash = ?`
     )
     .bind(await empreinteJeton(jeton))
     .first();
   if (!ligne || !ligne.actif || ligne.expire_le < Date.now()) return null;
-  return { id: ligne.id, email: ligne.email, nom: ligne.nom, role: ligne.role };
+  return { id: ligne.id, email: ligne.email, nom: ligne.nom, identifiant: ligne.identifiant, role: ligne.role };
 }
 
 export async function supprimerSession(request, db) {

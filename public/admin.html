@@ -30,21 +30,23 @@
       <h2>Ajouter un collègue</h2>
       <form id="form-ajout">
         <div class="grille-form">
-          <div><label for="nom">Nom</label><input id="nom" required></div>
+          <div><label for="prenom">Prénom</label><input id="prenom" required autocomplete="off"></div>
+          <div><label for="nom">Nom de famille</label><input id="nom" required autocomplete="off"></div>
+          <div><label for="identifiant">Identifiant de connexion</label><input id="identifiant" required autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="proposé automatiquement"></div>
           <div><label for="email">E-mail</label><input id="email" type="email" required></div>
           <div><label for="mdp">Mot de passe provisoire</label><input id="mdp" type="text" minlength="10" required autocomplete="off"></div>
         </div>
         <button class="bouton" type="submit" style="margin-top:16px">Créer le compte</button>
         <div class="message" id="msg-ajout" role="alert"></div>
-        <p class="doux" style="font-size:.9rem">Transmettez ce mot de passe provisoire au collègue de vive voix ou par SMS, et demandez-lui de le changer dès sa première connexion (page d'accueil).</p>
+        <p class="doux" style="font-size:.9rem">Transmettez l'identifiant et le mot de passe provisoire au collègue de vive voix ou par SMS, et demandez-lui de changer le mot de passe dès sa première connexion (Mon compte).</p>
       </form>
     </section>
 
     <section class="carte">
       <h2>Comptes</h2>
       <table class="tableau">
-        <thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>État</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
-        <tbody id="liste"><tr><td colspan="6" class="doux">Chargement…</td></tr></tbody>
+        <thead><tr><th>Nom</th><th>Identifiant</th><th>E-mail</th><th>Rôle</th><th>État</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+        <tbody id="liste"><tr><td colspan="7" class="doux">Chargement…</td></tr></tbody>
       </table>
       <div class="message" id="msg-liste" role="alert"></div>
     </section>
@@ -59,6 +61,7 @@
       document.getElementById("liste").innerHTML = comptes.map((c) => `
         <tr>
           <td data-libelle="Nom"><strong>${echapper(c.nom)}</strong></td>
+          <td data-libelle="Identifiant"><code>${echapper(c.identifiant || "—")}</code> <button class="bouton bouton-discret" style="font-size:.78rem;padding:4px 8px" onclick="changerIdentifiant(${c.id})">Modifier</button></td>
           <td data-libelle="E-mail">${echapper(c.email)}</td>
           <td data-libelle="Rôle">${c.role === "admin" ? "Administrateur" : "Collègue"}</td>
           <td data-libelle="État"><span class="pastille ${c.actif ? "ok" : "ko"}">${c.actif ? "Actif" : "Désactivé"}</span></td>
@@ -81,6 +84,31 @@
       } catch (err) { afficherMessage(msg, err.message, "ko"); }
     }
 
+    async function changerIdentifiant(id) {
+      const c = comptes.find((x) => x.id === id) || {};
+      const nouvel = prompt(`Identifiant de connexion pour ${c.nom} (ex. a.shehram) :`, c.identifiant || "");
+      if (!nouvel || nouvel === c.identifiant) return;
+      const msg = document.getElementById("msg-liste");
+      try {
+        const r = await appelApi(`/api/admin/utilisateurs/${id}/identifiant`, "POST", { identifiant: nouvel });
+        afficherMessage(msg, `Identifiant enregistré : ${r.identifiant}.`, "ok");
+        chargerListe();
+      } catch (err) { afficherMessage(msg, err.message, "ko"); }
+    }
+
+    // Proposition automatique de l'identifiant pendant la saisie du prénom et du nom (tant qu'il n'a pas été modifié à la main).
+    let identifiantManuel = false, minuteurId = null;
+    document.getElementById("identifiant").addEventListener("input", () => { identifiantManuel = true; });
+    ["prenom", "nom"].forEach((id) => document.getElementById(id).addEventListener("input", () => {
+      if (identifiantManuel) return;
+      clearTimeout(minuteurId);
+      minuteurId = setTimeout(async () => {
+        const prenom = document.getElementById("prenom").value, nom = document.getElementById("nom").value;
+        if (!prenom.trim() || !nom.trim()) return;
+        try { document.getElementById("identifiant").value = (await appelApi("/api/admin/identifiant", "POST", { prenom, nom })).identifiant; } catch {}
+      }, 300);
+    }));
+
     async function reinitialiser(id) {
       const nom = (comptes.find((c) => c.id === id) || {}).nom || "ce compte";
       const mdp = prompt(`Nouveau mot de passe provisoire pour ${nom} (10 caractères minimum) :`);
@@ -96,13 +124,15 @@
       e.preventDefault();
       const msg = document.getElementById("msg-ajout");
       try {
-        await appelApi("/api/admin/utilisateurs", "POST", {
-          nom: document.getElementById("nom").value,
+        const r = await appelApi("/api/admin/utilisateurs", "POST", {
+          prenom: document.getElementById("prenom").value,
+          nom_famille: document.getElementById("nom").value,
+          identifiant: document.getElementById("identifiant").value,
           email: document.getElementById("email").value,
           mot_de_passe: document.getElementById("mdp").value,
         });
-        e.target.reset();
-        afficherMessage(msg, "Compte créé.", "ok");
+        e.target.reset(); identifiantManuel = false;
+        afficherMessage(msg, `Compte créé. Identifiant de connexion : ${r.identifiant}.`, "ok");
         chargerListe();
       } catch (err) { afficherMessage(msg, err.message, "ko"); }
     });
