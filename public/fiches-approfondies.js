@@ -1,4 +1,4 @@
-// version 1.2 — Contenu approfondi des fiches « Apprendre ».
+// version 1.3 — Contenu approfondi des fiches « Apprendre ».
 // Chaque règle renvoie à sa source officielle (s: [nom, url]). Rien n'est ajouté sans source.
 // Lot 1 : donations, succession, démembrement, régimes matrimoniaux (vérifié le 14 novembre 2026).
 
@@ -431,6 +431,7 @@ Object.assign(SRC, {
   scpiAmf: ["AMF · Investir dans une SCPI", "https://www.amf-france.org/sites/institutionnel/files/private/2023-12/2023_investir_dans_une_scpi.pdf"],
   scpiRetrait: ["AMF · SCPI : retrait ou ordre de vente", "https://www.amf-france.org/en/news-publications/news/scpis-unlike-orders-sell-units-redemption-requests-do-note-have-validity-period-and-do-not-have-be"],
   scpiDelai: ["AMF · Médiateur : délai de retrait", "https://www.amf-france.org/en/amf-ombudsman/ombudsman-online-diary/latest/scpi-redemption-request-even-if-order-may-be-executed-within-indefinite-period-time"],
+  avAcompte: ["BOFiP · Acompte sur les gains d'assurance-vie", "https://bofip.impots.gouv.fr/bofip/3742-PGP.html/identifiant=BOI-RPPM-RCM-30-20-30-20191220"],
   psNote: ["AMF · Note sur les produits structurés", "https://www.amf-france.org/sites/institutionnel/files/private/2026-06/note_explicative_-_produits_structures.pdf"],
   psEtude: ["AMF-ACPR · Étude produits structurés (juin 2026)", "https://www.amf-france.org/sites/institutionnel/files/private/2026-06/Etude-du-pole-commun-amf-acpr-sur-la-distribution-les-frais-et-les-performances-des-produits-structures-juin_0.pdf"],
 });
@@ -457,7 +458,7 @@ Object.assign(APPROFONDI, {
       {
         titre: "Le prélèvement à la source, puis la déclaration", icone: "🧾",
         points: [
-          { t: "Au retrait, l'assureur prélève un acompte sur les gains : 12,8 % avant 8 ans, 7,5 % après 8 ans. Le calcul définitif se fait dans la déclaration de revenus, et le trop-perçu est remboursé.", s: SRC.avRachat },
+          { t: "Au retrait, l'assureur prélève un acompte sur les gains : 12,8 % avant 8 ans, 7,5 % après 8 ans. L'abattement n'est pas déduit à ce stade ; le calcul définitif se fait dans la déclaration de revenus, et le trop-perçu est remboursé.", s: SRC.avAcompte },
           { t: "Après 8 ans, l'abattement de 4 600 € (9 200 € pour un couple) vaut pour l'ensemble des contrats d'une même personne.", s: SRC.avRachat },
           { t: "Le taux de 7,5 % dépend du total des versements non remboursés sur tous les contrats, comparé à 150 000 € ; la fraction qui dépasse est imposée à 12,8 %.", s: SRC.avRachat },
           { t: "Dispense de l'acompte si le revenu fiscal de référence de l'avant-dernière année est inférieur à 25 000 € (50 000 € pour un couple) : demande à faire avant le 30 novembre de l'année précédente.", s: SRC.avRachat },
@@ -467,7 +468,7 @@ Object.assign(APPROFONDI, {
       {
         titre: "Au décès : les règles à connaître", icone: "📜",
         points: [
-          { t: "Les versements faits jusqu'au 12 octobre 1998 inclus sont exonérés.", s: SRC.avDeces },
+          { t: "Versements faits jusqu'au 12 octobre 1998 inclus : exonérés sur les contrats souscrits avant le 20 novembre 1991 ; pour les contrats souscrits ensuite, seulement s'ils ont été faits avant 70 ans.", s: SRC.avDeces },
           { t: "Exonérés : conjoint, partenaire de PACS, et frère ou sœur célibataire, veuf, divorcé ou séparé, de plus de 50 ans (ou invalide), ayant vécu 5 ans avec le défunt.", s: SRC.avDeces },
           { t: "Le capital revient dans la succession si aucun bénéficiaire n'est désigné.", s: SRC.avDeces },
           { t: "Versements après 70 ans : le bénéficiaire dépose le formulaire 2705-A dans les 6 mois, un par assureur. L'assureur ne paie qu'au vu de ce formulaire traité.", s: SRC.avDeces },
@@ -494,14 +495,14 @@ Object.assign(APPROFONDI, {
       },
     ],
     vraiFaux: [
-      { texte: "Sur un retrait, l'assureur prélève un acompte même si les gains seront couverts par l'abattement.", vrai: true, explication: "L'acompte est régularisé dans la déclaration de revenus, et le trop-perçu est remboursé (Service-public)." },
+      { texte: "Sur un retrait, l'assureur prélève un acompte même si les gains seront couverts par l'abattement.", vrai: true, explication: "L'abattement ne s'applique pas au calcul de l'acompte (BOFiP) ; l'excédent est remboursé après la déclaration de revenus." },
       { texte: "En 2026, les gains d'assurance-vie supportent 18,6 % de prélèvements sociaux.", vrai: false, explication: "L'assurance-vie reste à 17,2 % (Service-public)." },
       { texte: "Sans bénéficiaire désigné, le capital revient dans la succession.", vrai: true, explication: "Il est alors taxé selon les règles des successions." },
     ],
     quiz: [
       { question: "Contrat de 50 000 €, dont 40 000 € versés. Retrait de 5 000 €. Gains contenus ?", choix: ["500 €", "1 000 €", "4 000 €", "5 000 €"], bonne: 1, explication: "5 000 − 40 000 × 5 000 ÷ 50 000 = 5 000 − 4 000 = 1 000 €." },
       { question: "Quel formulaire pour des versements faits après 70 ans ?", choix: ["2735", "2705-A", "2042", "2074"], bonne: 1, explication: "Le 2705-A, à déposer dans les 6 mois, un par assureur." },
-      { question: "Les versements faits jusqu'à quelle date sont exonérés au décès ?", choix: ["31 décembre 1991", "12 octobre 1998", "27 septembre 2017", "1er janvier 2026"], bonne: 1, explication: "Jusqu'au 12 octobre 1998 inclus." },
+      { question: "Les versements faits jusqu'à quelle date sont exonérés au décès ?", choix: ["31 décembre 1991", "12 octobre 1998", "27 septembre 2017", "1er janvier 2026"], bonne: 1, explication: "Jusqu'au 12 octobre 1998 inclus, avec une condition d'âge (avant 70 ans) pour les contrats souscrits depuis le 20 novembre 1991." },
     ],
     cartes: [
       { recto: "Gains d'un retrait", verso: "Retrait − versements × (retrait ÷ valeur du contrat)." },
@@ -614,7 +615,7 @@ Object.assign(APPROFONDI, {
       {
         titre: "Ce qu'on peut y mettre", icone: "🧺",
         points: [
-          { t: "Actions de sociétés de l'Union européenne (hors actions de préférence), parts de SARL, et fonds investis à plus de 75 % en titres éligibles.", s: SRC.pea },
+          { t: "Actions de sociétés de l'Union européenne ou de l'Espace économique européen (hors actions de préférence), parts de SARL, et fonds investis à au moins 75 % en titres éligibles.", s: SRC.pea },
           { t: "Interdit de détenir, avec sa famille, plus de 25 % des droits d'une société via le PEA.", s: SRC.pea },
           { t: "Titres non cotés : l'exonération de leurs revenus est limitée à 10 % du montant investi ; au-delà, ils sont imposés chaque année.", s: SRC.peaBofip },
         ],
@@ -624,7 +625,7 @@ Object.assign(APPROFONDI, {
         points: [
           { t: "En principe, tout retrait avant 5 ans clôture le plan.", s: SRC.pea },
           { t: "Exceptions : licenciement, invalidité, mise à la retraite anticipée (du titulaire ou de son conjoint), titres d'une société en liquidation, ou création / reprise d'entreprise avec réinvestissement sous 3 mois.", s: SRC.pea },
-          { t: "Après un tel retrait, plus aucun versement n'est possible.", s: SRC.pea },
+          { t: "Après un retrait pour créer ou reprendre une entreprise, plus aucun versement n'est possible. Après un licenciement, une invalidité, une retraite anticipée ou une liquidation, les versements restent possibles dans la limite du plafond.", s: SRC.peaRetraits },
           { t: "Fiscalité : création ou reprise d'entreprise, gains exonérés d'impôt ; licenciement, invalidité, retraite anticipée ou liquidation, gains imposés. Les prélèvements sociaux sont dus dans tous les cas.", s: SRC.peaRetraits },
         ],
       },
@@ -649,8 +650,8 @@ Object.assign(APPROFONDI, {
         titre: "Licencié à 3 ans", niveau: "Piège",
         enonce: "Ludovic est licencié. Son PEA a 3 ans. Il retire 10 000 €.",
         question: "Son PEA est-il clôturé ? Ses gains sont-ils exonérés ?",
-        etapes: ["Le licenciement est une exception : le plan reste ouvert.", "Mais il ne pourra plus faire de versements.", "Les gains de ce retrait sont imposés, plus les prélèvements sociaux."],
-        reponse: "Plan maintenu, mais versements bloqués et gains imposés. Seule la création ou reprise d'entreprise exonère d'impôt avant 5 ans.",
+        etapes: ["Le licenciement est une exception : le plan reste ouvert.", "Il peut continuer à verser, dans la limite du plafond.", "Les gains de ce retrait sont imposés, plus les prélèvements sociaux."],
+        reponse: "Plan maintenu, versements toujours possibles, mais gains imposés (plus les prélèvements sociaux). Seule la création ou reprise d'entreprise exonère d'impôt avant 5 ans.",
         s: SRC.peaRetraits,
       },
       {
@@ -776,7 +777,7 @@ Object.assign(APPROFONDI, {
           { t: "La très grande majorité des produits sont des autocalls.", s: SRC.psEtude },
           { t: "Fin 2024 : 74 % offrent une protection du capital, dont 14 % totale et inconditionnelle ; 26 % n'en offrent aucune.", s: SRC.psEtude },
           { t: "Sur 2022-2024, durée moyenne avant rappel : environ 2 ans, pour une échéance théorique de 8 à 12 ans (marchés haussiers).", s: SRC.psEtude },
-          { t: "Coût d'entrée total moyen : 5,83 % (de 1,20 % à 13,16 %), dont 3,95 % en moyenne pour un CIF-CGP.", s: SRC.psEtude },
+          { t: "Coût d'entrée total moyen : 5,83 % (de 1,20 % à 13,16 %), dont, en moyenne, 3,95 % perçus par le distributeur final lorsqu'il s'agit d'un CIF-CGP (données déclaratives).", s: SRC.psEtude },
           { t: "Sur 2022-2024, retard de 2,4 points par rapport à des fonds indiciels sur les mêmes sous-jacents (échantillon de 65 produits).", s: SRC.psEtude },
         ],
       },
@@ -784,7 +785,7 @@ Object.assign(APPROFONDI, {
         titre: "Ce que l'AMF attend du conseiller", icone: "✅",
         points: [
           { t: "Définir son propre marché cible au lieu de recopier celui du producteur.", s: SRC.psEtude },
-          { t: "Tester les connaissances du client par de vraies questions techniques, pas par une auto-évaluation.", s: SRC.psEtude },
+          { t: "Évaluer les connaissances et l'expérience du client avec un questionnaire qui ne repose pas sur sa seule auto-évaluation.", s: SRC.psEtude },
           { t: "Annoncer les coûts avant la souscription, en montant total : seuls 13 % des prestataires contrôlés le faisaient correctement.", s: SRC.psEtude },
         ],
       },
