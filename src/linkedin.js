@@ -280,7 +280,7 @@ export async function routeLinkedin(request, env, chemin, moi) {
     } else return erreur("Choisissez une actualité, une fiche ou un thème.");
 
     const demande = `${source}\n\nAPPROCHE : ${APPROCHES[approche]}\nTON : ${TONS[ton]}\nLONGUEUR : ${LONGUEURS[longueur]}${consigne ? `\nPRÉCISION DU CONSEILLER : ${consigne}` : ""}`;
-    const r = await generer(env, db, CONSIGNES_POST, demande, SCHEMA_POST, "fort");
+    const r = await generer(env, db, CONSIGNES_POST, demande, SCHEMA_POST, "lite");   // Flash-Lite : réponse en quelques secondes ; Flash en relais
     if (!r.donnees) return erreur(r.erreur || "Rédaction impossible pour le moment.", 503);
     compteur.n++;
     await ecrireEtat(db, cleJour, compteur);
