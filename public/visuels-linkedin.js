@@ -132,8 +132,24 @@ function conclusion(ctx, v, z, yMin) {
   paragraphe(ctx, v.conclusion, M + 34, y, L - 2 * M - 40, { taille: 38, poids: 500, couleur: CHARTE.blanc, maxLignes: 2, interligne: 1.2 });
 }
 
+// Typographie française : espace fine insécable avant % et € (« 4 % », « 31 865 € »).
+function typo(v) {
+  const t = (x) => typeof x === "string" ? x.replace(/(\d)[ \u00a0\u202f]?(%|€)/g, "$1\u202f$2") : Array.isArray(x) ? x.map(t) : x;
+  return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, t(x)]));
+}
+// Texte alternatif (accessibilité) : décrit fidèlement ce que montre l'image.
+function texteAlternatif(v) {
+  const w = typo(v), parts = [`Visuel « ${w.titre} »`];
+  if (w.modele === "chiffre" && w.chiffre) parts.push(`Chiffre clé : ${w.chiffre}${w.chiffre_legende ? ", " + w.chiffre_legende : ""}`);
+  if ((w.modele === "points" || w.modele === "etapes") && w.points.length) parts.push((w.modele === "etapes" ? "Étapes : " : "Points clés : ") + w.points.map((p, i) => `${i + 1}. ${p}`).join(" ; "));
+  if (w.modele === "comparaison") parts.push(`${w.gauche_titre} : ${w.gauche.join(", ")}. ${w.droite_titre} : ${w.droite.join(", ")}`);
+  if (w.conclusion) parts.push(w.conclusion);
+  return parts.map((p) => p.replace(/[.\s]+$/, "")).join(". ") + ".";
+}
+
 // Une image (le modèle choisi).
 async function dessinerVisuel(v, sig) {
+  v = typo(v);
   await chargerPolices();
   const c = document.createElement("canvas"); c.width = L; c.height = H;
   const ctx = c.getContext("2d"), z = cadre(ctx, v, sig);
@@ -143,6 +159,7 @@ async function dessinerVisuel(v, sig) {
 
 // Carrousel : couverture, une page par idée, page finale.
 async function dessinerCarrousel(v, sig) {
+  v = typo(v);
   await chargerPolices();
   const pages = [];
   const nouvelle = () => { const c = document.createElement("canvas"); c.width = L; c.height = H; pages.push(c); return c.getContext("2d"); };

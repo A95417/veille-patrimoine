@@ -233,19 +233,52 @@ export async function routeLinkedin(request, env, chemin, moi) {
   }
 
   // Signature des visuels (nom du conseiller + cabinet), propre à chaque utilisateur.
+  const lireJson = async () => { try { return await request.json(); } catch { return {}; } };
+  const id = moi?.id ?? "robot";
+
+  // Signature des visuels : nom du conseiller (personnel) + cabinet (commun à l'équipe, réglé par l'administrateur,
+  // ou personnel si le conseiller en saisit un autre).
   if (chemin === "/api/linkedin/signature") {
-    const cle = "signature:" + (moi?.id ?? "robot");
-    if (request.method === "GET") {
-      const s = await lireEtat(db, cle);
-      return json(s?.valeur || { nom: moi?.nom || "", cabinet: "" });
-    }
+    const cle = "signature:" + id;
+    const commun = (await lireEtat(db, "linkedin_cabinet"))?.valeur || "";
     if (request.method === "POST") {
-      let d = {};
-      try { d = await request.json(); } catch {}
+      const d = await lireJson();
       const v = { nom: String(d.nom || "").trim().slice(0, 60), cabinet: String(d.cabinet || "").trim().slice(0, 60) };
+      if (d.pour_tous && moi?.role === "admin") { await ecrireEtat(db, "linkedin_cabinet", v.cabinet); v.cabinet = ""; }
+      else if (v.cabinet === commun) v.cabinet = "";   // identique au cabinet commun : on suit le réglage de l'équipe
       await ecrireEtat(db, cle, v);
-      return json(v);
     }
+    const s = (await lireEtat(db, cle))?.valeur || { nom: moi?.nom || "", cabinet: "" };
+    const communMaj = (await lireEtat(db, "linkedin_cabinet"))?.valeur || "";
+    return json({ nom: s.nom || moi?.nom || "", cabinet: s.cabinet || communMaj, cabinet_commun: communMaj, admin: moi?.role === "admin" });
+  }
+
+  // « Ma voix » : quelques posts du conseiller, pour que l'IA reprenne son style (ton, structure), jamais son contenu.
+  if (chemin === "/api/linkedin/voix") {
+    const cle = "voix:" + id;
+    if (request.method === "POST") {
+      const d = await lireJson();
+      await ecrireEtat(db, cle, { exemples: String(d.exemples || "").slice(0, 4000), actif: d.actif !== false });
+    }
+    return json((await lireEtat(db, cle))?.valeur || { exemples: "", actif: false });
+  }
+
+  // « Mes posts » : historique des posts (brouillons et publiés), propre à chaque conseiller, sur tous ses appareils.
+  if (chemin === "/api/linkedin/posts") {
+    const cle = "posts:" + id;
+    let liste = (await lireEtat(db, cle))?.valeur || [];
+    if (request.method === "POST") {
+      const d = await lireJson();
+      if (d.supprimer) liste = liste.filter((p) => p.id !== d.supprimer);
+      else if (d.id && d.statut && !d.texte) liste = liste.map((p) => (p.id === d.id ? { ...p, statut: d.statut === "publie" ? "publie" : "brouillon", maj_le: new Date().toISOString() } : p));
+      else if (d.texte) {
+        const post = { id: d.id || crypto.randomUUID(), texte: String(d.texte).slice(0, 3000), visuel: d.visuel || null,
+          sujet: String(d.sujet || "").slice(0, 200), sujet_id: d.sujet_id || null, statut: d.statut === "publie" ? "publie" : "brouillon", maj_le: new Date().toISOString() };
+        liste = [post, ...liste.filter((p) => p.id !== post.id)].slice(0, 60);
+      }
+      await ecrireEtat(db, cle, liste);
+    }
+    return json({ posts: liste });
   }
 
   // Rédaction d'un post.
@@ -279,7 +312,9 @@ export async function routeLinkedin(request, env, chemin, moi) {
       source = `THÈME LIBRE (aucun contenu factuel fourni : n'écris aucun chiffre ni aucune règle précise) : ${String(d.theme).slice(0, 300)}`;
     } else return erreur("Choisissez une actualité, une fiche ou un thème.");
 
-    const demande = `${source}\n\nAPPROCHE : ${APPROCHES[approche]}\nTON : ${TONS[ton]}\nLONGUEUR : ${LONGUEURS[longueur]}${consigne ? `\nPRÉCISION DU CONSEILLER : ${consigne}` : ""}`;
+    const voix = d.ma_voix ? (await lireEtat(db, "voix:" + id))?.valeur?.exemples || "" : "";
+    const demande = `${source}\n\nAPPROCHE : ${APPROCHES[approche]}\nTON : ${TONS[ton]}\nLONGUEUR : ${LONGUEURS[longueur]}${consigne ? `\nPRÉCISION DU CONSEILLER : ${consigne}` : ""}` +
+      (voix ? `\n\nEXEMPLES DE POSTS DU CONSEILLER (imite seulement son style : ton, rythme, tournures, longueur des phrases ; n'en reprends ni les faits, ni les chiffres, ni les sujets) :\n${voix}` : "");
     const r = await generer(env, db, CONSIGNES_POST, demande, SCHEMA_POST, "lite");   // Flash-Lite : réponse en quelques secondes ; Flash en relais
     if (!r.donnees) return erreur(r.erreur || "Rédaction impossible pour le moment.", 503);
     compteur.n++;

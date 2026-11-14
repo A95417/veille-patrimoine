@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 3.0 — posts très courts + visuels aux couleurs du cabinet -->
+<!-- version 4.0 — Mes posts, Ma voix, conformité, partage, texte alternatif -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -109,6 +109,18 @@
     .carrousel { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
     .carrousel img { flex: 0 0 82%; width: 82%; scroll-snap-align: start; }
     .visuel-reglages input, .visuel-reglages textarea { width: 100%; box-sizing: border-box; }
+    .apercu-img { display: block; width: calc(100% + 32px); margin: 12px -16px -16px; border-radius: 0 0 14px 14px; }
+    .alt-texte { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--fond); font-size: .85rem; }
+    .alt-texte p { margin: 4px 0 8px; }
+    .conformite { border: 1px solid var(--ko); background: color-mix(in srgb, var(--ko) 8%, transparent); border-radius: 12px; padding: 10px 14px; margin: 12px 0; font-size: .9rem; }
+    .conformite ul { margin: 6px 0 0; padding-left: 20px; }
+    .publie-barre { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; background: var(--accent-doux); margin: 0 0 14px; font-size: .92rem; }
+    .statut { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--fond); color: var(--doux); }
+    .statut.publie { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+    .post-ligne { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--bord); font-size: .9rem; flex-wrap: wrap; }
+    .post-ligne .actions-post { display: flex; gap: 4px; flex-wrap: wrap; }
+    .post-ligne .actions-post .bouton { font-size: .8rem; padding: 6px 10px; }
+    .sous-titre-idees { margin: 22px 0 10px; font-size: .95rem; }
     .reprise { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; border: 1px dashed var(--bord-fort); margin-bottom: 14px; font-size: .92rem; }
   </style>
 </head>
@@ -117,13 +129,16 @@
   <main class="page">
     <div class="li-tete">
       <div><h1>Préparer un post LinkedIn</h1><p>Un sujet, une approche, et l'IA rédige un post court et professionnel. Vous gardez la main.</p></div>
-      <button type="button" class="bouton bouton-discret" id="btn-brouillons">Mes brouillons</button>
+      <button type="button" class="bouton bouton-discret" id="btn-brouillons">Mes posts</button>
     </div>
     <div id="zone-reprise"></div>
     <section class="carte" id="panneau-brouillons" hidden style="margin-bottom:16px">
-      <h2 style="margin:0 0 8px;font-size:1.1rem">Mes brouillons</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <h2 style="margin:0;font-size:1.1rem">Mes posts</h2>
+        <div class="puces" id="filtre-posts"><button type="button" class="puce" data-fp="" aria-pressed="true">Tous</button><button type="button" class="puce" data-fp="brouillon" aria-pressed="false">Brouillons</button><button type="button" class="puce" data-fp="publie" aria-pressed="false">Publiés</button></div>
+      </div>
       <div id="brouillons"></div>
-      <p class="doux petit" style="margin:10px 0 0">Gardés sur cet appareil uniquement.</p>
+      <p class="doux petit" style="margin:10px 0 0">Enregistrés sur votre compte : retrouvez-les sur tous vos appareils.</p>
     </section>
 
     <nav class="etapes" aria-label="Étapes">
@@ -163,6 +178,11 @@
               <button type="button" class="puce" data-longueur="court" aria-pressed="true">Très court · 3 à 5 lignes</button>
               <button type="button" class="puce" data-longueur="moyen" aria-pressed="false">Court · ≈ 700 caractères</button></div></div>
           </div>
+          <details class="precision" id="bloc-voix"><summary>✍️ Écrire dans mon style (Ma voix)</summary>
+            <p class="doux petit" style="margin:8px 0">Collez 2 ou 3 de vos posts LinkedIn. L'IA imitera votre ton et votre rythme, sans reprendre leur contenu.</p>
+            <textarea id="voix-exemples" rows="6" maxlength="4000" style="width:100%;box-sizing:border-box" placeholder="Collez ici vos posts, séparés par une ligne vide"></textarea>
+            <label style="display:flex;gap:8px;align-items:center;margin:8px 0;font-weight:500"><input type="checkbox" id="voix-actif" style="width:auto"> Utiliser mon style pour les prochains posts</label>
+            <button type="button" class="bouton bouton-discret" id="btn-voix">Enregistrer</button></details>
           <details class="precision"><summary>Ajouter une précision pour l'IA (facultatif)</summary>
             <input id="consigne" maxlength="200" style="margin-top:8px" placeholder="Ex. : s'adresser aux chefs d'entreprise">
             <p class="alerte-donnees">N'indiquez jamais de nom ni d'information sur un client.</p></details>
@@ -176,13 +196,15 @@
           <div id="p3-contenu" hidden>
             <h2>Votre post est prêt</h2>
             <p class="doux">Relisez l'aperçu, ajustez si besoin, puis copiez-le dans LinkedIn.</p>
+            <div class="publie-barre" id="publie-barre" hidden><span id="publie-texte">Publié ?</span><button type="button" class="bouton" id="btn-marquer">✓ Oui, marquer comme publié</button></div>
             <div class="apercu" id="apercu"></div>
             <p class="apercu-note">Aperçu approximatif : la partie surlignée est à peu près ce qui s'affiche avant « … voir plus ».</p>
+            <div id="conformite"></div>
             <div class="actions">
-              <button type="button" class="bouton" id="btn-copier-ouvrir">Copier et ouvrir LinkedIn</button>
-              <button type="button" class="bouton bouton-discret" id="btn-copier">Copier</button>
+              <button type="button" class="bouton" id="btn-publier">Publier sur LinkedIn</button>
+              <button type="button" class="bouton bouton-discret" id="btn-copier">Copier le texte</button>
               <button type="button" class="bouton bouton-discret" id="btn-modifier">✏️ Modifier le texte</button>
-              <button type="button" class="bouton bouton-discret" id="btn-brouillon">Garder en brouillon</button>
+              <button type="button" class="bouton bouton-discret" id="btn-brouillon">Enregistrer dans Mes posts</button>
             </div>
             <div id="zone-edition" hidden>
               <label for="post" class="bloc-lib">Texte du post</label>
@@ -210,7 +232,9 @@
                   <details class="precision" id="bloc-signature"><summary>Signature : <span id="signature-resume"></span></summary>
                     <label for="sig-nom" class="bloc-lib" style="margin-top:10px">Nom du conseiller</label><input id="sig-nom" maxlength="60" placeholder="Prénom Nom">
                     <label for="sig-cabinet" class="bloc-lib" style="margin-top:10px">Cabinet</label><input id="sig-cabinet" maxlength="60" placeholder="Nom du cabinet">
+                    <label id="bloc-pour-tous" style="display:none;gap:8px;align-items:center;margin:10px 0 0;font-weight:500"><input type="checkbox" id="sig-pour-tous" style="width:auto"> Utiliser ce cabinet pour toute l'équipe</label>
                     <p style="margin:10px 0 0"><button type="button" class="bouton bouton-discret" id="btn-signature">Enregistrer ma signature</button></p></details>
+                  <div class="alt-texte" id="alt-texte"></div>
                 </div>
               </div>
             </section>
@@ -317,12 +341,21 @@
       const z = $("zone-sujet"), d = etat.donnees;
       document.querySelectorAll("[data-onglet]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.onglet === etat.onglet));
       if (etat.onglet === "idees") {
-        if (!d.idees.length) { z.innerHTML = '<p class="doux">Pas d\'idée pour le moment : choisissez une actualité.</p>'; return; }
-        z.innerHTML = `<div class="idees">${d.idees.map((i, k) => `<div class="idee">
+        // Idées « toujours d'actualité » : 3 fiches Apprendre (contenu vérifié), qui changent chaque jour.
+        const jour = new Date().toLocaleDateString("en-CA"), graine = [...jour].reduce((a, c) => a + c.charCodeAt(0), 0);
+        const fichesJour = [0, 1, 2].map((k) => FICHES[(graine + k * 5) % FICHES.length]);
+        const publies = new Set(MES_POSTS.filter((p) => p.statut === "publie" && p.sujet_id).map((p) => p.sujet_id));
+        z.innerHTML = (d.idees.length ? `<div class="idees">${d.idees.map((i, k) => `<div class="idee">
           <button type="button" class="choix-carte" data-k="${k}">
-            <span class="tag">${i.simple ? "📰 À la une" : `${ICONES[i.approche] || ""} ${NOMS[i.approche] || ""}`}</span><strong>${echapper(i.titre)}</strong>
+            <span class="tag">${i.simple ? "📰 À la une" : `${ICONES[i.approche] || ""} ${NOMS[i.approche] || ""}`}</span>${publies.has(i.sujet_id) ? '<span class="statut publie">✓ Déjà publié</span>' : ""}<strong>${echapper(i.titre)}</strong>
             <span class="petit">${echapper(i.pourquoi)}</span></button>
-          <div class="idee-actions"><button type="button" data-k="${k}">Choisir</button><button type="button" data-direct="${k}">✨ Rédiger directement</button></div></div>`).join("")}</div>`;
+          <div class="idee-actions"><button type="button" data-k="${k}">Choisir</button><button type="button" data-direct="${k}">✨ Rédiger directement</button></div></div>`).join("")}</div>`
+          : '<p class="doux">Pas d\'idée tirée de l\'actualité pour le moment.</p>') +
+          `<h3 class="sous-titre-idees">🎓 Toujours d'actualité : idées pédagogiques</h3><div class="idees">${fichesJour.map((f) => `<div class="idee">
+            <button type="button" class="choix-carte" data-fj="${f.id}"><span class="tag">🎓 Pédagogie</span><strong>${echapper(f.titre)} : l'essentiel en 3 lignes</strong><span class="petit">${echapper(f.sousTitre)}</span></button>
+            <div class="idee-actions"><button type="button" data-fj="${f.id}">Choisir</button><button type="button" data-fjd="${f.id}">✨ Rédiger directement</button></div></div>`).join("")}</div>`;
+        z.querySelectorAll("[data-fj]").forEach((b) => b.onclick = () => { choisirFiche(b.dataset.fj); allerA(2); });
+        z.querySelectorAll("[data-fjd]").forEach((b) => b.onclick = () => { choisirFiche(b.dataset.fjd); rediger(); });
         const prendre = (k) => { const i = d.idees[k]; choisirSujet({ type: "sujet", sujet_id: i.sujet_id, libelle: i.sujet.titre || i.titre }, i.simple ? null : i.approche); };
         z.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => { prendre(Number(b.dataset.k)); allerA(2); });
         z.querySelectorAll("[data-direct]").forEach((b) => b.onclick = () => { prendre(Number(b.dataset.direct)); rediger(); });
@@ -371,7 +404,7 @@
 
     async function rediger() {
       if (!etat.choix) { allerA(1); notifier("Choisissez d'abord un sujet.", true); return; }
-      const corps = { approche: etat.approche, ton: etat.ton, longueur: etat.longueur, consigne: $("consigne").value.trim() };
+      const corps = { approche: etat.approche, ton: etat.ton, longueur: etat.longueur, consigne: $("consigne").value.trim(), ma_voix: $("voix-actif").checked };
       if (etat.choix.type === "sujet") corps.sujet_id = etat.choix.sujet_id;
       else if (etat.choix.type === "fiche") corps.fiche = { titre: etat.choix.fiche.titre, contenu: texteFiche(etat.choix.fiche) };
       else corps.theme = etat.choix.theme;
@@ -380,7 +413,7 @@
       $("p3-attente").hidden = false; $("p3-contenu").hidden = true; $("p3-erreur").hidden = true;
       try {
         const p = await appelApi("/api/linkedin/rediger", "POST", corps);
-        etat.post = p; etat.visuel = p.visuel || null; etat.accroche = 0; etat.cta = 0; etat.tagsOff = []; etat.modifie = false;
+        etat.post = p; etat.visuel = p.visuel || null; etat.postId = null; $("publie-barre").hidden = true; etat.accroche = 0; etat.cta = 0; etat.tagsOff = []; etat.modifie = false;
         etat.texte = construire();
         afficherResultat();
         if (p.restants <= 5) notifier(`Encore ${p.restants} rédaction${p.restants > 1 ? "s" : ""} possible${p.restants > 1 ? "s" : ""} aujourd'hui.`);
@@ -425,13 +458,32 @@
       coupe = Math.min(coupe, cumul > 0 ? cumul - 1 : coupe);
       const debut = t.slice(0, coupe), suite = t.slice(coupe);
       $("apercu").innerHTML = `<div class="apercu-tete"><span class="avatar">${echapper(initiales)}</span><span><strong>${echapper(nom)}</strong><small>Conseiller en gestion de patrimoine · à l'instant</small></span></div>
-        <div class="apercu-texte"><span class="coupure">${echapper(debut)}</span>${suite ? (ouvert ? echapper(suite) : `<button type="button" class="voir-plus" id="voir-plus">… voir plus</button>`) : ""}</div>`;
+        <div class="apercu-texte"><span class="coupure">${echapper(debut)}</span>${suite ? (ouvert ? echapper(suite) : `<button type="button" class="voir-plus" id="voir-plus">… voir plus</button>`) : ""}</div>
+        ${imageApercu ? `<img class="apercu-img" alt="" src="${imageApercu}">` : ""}`;
       const vp = $("voir-plus"); if (vp) vp.onclick = () => afficherApercu(true);
+      afficherConformite();
     }
 
     // ---------------------------------------------------------------- Visuels (image ou carrousel aux couleurs du cabinet)
     const NOMS_MODELES = { chiffre: "Chiffre clé", points: "3 points", etapes: "Étapes", comparaison: "Avant / après", question: "Question" };
-    let signature = { nom: "", cabinet: "" }, formatVisuel = "image", derniersVisuels = [], minuteur = null;
+    let signature = { nom: "", cabinet: "" }, formatVisuel = "image", derniersVisuels = [], minuteur = null, imageApercu = "";
+
+    // Formulations à risque au regard des règles de communication (information claire, exacte et non trompeuse).
+    const RISQUES = [
+      [/\bgaranti(e|s|es)?\b/i, "« garanti » : à n'employer que si la garantie est réelle, et en précisant laquelle et par qui."],
+      [/sans (aucun )?risques?|z[ée]ro risque/i, "« sans risque » : tout placement comporte des risques ; formulation trompeuse."],
+      [/(rendement|gain|performance|plus-value)s? (assur|garanti|certain|s[ûu]r)/i, "Promesse de rendement ou de gain : interdite."],
+      [/placement s[ûu]r|à coup s[ûu]r|100 ?% s[ûu]r/i, "« sûr » : laisse croire à une absence de risque."],
+      [/meilleur placement|placement id[ée]al|imbattable/i, "Superlatif commercial : à éviter."],
+      [/z[ée]ro imp[ôo]t|(plus|aucun) d'imp[ôo]ts?|d[ée]fiscalis\w* (totale|garantie)/i, "Promesse fiscale absolue : à nuancer (plafonds, conditions)."],
+      [/sans (aucuns? )?frais/i, "« sans frais » : à vérifier, des frais existent presque toujours."],
+    ];
+    function afficherConformite() {
+      const v = etat.visuel || {};
+      const texte = [etat.texte, v.titre, v.conclusion, v.chiffre_legende, ...(v.points || []), ...(v.gauche || []), ...(v.droite || [])].filter(Boolean).join("\n");
+      const trouves = RISQUES.filter(([re]) => re.test(texte)).map(([, m]) => m);
+      $("conformite").innerHTML = trouves.length ? `<div class="conformite"><strong>⚠️ Formulations à revoir avant de publier</strong><ul>${trouves.map((m) => `<li>${echapper(m)}</li>`).join("")}</ul></div>` : "";
+    }
     function modelesPossibles(v) {
       return Object.keys(NOMS_MODELES).filter((m) => m === "question" || (m === "chiffre" && v.chiffre) || ((m === "points" || m === "etapes") && v.points.length >= 2) || (m === "comparaison" && v.gauche.length && v.droite.length));
     }
@@ -449,10 +501,15 @@
       const donnees = { ...v, source: etat.post?.lien?.nom || "" };
       try {
         derniersVisuels = formatVisuel === "image" ? [await dessinerVisuel(donnees, sig)] : await dessinerCarrousel(donnees, sig);
+        imageApercu = derniersVisuels[0].toDataURL("image/jpeg", 0.85); afficherApercu();
+        $("alt-texte").innerHTML = `<strong>Texte alternatif</strong> (accessibilité, conseillé par LinkedIn)<p id="alt-contenu">${echapper(texteAlternatif(v))}</p>
+          <button type="button" class="bouton bouton-discret" id="btn-alt" style="font-size:.82rem;padding:6px 10px">Copier le texte alternatif</button>
+          <span class="doux petit"> Dans LinkedIn : sur l'image, « Texte alternatif ».</span>`;
+        $("btn-alt").onclick = () => copier(texteAlternatif(v));
         zone.innerHTML = formatVisuel === "image" ? `<img alt="Aperçu de l'image du post" src="${derniersVisuels[0].toDataURL("image/png")}">`
           : `<div class="carrousel">${derniersVisuels.map((c, i) => `<img alt="Page ${i + 1}" src="${c.toDataURL("image/jpeg", 0.85)}">`).join("")}</div>`;
       } catch (e) { zone.innerHTML = `<p class="message ko">Image impossible à créer : ${echapper(e.message)}</p>`; }
-      $("btn-partager-img").hidden = !(navigator.canShare && navigator.canShare({ files: [new File([""], "x.png", { type: "image/png" })] }));
+      $("btn-partager-img").hidden = !peutPartager();
     }
     function remplirTextesVisuel() {
       const v = etat.visuel; if (!v) return;
@@ -504,24 +561,50 @@
       majTexte();
     }
 
-    // ---------------------------------------------------------------- Brouillons
-    const lireBrouillons = () => { try { return JSON.parse(localStorage.getItem("linkedin_brouillons") || "[]"); } catch { return []; } };
+    // ---------------------------------------------------------------- Mes posts (enregistrés sur le compte)
+    let MES_POSTS = [], filtrePosts = "";
+    const peutPartager = () => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File([""], "x.png", { type: "image/png" })] })); } catch { return false; } };
+    async function chargerPosts() {
+      try {
+        // Reprise unique des anciens brouillons gardés sur cet appareil.
+        let locaux = []; try { locaux = JSON.parse(localStorage.getItem("linkedin_brouillons") || "[]"); } catch {}
+        for (const x of locaux.reverse()) await appelApi("/api/linkedin/posts", "POST", { texte: x.texte, statut: "brouillon" });
+        if (locaux.length) try { localStorage.removeItem("linkedin_brouillons"); } catch {}
+        MES_POSTS = (await appelApi("/api/linkedin/posts")).posts;
+      } catch {}
+      afficherBrouillons();
+      if (etat.donnees && etat.onglet === "idees") afficherOnglet();
+    }
+    async function enregistrerPost(statut) {
+      if (!etat.texte) return null;
+      etat.postId = etat.postId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+      const r = await appelApi("/api/linkedin/posts", "POST", { id: etat.postId, texte: etat.texte, visuel: etat.visuel, statut,
+        sujet: etat.choix?.libelle || "", sujet_id: etat.choix?.sujet_id || null });
+      MES_POSTS = r.posts; afficherBrouillons(); sauver();
+      return r;
+    }
     function afficherBrouillons() {
-      const l = lireBrouillons(), z = $("brouillons");
-      $("btn-brouillons").textContent = `Mes brouillons${l.length ? " (" + l.length + ")" : ""}`;
-      if (!l.length) { z.innerHTML = '<p class="doux petit" style="margin:0">Aucun brouillon pour l\'instant. Après une rédaction, touchez « Garder en brouillon ».</p>'; return; }
-      z.innerHTML = l.map((x, k) => `<div class="brouillon"><span>${echapper(x.texte.split("\n")[0].slice(0, 80))}…<br><span class="doux petit">${new Date(x.le).toLocaleDateString("fr-FR")}</span></span>
-        <span style="display:flex;gap:4px"><button type="button" class="bouton bouton-discret" data-ouvrir="${k}">Ouvrir</button><button type="button" class="bouton bouton-discret" data-suppr="${k}" aria-label="Supprimer ce brouillon">✕</button></span></div>`).join("");
+      const z = $("brouillons"), l = MES_POSTS.filter((p) => !filtrePosts || p.statut === filtrePosts);
+      $("btn-brouillons").textContent = `Mes posts${MES_POSTS.length ? " (" + MES_POSTS.length + ")" : ""}`;
+      if (!l.length) { z.innerHTML = `<p class="doux petit" style="margin:0">${MES_POSTS.length ? "Aucun post dans cette catégorie." : "Aucun post pour l'instant. Après une rédaction, touchez « Enregistrer dans Mes posts »."}</p>`; return; }
+      z.innerHTML = l.map((x) => `<div class="post-ligne"><span style="min-width:0;flex:1 1 260px"><span class="statut ${x.statut}">${x.statut === "publie" ? "Publié" : "Brouillon"}</span>
+          <strong style="display:block;margin-top:4px">${echapper(x.texte.split("\n")[0].slice(0, 90))}</strong><span class="doux petit">${new Date(x.maj_le).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}${x.sujet ? " · " + echapper(x.sujet.slice(0, 60)) : ""}</span></span>
+        <span class="actions-post"><button type="button" class="bouton bouton-discret" data-ouvrir="${x.id}">Ouvrir</button>
+          <button type="button" class="bouton bouton-discret" data-basculer="${x.id}">${x.statut === "publie" ? "Remettre en brouillon" : "✓ Publié"}</button>
+          <button type="button" class="bouton bouton-discret" data-suppr="${x.id}" aria-label="Supprimer ce post">✕</button></span></div>`).join("");
       z.querySelectorAll("[data-ouvrir]").forEach((b) => b.onclick = () => {
-        const x = lireBrouillons()[Number(b.dataset.ouvrir)];
-        etat.post = null; etat.texte = x.texte; etat.modifie = true;
+        const x = MES_POSTS.find((p) => p.id === b.dataset.ouvrir);
+        etat.post = null; etat.texte = x.texte; etat.visuel = x.visuel || null; etat.postId = x.id; etat.modifie = true;
         $("panneau-brouillons").hidden = true; allerA(3); afficherResultat();
         $("zone-edition").hidden = false;
       });
-      z.querySelectorAll("[data-suppr]").forEach((b) => b.onclick = () => {
-        const l2 = lireBrouillons(); l2.splice(Number(b.dataset.suppr), 1);
-        try { localStorage.setItem("linkedin_brouillons", JSON.stringify(l2)); } catch {}
-        afficherBrouillons();
+      z.querySelectorAll("[data-basculer]").forEach((b) => b.onclick = async () => {
+        const x = MES_POSTS.find((p) => p.id === b.dataset.basculer);
+        MES_POSTS = (await appelApi("/api/linkedin/posts", "POST", { id: x.id, statut: x.statut === "publie" ? "brouillon" : "publie" })).posts; afficherBrouillons();
+      });
+      z.querySelectorAll("[data-suppr]").forEach((b) => b.onclick = async () => {
+        if (b.dataset.confirme !== "1") { b.dataset.confirme = "1"; b.textContent = "Supprimer ?"; setTimeout(() => { b.dataset.confirme = ""; b.textContent = "✕"; }, 4000); return; }
+        MES_POSTS = (await appelApi("/api/linkedin/posts", "POST", { supprimer: b.dataset.suppr })).posts; afficherBrouillons();
       });
     }
 
@@ -546,21 +629,38 @@
       $("post").oninput = (e) => { etat.texte = e.target.value; etat.modifie = true; majTexte(true); };
       $("btn-modifier").onclick = () => { const z = $("zone-edition"); z.hidden = !z.hidden; if (!z.hidden) $("post").focus(); };
       $("btn-copier").onclick = () => copier(etat.texte);
-      $("btn-copier-ouvrir").onclick = () => { copier(etat.texte); window.open("https://www.linkedin.com/feed/", "_blank", "noopener"); };   // tout dans le même geste (exigence de Safari)
-      $("btn-brouillon").onclick = () => {
-        const l = lireBrouillons(); l.unshift({ texte: etat.texte, le: new Date().toISOString() });
-        try { localStorage.setItem("linkedin_brouillons", JSON.stringify(l.slice(0, 15))); notifier("Brouillon gardé sur cet appareil."); } catch { notifier("Impossible d'enregistrer sur cet appareil.", true); }
-        afficherBrouillons();
+      // Publier : sur téléphone, le texte est copié et l'image envoyée à l'application LinkedIn (partage) ;
+      // sur ordinateur, le texte est copié, l'image téléchargée et LinkedIn ouvert.
+      $("btn-publier").onclick = async () => {
+        copier(etat.texte);
+        if (peutPartager() && derniersVisuels.length) {
+          try { const f = await fichierVisuel(); await navigator.share({ files: [f], text: etat.texte }); } catch {}
+          $("publie-texte").textContent = "Texte copié : collez-le dans LinkedIn si besoin. Le post est publié ?";
+        } else {
+          window.open("https://www.linkedin.com/feed/", "_blank", "noopener");
+          if (derniersVisuels.length) { const f = await fichierVisuel(); telechargerBlob(f, f.name); }
+          $("publie-texte").textContent = "Texte copié et image téléchargée : dans LinkedIn, « Commencer un post », collez le texte, ajoutez l'image. C'est publié ?";
+        }
+        $("publie-barre").hidden = false;
+      };
+      $("btn-marquer").onclick = async () => { await enregistrerPost("publie"); $("publie-barre").hidden = true; notifier("Ajouté à Mes posts, comme publié."); };
+      $("btn-brouillon").onclick = async () => { try { await enregistrerPost("brouillon"); notifier("Enregistré dans Mes posts."); } catch (e) { notifier(e.message, true); } };
+      document.querySelectorAll("[data-fp]").forEach((b) => b.onclick = () => { filtrePosts = b.dataset.fp; document.querySelectorAll("[data-fp]").forEach((x) => x.setAttribute("aria-pressed", x === b)); afficherBrouillons(); });
+      // Ma voix
+      appelApi("/api/linkedin/voix").then((v) => { $("voix-exemples").value = v.exemples || ""; $("voix-actif").checked = !!(v.actif && v.exemples); }).catch(() => {});
+      $("btn-voix").onclick = async () => {
+        try { const v = await appelApi("/api/linkedin/voix", "POST", { exemples: $("voix-exemples").value, actif: $("voix-actif").checked }); $("voix-actif").checked = !!(v.actif && v.exemples); notifier("Votre style est enregistré."); }
+        catch (e) { notifier(e.message, true); }
       };
       let confirmer = false;
       $("btn-autre").onclick = () => {
         if (etat.modifie && !confirmer) { confirmer = true; $("btn-autre").textContent = "Vos modifications seront remplacées : confirmer ?"; setTimeout(() => { confirmer = false; $("btn-autre").textContent = "↻ Une autre version"; }, 5000); return; }
         confirmer = false; $("btn-autre").textContent = "↻ Une autre version"; rediger();
       };
-      $("btn-nouveau").onclick = () => { effacerEnCours(); Object.assign(etat, { choix: null, post: null, texte: "", modifie: false }); $("zone-edition").hidden = true; allerA(1); };
+      $("btn-nouveau").onclick = () => { effacerEnCours(); Object.assign(etat, { choix: null, post: null, texte: "", modifie: false }); $("zone-edition").hidden = true; if (etat.donnees) afficherOnglet(); allerA(1); };
       $("btn-brouillons").onclick = () => { const p = $("panneau-brouillons"); p.hidden = !p.hidden; };
       // Visuels : format, textes, signature, téléchargement et partage.
-      appelApi("/api/linkedin/signature").then((s) => { signature = s; $("sig-nom").value = s.nom || ""; $("sig-cabinet").value = s.cabinet || ""; if (etat.visuel) afficherVisuel(); }).catch(() => {});
+      appelApi("/api/linkedin/signature").then((s) => { signature = s; $("sig-nom").value = s.nom || ""; $("sig-cabinet").value = s.cabinet || ""; $("bloc-pour-tous").style.display = s.admin ? "flex" : "none"; if (etat.visuel) afficherVisuel(); }).catch(() => {});
       document.querySelectorAll("[data-format]").forEach((b) => b.onclick = () => { formatVisuel = b.dataset.format; afficherVisuel(); });
       const majTextes = () => {
         if (!etat.visuel) return;
@@ -570,20 +670,20 @@
       };
       ["v-titre", "v-points", "v-conclusion"].forEach((id) => $(id).oninput = majTextes);
       $("btn-signature").onclick = async () => {
-        try { signature = await appelApi("/api/linkedin/signature", "POST", { nom: $("sig-nom").value, cabinet: $("sig-cabinet").value }); notifier("Signature enregistrée."); $("bloc-signature").open = false; afficherVisuel(); }
+        try { signature = await appelApi("/api/linkedin/signature", "POST", { nom: $("sig-nom").value, cabinet: $("sig-cabinet").value, pour_tous: $("sig-pour-tous").checked }); notifier($("sig-pour-tous").checked ? "Cabinet enregistré pour toute l'équipe." : "Signature enregistrée."); $("bloc-signature").open = false; afficherVisuel(); }
         catch (e) { notifier(e.message, true); }
       };
       $("btn-png").onclick = async () => { const f = await fichierVisuel(); telechargerBlob(f, f.name); };
       $("btn-partager-img").onclick = async () => { const f = await fichierVisuel(); try { await navigator.share({ files: [f], text: etat.texte }); } catch {} };
       const enCours = lireEnCours();   // lu avant le premier enregistrement automatique
-      afficherBrouillons();
+      chargerPosts();
       allerA(1);
 
       // Ouverture depuis une actualité, le brief ou une fiche : /linkedin?sujet=… ou ?fiche=…
       const q = new URLSearchParams(location.search);
       try { etat.donnees = await appelApi("/api/linkedin/sujets"); }
       catch (e) { $("zone-sujet").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; return; }
-      if (!etat.donnees.idees.length) etat.onglet = "actus";
+
       afficherOnglet();
       if (q.get("sujet")) {
         const id = q.get("sujet");
