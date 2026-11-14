@@ -1,4 +1,4 @@
-// version 1.4 — Contenu approfondi des fiches « Apprendre ».
+// version 1.5 — Contenu approfondi des fiches « Apprendre ».
 // Chaque règle renvoie à sa source officielle (s: [nom, url]). Rien n'est ajouté sans source.
 // Lot 1 : donations, succession, démembrement, régimes matrimoniaux (vérifié le 14 novembre 2026).
 
@@ -841,6 +841,7 @@ Object.assign(SRC, {
   ifiPassif: ["impots.gouv.fr · Passif déductible à l'IFI", "https://www.impots.gouv.fr/particulier/questions/que-puis-je-deduire-au-niveau-du-passif-de-limpot-sur-la-fortune-immobiliere"],
   ifiInFine: ["BOFiP · Prêts in fine à l'IFI", "https://bofip.impots.gouv.fr/bofip/11365-PGP.html/identifiant=BOI-PAT-IFI-20-40-20-20190502"],
   ifiBiens: ["impots.gouv.fr · Patrimoine taxable à l'IFI", "https://www.impots.gouv.fr/particulier/patrimoine-taxable-lifi"],
+  ifiPretsFam: ["BOFiP · IFI, dettes non déductibles", "https://bofip.impots.gouv.fr/bofip/11367-PGP.html/identifiant=BOI-PAT-IFI-20-40-30-20180608"],
   cgi787B: ["Légifrance · CGI art. 787 B", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000047623071"],
   dutreil2026: ["BOFiP · Dutreil, loi de finances 2026", "https://bofip.impots.gouv.fr/bofip/15125-PGP.html/ACTU-2026-00114"],
   cgi150: ["Légifrance · CGI art. 150-0 B ter", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542872"],
@@ -865,7 +866,7 @@ Object.assign(APPROFONDI, {
         points: [
           { t: "Une dette se déduit si elle existe au 1er janvier, est à la charge du foyer et concerne des biens taxables.", s: SRC.ifiPassif },
           { t: "Déductibles : emprunts pour acheter ou faire des travaux, charges de copropriété impayées au 1er janvier, taxe foncière et IFI théorique.", s: SRC.ifiPassif },
-          { t: "Non déductibles : les prêts familiaux, et les dettes liées à des biens exonérés.", s: SRC.ifiPassif },
+          { t: "Non déductibles en principe : les prêts consentis par un membre du foyer, un ascendant, un descendant, un frère ou une sœur (ou une société qu'on contrôle), sauf si l'on prouve que le prêt est conclu à des conditions normales. Les dettes liées à des biens exonérés ne se déduisent pas non plus.", s: SRC.ifiPretsFam },
           { t: "Résidence principale : la dette se déduit dans la limite de sa valeur imposable (70 % de sa valeur, après l'abattement de 30 %).", s: SRC.ifiPassif },
           { t: "Au-delà de 5 M€ de patrimoine, la part des dettes qui dépasse 60 % de sa valeur ne se déduit qu'à moitié.", s: SRC.ifiPassif },
         ],
@@ -881,7 +882,7 @@ Object.assign(APPROFONDI, {
         titre: "Ce qui allège encore", icone: "🌲",
         points: [
           { t: "Biens immobiliers affectés à l'activité professionnelle principale : exonérés sous conditions.", s: SRC.ifiBiens },
-          { t: "Bois et forêts, parts de groupements forestiers : exonérés à 75 %. Biens ruraux loués à long terme : exonération partielle.", s: SRC.ifiBiens },
+          { t: "Bois et forêts, parts de groupements forestiers : exonérés à 75 %. Biens ruraux loués à long terme : exonération partielle, sous conditions.", s: SRC.ifiBiens },
           { t: "Don à un organisme d'intérêt général : réduction d'IFI de 75 % du don, dans la limite de 50 000 €.", s: SRC.ifiCalcul },
           { t: "Plafonnement : si IFI + impôts sur le revenu dépassent 75 % des revenus de l'année précédente, l'IFI baisse de l'excédent.", s: SRC.ifiCalcul },
         ],
@@ -914,7 +915,7 @@ Object.assign(APPROFONDI, {
       },
     ],
     vraiFaux: [
-      { texte: "Un prêt consenti par les parents se déduit à l'IFI.", vrai: false, explication: "Les prêts familiaux ne sont pas déductibles (impots.gouv.fr)." },
+      { texte: "Un prêt consenti par les parents se déduit toujours à l'IFI.", vrai: false, explication: "En principe non, sauf si l'on prouve qu'il est conclu à des conditions normales (échéances respectées, vrais remboursements)." },
       { texte: "Un don à un organisme d'intérêt général réduit l'IFI de 75 % du don.", vrai: true, explication: "Dans la limite de 50 000 € de réduction." },
     ],
     quiz: [
@@ -940,13 +941,13 @@ Object.assign(APPROFONDI, {
         titre: "Quelle société ?", icone: "🏭",
         points: [
           { t: "Activité principale industrielle, commerciale, artisanale, agricole ou libérale. Gérer son propre patrimoine mobilier ou immobilier ne compte pas.", s: SRC.cgi787B },
-          { t: "Une holding « animatrice » est admise : elle participe activement à la politique de son groupe et rend des services spécifiques à ses filiales.", s: SRC.cgi787B },
+          { t: "Une holding « animatrice » est admise : elle participe activement à la politique de son groupe et, le cas échéant, rend à ses filiales des services internes.", s: SRC.cgi787B },
         ],
       },
       {
         titre: "Les biens de luxe exclus (depuis le 21 février 2026)", icone: "🛥️",
         points: [
-          { t: "La valeur de certains biens non affectés exclusivement à l'activité pendant au moins 3 ans est exclue : biens de chasse ou de pêche, véhicules de tourisme, yachts et bateaux de plaisance, avions, bijoux, métaux précieux, objets d'art, chevaux de course, vins et alcools, logements.", s: SRC.cgi787B },
+          { t: "Est exclue la valeur de certains biens qui ne sont pas affectés exclusivement à l'activité pendant les 3 ans avant la transmission (ou depuis leur achat) et jusqu'à la fin de l'engagement individuel : biens de chasse ou de pêche, véhicules de tourisme, yachts et bateaux de plaisance, aéronefs, bijoux, métaux précieux, objets d'art, de collection ou d'antiquité, chevaux de course ou de concours, vins et alcools, logements et résidences.", s: SRC.cgi787B },
           { t: "La règle s'applique aussi aux biens détenus par les filiales contrôlées.", s: SRC.cgi787B },
           { t: "Elle vise les transmissions à partir du 21 février 2026, comme l'engagement individuel porté à 6 ans.", s: SRC.dutreil2026 },
         ],
@@ -1005,7 +1006,7 @@ Object.assign(APPROFONDI, {
     ],
     cartes: [
       { recto: "Engagement réputé acquis", verso: "Détention depuis 2 ans aux seuils, avec une activité ou une direction dans la société depuis 2 ans." },
-      { recto: "Biens somptuaires", verso: "Exclus de l'exonération s'ils ne sont pas affectés exclusivement à l'activité depuis 3 ans." },
+      { recto: "Biens somptuaires", verso: "Exclus de l'exonération s'ils ne sont pas affectés exclusivement à l'activité 3 ans avant la transmission et jusqu'à la fin de l'engagement individuel." },
     ],
     liens: [
       { type: "officiel", titre: "Article 787 B du CGI (Légifrance)", url: SRC.cgi787B[1] },
@@ -1038,8 +1039,8 @@ Object.assign(APPROFONDI, {
       {
         titre: "Donation des titres de la holding", icone: "🎁",
         points: [
-          { t: "Le donataire reprend la plus-value en report ; elle est imposée chez lui s'il cède, apporte ou annule les titres dans les 6 ans (11 ans pour un réinvestissement en fonds).", s: SRC.apport2026 },
-          { t: "Pas de remise en cause en cas de décès, d'invalidité ou de licenciement du donataire.", s: SRC.cgi150 },
+          { t: "Si le donataire contrôle la holding, il reprend la plus-value en report ; elle est imposée chez lui s'il cède, apporte ou annule les titres dans les 6 ans (11 ans pour un réinvestissement en fonds).", s: SRC.apport2026 },
+          { t: "Pas de remise en cause en cas de décès du donataire (ou de son conjoint ou partenaire de PACS soumis à imposition commune), d'invalidité de 2e ou 3e catégorie ou de licenciement.", s: SRC.cgi150 },
         ],
       },
     ],
@@ -1094,7 +1095,7 @@ Object.assign(APPROFONDI, {
       {
         titre: "Ce que dit le texte (art. 199 undecies B)", icone: "📜",
         points: [
-          { t: "Réduction de base : 38,25 % du prix hors taxes du matériel neuf ; 45,9 % notamment en Guyane, à Mayotte, Saint-Pierre-et-Miquelon, Wallis-et-Futuna, en Nouvelle-Calédonie et pour les énergies renouvelables.", s: SRC.cgi199 },
+          { t: "Réduction de base : 38,25 % du prix hors taxes du matériel neuf ; 45,9 % notamment en Guyane, à Mayotte, Saint-Pierre-et-Miquelon, Wallis-et-Futuna, en Nouvelle-Calédonie. Énergies renouvelables : 45,9 % (53,55 % dans ces territoires).", s: SRC.cgi199 },
           { t: "En location, 66 % de l'avantage doit être rétrocédé à l'entreprise locataire (baisse du loyer et du prix de rachat) ; 56 % pour les programmes de moins de 300 000 € par exploitant.", s: SRC.cgi199 },
           { t: "Conservation : 5 ans, ou la durée normale d'utilisation si elle est plus courte (7 ans au moins si cette durée atteint 7 ans).", s: SRC.cgi199 },
           { t: "Agrément du ministère du Budget au-delà de 1 M€ par programme, ou de 250 000 € quand l'investisseur ne participe pas à l'exploitation ; obligatoire quel que soit le montant dans certains secteurs (transports, plaisance, agriculture, pêche…).", s: SRC.cgi199 },
