@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 10.0 -->
+<!-- version 11.0 — fiches approfondies (sources par règle, cas pratiques) -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -21,8 +21,31 @@
   <script src="/fiches-client.js"></script>
   <script src="/couvertures.js"></script>
   <script src="/outils-fiches.js"></script>
+  <script src="/fiches-approfondies.js"></script>
   <style>
     .contenu { max-width: 920px; }
+    /* Aller plus loin : blocs dépliables, une source par règle */
+    .approfondir { display: grid; gap: 10px; }
+    .approfondir details { border: 1px solid var(--bord); border-radius: 14px; background: var(--carte); }
+    .approfondir summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; gap: 12px; align-items: center; font-weight: 600; }
+    .approfondir summary::-webkit-details-marker { display: none; }
+    .approfondir summary .ic-bloc { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--i0, var(--fond)); flex: 0 0 34px; font-size: 1.05rem; }
+    .approfondir summary .nb { margin-left: auto; font-size: .78rem; color: var(--doux); font-weight: 500; }
+    .approfondir summary::after { content: "+"; font-size: 1.2rem; color: var(--doux); }
+    .approfondir details[open] summary::after { content: "−"; }
+    .approfondir ul { margin: 0; padding: 0 16px 14px; list-style: none; display: grid; gap: 10px; }
+    .approfondir li { display: grid; gap: 4px; line-height: 1.5; font-size: .95rem; padding-left: 14px; border-left: 3px solid var(--i3, var(--accent)); }
+    .src { font-size: .76rem; color: var(--doux); text-decoration: none; display: inline-flex; gap: 4px; align-items: center; width: fit-content; }
+    .src:hover { color: var(--accent); text-decoration: underline; }
+    .src::before { content: "§"; font-weight: 700; color: var(--i3, var(--accent)); }
+    /* Cas pratiques */
+    .cas-onglets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .cas-niveau { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--fond); }
+    .cas-niveau.piege { background: color-mix(in srgb, var(--ko) 15%, transparent); color: var(--ko); }
+    .cas-etapes { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: etape; }
+    .cas-etapes li { display: flex; gap: 10px; align-items: flex-start; line-height: 1.5; }
+    .cas-etapes li::before { counter-increment: etape; content: counter(etape); flex: 0 0 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: .78rem; font-weight: 700; background: var(--i3, var(--accent)); color: #fff; }
+    .cas-etapes li[hidden] { display: none; }
     .banniere { border-radius: var(--rayon); overflow: hidden; margin-bottom: 16px; position: relative; height: clamp(170px, 30vw, 280px); }
     .banniere .couverture { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     .phrase { font-family: var(--titre); font-size: 1.35rem; line-height: 1.45; font-weight: 500; margin: 0; }
@@ -87,6 +110,15 @@
   <script>
     const id = new URLSearchParams(location.search).get("id");
     const f = FICHES.find((x) => x.id === id);
+    // Contenu approfondi (sources officielles par règle, cas pratiques, questions en plus) : fusionné avec la fiche.
+    const A = (typeof APPROFONDI !== "undefined" && f && APPROFONDI[f.id]) || null;
+    if (A) {
+      if (A.verifie) f.verifie = A.verifie;
+      for (const k of ["quiz", "vraiFaux", "cartes", "paires", "pieges"]) if (A[k]) f[k] = [...f[k], ...A[k]];
+      if (A.liens) f.liens = [...A.liens, ...f.liens.filter((l) => !A.liens.some((x) => x.url === l.url))];
+      if (A.remplacer) Object.assign(f, A.remplacer);   // corrections ponctuelles de la fiche de base
+    }
+    const sourceHtml = (s) => s ? `<a class="src" href="${echapper(s[1])}" target="_blank" rel="noopener noreferrer">${echapper(s[0])}</a>` : "";
 
     function afficher(scores) {
       document.title = f.titre + " · Apprendre · Veille Patrimoine";
@@ -123,15 +155,29 @@
             <tbody>${t.lignes.map((l) => `<tr>${l.map((c) => `<td>${echapper(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
             ${t.note ? `<p class="doux petit" style="margin:0">${echapper(t.note)}</p>` : ""}`).join("")}
         </section>
+        ${A && A.blocs ? `<section class="carte bloc th-${f.theme}" id="approfondir"><h2>Aller plus loin</h2>
+          <p class="doux" style="margin-top:-4px">Les règles en détail, chacune avec sa source officielle. Touchez un bloc pour l'ouvrir.</p>
+          <div class="approfondir">${A.blocs.map((b) => `<details><summary><span class="ic-bloc" aria-hidden="true">${b.icone || "📌"}</span>${echapper(b.titre)}<span class="nb">${b.points.length} point${b.points.length > 1 ? "s" : ""}</span></summary>
+            <ul>${b.points.map((p) => `<li><span>${echapper(p.t)}</span>${sourceHtml(p.s)}</li>`).join("")}</ul></details>`).join("")}</div></section>` : ""}
         <div class="cols">
           <section class="carte bloc"><h2>${echapper(f.libellePourQui || "Pour qui ?")}</h2><ul class="liste-icones">${f.pourQui.map((x) => `<li><span class="ic oui">✓</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
           <section class="carte bloc"><h2>${echapper(f.libellePasPourQui || "À éviter si…")}</h2><ul class="liste-icones">${f.pasPourQui.map((x) => `<li><span class="ic non">✕</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
         </div>
         <section class="carte bloc"><h2>Les pièges à éviter</h2><ul class="liste-icones">${f.pieges.map((x) => `<li><span class="ic att">!</span><span>${echapper(x)}</span></li>`).join("")}</ul></section>
-        <section class="carte bloc th-${f.theme}"><h2>Cas pratique</h2><div class="cas">
-          <p>${echapper(f.cas.enonce)}</p><p><strong>${echapper(f.cas.question)}</strong></p>
-          <button type="button" class="bouton bouton-discret no-print" id="btn-cas">Voir la réponse</button>
-          <p id="cas-reponse" hidden style="margin-top:12px">${echapper(f.cas.reponse)}</p></div></section>
+        ${(() => {
+          const cas = [{ ...f.cas, titre: f.cas.titre || "L'essentiel", niveau: f.cas.niveau || "Facile" }, ...((A && A.cas) || [])];
+          return `<section class="carte bloc th-${f.theme}" id="cas"><h2>${cas.length > 1 ? `Cas pratiques (${cas.length})` : "Cas pratique"}</h2>
+            ${cas.length > 1 ? `<div class="cas-onglets no-print" role="group" aria-label="Choisir un cas">${cas.map((c, i) => `<button type="button" class="puce" data-cas="${i}" aria-pressed="${i === 0}">${i + 1}. ${echapper(c.titre)}</button>`).join("")}</div>` : ""}
+            ${cas.map((c, i) => `<div class="cas" data-cas-zone="${i}" ${i ? "hidden" : ""}>
+              <p style="margin:0 0 8px"><span class="cas-niveau ${/pi[eè]ge/i.test(c.niveau) ? "piege" : ""}">${echapper(c.niveau)}</span></p>
+              <p>${echapper(c.enonce)}</p><p><strong>${echapper(c.question)}</strong></p>
+              ${c.etapes ? `<ol class="cas-etapes">${c.etapes.map((e) => `<li hidden>${echapper(e)}</li>`).join("")}</ol>` : ""}
+              <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                ${c.etapes ? `<button type="button" class="bouton bouton-discret" data-indice="${i}">Étape suivante</button>` : ""}
+                <button type="button" class="bouton bouton-discret" data-reponse="${i}">Voir la réponse</button></div>
+              <p data-rep="${i}" hidden style="margin-top:12px"><strong>Réponse :</strong> ${echapper(c.reponse)}</p>
+              ${c.s ? `<p style="margin:6px 0 0">${sourceHtml(c.s)}</p>` : ""}</div>`).join("")}</section>`;
+        })()}
         <section class="carte bloc"><h2>Comment l'expliquer à un client</h2><p class="parler" style="background:var(--accent-doux);border-radius:12px;padding:12px 16px;font-style:italic;margin:0 0 10px">${echapper(f.phraseClient)}</p>
           <button type="button" class="bouton bouton-discret no-print" id="btn-phrase">Copier la phrase</button></section>
         ${client ? `<section class="carte bloc" id="client"><h2>Présenter le sujet au client</h2>
@@ -157,7 +203,22 @@
       document.getElementById("fiche").innerHTML = h;
 
       (OUTILS_FICHES[f.id] || []).forEach((o, k) => o.init(document.getElementById("outil-" + k)));
-      document.getElementById("btn-cas").onclick = (e) => { document.getElementById("cas-reponse").hidden = false; e.currentTarget.remove(); };
+      // Cas pratiques : choix du cas, correction étape par étape, réponse.
+      document.querySelectorAll("[data-cas]").forEach((b) => b.onclick = () => {
+        document.querySelectorAll("[data-cas]").forEach((x) => x.setAttribute("aria-pressed", x === b));
+        document.querySelectorAll("[data-cas-zone]").forEach((z) => z.hidden = z.dataset.casZone !== b.dataset.cas);
+      });
+      document.querySelectorAll("[data-indice]").forEach((b) => b.onclick = () => {
+        const z = b.closest(".cas"), cachee = z.querySelector(".cas-etapes li[hidden]");
+        if (cachee) cachee.hidden = false;
+        if (!z.querySelector(".cas-etapes li[hidden]")) b.remove();
+      });
+      document.querySelectorAll("[data-reponse]").forEach((b) => b.onclick = () => {
+        const z = b.closest(".cas");
+        z.querySelectorAll(".cas-etapes li").forEach((l) => l.hidden = false);
+        z.querySelector("[data-rep]").hidden = false;
+        z.querySelector("[data-indice]")?.remove(); b.remove();
+      });
       document.getElementById("btn-phrase").onclick = () => copier(f.phraseClient);
       document.getElementById("btn-ecouter").onclick = (e) => lireAVoixHaute([f.titre + ".", f.enUnePhrase, ...f.essentiel.map((x) => x.titre + ". " + x.texte),
         "Comment l'expliquer à un client.", f.phraseClient].join(" "), e.currentTarget);
