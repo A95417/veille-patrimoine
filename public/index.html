@@ -19,9 +19,10 @@
   <script src="/fiches-suite.js" defer></script>
   <script src="/couvertures.js" defer></script>
   <style>
-    .haut { display: flex; flex-wrap: wrap; gap: 26px; margin-bottom: 30px; align-items: stretch; }
-    .haut .hero { flex: 999 1 560px; min-width: 0; }
-    .haut #rdv { flex: 1 1 300px; min-width: 0; max-width: 420px; margin: 0; }
+    /* Le brief prend toute la largeur ; les points pour les rendez-vous sont en dessous, en cartes côte à côte. */
+    .haut { display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px; }
+    .haut .hero { min-width: 0; }
+    .haut #rdv { margin: 0; min-width: 0; }
     .colonne-cote .chiffre { margin: 0; }
     .deux-colonnes > .colonne-cote { position: static; max-height: none; overflow: visible; }   /* la colonne défile avec la page : rien n'est coupé */
     .chiffre-libelle { font-size: 1rem; line-height: 1.45; margin: 0; }
@@ -37,8 +38,8 @@
     .plus-filtres-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; align-items: end; }
     .plus-filtres-grille label { margin: 0 0 4px; font-size: .8rem; color: var(--doux); }
     .vide { text-align: center; padding: 32px 16px; border: 1px dashed var(--bord-fort); border-radius: var(--rayon); color: var(--doux); }
-    .rdv { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
-    .rdv li { display: flex; gap: 10px; font-size: .95rem; line-height: 1.45; }
+    .rdv { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+    .rdv li { display: flex; gap: 10px; font-size: .95rem; line-height: 1.45; padding: 14px 16px; border-radius: 14px; background: var(--fond); }
     .rdv-num { flex: 0 0 26px; height: 26px; border-radius: 8px; background: var(--accent-doux); color: var(--accent-fonce);
                font-weight: 600; display: grid; place-items: center; font-size: .8rem; }
     .rdv a { font-size: .82rem; white-space: nowrap; }
@@ -52,7 +53,8 @@
     .encart-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     @media (max-width: 760px) {
       .haut { gap: 16px; margin-bottom: 18px; }
-      .haut #rdv { max-width: none; }
+      .rdv { grid-template-columns: 1fr; gap: 8px; }
+      .rdv li { padding: 0; background: none; }
       .actions-hero { gap: 8px; }
       .actions-hero .bouton { padding: 9px 14px; font-size: .92rem; }
       /* Ordre sur téléphone : repères (chiffre, marchés) avant les actualités, encarts après. */
