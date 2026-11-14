@@ -22,7 +22,7 @@ FICHES.push(
       { titre: "Une société, pas une indivision", texte: "La SCI a la personnalité morale : c'est elle qui achète, emprunte et loue. Les associés détiennent des parts, réparties selon leurs apports (argent ou bien immobilier)." },
       { titre: "Des règles écrites dans les statuts", texte: "Les statuts organisent presque tout : pouvoirs du gérant, majorités, entrée de nouveaux associés. Sans clause contraire, les décisions qui dépassent les pouvoirs du gérant se prennent à l'unanimité." },
       { titre: "L'impôt sur le revenu par défaut", texte: "Les loyers sont imposés chez chaque associé, à proportion de ses parts, en revenus fonciers, même s'ils ne sont pas distribués. La SCI peut opter pour l'impôt sur les sociétés." },
-      { titre: "Une activité civile", texte: "Louer des locaux nus est civil. Une activité commerciale (achat-revente, location meublée au-delà de 10 % des recettes) fait passer la SCI à l'impôt sur les sociétés." },
+      { titre: "Une activité civile", texte: "Louer des locaux nus est civil. Une activité commerciale (achat-revente, location meublée…) qui dépasse 10 % des recettes fait passer la SCI à l'impôt sur les sociétés." },
       { titre: "Une responsabilité sans plafond", texte: "Chaque associé répond des dettes de la société sans limite, mais seulement à proportion de sa part, et le créancier doit d'abord poursuivre la société." },
     ],
     schema: [
@@ -38,8 +38,8 @@ FICHES.push(
         lignes: [
           ["Qui paie l'impôt ?", "Chaque associé, sur sa quote-part, même sans distribution", "La SCI elle-même"],
           ["Loyers", "Revenus fonciers (déclaration 2044 de l'associé) ; la SCI dépose la 2072", "Bénéfice de la société (déclaration 2065) : 15 % jusqu'à 42 500 € sous conditions, 25 % au-delà"],
-          ["Vente d'un immeuble", "Plus-values des particuliers : 19 % + 17,2 %, abattements pour durée de détention", "Imposée dans le résultat de la société"],
-          ["Revenir en arrière", "—", "Option révocable jusqu'à la 5e année, puis irrévocable"],
+          ["Vente d'un immeuble", "Plus-values des particuliers : 19 % + 17,2 %, abattements pour durée de détention", "Imposée dans le résultat de la société, sans abattement pour durée de détention"],
+          ["Revenir en arrière", "—", "Renonciation possible jusqu'au 5e exercice suivant celui de l'option, puis option irrévocable ; après une renonciation, impossible de réopter"],
         ],
         note: "L'option pour l'impôt sur les sociétés doit être notifiée avant la fin du 3e mois de l'exercice concerné (Service-public).",
       },
@@ -56,7 +56,7 @@ FICHES.push(
     pasPourQui: ["Un achat-revente rapide de biens (activité commerciale, à faire en société commerciale)", "Une location meublée importante, qui ferait basculer la SCI à l'impôt sur les sociétés", "Une personne seule (il faut au moins 2 associés)"],
     pieges: [
       "Faire de la location meublée au-delà de 10 % des recettes sans le savoir : la SCI passe à l'impôt sur les sociétés.",
-      "Opter pour l'impôt sur les sociétés sans mesurer que, passé 5 ans, on ne peut plus revenir en arrière.",
+      "Opter pour l'impôt sur les sociétés sans mesurer qu'après le 5e exercice on ne peut plus revenir en arrière, et qu'après une renonciation on ne peut plus réopter.",
       "Oublier que les associés paient l'impôt sur les loyers même si la SCI les garde pour rembourser l'emprunt.",
       "Rédiger des statuts types sans réfléchir aux pouvoirs du gérant et à l'agrément des nouveaux associés.",
     ],
@@ -64,14 +64,14 @@ FICHES.push(
     cas: {
       enonce: "Marc vend à sa sœur toutes ses parts d'une SCI qui ne détient que des appartements loués, pour 120 000 €.",
       question: "Combien de droits d'enregistrement ?",
-      reponse: "La SCI est à prépondérance immobilière : 5 % du prix, soit 6 000 €. L'acheteuse doit aussi être agréée par les associés, sauf clause contraire des statuts.",
+      reponse: "La SCI est à prépondérance immobilière : 5 % du prix, soit 6 000 €. Sa sœur n'étant ni ascendante ni descendante, elle doit aussi être agréée par les associés, sauf clause contraire des statuts.",
     },
     vraiFaux: [
       { texte: "On peut créer une SCI seul.", vrai: false, explication: "Il faut au moins 2 associés." },
       { texte: "Une SCI à l'impôt sur le revenu ne paie pas elle-même l'impôt sur les loyers.", vrai: true, explication: "Ce sont les associés, chacun sur sa quote-part." },
       { texte: "Les associés d'une SCI ne risquent jamais plus que leur apport.", vrai: false, explication: "Leur responsabilité est indéfinie, à proportion de leur part dans le capital (Code civil, art. 1857)." },
       { texte: "Des époux peuvent créer une SCI à deux.", vrai: true, explication: "Quel que soit leur régime matrimonial." },
-      { texte: "L'option pour l'impôt sur les sociétés est définitive dès le départ.", vrai: false, explication: "Elle peut être révoquée jusqu'à la 5e année suivant l'option, puis devient irrévocable." },
+      { texte: "L'option pour l'impôt sur les sociétés est définitive dès le départ.", vrai: false, explication: "On peut y renoncer jusqu'au 5e exercice suivant celui de l'option ; ensuite elle devient irrévocable." },
     ],
     quiz: [
       { question: "Quel est le capital minimum d'une SCI ?", choix: ["1 €", "1 000 €", "7 500 €", "37 000 €"], bonne: 0, explication: "Le capital est libre, avec un minimum de 1 €." },
@@ -84,7 +84,7 @@ FICHES.push(
       { recto: "Responsabilité des associés", verso: "Indéfinie, non solidaire, à proportion des parts ; le créancier poursuit d'abord la société." },
       { recto: "Déclaration 2072", verso: "Déclaration annuelle d'une SCI à l'impôt sur le revenu." },
       { recto: "Prépondérance immobilière", verso: "Plus de 50 % de l'actif en immobilier non affecté à l'exploitation : vente de parts taxée à 5 %." },
-      { recto: "Option pour l'IS", verso: "Avant la fin du 3e mois de l'exercice ; révocable jusqu'à la 5e année, puis définitive." },
+      { recto: "Option pour l'IS", verso: "Avant la fin du 3e mois de l'exercice ; renonciation possible jusqu'au 5e exercice suivant, puis définitive." },
     ],
     paires: [
       { terme: "Gérant", definition: "Dirige la SCI au quotidien" },

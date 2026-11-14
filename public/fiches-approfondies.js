@@ -1135,6 +1135,9 @@ Object.assign(SRC, {
   sciMeuble: ["impots.gouv.fr · Les SCI", "https://www.impots.gouv.fr/particulier/les-sci"],
   sciPv: ["impots.gouv.fr · Plus-value d'une SCI à l'IR", "https://www.impots.gouv.fr/particulier/questions/la-societe-civile-immobiliere-imposee-limpot-sur-le-revenu-dont-je-suis"],
   sciLivret: ["impots.gouv.fr · Livret fiscal des sociétés civiles", "https://www.impots.gouv.fr/sites/default/files/media/1_metier/2_professionnel/EV/1_creation_entreprise/livret_fiscal/nid_12250_sci_livret_fiscal_createur_dentreprise.pdf"],
+  cc1861: ["Légifrance · Code civil art. 1861", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006444345"],
+  crl: ["BOFiP · Contribution sur les revenus locatifs", "https://bofip.impots.gouv.fr/bofip/9659-PGP.html/identifiant=BOI-RFPI-CTRL-20-10-20140808"],
+  isPv: ["BOFiP · Plus-values à l'IS", "https://bofip.impots.gouv.fr/bofip/5642-PGP.html/identifiant=BOI-IS-BASE-20-20130311"],
   cc1857: ["Légifrance · Code civil art. 1857", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006444321"],
 });
 
@@ -1164,16 +1167,17 @@ Object.assign(APPROFONDI, {
           { t: "SCI à l'impôt sur le revenu : déclaration 2072 chaque année ; chaque associé reporte sa quote-part sur sa déclaration 2044.", s: SRC.sciLivret },
           { t: "SCI à l'impôt sur les sociétés : déclaration 2065 et comptabilité commerciale ; un déficit ne se déduit pas des revenus des associés.", s: SRC.sciMeuble },
           { t: "Location meublée : c'est une activité commerciale. La SCI reste à l'impôt sur le revenu si ces recettes ne dépassent pas 10 % du total.", s: SRC.sciMeuble },
-          { t: "Contribution sur les revenus locatifs de 2,5 % si au moins un associé est à l'impôt sur les sociétés, pour des locaux dans un immeuble de plus de 15 ans (hors loyers soumis à TVA).", s: SRC.sciLivret },
+          { t: "Contribution de 2,5 % due par une SCI à l'IS, ou par une SCI à l'IR dont au moins un associé est à l'IS (elle porte alors sur la totalité des loyers). Elle vise les locaux d'un immeuble achevé depuis au moins 15 ans au 1er janvier, hors loyers soumis à TVA.", s: SRC.crl },
         ],
       },
       {
         titre: "Vendre un bien ou des parts", icone: "🔑",
         points: [
           { t: "SCI à l'impôt sur le revenu qui vend un immeuble : régime des plus-values des particuliers, imposé chez chaque associé au prorata de ses parts (19 % + 17,2 %, abattements pour durée de détention).", s: SRC.sciPv },
-          { t: "Le notaire dépose la déclaration 2048-IMM et paie l'impôt ; chaque associé reporte sa quote-part sur sa déclaration de revenus.", s: SRC.sciPv },
+          { t: "Le notaire dépose la déclaration 2048-IMM et paie l'impôt ; chaque associé reporte sa quote-part sur sa déclaration de revenus. Une surtaxe s'ajoute si la plus-value dépasse 50 000 €.", s: SRC.sciPv },
+          { t: "SCI à l'IS qui vend un immeuble : la plus-value entre dans le résultat imposable de la société, au taux de droit commun, sans abattement pour durée de détention.", s: SRC.isPv },
           { t: "L'associé qui occupe gratuitement le logement comme résidence principale peut bénéficier de l'exonération, au prorata de sa participation.", s: SRC.sciPv },
-          { t: "Vente de parts : accord de tous les associés en principe, sauf pour une cession gratuite à un ascendant ou un descendant ; les statuts peuvent prévoir autre chose.", s: SRC.spSci },
+          { t: "Cession de parts : agrément de tous les associés en principe. Sauf clause contraire des statuts, les cessions à un ascendant ou un descendant du cédant en sont dispensées, qu'elles soient gratuites ou vendues.", s: SRC.cc1861 },
         ],
       },
       {
