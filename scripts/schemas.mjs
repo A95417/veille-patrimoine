@@ -101,6 +101,8 @@ export async function produireSchemas(brief) {
       }
       await appelSite("/api/robot/brief/schemas", "POST", { jour: brief.jour, edition: brief.edition || "matin", schemas });
       console.log(`Schémas du brief ${brief.jour} (${brief.edition}) : ${Object.keys(schemas).length}/${actus.length} (${modele}).`);
+      for (const [id, v] of Object.entries(schemas))
+        console.log(`  - ${v.modele} · ${v.titre} · ${v.chiffre ? v.chiffre + " " + v.legende : v.modele === "avant_apres" ? v.avant + " → " + v.apres : v.elements.join(" | ")}`);
       return true;
     } catch (e) { console.error(`Schémas : échec avec ${modele} :`, e.message); }
   }
