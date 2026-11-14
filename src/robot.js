@@ -271,8 +271,9 @@ export async function routeRobot(request, env, chemin) {
 
   // 7 bis) Contrôle de la rubrique LinkedIn (idées + une rédaction d'essai), pour les vérifications automatiques.
   if (chemin === "/api/robot/linkedin/essai" && request.method === "POST") {
-    await db.prepare("DELETE FROM etat WHERE cle IN ('linkedin_idees_erreur', 'linkedin_idees')").run();   // essai : on force un nouveau calcul
+    if (corps.idees) await db.prepare("DELETE FROM etat WHERE cle IN ('linkedin_idees_erreur', 'linkedin_idees')").run();   // essai des idées : nouveau calcul forcé
     const base = "https://site.local";
+    const t0 = Date.now();
     const idees = await (await routeLinkedin(new Request(base + "/api/linkedin/sujets"), env, "/api/linkedin/sujets", null)).json();
     let post = null;
     if (corps.rediger && idees.sujets?.length) {
@@ -281,7 +282,7 @@ export async function routeRobot(request, env, chemin) {
         env, "/api/linkedin/rediger", null)).json();
     }
     const diag = await db.prepare("SELECT valeur FROM etat WHERE cle = 'linkedin_idees_erreur'").first();
-    return json({ diagnostic: diag?.valeur || null, nb_idees: idees.idees?.filter((i) => !i.simple).length || 0, nb_sujets: idees.sujets?.length || 0, ia: idees.ia, idees: idees.idees?.map((i) => i.titre), post });
+    return json({ duree_s: Math.round((Date.now() - t0) / 1000), diagnostic: diag?.valeur || null, nb_idees: idees.idees?.filter((i) => !i.simple).length || 0, nb_sujets: idees.sujets?.length || 0, ia: idees.ia, idees: idees.idees?.map((i) => i.titre), post });
   }
 
   // 8) Compteur de requêtes IA du jour (remis à zéro à minuit, heure de Californie, comme chez Google).
