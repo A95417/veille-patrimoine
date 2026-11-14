@@ -1,4 +1,4 @@
-// version 1.3 — Contenu approfondi des fiches « Apprendre ».
+// version 1.4 — Contenu approfondi des fiches « Apprendre ».
 // Chaque règle renvoie à sa source officielle (s: [nom, url]). Rien n'est ajouté sans source.
 // Lot 1 : donations, succession, démembrement, régimes matrimoniaux (vérifié le 14 novembre 2026).
 
@@ -468,7 +468,7 @@ Object.assign(APPROFONDI, {
       {
         titre: "Au décès : les règles à connaître", icone: "📜",
         points: [
-          { t: "Versements faits jusqu'au 12 octobre 1998 inclus : exonérés sur les contrats souscrits avant le 20 novembre 1991 ; pour les contrats souscrits ensuite, seulement s'ils ont été faits avant 70 ans.", s: SRC.avDeces },
+          { t: "Versements faits jusqu'au 12 octobre 1998 inclus : exonérés sur les contrats souscrits avant le 20 novembre 1991 ; pour les contrats souscrits ensuite, seulement s'ils ont été faits avant 70 ans.", s: SRC.avDeces },
           { t: "Exonérés : conjoint, partenaire de PACS, et frère ou sœur célibataire, veuf, divorcé ou séparé, de plus de 50 ans (ou invalide), ayant vécu 5 ans avec le défunt.", s: SRC.avDeces },
           { t: "Le capital revient dans la succession si aucun bénéficiaire n'est désigné.", s: SRC.avDeces },
           { t: "Versements après 70 ans : le bénéficiaire dépose le formulaire 2705-A dans les 6 mois, un par assureur. L'assureur ne paie qu'au vu de ce formulaire traité.", s: SRC.avDeces },
@@ -502,7 +502,7 @@ Object.assign(APPROFONDI, {
     quiz: [
       { question: "Contrat de 50 000 €, dont 40 000 € versés. Retrait de 5 000 €. Gains contenus ?", choix: ["500 €", "1 000 €", "4 000 €", "5 000 €"], bonne: 1, explication: "5 000 − 40 000 × 5 000 ÷ 50 000 = 5 000 − 4 000 = 1 000 €." },
       { question: "Quel formulaire pour des versements faits après 70 ans ?", choix: ["2735", "2705-A", "2042", "2074"], bonne: 1, explication: "Le 2705-A, à déposer dans les 6 mois, un par assureur." },
-      { question: "Les versements faits jusqu'à quelle date sont exonérés au décès ?", choix: ["31 décembre 1991", "12 octobre 1998", "27 septembre 2017", "1er janvier 2026"], bonne: 1, explication: "Jusqu'au 12 octobre 1998 inclus, avec une condition d'âge (avant 70 ans) pour les contrats souscrits depuis le 20 novembre 1991." },
+      { question: "Les versements faits jusqu'à quelle date sont exonérés au décès ?", choix: ["31 décembre 1991", "12 octobre 1998", "27 septembre 2017", "1er janvier 2026"], bonne: 1, explication: "Jusqu'au 12 octobre 1998 inclus, avec une condition d'âge (avant 70 ans) pour les contrats souscrits depuis le 20 novembre 1991." },
     ],
     cartes: [
       { recto: "Gains d'un retrait", verso: "Retrait − versements × (retrait ÷ valeur du contrat)." },
@@ -832,5 +832,298 @@ Object.assign(APPROFONDI, {
       { type: "officiel", titre: "Note explicative produits structurés (AMF)", url: SRC.psNote[1] },
       { type: "officiel", titre: "Étude frais et performances (AMF-ACPR, 2026)", url: SRC.psEtude[1] },
     ],
+  },
+});
+
+// ====================================================================== LOT 3 : IFI, GIRARDIN, APPORT-CESSION, DUTREIL (vérifié le 15 novembre 2026)
+Object.assign(SRC, {
+  ifiCalcul: ["Service-public · Calcul de l'IFI", "https://www.service-public.gouv.fr/particuliers/vosdroits/F138"],
+  ifiPassif: ["impots.gouv.fr · Passif déductible à l'IFI", "https://www.impots.gouv.fr/particulier/questions/que-puis-je-deduire-au-niveau-du-passif-de-limpot-sur-la-fortune-immobiliere"],
+  ifiInFine: ["BOFiP · Prêts in fine à l'IFI", "https://bofip.impots.gouv.fr/bofip/11365-PGP.html/identifiant=BOI-PAT-IFI-20-40-20-20190502"],
+  ifiBiens: ["impots.gouv.fr · Patrimoine taxable à l'IFI", "https://www.impots.gouv.fr/particulier/patrimoine-taxable-lifi"],
+  cgi787B: ["Légifrance · CGI art. 787 B", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000047623071"],
+  dutreil2026: ["BOFiP · Dutreil, loi de finances 2026", "https://bofip.impots.gouv.fr/bofip/15125-PGP.html/ACTU-2026-00114"],
+  cgi150: ["Légifrance · CGI art. 150-0 B ter", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542872"],
+  apport2026: ["BOFiP · Apport-cession, loi de finances 2026", "https://bofip.impots.gouv.fr/bofip/15099-PGP.html/ACTU-2026-00099"],
+  cgi199: ["Légifrance · CGI art. 199 undecies B", "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051202835"],
+});
+
+Object.assign(APPROFONDI, {
+  // ------------------------------------------------------------------ IFI
+  ifi: {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "La décote, entre 1,3 et 1,4 M€", icone: "📉",
+        points: [
+          { t: "Décote = 17 500 € − 1,25 % × patrimoine net taxable, à retirer de l'IFI brut.", s: SRC.ifiCalcul },
+          { t: "Exemple officiel : 1 350 000 € nets → IFI brut 2 850 €, décote 625 €, IFI à payer 2 225 €.", s: SRC.ifiCalcul },
+        ],
+      },
+      {
+        titre: "Les dettes : ce qui se déduit", icone: "➖",
+        points: [
+          { t: "Une dette se déduit si elle existe au 1er janvier, est à la charge du foyer et concerne des biens taxables.", s: SRC.ifiPassif },
+          { t: "Déductibles : emprunts pour acheter ou faire des travaux, charges de copropriété impayées au 1er janvier, taxe foncière et IFI théorique.", s: SRC.ifiPassif },
+          { t: "Non déductibles : les prêts familiaux, et les dettes liées à des biens exonérés.", s: SRC.ifiPassif },
+          { t: "Résidence principale : la dette se déduit dans la limite de sa valeur imposable (70 % de sa valeur, après l'abattement de 30 %).", s: SRC.ifiPassif },
+          { t: "Au-delà de 5 M€ de patrimoine, la part des dettes qui dépasse 60 % de sa valeur ne se déduit qu'à moitié.", s: SRC.ifiPassif },
+        ],
+      },
+      {
+        titre: "Le prêt in fine", icone: "⏳",
+        points: [
+          { t: "Il ne se déduit pas en totalité chaque année : déduction = montant emprunté − montant emprunté × années écoulées ÷ durée du prêt.", s: SRC.ifiInFine },
+          { t: "Seules les années complètes comptent. Un prêt sans terme est traité comme un prêt de 20 ans (−1/20 par an).", s: SRC.ifiInFine },
+        ],
+      },
+      {
+        titre: "Ce qui allège encore", icone: "🌲",
+        points: [
+          { t: "Biens immobiliers affectés à l'activité professionnelle principale : exonérés sous conditions.", s: SRC.ifiBiens },
+          { t: "Bois et forêts, parts de groupements forestiers : exonérés à 75 %. Biens ruraux loués à long terme : exonération partielle.", s: SRC.ifiBiens },
+          { t: "Don à un organisme d'intérêt général : réduction d'IFI de 75 % du don, dans la limite de 50 000 €.", s: SRC.ifiCalcul },
+          { t: "Plafonnement : si IFI + impôts sur le revenu dépassent 75 % des revenus de l'année précédente, l'IFI baisse de l'excédent.", s: SRC.ifiCalcul },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Juste au-dessus du seuil", niveau: "Facile",
+        enonce: "Un couple a 1 350 000 € de patrimoine immobilier net taxable au 1er janvier.",
+        question: "Combien d'IFI ?",
+        etapes: ["De 800 000 à 1 300 000 € : 500 000 × 0,5 % = 2 500 €.", "De 1 300 000 à 1 350 000 € : 50 000 × 0,7 % = 350 €.", "IFI brut : 2 850 €.", "Décote : 17 500 − 1 350 000 × 1,25 % = 625 €."],
+        reponse: "2 850 − 625 = 2 225 €.",
+        s: SRC.ifiCalcul,
+      },
+      {
+        titre: "Le prêt in fine", niveau: "Intermédiaire",
+        enonce: "Prêt in fine de 600 000 € sur 10 ans, versé le 1er mars 2023, pour un appartement loué.",
+        question: "Combien peut-on déduire dans l'IFI 2026 ?",
+        etapes: ["Au 1er janvier 2026, 2 années complètes se sont écoulées (mars 2023 → mars 2025).", "Déduction = 600 000 − 600 000 × 2 ÷ 10.", "= 600 000 − 120 000."],
+        reponse: "480 000 €, et non 600 000 €.",
+        s: SRC.ifiInFine,
+      },
+      {
+        titre: "Beaucoup de dettes", niveau: "Piège",
+        enonce: "Un client a 6 M€ de patrimoine immobilier taxable et 4 M€ de dettes.",
+        question: "Peut-il déduire les 4 M€ ?",
+        etapes: ["Patrimoine supérieur à 5 M€ : plafonnement des dettes.", "60 % de 6 M€ = 3,6 M€, déductibles en totalité.", "Excédent : 0,4 M€, déductible à 50 % = 0,2 M€."],
+        reponse: "Non : 3,8 M€ seulement.",
+        s: SRC.ifiPassif,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Un prêt consenti par les parents se déduit à l'IFI.", vrai: false, explication: "Les prêts familiaux ne sont pas déductibles (impots.gouv.fr)." },
+      { texte: "Un don à un organisme d'intérêt général réduit l'IFI de 75 % du don.", vrai: true, explication: "Dans la limite de 50 000 € de réduction." },
+    ],
+    quiz: [
+      { question: "IFI brut pour 2 000 000 € nets taxables ?", choix: ["2 500 €", "4 900 €", "7 400 €", "14 000 €"], bonne: 2, explication: "500 000 × 0,5 % + 700 000 × 0,7 % = 2 500 + 4 900 = 7 400 €." },
+      { question: "Quelle décote pour 1 380 000 € ?", choix: ["0 €", "250 €", "625 €", "17 500 €"], bonne: 1, explication: "17 500 − 1 380 000 × 1,25 % = 17 500 − 17 250 = 250 €." },
+    ],
+    cartes: [
+      { recto: "Décote IFI", verso: "17 500 € − 1,25 % du patrimoine net, entre 1,3 et 1,4 M€." },
+      { recto: "Prêt in fine (IFI)", verso: "Déduction dégressive : montant × (1 − années écoulées ÷ durée)." },
+    ],
+    liens: [
+      { type: "officiel", titre: "Calcul de l'IFI (Service-public)", url: SRC.ifiCalcul[1] },
+      { type: "officiel", titre: "Passif déductible (impots.gouv.fr)", url: SRC.ifiPassif[1] },
+      { type: "officiel", titre: "Patrimoine taxable (impots.gouv.fr)", url: SRC.ifiBiens[1] },
+    ],
+  },
+
+  // ------------------------------------------------------------------ PACTE DUTREIL
+  "pacte-dutreil": {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "Quelle société ?", icone: "🏭",
+        points: [
+          { t: "Activité principale industrielle, commerciale, artisanale, agricole ou libérale. Gérer son propre patrimoine mobilier ou immobilier ne compte pas.", s: SRC.cgi787B },
+          { t: "Une holding « animatrice » est admise : elle participe activement à la politique de son groupe et rend des services spécifiques à ses filiales.", s: SRC.cgi787B },
+        ],
+      },
+      {
+        titre: "Les biens de luxe exclus (depuis le 21 février 2026)", icone: "🛥️",
+        points: [
+          { t: "La valeur de certains biens non affectés exclusivement à l'activité pendant au moins 3 ans est exclue : biens de chasse ou de pêche, véhicules de tourisme, yachts et bateaux de plaisance, avions, bijoux, métaux précieux, objets d'art, chevaux de course, vins et alcools, logements.", s: SRC.cgi787B },
+          { t: "La règle s'applique aussi aux biens détenus par les filiales contrôlées.", s: SRC.cgi787B },
+          { t: "Elle vise les transmissions à partir du 21 février 2026, comme l'engagement individuel porté à 6 ans.", s: SRC.dutreil2026 },
+        ],
+      },
+      {
+        titre: "L'engagement collectif en détail", icone: "🤝",
+        points: [
+          { t: "Seuils : 17 % des droits financiers et 34 % des droits de vote (non coté) ; 10 % et 20 % (coté), à respecter pendant toute la durée.", s: SRC.cgi787B },
+          { t: "Pas d'engagement au décès ? Les héritiers peuvent le signer dans les 6 mois.", s: SRC.cgi787B },
+          { t: "Engagement « réputé acquis » : détention depuis 2 ans au moins (seul ou avec son conjoint, partenaire ou concubin) atteignant les seuils, si l'un d'eux travaille ou dirige la société depuis 2 ans.", s: SRC.cgi787B },
+          { t: "Il ne s'impose à l'administration qu'à partir de l'enregistrement de l'acte qui le constate.", s: SRC.cgi787B },
+        ],
+      },
+      {
+        titre: "Après la transmission", icone: "📋",
+        points: [
+          { t: "Chaque bénéficiaire conserve ses titres 6 ans à compter de la fin de l'engagement collectif : au moins 8 ans au total.", s: SRC.cgi787B },
+          { t: "Une attestation de la société accompagne la déclaration ou l'acte, puis une autre est fournie dans les 3 mois après la fin de l'engagement individuel.", s: SRC.cgi787B },
+          { t: "Donation avec réserve d'usufruit possible si les statuts limitent les droits de vote de l'usufruitier aux décisions sur les bénéfices.", s: SRC.cgi787B },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Le décès sans pacte", niveau: "Facile",
+        enonce: "Un chef d'entreprise décède sans avoir signé de pacte Dutreil. Ses deux enfants héritent des titres.",
+        question: "Le Dutreil est-il perdu ?",
+        etapes: ["La loi permet aux héritiers de signer l'engagement collectif après le décès.", "Délai : 6 mois après la transmission.", "Puis chacun prend l'engagement individuel de 6 ans."],
+        reponse: "Non, s'ils signent l'engagement collectif dans les 6 mois.",
+        s: SRC.cgi787B,
+      },
+      {
+        titre: "Le yacht dans la société", niveau: "Intermédiaire",
+        enonce: "Une société vaut 3 M€, dont un yacht de 300 000 € qui n'est pas utilisé exclusivement pour l'activité. Donation sous Dutreil en mars 2026.",
+        question: "Sur quelle valeur portent les droits, avant abattement ?",
+        etapes: ["Le yacht est exclu de l'exonération : 300 000 € taxables en entier.", "Le reste : 2 700 000 €, exonéré à 75 %.", "25 % × 2 700 000 = 675 000 €.", "675 000 + 300 000 = 975 000 €."],
+        reponse: "975 000 €, contre 750 000 € avant la loi de finances 2026.",
+        s: SRC.cgi787B,
+      },
+      {
+        titre: "L'usufruit qui garde tout", niveau: "Piège",
+        enonce: "Un père donne la nue-propriété de ses titres à ses enfants sous Dutreil, garde l'usufruit et tous les droits de vote.",
+        question: "Le Dutreil s'applique-t-il ?",
+        etapes: ["La donation avec réserve d'usufruit est possible.", "Mais les droits de vote de l'usufruitier doivent être limités, par les statuts, aux décisions sur les bénéfices.", "Ici, le père garde tous les votes."],
+        reponse: "Non, tant que les statuts ne sont pas modifiés. À régler avant la donation.",
+        s: SRC.cgi787B,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Une holding animatrice peut bénéficier du pacte Dutreil.", vrai: true, explication: "Elle est considérée comme ayant une activité commerciale (art. 787 B)." },
+      { texte: "Les héritiers peuvent signer l'engagement collectif dans l'année du décès.", vrai: false, explication: "Dans les 6 mois." },
+    ],
+    quiz: [
+      { question: "Seuils de l'engagement collectif pour une société cotée ?", choix: ["17 % et 34 %", "10 % et 20 %", "25 % et 50 %", "5 % et 10 %"], bonne: 1, explication: "10 % des droits financiers et 20 % des droits de vote." },
+      { question: "Durée minimale totale de conservation (collectif + individuel) depuis 2026 ?", choix: ["4 ans", "6 ans", "8 ans", "10 ans"], bonne: 2, explication: "2 ans d'engagement collectif + 6 ans d'engagement individuel." },
+    ],
+    cartes: [
+      { recto: "Engagement réputé acquis", verso: "Détention depuis 2 ans aux seuils, avec une activité ou une direction dans la société depuis 2 ans." },
+      { recto: "Biens somptuaires", verso: "Exclus de l'exonération s'ils ne sont pas affectés exclusivement à l'activité depuis 3 ans." },
+    ],
+    liens: [
+      { type: "officiel", titre: "Article 787 B du CGI (Légifrance)", url: SRC.cgi787B[1] },
+      { type: "officiel", titre: "Nouveautés 2026 (BOFiP)", url: SRC.dutreil2026[1] },
+    ],
+  },
+
+  // ------------------------------------------------------------------ APPORT-CESSION
+  "apport-cession": {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "Comment réinvestir ?", icone: "🔁",
+        points: [
+          { t: "Financer des moyens d'exploitation d'une activité opérationnelle ; la gestion de son propre patrimoine immobilier est exclue.", s: SRC.cgi150 },
+          { t: "Acheter des titres donnant le contrôle d'une société opérationnelle, ou souscrire au capital de sociétés éligibles.", s: SRC.cgi150 },
+          { t: "Souscrire à des fonds (FCPR, FPCI, SLP, SCR) respectant des quotas ; les sommes doivent être appelées et versées dans les 5 ans.", s: SRC.cgi150 },
+          { t: "Les biens ou titres acquis sont conservés au moins 5 ans.", s: SRC.cgi150 },
+        ],
+      },
+      {
+        titre: "Les détails qui coûtent cher", icone: "⚠️",
+        points: [
+          { t: "Une soulte est admise jusqu'à 10 % de la valeur nominale des titres reçus ; la plus-value correspondante est imposée tout de suite.", s: SRC.cgi150 },
+          { t: "Chaque complément de prix ouvre un nouveau délai de 3 ans pour réinvestir 70 % de ce complément.", s: SRC.cgi150 },
+          { t: "Si le réinvestissement n'est pas respecté, la plus-value est imposée avec l'intérêt de retard, compté depuis la date de l'apport.", s: SRC.cgi150 },
+          { t: "Le transfert du domicile fiscal hors de France fait aussi tomber le report.", s: SRC.cgi150 },
+        ],
+      },
+      {
+        titre: "Donation des titres de la holding", icone: "🎁",
+        points: [
+          { t: "Le donataire reprend la plus-value en report ; elle est imposée chez lui s'il cède, apporte ou annule les titres dans les 6 ans (11 ans pour un réinvestissement en fonds).", s: SRC.apport2026 },
+          { t: "Pas de remise en cause en cas de décès, d'invalidité ou de licenciement du donataire.", s: SRC.cgi150 },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Réinvestir trop peu", niveau: "Facile",
+        enonce: "Apport en 2026 (plus-value de 1 M€). La holding revend 18 mois plus tard pour 3 M€ et ne réinvestit que 1,8 M€ dans les 3 ans.",
+        question: "Le report est-il maintenu ?",
+        etapes: ["Cession dans les 3 ans de l'apport : il faut réinvestir 70 %.", "70 % × 3 M€ = 2,1 M€.", "1,8 M€ < 2,1 M€."],
+        reponse: "Non : le report tombe, la plus-value de 1 M€ est imposée, avec l'intérêt de retard depuis la date de l'apport.",
+        s: SRC.cgi150,
+      },
+      {
+        titre: "Le complément de prix", niveau: "Intermédiaire",
+        enonce: "La holding a vendu la société 2 ans après l'apport et a réinvesti correctement. Un an plus tard, elle reçoit un complément de prix de 500 000 €.",
+        question: "Que doit-elle faire ?",
+        etapes: ["Le complément de prix ouvre un nouveau délai de 3 ans.", "Il faut réinvestir 70 % du complément.", "70 % × 500 000 = 350 000 €."],
+        reponse: "Réinvestir 350 000 € dans des actifs éligibles dans les 3 ans suivant ce complément.",
+        s: SRC.cgi150,
+      },
+      {
+        titre: "La SCI de location", niveau: "Piège",
+        enonce: "Le dirigeant veut que sa holding réinvestisse le prix dans une SCI qui achète des appartements à louer.",
+        question: "Est-ce un réinvestissement éligible ?",
+        etapes: ["Le réinvestissement doit financer une activité opérationnelle.", "La gestion de son propre patrimoine immobilier est expressément exclue."],
+        reponse: "Non : la location d'appartements n'est pas éligible, le report tomberait.",
+        s: SRC.cgi150,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Un complément de prix doit aussi être réinvesti à 70 %.", vrai: true, explication: "Dans un nouveau délai de 3 ans (art. 150-0 B ter)." },
+      { texte: "Quitter la France n'a pas d'effet sur le report.", vrai: false, explication: "Le transfert du domicile fiscal hors de France fait tomber le report." },
+    ],
+    quiz: [
+      { question: "Prix de 4 M€ cédé dans les 3 ans de l'apport. Minimum à réinvestir ?", choix: ["2,4 M€", "2,8 M€", "3 M€", "4 M€"], bonne: 1, explication: "70 % × 4 M€ = 2,8 M€." },
+      { question: "Soulte maximale admise lors de l'apport ?", choix: ["5 %", "10 % de la valeur nominale des titres reçus", "20 %", "Aucune"], bonne: 1, explication: "10 % de la valeur nominale ; la plus-value correspondante est imposée tout de suite." },
+    ],
+    cartes: [
+      { recto: "Intérêt de retard (150-0 B ter)", verso: "Dû depuis la date de l'apport si l'obligation de réinvestir n'est pas respectée." },
+      { recto: "Complément de prix", verso: "Nouveau délai de 3 ans pour réinvestir 70 %." },
+    ],
+    liens: [
+      { type: "officiel", titre: "Article 150-0 B ter du CGI (Légifrance)", url: SRC.cgi150[1] },
+      { type: "officiel", titre: "Nouveautés 2026 (BOFiP)", url: SRC.apport2026[1] },
+    ],
+  },
+
+  // ------------------------------------------------------------------ GIRARDIN
+  "girardin-industriel": {
+    verifie: "15 novembre 2026",
+    blocs: [
+      {
+        titre: "Ce que dit le texte (art. 199 undecies B)", icone: "📜",
+        points: [
+          { t: "Réduction de base : 38,25 % du prix hors taxes du matériel neuf ; 45,9 % notamment en Guyane, à Mayotte, Saint-Pierre-et-Miquelon, Wallis-et-Futuna, en Nouvelle-Calédonie et pour les énergies renouvelables.", s: SRC.cgi199 },
+          { t: "En location, 66 % de l'avantage doit être rétrocédé à l'entreprise locataire (baisse du loyer et du prix de rachat) ; 56 % pour les programmes de moins de 300 000 € par exploitant.", s: SRC.cgi199 },
+          { t: "Conservation : 5 ans, ou la durée normale d'utilisation si elle est plus courte (7 ans au moins si cette durée atteint 7 ans).", s: SRC.cgi199 },
+          { t: "Agrément du ministère du Budget au-delà de 1 M€ par programme, ou de 250 000 € quand l'investisseur ne participe pas à l'exploitation ; obligatoire quel que soit le montant dans certains secteurs (transports, plaisance, agriculture, pêche…).", s: SRC.cgi199 },
+        ],
+      },
+      {
+        titre: "Si la réduction dépasse l'impôt", icone: "➡️",
+        points: [
+          { t: "La partie non utilisée se reporte sur l'impôt sur le revenu des années suivantes, jusqu'à la 5e année incluse.", s: SRC.cgi199 },
+          { t: "Si le locataire cesse son activité, la reprise de la réduction est limitée aux trois quarts.", s: SRC.cgi199 },
+        ],
+      },
+    ],
+    cas: [
+      {
+        titre: "Trop de réduction", niveau: "Piège",
+        enonce: "Une cliente paie 7 000 € d'impôt. Son opération Girardin lui donne 10 000 € de réduction.",
+        question: "Les 3 000 € en trop sont-ils perdus ?",
+        etapes: ["La réduction s'impute d'abord sur l'impôt de l'année : 7 000 €.", "Le solde de 3 000 € se reporte sur les années suivantes, jusqu'à la 5e.", "Mais elle a avancé de l'argent pour un gain retardé et incertain."],
+        reponse: "Non, ils se reportent jusqu'à 5 ans. Mieux vaut quand même dimensionner l'apport à l'impôt de l'année.",
+        s: SRC.cgi199,
+      },
+    ],
+    vraiFaux: [
+      { texte: "Un programme de 400 000 € auquel l'investisseur ne participe pas doit être agréé.", vrai: true, explication: "Seuil de 250 000 € quand l'investisseur ne participe pas à l'exploitation." },
+    ],
+    quiz: [
+      { question: "Taux de rétrocession au locataire pour un programme de 200 000 € ?", choix: ["44 %", "56 %", "66 %", "100 %"], bonne: 1, explication: "56 % sous 300 000 € par exploitant, 66 % au-delà." },
+    ],
+    liens: [{ type: "officiel", titre: "Article 199 undecies B du CGI (Légifrance)", url: SRC.cgi199[1] }],
   },
 });
