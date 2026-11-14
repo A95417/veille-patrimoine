@@ -271,6 +271,7 @@
         const minutes = Math.max(2, Math.round(mots / 200));
         const nbPoints = (brief.a_retenir || []).length;
         actions.innerHTML = `<a class="bouton" href="/brief?jour=${brief.jour}&edition=${brief.edition || "matin"}">${brief.edition === "soir" ? "Lire le point du soir" : "Lire le brief"} · ${minutes} min</a>
+          <a class="bouton second" href="/brief?jour=${brief.jour}&edition=${brief.edition || "matin"}&express=1">⚡ Express</a>
           <button type="button" class="bouton second" id="btn-ecouter">${ICONE_ECOUTE} Écouter</button>` +
           `<a class="bouton second" href="/linkedin">✏️ Post LinkedIn</a>`;
         document.getElementById("btn-ecouter").onclick = (e) => ecouterBrief(brief, e.currentTarget);

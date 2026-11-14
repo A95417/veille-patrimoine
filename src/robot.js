@@ -206,13 +206,25 @@ export async function routeRobot(request, env, chemin) {
   // 10) Enregistrer le brief du jour ; on ne garde que 3 mois d'historique.
   if (chemin === "/api/robot/brief" && request.method === "POST") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(corps.jour || "")) return json({ erreur: "Jour invalide." }, 400);
+    if (JSON.stringify(corps.contenu || {}).length > 200000) return json({ erreur: "Brief trop volumineux." }, 413);
     const edition = corps.edition === "soir" ? "soir" : "matin";
     await db.batch([
       db.prepare("INSERT OR REPLACE INTO briefs (jour, edition, contenu, cree_le) VALUES (?, ?, ?, ?)")
-        .bind(corps.jour, edition, JSON.stringify(corps.contenu).slice(0, 60000), new Date().toISOString()),
+        .bind(corps.jour, edition, JSON.stringify(corps.contenu), new Date().toISOString()),
       db.prepare("DELETE FROM briefs WHERE jour < ?").bind(new Date(Date.now() - 92 * 86400000).toISOString().slice(0, 10)),
     ]);
     return json({ ok: true });
+  }
+
+  // Schémas du brief (un par actualité), ajoutés au contenu d'un brief existant.
+  if (chemin === "/api/robot/brief/schemas" && request.method === "POST") {
+    const edition = corps.edition === "soir" ? "soir" : "matin";
+    const b = await db.prepare("SELECT contenu FROM briefs WHERE jour = ? AND edition = ?").bind(corps.jour || "", edition).first();
+    if (!b) return json({ erreur: "Brief introuvable." }, 404);
+    const contenu = JSON.parse(b.contenu);
+    contenu.schemas = corps.schemas && typeof corps.schemas === "object" ? corps.schemas : {};
+    await db.prepare("UPDATE briefs SET contenu = ? WHERE jour = ? AND edition = ?").bind(JSON.stringify(contenu), corps.jour, edition).run();
+    return json({ ok: true, n: Object.keys(contenu.schemas).length });
   }
 
   // ------------------------------------------------------------ IA (étape 4)

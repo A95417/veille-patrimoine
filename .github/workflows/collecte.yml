@@ -20,6 +20,10 @@ on:
         description: "Produire la version audio du dernier brief (oui) — laisser vide en temps normal"
         required: false
         default: ""
+      schemas:
+        description: "Refaire les schémas du dernier brief (oui) — laisser vide en temps normal"
+        required: false
+        default: ""
 
 permissions:
   contents: write   # pour la petite note quotidienne qui garde le robot actif
@@ -78,6 +82,16 @@ jobs:
           BRIEF_FORCER: ${{ inputs.brief }}
 
       # Version audio (voix naturelle) du dernier brief, si elle manque (rattrapage automatique) ou à la demande (audio = oui).
+      # Schémas du dernier brief (un par actualité), s'ils manquent ou à la demande (schemas = oui).
+      - name: Schémas du dernier brief
+        if: ${{ always() }}
+        run: node scripts/schemas.mjs | tee -a collecte.log
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SCHEMAS_FORCER: ${{ inputs.schemas }}
+
       - name: Audio du dernier brief
         if: ${{ always() }}
         run: node scripts/audio.mjs | tee -a collecte.log

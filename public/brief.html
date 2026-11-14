@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 9.2 -->
+<!-- version 10.0 — schémas, graphique des marchés, mode Express -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -16,6 +16,7 @@
   <meta name="apple-mobile-web-app-title" content="Veille">
   <script src="/commun.js"></script>
   <script src="/jeux.js"></script>
+  <script src="/schemas-brief.js"></script>
   <style>
     .brief-page { max-width: 1320px; }
     .brief-grille { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; align-items: start; }
@@ -58,6 +59,55 @@
     .actu p { margin: 0; font-size: .95rem; line-height: 1.6; color: var(--doux); }
     .actu .sources { margin-top: auto; padding-top: 6px; }
     .chiffre-brief { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
+    /* Schémas des actualités */
+    .schema { margin: 4px 0 2px; padding: 14px 16px; border-radius: 14px; background: var(--i0, var(--fond)); color: var(--texte); }
+    .schema figcaption { display: flex; gap: 8px; align-items: center; font-weight: 600; font-size: .9rem; margin-bottom: 10px; color: var(--i3, var(--accent-fonce)); }
+    .sch-icone { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--carte); color: var(--i3, var(--accent)); flex: 0 0 34px; }
+    .sch-chiffre { display: flex; flex-direction: column; gap: 2px; }
+    .sch-valeur { font-family: var(--titre); font-weight: 700; font-size: 2.3rem; line-height: 1.1; color: var(--i3, var(--accent-fonce)); }
+    .sch-legende { font-size: .92rem; color: var(--texte); }
+    .sch-aa { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: stretch; }
+    .sch-boite { background: var(--carte); border-radius: 12px; padding: 10px 12px; font-size: .9rem; line-height: 1.35; display: flex; flex-direction: column; gap: 4px; }
+    .sch-apres { box-shadow: inset 0 0 0 2px var(--i3, var(--accent)); }
+    .sch-etiquette { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); }
+    .sch-fleche { align-self: center; font-size: 1.3rem; font-weight: 700; color: var(--i3, var(--accent)); }
+    .sch-etapes, .sch-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .sch-etapes li, .sch-points li { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; line-height: 1.4; }
+    .sch-num, .sch-coche { flex: 0 0 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: .78rem; font-weight: 700; background: var(--i3, var(--accent)); color: #fff; }
+    .sch-coche { background: var(--carte); color: var(--i3, var(--accent)); }
+    .actu .resume-long { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .actu .resume-long.ouvert { display: block; }
+    .lire-suite { font: inherit; font-size: .85rem; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; width: fit-content; }
+    /* Graphique des marchés */
+    .g-marches { display: grid; gap: 8px; margin-top: 16px; }
+    .gm-ligne { display: grid; grid-template-columns: minmax(90px, 150px) 1fr 70px; gap: 12px; align-items: center; font-size: .92rem; }
+    .gm-piste { position: relative; height: 18px; }
+    .gm-zero { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--bord-fort); }
+    .gm-barre { position: absolute; top: 2px; bottom: 2px; border-radius: 4px; transition: width .4s ease; }
+    .gm-barre.pos { background: var(--ok); } .gm-barre.neg { background: var(--ko); }
+    .gm-val { text-align: right; font-weight: 600; } .gm-val.pos { color: var(--ok); } .gm-val.neg { color: var(--ko); }
+    /* Lecture Express (façon stories) */
+    .bouton-express { background: #ffd23f !important; color: #1b1f3b !important; font-weight: 700; }
+    .express { position: fixed; inset: 0; z-index: 100; background: var(--fond); display: flex; flex-direction: column; align-items: center; }
+    .ex-barres { display: flex; gap: 4px; width: min(560px, calc(100% - 32px)); margin: 14px 0 0; }
+    .ex-barres span { flex: 1; height: 4px; border-radius: 2px; background: var(--bord-fort); overflow: hidden; }
+    .ex-barres span.vu { background: var(--accent); }
+    .ex-fermer { position: absolute; top: 24px; right: 16px; z-index: 3; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--bord); background: var(--carte); color: var(--texte); font-size: 1.1rem; cursor: pointer; }
+    .ex-carte { position: relative; z-index: 1; width: min(560px, calc(100% - 32px)); flex: 1; overflow-y: auto; padding: 44px 4px 30px; display: flex; flex-direction: column; justify-content: center; gap: 14px; pointer-events: none; }
+    .ex-carte a, .ex-carte button { pointer-events: auto; position: relative; z-index: 3; }
+    .ex-zone { position: absolute; top: 70px; bottom: 0; width: 50%; z-index: 2; background: none; border: 0; cursor: pointer; }
+    .ex-prec { left: 0; width: 30%; } .ex-suiv { right: 0; width: 70%; }
+    .ex-tete { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--doux); }
+    .ex-grand { font-size: clamp(1.8rem, 6vw, 2.4rem); line-height: 1.15; margin: 0; }
+    .ex-titre { font-size: clamp(1.35rem, 4.5vw, 1.7rem); line-height: 1.25; margin: 0; }
+    .ex-chiffre { font-family: var(--titre); font-size: clamp(3.5rem, 16vw, 5.5rem); font-weight: 700; line-height: 1; color: var(--accent); }
+    .ex-texte { font-size: 1.1rem; line-height: 1.5; margin: 0; } .ex-texte.petit { font-size: .98rem; color: var(--doux); }
+    .ex-liste, .ex-retenir { margin: 0; padding-left: 22px; display: grid; gap: 12px; font-size: 1.05rem; line-height: 1.45; }
+    .ex-aide { color: var(--doux); font-size: .9rem; margin: 10px 0 0; }
+    .ex-lien { font-weight: 600; width: fit-content; }
+    .ex-fin { display: flex; gap: 10px; flex-wrap: wrap; }
+    .express .schema { pointer-events: none; }
+    @media (max-width: 560px) { .gm-ligne { grid-template-columns: 84px 1fr 58px; gap: 8px; font-size: .85rem; } .sch-aa { grid-template-columns: 1fr; } .sch-fleche { transform: rotate(90deg); justify-self: center; } }
     .avertissement { font-size: .85rem; color: var(--doux); border: 1px dashed var(--bord-fort); border-radius: 12px; padding: 10px 14px; }
   </style>
 </head>
@@ -95,7 +145,8 @@
         <h1>${b.edition === "soir" ? "Le point de la journée" : "Brief du matin"} · ${dateLongue(b.jour)}</h1>
         <p>${echapper(b.synthese || "Brief produit sans synthèse (IA indisponible ce matin-là) : retrouvez ci-dessous les actualités majeures.")}</p>
         <div class="actions-hero no-print">
-          <button type="button" class="bouton" id="btn-ecouter">${ICONE_ECOUTE} Écouter le brief</button>
+          <button type="button" class="bouton bouton-express" id="btn-express">⚡ Version Express · 1 min</button>
+          <button type="button" class="bouton second" id="btn-ecouter">${ICONE_ECOUTE} Écouter le brief</button>
           <button type="button" class="bouton second" onclick="print()">Imprimer</button>
         </div>
       </section>`;
@@ -113,10 +164,11 @@
       html += `<section id="b-actus"><div class="titre-section"><h2>${b.edition === "soir" ? "Les actualités majeures de la journée" : "Les actualités majeures des dernières 24 heures"}</h2></div>
         ${(b.actualites || []).length ? `<div class="actus">${b.actualites.map((a) => {
           const t = themeDe(a.categories);
-          return `<article class="actu">
+          return `<article class="actu th-${t.id}">
             <div class="actu-haut">${picto(t.id)}<div class="meta th-${t.id}"><span class="etiquette">${echapper((a.categories || [])[0] || t.nom)}</span><span class="niveau n${a.importance}">Importance ${a.importance}/5</span></div></div>
             <h3><a href="${lienSujet(a.id)}">${echapper(a.titre)}</a></h3>
-            ${a.resume ? `<p>${echapper(a.resume)}</p>` : ""}
+            ${schemaActu((b.schemas || {})[a.id])}
+            ${a.resume ? `<p class="${a.resume.length > 220 ? "resume-long" : ""}">${echapper(a.resume)}</p>${a.resume.length > 220 ? '<button type="button" class="lire-suite no-print">Lire la suite</button>' : ""}` : ""}
             <div class="sources">${(a.sources || []).map((s) => `<a class="source" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">${echapper(s.nom)} ↗</a>`).join("")}
               <a class="source no-print" href="/linkedin?sujet=${encodeURIComponent(a.id)}" title="Préparer un post LinkedIn sur ce sujet">✏️ Post LinkedIn</a></div>
           </article>`;
@@ -125,8 +177,7 @@
 
       html += `<section class="carte bloc" id="b-marches"><h2>${b.edition === "soir" ? "Marchés : la séance du jour" : "Marchés : clôtures de la veille"}</h2>
         ${b.commentaire_marches ? `<p style="margin:0">${echapper(b.commentaire_marches)}</p>` : ""}
-        ${valeurs.length ? `<div class="mini-marches">${valeurs.map((v) =>
-            `<div><span>${echapper(nomCourt(v))}</span>${formatVariation(v.variation)}</div>`).join("")}</div>
+        ${valeurs.length ? `${graphiqueMarches(valeurs)}
           <p class="doux petit" style="margin:8px 0 0">Estimations via des fonds indiciels cotés à New York (voir la page Marchés)${b.edition === "soir" ? ", relevées pendant la séance : Europe clôturée, New York en cours" : ""}.</p>`
           : `<p class="doux" style="margin:0">Aucun relevé de clôture disponible pour ce jour.</p>`}
       </section>`;
@@ -141,6 +192,9 @@
         { cle: `actu:${b.jour}-${b.edition || "matin"}` });
       window.speechSynthesis?.cancel();
       document.getElementById("btn-ecouter").onclick = (e) => ecouterBrief(b, e.currentTarget);
+      document.getElementById("btn-express").onclick = () => ouvrirExpress(b, valeurs);
+      document.querySelectorAll(".lire-suite").forEach((x) => x.onclick = () => { const p = x.previousElementSibling; p.classList.toggle("ouvert"); x.textContent = p.classList.contains("ouvert") ? "Réduire" : "Lire la suite"; });
+      if (new URLSearchParams(location.search).get("express") === "1") { history.replaceState(null, "", location.pathname + location.search.replace(/[?&]express=1/, "")); ouvrirExpress(b, valeurs); }
     }
 
     // Sommaire de la colonne de gauche : un lien par section, celui de la section visible est surligné.
