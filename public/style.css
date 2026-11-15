@@ -484,3 +484,10 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
   .nav::-webkit-scrollbar { display: none; }
   .recherche-entete { margin-left: auto; }
 }
+
+/* Lisibilité sur mobile : aucun texte sous 12 px (onglets, badges, crédits photo, étiquettes de schémas). */
+@media (max-width: 760px) {
+  .onglets-bas a, .onglets-bas button, .credit, .type, .tag, .cas-niveau, .sch-etiquette, .g-col-lib, .g-col-val, .memo-titre, .pilule { font-size: .75rem !important; }
+}
+
+#bandeau-hors-ligne { position: sticky; top: 0; z-index: 60; background: #3a3f55; color: #fff; text-align: center; font-size: .85rem; padding: 6px 12px; }

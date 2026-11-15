@@ -506,7 +506,7 @@ async function chargerEntete(pageActive) {
     plus: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
   };
   const principaux = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "LinkedIn"]];
-  const autres = [["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
+  const autres = [["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/glossaire", "Glossaire"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
   const dansPlus = autres.some(([h]) => h === pageActive);
   const svg = (k) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
   document.getElementById("onglets-bas")?.remove();
@@ -528,7 +528,8 @@ async function chargerEntete(pageActive) {
     }
   });
   chargerFavoris();
-  const deconnecter = async () => { await appelApi("/api/deconnexion", "POST", {}); location.href = "/connexion"; };
+  const deconnecter = async () => { await appelApi("/api/deconnexion", "POST", {}); await viderHorsLigne(); location.href = "/connexion"; };
+  activerHorsLigne();
   document.getElementById("btn-deconnexion").onclick = deconnecter;
   document.getElementById("btn-deconnexion-2").onclick = deconnecter;
   return moi;
@@ -570,4 +571,23 @@ async function desactiverNotifications() {
   if (!a) return;
   await appelApi("/api/push/desabonnement", "POST", { endpoint: a.endpoint }).catch(() => {});
   await a.unsubscribe().catch(() => {});
+}
+
+// ---------------------------------------------------------------- Lecture hors ligne
+// Le service de fond (sw.js) garde une copie des pages et lectures consultées ; bandeau quand le réseau manque.
+function activerHorsLigne() {
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  const bandeau = () => {
+    let b = document.getElementById("bandeau-hors-ligne");
+    if (navigator.onLine) { b?.remove(); return; }
+    if (b) return;
+    b = document.createElement("div"); b.id = "bandeau-hors-ligne"; b.setAttribute("role", "status");
+    b.textContent = "Hors ligne : vous lisez la dernière version enregistrée sur cet appareil.";
+    document.body.prepend(b);
+  };
+  addEventListener("online", bandeau); addEventListener("offline", bandeau); bandeau();
+}
+// À la déconnexion, on efface les copies hors ligne (données personnelles).
+async function viderHorsLigne() {
+  try { for (const k of await caches.keys()) await caches.delete(k); } catch {}
 }

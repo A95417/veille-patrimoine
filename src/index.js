@@ -187,9 +187,18 @@ async function api(request, env, url) {
     }
     return json({ ok: true });
   }
+  // Note personnelle sur un sujet de « Ma sélection » (jamais transmise à l'IA).
+  if (chemin === "/api/selection/note" && methode === "POST") {
+    const d = await lireJson(request);
+    const id = Number(d.sujet_id), note = String(d.note ?? "").trim().slice(0, 1000);
+    if (!Number.isInteger(id)) return erreur("Sujet invalide.");
+    const r = await db.prepare("UPDATE favoris SET note = ? WHERE utilisateur_id = ? AND sujet_id = ?").bind(note || null, moi.id, id).run();
+    if (!r.meta.changes) return erreur("Ce sujet n'est pas dans votre sélection.", 404);
+    return json({ ok: true });
+  }
   if (chemin === "/api/selection" && methode === "GET") {
     const { results } = await db
-      .prepare(`SELECT ${COLONNES}, f.cree_le AS mis_de_cote_le FROM favoris f JOIN sujets s ON s.id = f.sujet_id
+      .prepare(`SELECT ${COLONNES}, f.cree_le AS mis_de_cote_le, f.note AS ma_note FROM favoris f JOIN sujets s ON s.id = f.sujet_id
                  WHERE f.utilisateur_id = ? ORDER BY f.cree_le DESC LIMIT 300`)
       .bind(moi.id).all();
     return json({ sujets: await avecArticles(db, results) });

@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- version 1.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glossaire · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <script src="/commun.js"></script>
+  <script src="/glossaire.js"></script>
+  <script src="/fiches.js"></script>
+  <script src="/fiches-suite.js"></script>
+  <script src="/fiches-nouvelles.js"></script>
+  <style>
+    .lettres { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 18px; }
+    .lettres a { min-width: 34px; text-align: center; padding: 6px 0; border-radius: 8px; background: var(--carte); border: 1px solid var(--bord); text-decoration: none; font-weight: 600; }
+    .terme { padding: 14px 0; border-bottom: 1px solid var(--bord); }
+    .terme h3 { margin: 0 0 4px; font-size: 1.05rem; }
+    .terme .variantes { color: var(--doux); font-weight: 400; font-size: .85rem; }
+    .terme p { margin: 0; line-height: 1.55; }
+    .terme .liens { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+    h2.lettre { margin: 22px 0 0; font-size: 1.3rem; color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page" style="max-width:820px">
+    <p class="surtitre"><a href="/apprendre">Apprendre</a> › Glossaire</p>
+    <h1>Glossaire</h1>
+    <p class="doux">Les mots techniques du brief et des fiches, expliqués simplement. Ce sont des définitions générales : les montants et taux à jour sont dans les fiches.</p>
+    <label class="sr" for="filtre">Filtrer</label>
+    <input id="filtre" type="search" placeholder="Chercher un mot : usufruit, PFU, spread…" autocomplete="off">
+    <nav class="lettres" id="lettres" aria-label="Lettres"></nav>
+    <div id="liste"></div>
+    <p class="doux" id="vide" hidden>Aucun mot ne correspond.</p>
+  </main>
+  <script>
+    const sansAccent = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    // Fiches liées : le terme apparaît dans le titre, le sous-titre ou le mot-clé de recherche de la fiche.
+    const fichesLiees = (variantes) => FICHES.filter((f) => variantes.some((v) => {
+      const t = sansAccent(` ${f.titre} ${f.sousTitre || ""} ${f.recherche || ""} `), m = sansAccent(v);
+      return m.length > 2 && new RegExp(`[^a-z0-9]${m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[^a-z0-9]`).test(t);
+    })).slice(0, 3);
+    const termes = GLOSSAIRE.map(([v, d]) => ({ nom: v[0], autres: v.slice(1), def: d, fiches: fichesLiees(v), cle: sansAccent(v.join(" ") + " " + d) }))
+      .sort((a, b) => sansAccent(a.nom).localeCompare(sansAccent(b.nom)));
+    function afficher(q) {
+      const k = sansAccent(q.trim()), vis = termes.filter((t) => !k || t.cle.includes(k));
+      let html = "", lettre = "";
+      for (const t of vis) {
+        const l = sansAccent(t.nom)[0].toUpperCase();
+        if (l !== lettre) { lettre = l; html += `<h2 class="lettre" id="l-${l}">${l}</h2>`; }
+        html += `<div class="terme"><h3>${echapper(t.nom)} ${t.autres.length ? `<span class="variantes">(${t.autres.map(echapper).join(", ")})</span>` : ""}</h3>
+          <p>${echapper(t.def)}</p>${t.fiches.length ? `<div class="liens">${t.fiches.map((f) => `<a class="pilule" href="/fiche?id=${f.id}">Fiche : ${echapper(f.titre)} →</a>`).join("")}</div>` : ""}</div>`;
+      }
+      document.getElementById("liste").innerHTML = html;
+      document.getElementById("vide").hidden = vis.length > 0;
+      document.getElementById("lettres").innerHTML = [...new Set(vis.map((t) => sansAccent(t.nom)[0].toUpperCase()))].map((l) => `<a href="#l-${l}">${l}</a>`).join("");
+    }
+    chargerEntete("/apprendre").then(() => {
+      const f = document.getElementById("filtre"), q = new URLSearchParams(location.search).get("q") || "";
+      f.value = q; afficher(q); f.addEventListener("input", () => afficher(f.value));
+      if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+    });
+  </script>
+</body>
+</html>

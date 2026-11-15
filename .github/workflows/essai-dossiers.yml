@@ -1,0 +1,18 @@
+name: Essai dossiers
+on:
+  workflow_dispatch:
+jobs:
+  essai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          curl -sS https://www.senat.fr/robots.txt | grep -iE "user-agent: \*|disallow: /dossier|disallow: /$" | head
+          curl -sS -A "VeillePatrimoineBot/1.0" https://www.senat.fr/dossier-legislatif/pjlf2027.html -o s.html; wc -c s.html
+          python3 - <<'PY'
+          import re
+          h=open("s.html",encoding="utf-8",errors="replace").read()
+          h=re.sub(r'<(script|style|svg)[\s\S]*?</\1>','',h)
+          i=h.find("timeline"); i = i if i>0 else h.find("tape")
+          print(h[max(0,i-2000):i+6000])
+          PY

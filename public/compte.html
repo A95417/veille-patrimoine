@@ -101,7 +101,7 @@
     $n("btn-notif-off").onclick = async () => { await desactiverNotifications(); notifier("Notifications désactivées sur cet appareil."); majNotif(); };
     majNotif();
 
-    document.getElementById("btn-sortir").onclick = async () => { await appelApi("/api/deconnexion", "POST", {}); location.href = "/connexion"; };
+    document.getElementById("btn-sortir").onclick = async () => { await appelApi("/api/deconnexion", "POST", {}); await viderHorsLigne(); location.href = "/connexion"; };
     document.getElementById("form-mdp").addEventListener("submit", async (e) => {
       e.preventDefault();
       const msg = document.getElementById("msg-mdp");

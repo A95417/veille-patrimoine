@@ -103,6 +103,8 @@
     .bloc h2 { font-size: 1.15rem; display: flex; align-items: center; gap: 8px; }
     .avertissement { font-size: .85rem; color: var(--doux); border: 1px dashed var(--bord-fort); border-radius: 12px; padding: 10px 14px; }
     @media (max-width: 760px) { .etape:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -16px; transform: translateX(50%); } .etape { flex-basis: 100%; margin: 6px 0 14px; } .phrase { font-size: 1.15rem; } }
+    .alerte-fiche { background: var(--ko-doux, #fdecea); border-radius: 14px; padding: 12px 16px; margin: 0 0 16px; line-height: 1.5; }
+    .alerte-fiche ul { margin: 6px 0; padding-left: 20px; }
   </style>
 </head>
 <body>
@@ -132,6 +134,7 @@
           ${sc ? `<span class="niveau ${sc.score / sc.total >= 0.8 ? "n4" : ""}">Meilleur score au quiz : ${sc.score}/${sc.total}</span>` : ""}</div>
         <h1 style="margin:12px 0 4px">${echapper(f.titre)}</h1>
         <p class="doux" style="margin:0 0 14px;font-size:1.05rem">${echapper(f.sousTitre)}</p>
+        <div id="alerte-fiche" class="alerte-fiche no-print" hidden></div>
         <div class="barre-actions no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
           <a class="bouton" href="#jeux">Me tester</a>
           <a class="bouton bouton-discret" href="#client">Présenter au client</a>
@@ -240,6 +243,18 @@
       appelApi("/api/recherche?q=" + encodeURIComponent(f.recherche)).then(({ sujets }) => {
         const z = document.getElementById("actus");
         z.innerHTML = sujets.length ? sujets.slice(0, 6).map(ligne).join("") : '<p class="doux">Aucun sujet récent sur ce thème pour l\'instant.</p>';
+        // « Fiche à revérifier » : une actualité publiée après la date de vérification parle d'un changement de règle.
+        const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+        const [j, m, a] = String(f.verifie).split(" "), verifieLe = new Date(Number(a), MOIS.indexOf(m), Number(j));
+        const CHANGEMENT = /loi de finances|\bPLF|PLFSS|projet de loi|amendement|réforme|décret|barème|plafond|seuil|abattement|supprim|relèv|nouvelle règle|nouveau régime|prolongé|prolongation|BOFiP|fiscalité de/i;
+        const alertes = sujets.filter((s) => new Date(s.derniere_pub) > verifieLe && CHANGEMENT.test(s.titre_fr || s.titre)).slice(0, 3);
+        if (alertes.length && !isNaN(verifieLe)) {
+          const box = document.getElementById("alerte-fiche");
+          box.innerHTML = `<strong>⚠️ À revérifier :</strong> ${alertes.length > 1 ? "des actualités publiées" : "une actualité publiée"} depuis la vérification de cette fiche (le ${f.verifie}) ${alertes.length > 1 ? "pourraient" : "pourrait"} changer une règle :
+            <ul>${alertes.map((s) => `<li><a href="/sujet?id=${s.id}">${echapper(s.titre_fr || s.titre)}</a></li>`).join("")}</ul>
+            <span class="doux petit">Repérage automatique par mots-clés : vérifiez sur la source officielle avant de conseiller.</span>`;
+          box.hidden = false;
+        }
       }).catch(() => { document.getElementById("actus").innerHTML = '<p class="doux">Recherche indisponible.</p>'; });
     }
 

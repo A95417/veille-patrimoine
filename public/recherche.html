@@ -15,6 +15,10 @@
   <meta name="theme-color" content="#3a49d6">
   <meta name="apple-mobile-web-app-title" content="Veille">
   <script src="/commun.js"></script>
+  <script src="/glossaire.js"></script>
+  <script src="/fiches.js"></script>
+  <script src="/fiches-suite.js"></script>
+  <script src="/fiches-nouvelles.js"></script>
   <style>
     .zone-recherche { display: flex; gap: 8px; margin: 12px 0 18px; }
     .zone-recherche input { flex: 1; font-size: 1.05rem; padding: 12px 14px; }
@@ -24,16 +28,34 @@
   <header class="entete" id="entete"></header>
   <main class="page">
     <h1>Recherche</h1>
-    <p class="doux">Cherche dans les titres, les chapôs et les résumés des 3 derniers mois. Les accents et les majuscules sont ignorés, et les débuts de mots suffisent : « assur vie » trouve « assurance-vie ».</p>
+    <p class="doux">Cherche dans les fiches Apprendre, le glossaire, et les titres, chapôs et résumés de l'actualité des 3 derniers mois. Les accents et les majuscules sont ignorés, et les débuts de mots suffisent : « assur vie » trouve « assurance-vie ».</p>
     <form class="zone-recherche" id="form">
       <input id="q" type="search" placeholder="Ex. : PER, donation, Livret A, SCPI, BCE…" autocomplete="off" autofocus>
       <button class="bouton" type="submit">Chercher</button>
     </form>
+    <section class="carte" id="savoir" hidden style="margin:0 0 18px">
+      <h2 style="margin:0 0 8px;font-size:1.05rem">📚 Dans Apprendre et le glossaire</h2>
+      <div id="savoir-liste" style="display:flex;flex-direction:column;gap:8px"></div>
+    </section>
     <p class="doux" id="info"></p>
     <div class="grille-cartes" id="resultats"></div>
   </main>
   <script>
+    // Fiches et glossaire : recherche locale, mots entiers ou débuts de mots, sans accents.
+    const sansAccent = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    function chercherSavoir(q) {
+      const mots = sansAccent(q).split(/[^a-z0-9]+/).filter((m) => m.length > 1);
+      const zone = document.getElementById("savoir"), liste = document.getElementById("savoir-liste");
+      if (!mots.length) { zone.hidden = true; return; }
+      const ok = (texte) => { const t = " " + sansAccent(texte).replace(/[^a-z0-9]+/g, " ") + " "; return mots.every((m) => t.includes(" " + m + (m.length <= 3 ? " " : ""))); };   // sigles courts : mot entier
+      const fiches = FICHES.filter((f) => ok(`${f.titre} ${f.sousTitre || ""} ${f.recherche || ""} ${f.enUnePhrase || ""}`)).slice(0, 4);
+      const termes = GLOSSAIRE.filter(([v, d]) => ok(v.join(" "))).slice(0, 4);
+      liste.innerHTML = fiches.map((f) => `<a href="/fiche?id=${f.id}"><strong>Fiche : ${echapper(f.titre)}</strong> <span class="doux">— ${echapper(f.sousTitre || "")}</span></a>`).join("") +
+        termes.map(([v, d]) => `<div><a href="/glossaire?q=${encodeURIComponent(v[0])}"><strong>${echapper(v[0])}</strong></a> <span class="doux">— ${echapper(d)}</span></div>`).join("");
+      zone.hidden = !(fiches.length + termes.length);
+    }
     async function chercher(q) {
+      chercherSavoir(q);
       const info = document.getElementById("info");
       const zone = document.getElementById("resultats");
       if (!q.trim()) { info.textContent = ""; zone.innerHTML = ""; return; }

@@ -18,6 +18,10 @@
   <style>
     .outils-selection { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
     .vide-selection { text-align: center; padding: 40px 20px; }
+    .ma-note { margin: 0 16px 16px; padding-top: 10px; border-top: 1px dashed var(--bord); }
+    .ma-note label { font-size: .85rem; margin: 0 0 4px; display: block; }
+    .ma-note textarea { width: 100%; resize: vertical; font: inherit; font-size: .92rem; }
+    @media print { .ma-note textarea { border: 0; padding: 0; } .ma-note textarea:placeholder-shown { display: none; } }
     .vide-selection svg { color: var(--accent); }
   </style>
 </head>
@@ -39,7 +43,10 @@
       const { sujets } = await appelApi("/api/selection");
       document.getElementById("compte").textContent = sujets.length ? `${sujets.length} sujet${sujets.length > 1 ? "s" : ""}` : "";
       document.getElementById("outils").hidden = !sujets.length;
-      document.getElementById("liste").innerHTML = sujets.length ? sujets.map(carte).join("") :
+      document.getElementById("liste").innerHTML = sujets.length ? sujets.map((s) => carte(s).replace(/<\/article>\s*$/, `
+          <div class="ma-note"><label for="note-${s.id}">📝 Ma note <span class="doux">(visible par moi seul)</span></label>
+            <textarea id="note-${s.id}" data-note="${s.id}" rows="2" maxlength="1000" placeholder="Ex. : à évoquer avec M. Dupont au rendez-vous de mars">${echapper(s.ma_note || "")}</textarea>
+            <span class="doux petit" data-etat="${s.id}"></span></div></article>`)).join("") :
         `<div class="carte vide-selection" style="grid-column:1/-1">
           <svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
           <p><strong>Votre sélection est vide.</strong></p>
@@ -53,6 +60,17 @@
           return `${i + 1}. ${s.titre_fr || s.titre}\n${texteCourt(s)}${a ? `\nSource : ${a.source_nom} — ${a.lien}` : ""}`;
         }).join("\n\n"));
     }
+    // Notes : enregistrées automatiquement une seconde après la dernière frappe.
+    const minuteurs = {};
+    document.addEventListener("input", (e) => {
+      const t = e.target.closest("[data-note]"); if (!t) return;
+      const id = t.dataset.note, etat = document.querySelector(`[data-etat="${id}"]`);
+      etat.textContent = "…"; clearTimeout(minuteurs[id]);
+      minuteurs[id] = setTimeout(async () => {
+        try { await appelApi("/api/selection/note", "POST", { sujet_id: Number(id), note: t.value }); etat.textContent = "Enregistrée ✓"; }
+        catch (err) { etat.textContent = "Non enregistrée : " + err.message; }
+      }, 1000);
+    });
     // Retirer un sujet : la carte disparaît de la page.
     document.addEventListener("click", (e) => {
       const b = e.target.closest("[data-favori]");
