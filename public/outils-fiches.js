@@ -416,3 +416,82 @@ const OUTILS_FICHES = {
     },
   ],
 };
+
+// ---------------------------------------------------------------- Boîte à outils : calculs transverses
+// Sources : barème IR 2026 (Service-public F1419), émoluments des notaires (Code de commerce, art. A444-91),
+// frais d'acquisition (impots.gouv.fr), norme du Haut Conseil de stabilité financière (35 %, 25 ans),
+// droits de succession en ligne directe (CGI art. 777 et 779).
+const BAREME_IR_2026 = [[11600, 0], [29579, .11], [84577, .30], [181917, .41], [Infinity, .45]];
+const PLAFOND_DEMI_PART = 1807;
+const BOITE_OUTILS = [
+  {
+    id: "ir", titre: "Impôt sur le revenu 2026", theme: "fisc",
+    intro: "Barème appliqué aux revenus de 2025 (Service-public). Quotient familial plafonné à 1 807 € par demi-part au-delà de la situation de base.",
+    source: ["Service-public · Barème de l'impôt", "https://www.service-public.gouv.fr/particuliers/vosdroits/F1419"],
+    html: () => ctl.curseur("rn", "Revenu net imposable du foyer", 0, 400000, 1000, 60000) +
+      ctl.choix("sit", "Situation", [["1", "Célibataire"], ["2", "Couple marié ou pacsé"]], "2") +
+      ctl.choix("enf", "Enfants à charge", [["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]], "2") + ctl.resultat(),
+    init: (z) => brancher(z, { rn: euros }, (v, r) => {
+      const base = v.sit, demi = v.enf <= 2 ? v.enf * .5 : 1 + (v.enf - 2);   // 3e enfant et suivants : une part entière
+      const parts = base + demi;
+      const impot = (p) => baremeProgressif(v.rn / p, BAREME_IR_2026) * p;
+      const avecQF = impot(parts), sansQF = impot(base);
+      const plafond = sansQF - demi * 2 * PLAFOND_DEMI_PART;
+      const brut = Math.max(avecQF, plafond);
+      const tmi = [...BAREME_IR_2026].find(([h]) => v.rn / (brut === avecQF ? parts : base) <= h)[1];
+      r.className = "simu-resultat neutre";
+      r.innerHTML = `${parts.toLocaleString("fr-FR")} part${parts > 1 ? "s" : ""} · Impôt brut estimé : <strong>${euros(brut)}</strong><br>
+        Taux marginal : <strong>${Math.round(tmi * 100)} %</strong> · Taux moyen : <strong>${pct(v.rn ? brut / v.rn : 0)}</strong>` +
+        (brut > avecQF + 1 ? `<br>Le plafonnement du quotient familial s'applique (+${euros(brut - avecQF)}).` : "") +
+        note("Avant décote, réductions et crédits d'impôt. Cas simples seulement (pas de parent isolé, d'invalidité ni de résidence alternée).");
+    }),
+  },
+  {
+    id: "notaire", titre: "Frais d'achat immobilier (« frais de notaire »)", theme: "immo",
+    intro: "Taxe de publicité foncière (6,32 % au maximum dans l'ancien, 0,71 % dans le neuf), contribution de sécurité immobilière (0,1 %) et émoluments du notaire (barème réglementé).",
+    source: ["impots.gouv.fr · Frais payés chez le notaire", "https://www.impots.gouv.fr/particulier/questions/jachete-un-bien-immobilier-quaurai-je-payer-comme-frais-au-notaire"],
+    html: () => ctl.curseur("px", "Prix du bien", 20000, 2000000, 5000, 300000) +
+      ctl.choix("ty", "Type de bien", [["ancien", "Ancien"], ["neuf", "Neuf (VEFA)"]], "ancien") +
+      ctl.choix("pa", "Première acquisition de résidence principale ? (ancien)", [["0", "Non"], ["1", "Oui"]], "0") + ctl.resultat(),
+    init: (z) => brancher(z, { px: euros }, (v, r) => {
+      const tpf = v.ty === "neuf" ? .0071 : v.pa === 1 ? .0581 : .0632;   // primo-accédant : part départementale limitée à 4,5 % (≈ 5,81 % au total)
+      const droits = v.px * tpf;
+      const csi = Math.max(15, v.px * .001);
+      const emolHT = baremeProgressif(v.px, [[6500, .0387], [17000, .01596], [60000, .01064], [Infinity, .00799]]);
+      const total = droits + csi + emolHT * 1.2;
+      r.className = "simu-resultat neutre";
+      r.innerHTML = `Taxes (publicité foncière) : <strong>${euros(droits)}</strong> · Contribution de sécurité immobilière : ${euros(csi)}<br>
+        Émoluments du notaire : ${euros(emolHT)} HT, soit ${euros(emolHT * 1.2)} TTC<br><strong>Total estimé : ${euros(total)}</strong> (${pct(total / v.px)} du prix), hors débours.` +
+        note("Le taux de l'ancien dépend du département (6,32 % au maximum jusqu'en mars 2028). Pour un primo-accédant, la part départementale reste limitée à 4,5 % : estimation à environ 5,81 % au total. Demandez le chiffre exact au notaire ou utilisez le simulateur de l'ANIL.");
+    }),
+  },
+  {
+    id: "emprunt", titre: "Capacité d'emprunt", theme: "immo",
+    intro: "Norme du Haut Conseil de stabilité financière : les charges d'emprunt ne doivent pas dépasser 35 % des revenus, sur 25 ans au plus.",
+    source: ["economie.gouv.fr · Norme HCSF", "https://www.economie.gouv.fr/hcsf/mesures/mesure-relative-loctroi-de-credits-immobiliers"],
+    html: () => ctl.curseur("rv", "Revenus nets mensuels du foyer", 1000, 30000, 100, 5000) + ctl.curseur("ch", "Crédits déjà en cours (par mois)", 0, 10000, 50, 0) +
+      ctl.curseur("tx", "Taux du crédit (assurance comprise), en %", 0.5, 7, 0.05, 3.5) + ctl.choix("du", "Durée", [["15", "15 ans"], ["20", "20 ans"], ["25", "25 ans"]], "25") + ctl.resultat(),
+    init: (z) => brancher(z, { rv: euros, ch: euros, tx: (x) => x.toLocaleString("fr-FR") + " %" }, (v, r) => {
+      const mens = Math.max(0, v.rv * .35 - v.ch), t = v.tx / 100 / 12, n = v.du * 12;
+      const capital = t ? mens * (1 - Math.pow(1 + t, -n)) / t : mens * n;
+      r.className = "simu-resultat " + (mens > 0 ? "gain" : "perte");
+      r.innerHTML = `Mensualité maximale : <strong>${euros(mens)}</strong> (35 % des revenus, moins les crédits en cours)<br>Capital empruntable : <strong>${euros(capital)}</strong> sur ${v.du} ans` +
+        note("Estimation : chaque banque apprécie aussi le reste à vivre, l'apport et peut déroger dans la limite de 20 % de ses dossiers.");
+    }),
+  },
+  {
+    id: "succession", titre: "Droits de succession d'une famille", theme: "transmission",
+    intro: "Héritage partagé à parts égales entre les enfants, après l'abattement de 100 000 € chacun et le barème en ligne directe. Le conjoint est exonéré.",
+    source: ["impots.gouv.fr · Calcul des droits de succession", "https://www.impots.gouv.fr/particulier/questions/comment-dois-je-calculer-les-droits-de-succession"],
+    html: () => ctl.curseur("pa", "Patrimoine net transmis", 0, 5000000, 10000, 800000) + ctl.choix("en", "Nombre d'enfants", [["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]], "2") +
+      ctl.choix("cj", "Conjoint survivant", [["0", "Non"], ["1", "Oui, 1/4 en pleine propriété"]], "0") + ctl.resultat(),
+    init: (z) => brancher(z, { pa: euros }, (v, r) => {
+      const partEnfants = v.cj === 1 ? v.pa * .75 : v.pa, parEnfant = partEnfants / v.en;
+      const droitsUn = baremeProgressif(Math.max(0, parEnfant - 100000), BAREME_LIGNE_DIRECTE), total = droitsUn * v.en;
+      r.className = "simu-resultat " + (total > 0 ? "perte" : "gain");
+      r.innerHTML = `${v.cj === 1 ? `Conjoint : ${euros(v.pa * .25)} (exonéré)<br>` : ""}Chaque enfant reçoit <strong>${euros(parEnfant)}</strong> et paie <strong>${euros(droitsUn)}</strong><br>Total des droits : <strong>${euros(total)}</strong> (${pct(v.pa ? total / v.pa : 0)} du patrimoine)` +
+        barres([{ libelle: "Reçu par enfant", valeur: parEnfant - droitsUn, couleur: "#2a8a50" }, { libelle: "Droits par enfant", valeur: droitsUn, couleur: "#e0723b" }]) +
+        note("Sans donation dans les 15 dernières années, sans assurance-vie ni démembrement. Le conjoint peut aussi choisir l'usufruit de la totalité (enfants communs).");
+    }),
+  },
+];

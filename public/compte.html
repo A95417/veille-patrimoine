@@ -63,12 +63,16 @@
         </form>
       </section>
 
+      <section class="carte" id="bloc-admin" hidden><h2 style="margin:0 0 6px;font-size:1.1rem">Administration</h2>
+        <p class="doux" style="margin:0 0 10px">Comptes de l'équipe, état du robot, sauvegarde de la base.</p><a class="bouton" href="/admin">Ouvrir l'administration</a></section>
+
       <section class="carte"><button type="button" class="bouton bouton-discret" id="btn-sortir" style="color:var(--ko)">Se déconnecter</button></section>
     </div>
   </main>
   <script>
     chargerEntete("/compte").then((moi) => {
       const nom = moi.nom || moi.email;
+      if (moi.role === "admin") document.getElementById("bloc-admin").hidden = false;
       document.getElementById("nom").textContent = nom;
       document.getElementById("email").innerHTML = `Identifiant de connexion : <strong>${echapper(moi.identifiant || "—")}</strong><br>${echapper(moi.email)}${moi.role === "admin" ? " · administrateur" : ""}`;
       document.getElementById("avatar").textContent = nom.split(/[\s@.]+/).filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();

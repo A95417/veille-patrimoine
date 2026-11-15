@@ -110,7 +110,7 @@ export async function routeLecture(chemin, url, db) {
     const auj = new Date().toISOString().slice(0, 10), annee = auj.slice(0, 4);
     if (auj >= `${annee}-11-01`) echeances.push({ date: `${annee}-12-31`, conseil: true,
       titre: "PER : dernier jour pour un versement déductible des revenus de l'année",
-      detail: "Rappel conseiller : les versements volontaires sur un PER se déduisent du revenu de l'année du versement, dans la limite du plafond.",
+      detail: "Rappel conseiller : les versements volontaires sur un PER (effectués avant 70 ans) se déduisent du revenu de l'année du versement, dans la limite du plafond.",
       lien: "https://www.service-public.gouv.fr/particuliers/vosdroits/F36526" });
     echeances = echeances.filter((e) => e.date >= auj).sort((a, b) => a.date.localeCompare(b.date));
     return json({ echeances, maj_le: l ? l.maj_le : null });
