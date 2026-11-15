@@ -469,8 +469,7 @@ const LOGO = `<svg width="30" height="30" viewBox="0 0 28 28" aria-hidden="true"
   <path d="M7 18l5-5 4 3 5-7" fill="none" stroke="var(--accent-texte)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 async function chargerEntete(pageActive) {
   const moi = await appelApi("/api/moi");
-  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "LinkedIn"], ["/selection", "Ma sélection"], ["/marches", "Marchés"]];
-  if (moi.role === "admin") liens.push(["/admin", "Admin"]);
+  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "LinkedIn"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Outils"]];
   const nav = liens
     .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${nom}</a>`)
     .join("");
@@ -507,7 +506,7 @@ async function chargerEntete(pageActive) {
     plus: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
   };
   const principaux = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "LinkedIn"]];
-  const autres = [["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
+  const autres = [["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
   const dansPlus = autres.some(([h]) => h === pageActive);
   const svg = (k) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
   document.getElementById("onglets-bas")?.remove();

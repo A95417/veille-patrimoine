@@ -1,0 +1,59 @@
+<!doctype html>
+<!-- version 1.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Boîte à outils · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <script src="/commun.js"></script>
+  <script src="/fiches.js"></script>
+  <script src="/fiches-suite.js"></script>
+  <script src="/fiches-nouvelles.js"></script>
+  <script src="/outils-fiches.js"></script>
+  <style>
+    .outils-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; }
+    .outils-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; align-items: start; }
+    .outils-grille .carte { margin: 0; }
+    .outil-source { display: block; margin-top: 10px; font-size: .85rem; }
+    .fiche-lien { font-size: .85rem; }
+    h2.groupe-titre { font-size: 1.15rem; margin: 26px 0 10px; }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <h1>Boîte à outils</h1>
+    <p class="doux">Tous les calculateurs du site au même endroit. Ce sont des estimations pédagogiques, à partir des barèmes officiels cités sous chaque outil : à confirmer avant tout conseil.</p>
+    <nav class="outils-nav puces" id="nav" aria-label="Aller à un outil"></nav>
+    <h2 class="groupe-titre">Calculs du quotidien</h2>
+    <div class="outils-grille" id="boite"></div>
+    <h2 class="groupe-titre">Simulateurs des fiches Apprendre</h2>
+    <div class="outils-grille" id="fiches"></div>
+  </main>
+  <script>
+    chargerEntete("/outils").then(() => {
+      const boite = document.getElementById("boite"), fiches = document.getElementById("fiches"), nav = document.getElementById("nav");
+      boite.innerHTML = BOITE_OUTILS.map((o) => `<section class="carte simu th-${o.theme}" id="b-${o.id}"><h2>${o.titre}</h2>
+        <p class="doux" style="margin-top:-4px">${o.intro}</p>${o.html()}
+        <a class="outil-source" href="${o.source[1]}" target="_blank" rel="noopener noreferrer">Source : ${echapper(o.source[0])} ↗</a></section>`).join("");
+      BOITE_OUTILS.forEach((o) => o.init(document.getElementById("b-" + o.id)));
+      const liste = [];
+      for (const f of FICHES) (OUTILS_FICHES[f.id] || []).forEach((o, k) => { if (/^Calculateur|^Simulateur|^Comparateur/i.test(o.titre)) liste.push({ f, o, id: `f-${f.id}-${k}` }); });
+      fiches.innerHTML = liste.map(({ f, o, id }) => `<section class="carte simu th-${f.theme}" id="${id}"><h2>${o.titre}</h2>
+        ${o.intro ? `<p class="doux" style="margin-top:-4px">${o.intro}</p>` : ""}${o.html()}
+        <a class="fiche-lien" href="/fiche?id=${f.id}">Fiche « ${echapper(f.titre)} » →</a></section>`).join("");
+      liste.forEach(({ o, id }) => o.init(document.getElementById(id)));
+      nav.innerHTML = [...BOITE_OUTILS.map((o) => [`b-${o.id}`, o.titre]), ...liste.map(({ f, id }) => [id, f.titre])]
+        .map(([id, t]) => `<a class="puce" href="#${id}">${echapper(t)}</a>`).join("");
+    });
+  </script>
+</body>
+</html>
