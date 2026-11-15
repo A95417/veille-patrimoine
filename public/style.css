@@ -459,3 +459,14 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
   .notification { bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
 @media print { .onglets-bas { display: none !important; } }
+
+/* Échéances fiscales (page Aujourd'hui) */
+.echeances { list-style: none; margin: 0; padding: 0; }
+.echeances li { border-bottom: 1px solid var(--bord); }
+.echeances li:last-child { border-bottom: 0; }
+.echeances summary { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 8px 0; cursor: pointer; list-style: none; }
+.echeances summary::-webkit-details-marker { display: none; }
+.ech-date { font-weight: 700; font-family: var(--titre); font-size: .9rem; }
+.ech-titre { font-size: .9rem; line-height: 1.35; }
+.ech-dans { font-size: .78rem; color: var(--doux); white-space: nowrap; }
+.echeances details p { margin: 0 0 8px 70px; }

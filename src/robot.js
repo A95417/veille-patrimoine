@@ -165,6 +165,17 @@ export async function routeRobot(request, env, chemin) {
     return json({ ok: true, series: corps.series.length });
   }
 
+  // 5 bis ter) Calendrier fiscal officiel (impots.gouv.fr), relevé une fois par jour.
+  if (chemin === "/api/robot/calendrier" && request.method === "POST") {
+    const ech = (Array.isArray(corps.echeances) ? corps.echeances : []).slice(0, 80)
+      .filter((e) => /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && typeof e.titre === "string" && /^https:\/\/www\.impots\.gouv\.fr\//.test(e.lien || ""))
+      .map((e) => ({ date: e.date, titre: e.titre.slice(0, 200), detail: String(e.detail || "").slice(0, 400), lien: e.lien }));
+    if (!ech.length) return json({ erreur: "Aucune échéance valide." }, 400);
+    await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES ('calendrier', ?, ?)")
+      .bind(JSON.stringify({ echeances: ech }), new Date().toISOString()).run();
+    return json({ ok: true, echeances: ech.length });
+  }
+
   // 5 ter) Rattrapage de l'historique des cours (lancé une fois à la main).
   if (chemin === "/api/robot/marches/historique" && request.method === "POST") {
     const n = await ajouterHistorique(db, corps.points || []);

@@ -151,6 +151,12 @@
           <div id="marches-liste"></div>
           <p class="doux petit" style="margin:8px 0 0" id="marches-info"></p>
         </section>
+        <section class="carte" id="calendrier" hidden>
+          <div class="titre-section" style="margin-bottom:6px"><h2 style="margin:0">📅 Échéances fiscales</h2>
+            <a href="https://www.impots.gouv.fr/calendrier-fiscal?filter=part" class="petit" target="_blank" rel="noopener noreferrer">Calendrier officiel ↗</a></div>
+          <ul class="echeances" id="calendrier-liste"></ul>
+          <p class="doux petit" style="margin:6px 0 0">Source : impots.gouv.fr, à rappeler aux clients concernés.</p>
+        </section>
         <section class="carte encart" id="encart-linkedin" hidden>
           <h2>✏️ Idée de post LinkedIn</h2>
           <div id="linkedin-idee"></div>
@@ -332,6 +338,22 @@
         document.getElementById("encart-linkedin").hidden = false;
       } catch {}
     }
+
+    // ------------------------------------------------------------ Échéances fiscales (5 prochaines)
+    async function chargerCalendrier() {
+      try {
+        const { echeances } = await appelApi("/api/calendrier");
+        if (!echeances?.length) return;
+        const auj = new Date(new Date().toISOString().slice(0, 10));
+        const dans = (d) => { const n = Math.round((new Date(d) - auj) / 86400000); return n === 0 ? "aujourd'hui" : n === 1 ? "demain" : `dans ${n} j`; };
+        document.getElementById("calendrier-liste").innerHTML = echeances.slice(0, 5).map((e) => `
+          <li><details><summary><span class="ech-date">${new Date(e.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>
+            <span class="ech-titre">${e.conseil ? "💡 " : ""}${echapper(e.titre)}</span><span class="ech-dans">${dans(e.date)}</span></summary>
+            <p class="doux petit">${echapper(e.detail || "")} <a href="${echapper(e.lien)}" target="_blank" rel="noopener noreferrer">Source ↗</a></p></details></li>`).join("");
+        document.getElementById("calendrier").hidden = false;
+      } catch {}
+    }
+    chargerCalendrier();
 
     // ------------------------------------------------------------ Fiche à réviser : celle dont l'actualité parle le plus, sinon une fiche du jour
     const sansAccents = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();

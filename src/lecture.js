@@ -102,6 +102,20 @@ export async function routeLecture(chemin, url, db) {
     return json({ sujets: results, alertes_marches: await alertesDuJour(db) });
   }
 
+  // Calendrier fiscal (impots.gouv.fr) : échéances à venir, avec un rappel de fin d'année pour le PER.
+  if (chemin === "/api/calendrier") {
+    const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = 'calendrier'").first();
+    let echeances = [];
+    try { echeances = l ? JSON.parse(l.valeur).echeances : []; } catch {}
+    const auj = new Date().toISOString().slice(0, 10), annee = auj.slice(0, 4);
+    if (auj >= `${annee}-11-01`) echeances.push({ date: `${annee}-12-31`, conseil: true,
+      titre: "PER : dernier jour pour un versement déductible des revenus de l'année",
+      detail: "Rappel conseiller : les versements volontaires sur un PER se déduisent du revenu de l'année du versement, dans la limite du plafond.",
+      lien: "https://www.service-public.gouv.fr/particuliers/vosdroits/F36526" });
+    echeances = echeances.filter((e) => e.date >= auj).sort((a, b) => a.date.localeCompare(b.date));
+    return json({ echeances, maj_le: l ? l.maj_le : null });
+  }
+
   // Derniers relevés de marché (page Marchés).
   if (chemin === "/api/marches") {
     const lire = async (cle) => {
