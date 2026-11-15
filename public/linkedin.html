@@ -44,7 +44,22 @@
     .panneau[hidden] { display: none !important; }
     .panneau h2 { margin: 0 0 4px; font-size: 1.2rem; }
     .panneau > .doux { margin: 0 0 14px; }
-    .onglets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .onglets { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--bord); margin-bottom: 14px; }
+    .onglets::-webkit-scrollbar { display: none; }
+    .onglets .puce { flex: 0 0 auto; border: 0; border-bottom: 2.5px solid transparent; border-radius: 0; background: none; color: var(--doux); font-weight: 600; font-size: .9rem; padding: 8px 10px; margin-bottom: -1px; box-shadow: none; white-space: nowrap; }
+    .onglets .puce:hover { color: var(--texte); background: none; }
+    .onglets .puce[aria-pressed="true"] { color: var(--accent-fonce); border-bottom-color: var(--accent); background: none; }
+    .idee .choix-carte .petit { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .liste-peda { display: grid; gap: 2px; }
+    .peda { display: flex; align-items: center; gap: 8px; border-radius: 10px; }
+    .peda:hover { background: var(--fond); }
+    .peda-choix { flex: 1; min-width: 0; display: grid; gap: 1px; text-align: left; font: inherit; color: var(--texte); background: none; border: 0; padding: 8px 10px; cursor: pointer; }
+    .peda-choix strong { font-weight: 600; font-size: .93rem; }
+    .peda-choix span { font-size: .8rem; color: var(--doux); }
+    .peda .peda-direct { flex: 0 0 auto; font-size: .85rem; text-decoration: none; padding: 8px 10px; }
+    .conseils details + details { border-top: 1px solid var(--bord); margin-top: 10px; padding-top: 10px; }
+    .conseils summary { cursor: pointer; font-weight: 700; font-size: .98rem; padding: 2px 0; }
+    .conseils details[open] summary { margin-bottom: 8px; }
     .idees { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
     .choix-carte { text-align: left; border: 1.5px solid var(--bord); background: var(--carte); color: var(--texte); border-radius: 14px; padding: 14px; cursor: pointer; font: inherit; display: grid; gap: 6px; align-content: start; transition: border-color .15s, transform .15s; width: 100%; box-sizing: border-box; }
     .choix-carte:hover { border-color: var(--accent); }
@@ -54,7 +69,7 @@
     .idee { display: grid; grid-template-rows: 1fr auto; border: 1.5px solid var(--bord); border-radius: 14px; overflow: hidden; background: var(--carte); }
     .idee .choix-carte { border: 0; border-radius: 0; }
     .idee-actions { display: flex; border-top: 1px solid var(--bord); }
-    .idee-actions button { flex: 1; font: inherit; font-size: .86rem; font-weight: 600; padding: 10px; border: 0; background: none; cursor: pointer; color: var(--accent-fonce); }
+    .idee-actions button { flex: 1; font: inherit; font-size: .82rem; font-weight: 600; padding: 7px; border: 0; background: none; cursor: pointer; color: var(--accent-fonce); }
     .idee-actions button + button { border-left: 1px solid var(--bord); }
     .idee-actions button:hover { background: var(--accent-doux); }
     .tag { display: inline-block; width: fit-content; padding: 2px 9px; border-radius: 999px; background: var(--fond); color: var(--accent-fonce); font-size: .74rem; font-weight: 700; }
@@ -406,8 +421,9 @@
       </div>
 
       <aside class="li-cote">
-        <section class="carte boite">
-          <h3>Un bon post en 5 points</h3>
+        <section class="carte boite conseils">
+          <details>
+          <summary>✍️ Un bon post en 5 points</summary>
           <ol>
             <li><strong>Une accroche</strong> courte : seules les premières lignes s'affichent avant « voir plus ».</li>
             <li><strong>Le contexte</strong> en une ou deux phrases.</li>
@@ -415,9 +431,9 @@
             <li><strong>Une conclusion</strong> : une question ou une invitation à échanger.</li>
             <li><strong>3 à 5 hashtags</strong> ciblés.</li>
           </ol>
-        </section>
-        <section class="carte boite">
-          <h3>Avant de publier</h3>
+          </details>
+          <details open>
+          <summary>✅ Avant de publier</summary>
           <ul>
             <li>Une information claire, exacte et non trompeuse.</li>
             <li>Aucune promesse de rendement ; les risques sont mentionnés.</li>
@@ -425,6 +441,7 @@
             <li>Aucune donnée sur un client.</li>
             <li>La source est citée et les chiffres vérifiés.</li>
           </ul>
+          </details>
         </section>
       </aside>
     </div>
@@ -501,11 +518,11 @@
           <button type="button" class="choix-carte" data-k="${k}">
             <span class="tag">${i.simple ? "📰 À la une" : `${ICONES[i.approche] || ""} ${NOMS[i.approche] || ""}`}</span>${publies.has(i.sujet_id) ? '<span class="statut publie">✓ Déjà publié</span>' : ""}<strong>${echapper(i.titre)}</strong>
             <span class="petit">${echapper(i.pourquoi)}</span></button>
-          <div class="idee-actions"><button type="button" data-k="${k}">Choisir</button><button type="button" data-direct="${k}">✨ Rédiger directement</button></div></div>`).join("")}</div>`
+          <div class="idee-actions"><button type="button" data-direct="${k}">✨ Rédiger directement</button></div></div>`).join("")}</div>`
           : '<p class="doux">Pas d\'idée tirée de l\'actualité pour le moment.</p>') +
-          `<h3 class="sous-titre-idees">🎓 Toujours d'actualité : idées pédagogiques</h3><div class="idees">${fichesJour.map((f) => `<div class="idee">
-            <button type="button" class="choix-carte" data-fj="${f.id}"><span class="tag">🎓 Pédagogie</span><strong>${echapper(f.titre)} : l'essentiel en 3 lignes</strong><span class="petit">${echapper(f.sousTitre)}</span></button>
-            <div class="idee-actions"><button type="button" data-fj="${f.id}">Choisir</button><button type="button" data-fjd="${f.id}">✨ Rédiger directement</button></div></div>`).join("")}</div>`;
+          `<h3 class="sous-titre-idees">🎓 Toujours d'actualité</h3><div class="liste-peda">${fichesJour.map((f) => `<div class="peda">
+            <button type="button" class="peda-choix" data-fj="${f.id}"><strong>${echapper(f.titre)} : l'essentiel en 3 lignes</strong><span>${echapper(f.sousTitre)}</span></button>
+            <button type="button" class="lien-bouton peda-direct" data-fjd="${f.id}">✨ Rédiger</button></div>`).join("")}</div>`;
         z.querySelectorAll("[data-fj]").forEach((b) => b.onclick = () => { choisirFiche(b.dataset.fj); allerA(2); });
         z.querySelectorAll("[data-fjd]").forEach((b) => b.onclick = () => { choisirFiche(b.dataset.fjd); rediger(); });
         const prendre = (k) => { const i = d.idees[k]; choisirSujet({ type: "sujet", sujet_id: i.sujet_id, libelle: i.sujet.titre || i.titre }, i.simple ? null : i.approche); };
