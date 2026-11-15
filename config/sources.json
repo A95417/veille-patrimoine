@@ -342,6 +342,83 @@
       "flux": [
         "https://decrypt.co/feed"
       ]
+    },
+    {
+      "id": "amf",
+      "nom": "AMF",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://www.amf-france.org/fr/abonnements-flux-rss",
+      "flux": [
+        "https://www.amf-france.org/fr/flux-rss/display/30",
+        "https://www.amf-france.org/fr/flux-rss/display/23",
+        "https://www.amf-france.org/fr/flux-rss/display/28"
+      ],
+      "note": "Actualités, communiqués de presse, alertes et mises en garde (liste officielle des flux AMF)."
+    },
+    {
+      "id": "acpr",
+      "nom": "ACPR",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://acpr.banque-france.fr/",
+      "flux": []
+    },
+    {
+      "id": "banque-de-france",
+      "nom": "Banque de France",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://www.banque-france.fr/fr",
+      "flux": []
+    },
+    {
+      "id": "assemblee-nationale",
+      "nom": "Assemblée nationale",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://www.assemblee-nationale.fr/",
+      "flux": []
+    },
+    {
+      "id": "impots-gouv",
+      "nom": "impots.gouv.fr",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://www.impots.gouv.fr/",
+      "flux": []
+    },
+    {
+      "id": "economie-gouv",
+      "nom": "Ministère de l'Économie",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://www.economie.gouv.fr/",
+      "flux": []
+    },
+    {
+      "id": "legifrance",
+      "nom": "Légifrance (Journal officiel)",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://www.legifrance.gouv.fr/",
+      "flux": []
+    },
+    {
+      "id": "notaires-de-france",
+      "nom": "Notaires de France",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://www.notaires.fr/fr",
+      "flux": []
     }
   ]
 }

@@ -4,6 +4,11 @@ name: Vérifier les sources
 
 on:
   workflow_dispatch:
+    inputs:
+      inactifs:
+        description: "Tester aussi les sources désactivées (oui) — pour évaluer de nouvelles sources"
+        required: false
+        default: ""
 
 permissions:
   contents: write   # pour enregistrer le rapport dans le dépôt
@@ -26,6 +31,8 @@ jobs:
 
       - name: Tester chaque source
         run: node scripts/verifier-sources.mjs
+        env:
+          VERIFIER_INACTIFS: ${{ inputs.inactifs }}
 
       - name: Enregistrer le rapport dans le dépôt
         run: |

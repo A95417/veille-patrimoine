@@ -91,7 +91,7 @@ async function verifierSource(src) {
 }
 
 const config = JSON.parse(await readFile(new URL("../config/sources.json", import.meta.url), "utf8"));
-const sources = config.sources.filter((s) => s.actif !== false);
+const sources = config.sources.filter((s) => s.actif !== false || process.env.VERIFIER_INACTIFS === "oui");
 const rapport = [];
 for (const src of sources) {
   process.stdout.write(`Vérification : ${src.nom}… `);
