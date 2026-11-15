@@ -25,12 +25,23 @@ const erreur = (message, statut = 400) => json({ erreur: message }, statut);
 const normaliserEmail = (e) => String(e || "").trim().toLowerCase();
 const emailValide = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
+const CSP = [
+  "default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com", "img-src 'self' https: data: blob:", "media-src 'self' blob: data:",
+  "connect-src 'self'", "worker-src 'self'", "manifest-src 'self'", "object-src 'none'", "base-uri 'self'",
+  "form-action 'self'", "frame-ancestors 'none'",
+].join("; ");
+
 // En-têtes de sécurité ajoutés à toutes les pages.
 function securiser(reponse) {
   const r = new Response(reponse.body, reponse);
   r.headers.set("X-Content-Type-Options", "nosniff");
   r.headers.set("X-Frame-Options", "DENY");
   r.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  r.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  r.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()");
+  // Politique de contenu : scripts et données uniquement depuis le site ; polices Google ; images des éditeurs en https.
+  if ((r.headers.get("Content-Type") || "").includes("text/html")) r.headers.set("Content-Security-Policy", CSP);
   return r;
 }
 
@@ -312,10 +323,18 @@ async function api(request, env, url) {
   return erreur("Adresse inconnue.", 404);
 }
 
+const FICHIER_STATIQUE = /\.(js|css|png|svg|ico|webmanifest)$/;
+
 // ---------------------------------------------------------------- Pages
 async function pages(request, env, url) {
   let chemin = url.pathname.replace(/\.html$/, "").replace(/\/index$/, "/");
-  if (PAGES_PUBLIQUES.has(chemin)) return env.ASSETS.fetch(request);
+  if (PAGES_PUBLIQUES.has(chemin)) {
+    if (!FICHIER_STATIQUE.test(url.pathname) || chemin === "/sw.js") return env.ASSETS.fetch(request);
+    const r = await env.ASSETS.fetch(request);
+    const pub = new Response(r.body, r);
+    pub.headers.set("Cache-Control", "private, no-cache");
+    return pub;
+  }
 
   const moi = await utilisateurConnecte(request, env.DB);
   if (!moi) {
@@ -327,7 +346,9 @@ async function pages(request, env, url) {
 
   const r = await env.ASSETS.fetch(request);
   const protegee = new Response(r.body, r);
-  protegee.headers.set("Cache-Control", "no-store");   // pages privées : jamais en cache partagé
+  // Pages privées : jamais en cache. Scripts, styles et images : gardés sur l'appareil mais revérifiés
+  // à chaque visite (réponse 304 très légère s'ils n'ont pas changé).
+  protegee.headers.set("Cache-Control", FICHIER_STATIQUE.test(url.pathname) ? "private, no-cache" : "no-store");
   return protegee;
 }
 

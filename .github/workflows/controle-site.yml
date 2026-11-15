@@ -1,0 +1,19 @@
+# Contrôle rapide du site en ligne : en-têtes de sécurité et cache (sans connexion, aucune donnée).
+name: Contrôle du site
+
+on:
+  workflow_dispatch:
+
+jobs:
+  controle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: En-têtes
+        run: |
+          S=https://veille-patrimoine.veille-a95417.workers.dev
+          for u in /connexion /style.css /commun.js /api/sante; do
+            echo "=== $u"; curl -sS -o /dev/null -D - "$S$u" | grep -iE "^(HTTP|content-type|cache-control|content-security|strict-transport|permissions-policy|x-frame|etag)"
+          done
+          echo "=== 304 ?"; E=$(curl -sS -o /dev/null -D - "$S/style.css" | grep -i '^etag' | cut -d' ' -f2 | tr -d '\r')
+          curl -sS -o /dev/null -w "%{http_code}\n" -H "If-None-Match: $E" "$S/style.css"
