@@ -10,7 +10,8 @@ const json = (d, s = 200) =>
 const erreur = (m, s = 400) => json({ erreur: m }, s);
 const DEPOT = "A95417/veille-patrimoine";
 const LIMITE_JOUR = 3, GARDER = 10, MORCEAU = 524_288, TAILLE_MAX_BASE = 420e6;   // morceaux de 512 Ko (base64)
-const VOIX = ["Sadachbia", "Fenrir", "Kore", "Charon"];
+const VOIX = ["Sadachbia", "Puck", "Zephyr", "Laomedeia", "Fenrir", "Leda", "Achird", "Kore", "Charon", "Sulafat", "Orus", "Gacrux"];
+const nouvelleGraine = () => (crypto.getRandomValues(new Uint32Array(1))[0] % 2147483647) || 1;
 const FORMATS = ["9:16", "4:5"];
 const MODELES = ["deux_profils", "chiffre_semaine", "echeance", "mythe", "libre"];
 const jourParis = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
@@ -26,10 +27,11 @@ function deBase64(s) {
 const COORD_FICTIVES = { cabinet: "BSC PATRIMOINE", activite: "Conseil en gestion de patrimoine", mail: "contact@example.com", telephone: "06 39 98 12 34", fictives: true };
 
 // ---------------------------------------------------------------- Gabarits autorisés et leurs paramètres (liste blanche)
-const PERSOS = ["lea", "tom", "tom_age", "conseil"];
+const PERSOS = ["lea", "tom", "tom_age", "conseil", "ines", "hugo", "sarah", "isaac", "michel", "francoise"];
+const LIEUX = ["appartement", "salon", "cuisine", "chambre_soir", "bureau", "coworking", "banque", "rue", "parc", "cafe", "mer", "maison_vente"];
 const P = {   // nom → [type, longueur max ou valeurs permises]
   personnage: ["enum", PERSOS], personnage_gauche: ["enum", PERSOS], personnage_droite: ["enum", PERSOS],
-  humeur: ["enum", ["sourire", "neutre", "souci", "surpris"]], decor: ["enum", ["appartement", "cafe", "bureau"]],
+  humeur: ["enum", ["sourire", "neutre", "souci", "surpris"]], decor: ["enum", LIEUX],
   nom: ["txt", 16], sous_nom: ["txt", 16], notification_titre: ["txt", 26], notification_texte: ["txt", 36], bocal: ["bool"],
   puces: ["liste", 16, 2], bulle: ["txt", 18], bandeau: ["txt", 28], gros_texte: ["txt", 16], petit_texte: ["txt", 34],
   titre_hausse: ["txt", 30], titre_baisse: ["txt", 30], tampon1: ["txt", 14], tampon2: ["txt", 14],
@@ -41,12 +43,12 @@ const P = {   // nom → [type, longueur max ou valeurs permises]
   gauche_nom: ["txt", 22], droite_nom: ["txt", 22], note: ["txt", 60],
 };
 const GABARITS = {
-  accroche: "ouverture choc (2 premières secondes) : personnage sur son téléphone + gros chiffre ou mot qui claque. p : personnage, bandeau, gros_texte, petit_texte",
-  personnage: "personnage en situation réelle. p : personnage, humeur, decor (appartement|cafe|bureau), nom, sous_nom (ex. « 25 ans »), notification_titre + notification_texte (virement, rappel…), bocal (true = épargne qui se remplit), puces (2 max), bulle (pensée courte)",
+  accroche: "ouverture choc (2 premières secondes) : personnage sur son téléphone + gros chiffre ou mot qui claque. p : personnage, decor (facultatif), bandeau, gros_texte, petit_texte",
+  personnage: "personnage en situation réelle. p : personnage, humeur, decor (lieu adapté à la situation), nom, sous_nom (ex. « 25 ans »), notification_titre + notification_texte (virement, rappel…), bocal (true = épargne qui se remplit), puces (2 max), bulle (pensée courte)",
   marche: "marchés qui montent puis baissent, deux tampons. Texte en 4 phrases courtes. p : tampon1, tampon2, titre_hausse, titre_baisse",
-  calendrier: "le temps qui passe (âges, années). p : libelle, de, a, unite, personnage (qui entre ensuite), montant",
-  comparaison: "deux colonnes chiffrées (UNIQUEMENT avec les chiffres de la SIMULATION). Texte : 1re phrase = profil de gauche, 2e = profil de droite. p : bandeau, gauche_nom, droite_nom, note",
-  egalite: "deux personnages, même effort, puis une question. p : gauche, droite, signe, question, personnage_gauche, personnage_droite",
+  calendrier: "le temps qui passe (âges, années). p : libelle, de, a, unite, personnage (qui entre ensuite), montant, decor (facultatif)",
+  comparaison: "deux colonnes chiffrées (UNIQUEMENT avec les chiffres de la SIMULATION). Texte : 1re phrase = profil de gauche, 2e = profil de droite. p : bandeau, gauche_nom, droite_nom, personnage_gauche, personnage_droite",
+  egalite: "deux personnages côte à côte, même effort (ou situation différente avec signe ≠), puis une question. p : gauche, droite, signe, question, personnage_gauche, personnage_droite, decor (facultatif)",
   grand_mot: "un mot ou chiffre géant, puis option boule de neige (intérêts composés). p : texte, legende, boule",
   bocaux: "« chaque situation est unique » : 3 bocaux de tailles différentes, une puce, une courbe. p : titre, colonnes [{libelle, niveau 0-1}], puce, courbe",
   chiffre: "un chiffre clé (UNIQUEMENT un chiffre des DONNÉES) avec sa source. p : bandeau, valeur, libelle, source, comparaison",
@@ -184,7 +186,12 @@ RÈGLES STRICTES :
 - Écris les nombres en chiffres avec espaces (49 000 €, 4 %).
 - Texte lu : phrases courtes, ponctuées (une idée par phrase), environ ${mots} mots au total.
 - Structure : 1re scène de type « accroche » (on doit comprendre l'enjeu en 2 secondes), puis 4 à 8 scènes variées, une phrase du type « chaque situation est unique » (gabarit bocaux conseillé), et une conclusion forte (gabarit sablier conseillé). N'écris PAS la scène de fin : elle est ajoutée automatiquement.
-- Personnages disponibles : lea (femme, 25 ans), tom (homme, 25 ans), tom_age (le même à 35 ans, barbe, veste), conseil (conseiller).
+- Personnages disponibles (choisis-les selon le sujet, varie-les, garde le même personnage pour une même histoire) :
+  lea (femme 25 ans, jeune active), tom (homme 25 ans, sweat), tom_age (le même Tom à 35 ans), ines (étudiante 22 ans), hugo (jeune actif 23 ans, casquette),
+  sarah (cheffe d'entreprise 40 ans), isaac (entrepreneur 38 ans), michel (retraité 66 ans), francoise (jeune retraitée 63 ans), conseil (conseiller en patrimoine).
+  Exemples : transmission ou succession → michel, francoise ; trésorerie, entreprise → sarah, isaac ; premier emploi, épargne de départ → ines, hugo, lea, tom.
+- Décors disponibles (adapte le lieu à la situation et varie-les d'une scène à l'autre) : ${LIEUX.join(", ")}.
+  Exemples : immobilier → maison_vente ; vacances, projets → mer ; budget du quotidien → cuisine ; rendez-vous → banque ou bureau ; le soir, l'inquiétude → chambre_soir.
 - Les paramètres « p » sont des textes très courts affichés à l'écran : ne pas répéter mot pour mot la phrase lue.
 GABARITS :
 ${Object.entries(GABARITS).map(([k, v]) => `- ${k} : ${v}`).join("\n")}
@@ -220,8 +227,8 @@ function avecChiffres(scenes, donnees) {
   const sim = donnees?.simulation;
   return scenes.map((s) => {
     if (s.type !== "comparaison" || !sim) return s;
-    return { ...s, p: { ...s.p, unite: "€", gauche: { nom: s.p.gauche_nom || `Dès ${sim.age1} ans`, valeur: Math.round(sim.A.capital), verse: Math.round(sim.A.versements), personnage: "lea" },
-      droite: { nom: s.p.droite_nom || `Dès ${sim.age2} ans`, valeur: Math.round(sim.B.capital), verse: Math.round(sim.B.versements), personnage: "tom_age" },
+    return { ...s, p: { ...s.p, unite: "€", gauche: { nom: s.p.gauche_nom || `Dès ${sim.age1} ans`, valeur: Math.round(sim.A.capital), verse: Math.round(sim.A.versements), personnage: s.p.personnage_gauche || "lea" },
+      droite: { nom: s.p.droite_nom || `Dès ${sim.age2} ans`, valeur: Math.round(sim.B.capital), verse: Math.round(sim.B.versements), personnage: s.p.personnage_droite || "tom_age" },
       note: `Exemple fictif : ${sim.mensuel} €/mois, ${String(sim.taux).replace(".", ",")} %/an, non garanti` } };
   });
 }
@@ -326,9 +333,9 @@ export async function routeVideo(request, env, chemin, moi, url) {
     try { s = await proposerScenario(env, db, d, coord); } catch (e) { return erreur(e.message, 502); }
     const id = crypto.randomUUID();
     const format = FORMATS.includes(d.format) ? d.format : "9:16", voix = VOIX.includes(d.voix) ? d.voix : "Sadachbia";
-    await db.prepare(`INSERT INTO videos (id, utilisateur_id, cree_le, maj_le, statut, modele, sujet, format, voix, duree_cible, storyboard, donnees, a_verifier, texte_post)
-      VALUES (?, ?, ?, ?, 'brouillon', ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(id, moi.id, iso, iso, s.modele, s.sujet, format, voix, s.duree, JSON.stringify(s.scenes), JSON.stringify(s.donnees), JSON.stringify(s.a_verifier), s.texte_post).run();
+    await db.prepare(`INSERT INTO videos (id, utilisateur_id, cree_le, maj_le, statut, modele, sujet, format, voix, duree_cible, storyboard, donnees, a_verifier, texte_post, graine)
+      VALUES (?, ?, ?, ?, 'brouillon', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(id, moi.id, iso, iso, s.modele, s.sujet, format, voix, s.duree, JSON.stringify(s.scenes), JSON.stringify(s.donnees), JSON.stringify(s.a_verifier), s.texte_post, nouvelleGraine()).run();
     const v = await db.prepare(`SELECT ${COLS}, v.storyboard, v.a_verifier, v.texte_post, v.donnees FROM videos v LEFT JOIN utilisateurs u ON u.id = v.utilisateur_id WHERE v.id = ?`).bind(id).first();
     return json({ video: sortie(v, true) });
   }
@@ -358,6 +365,7 @@ export async function routeVideo(request, env, chemin, moi, url) {
     if (!/perte en capital/i.test(post)) post += "\nInvestir comporte un risque de perte en capital.";
     if (don.simulation && !/fictif/i.test(post)) post += "\nExemple fictif à visée pédagogique.";
     const format = FORMATS.includes(d.format) ? d.format : v.format, voix = VOIX.includes(d.voix) ? d.voix : v.voix;
+    if (d.nouvelle_graine) await db.prepare("UPDATE videos SET graine = ? WHERE id = ?").bind(nouvelleGraine(), id).run();
     await db.prepare("UPDATE videos SET storyboard = ?, a_verifier = ?, texte_post = ?, format = ?, voix = ?, statut = 'brouillon', erreur = NULL, maj_le = ? WHERE id = ?")
       .bind(JSON.stringify(scenes), JSON.stringify(chiffresAVerifier(scenes, permis, post)), post, format, voix, iso, id).run();
     return json({ video: sortie(await db.prepare(`SELECT ${COLS}, v.storyboard, v.a_verifier, v.texte_post, v.donnees FROM videos v LEFT JOIN utilisateurs u ON u.id = v.utilisateur_id WHERE v.id = ?`).bind(id).first(), true) });
@@ -395,8 +403,8 @@ export async function routeVideo(request, env, chemin, moi, url) {
 
   if (action === "dupliquer" && methode === "POST") {
     const nid = crypto.randomUUID();
-    await db.prepare(`INSERT INTO videos (id, utilisateur_id, cree_le, maj_le, statut, modele, sujet, format, voix, duree_cible, storyboard, donnees, a_verifier, texte_post)
-      SELECT ?, ?, ?, ?, 'brouillon', modele, sujet, format, voix, duree_cible, storyboard, donnees, a_verifier, texte_post FROM videos WHERE id = ?`).bind(nid, moi.id, iso, iso, id).run();
+    await db.prepare(`INSERT INTO videos (id, utilisateur_id, cree_le, maj_le, statut, modele, sujet, format, voix, duree_cible, storyboard, donnees, a_verifier, texte_post, graine)
+      SELECT ?, ?, ?, ?, 'brouillon', modele, sujet, format, voix, duree_cible, storyboard, donnees, a_verifier, texte_post, ? FROM videos WHERE id = ?`).bind(nid, moi.id, iso, iso, nouvelleGraine(), id).run();
     return json({ id: nid });
   }
 
@@ -465,7 +473,7 @@ export async function routeVideoRobot(request, env, chemin) {
 
   if (!action && request.method === "GET") {
     const coord = await coordonnees(db), scenes = avecChiffres(JSON.parse(v.storyboard || "[]"), JSON.parse(v.donnees || "{}"));
-    return json({ statut: v.statut, job: { format: v.format, voix: v.voix, scenes, duree_estimee: dureeEstimee(scenes),
+    return json({ statut: v.statut, job: { format: v.format, voix: v.voix, scenes, duree_estimee: dureeEstimee(scenes), graine: v.graine || 1,
       config: { cabinet: coord.cabinet, activite: coord.activite, mail: coord.mail, telephone: coord.telephone, mentions: mentions(v, coord) } } });
   }
   if (action === "etat" && request.method === "POST") {

@@ -4,6 +4,8 @@
 </head><body>
 <svg id="s" xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
 <script src="base.js"></script>
+<script src="personnages.js"></script>
+<script src="decors.js"></script>
 <script src="gabarits.js"></script>
 <script>
 // Moteur générique : un storyboard (scènes + paramètres) et un calage (phrases et mots datés) → une image pour chaque instant t.
@@ -12,6 +14,7 @@ const COUPE_4_5 = 285;   // le format 4:5 garde la bande y = 285 → 1635 de l'i
 
 window.init = (job, calage) => {
   CONFIG = job.config || {};
+  GRAINE = Number.isInteger(job.graine) ? job.graine : 1;   // variations (décors, tenues, motifs) propres à la vidéo
   MOTS = calage.mots;
   SCENES = calage.scenes.map((c, i) => ({ i, type: job.scenes[i].type, p: job.scenes[i].p || {}, debut: c.debut, fin: c.fin, P: c.P, PF: c.PF }));
   SCENES.forEach((S) => { if (!GAB[S.type]) { ALERTES.add("gabarit inconnu : " + S.type); S.type = "grand_mot"; S.p = { texte: "" }; } });

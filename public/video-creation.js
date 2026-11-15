@@ -25,6 +25,19 @@
     mythe: [["mythe", "Idée reçue"], ["realite", "Réalité"]],
     sablier: [["haut", "Texte du haut"], ["gros", "Gros message"]],
   };
+  const PERSOS = [["lea", "Léa, 25 ans"], ["tom", "Tom, 25 ans"], ["tom_age", "Tom, 35 ans"], ["ines", "Inès, 22 ans, étudiante"], ["hugo", "Hugo, 23 ans"], ["sarah", "Sarah, 40 ans, cheffe d'entreprise"], ["isaac", "Isaac, 38 ans, entrepreneur"], ["michel", "Michel, 66 ans, retraité"], ["francoise", "Françoise, 63 ans"], ["conseil", "Le conseiller"]];
+  const LIEUX = [["appartement", "Appartement"], ["salon", "Salon familial"], ["cuisine", "Cuisine"], ["chambre_soir", "Chambre, le soir"], ["bureau", "Bureau"], ["coworking", "Coworking"], ["banque", "Agence bancaire"], ["rue", "Rue en ville"], ["parc", "Parc"], ["cafe", "Terrasse de café"], ["mer", "Bord de mer"], ["maison_vente", "Maison « À vendre »"]];
+  // Champs de personnage et de décor proposés selon le gabarit.
+  const CHOIX = {
+    accroche: [["personnage", "Personnage"], ["decor", "Décor"]], personnage: [["personnage", "Personnage"], ["decor", "Décor"]], marche: [["personnage", "Personnage"]],
+    calendrier: [["personnage", "Personnage"], ["decor", "Décor"]], egalite: [["personnage_gauche", "Personnage de gauche"], ["personnage_droite", "Personnage de droite"], ["decor", "Décor"]],
+    comparaison: [["personnage_gauche", "Personnage de gauche"], ["personnage_droite", "Personnage de droite"]],
+  };
+  const VOIX_INFO = {
+    Sadachbia: ["Dynamiques", "vivante, conseillée"], Puck: ["Dynamiques", "enjouée"], Zephyr: ["Dynamiques", "vive"], Laomedeia: ["Dynamiques", "entraînante"], Fenrir: ["Dynamiques", "énergique"], Leda: ["Dynamiques", "jeune"],
+    Achird: ["Posées", "amicale"], Kore: ["Posées", "assurée"], Charon: ["Posées", "informative"], Sulafat: ["Posées", "chaleureuse"], Orus: ["Posées", "ferme"], Gacrux: ["Posées", "mature"],
+  };
+  const EXTRAITS = new Set(["sadachbia", "fenrir", "kore", "charon", "zephyr", "laomedeia", "leda", "achird"]);
   const LIB_STATUT = { brouillon: "Brouillon", file: "En file d'attente", attente: "Démarrage", en_cours: "En fabrication", pret: "Prête", a_verifier: "Prête · à vérifier", erreur: "Échec", annule: "Annulée" };
   const EN_COURS = ["file", "attente", "en_cours"];
   const R = { modele: "deux_profils", duree: 45, format: "9:16", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
@@ -78,7 +91,7 @@
     document.querySelectorAll("[data-duree]").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.duree === R.duree));
     document.querySelectorAll("[data-format-v]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.formatV === R.format));
     const voix = reglages?.voix || ["Sadachbia"];
-    $v("vv-voix").innerHTML = voix.map((n) => `<span class="vv-voix"><button type="button" class="puce" data-voix="${n}" aria-pressed="${n === R.voix}">${n}${n === "Sadachbia" ? " · conseillée" : ""}</button><button type="button" class="vv-ecoute" data-ecoute="${n}" aria-label="Écouter la voix ${n}" title="Écouter">▶</button></span>`).join("");
+    $v("vv-voix").innerHTML = ["Dynamiques", "Posées"].map((gr) => `<div class="vv-voix-groupe"><span class="petit doux">${gr}</span><div class="puces">${voix.filter((n) => (VOIX_INFO[n]?.[0] || "Posées") === gr).map((n) => `<span class="vv-voix"><button type="button" class="puce" data-voix="${n}" aria-pressed="${n === R.voix}">${n} <small>· ${VOIX_INFO[n]?.[1] || ""}</small></button>${EXTRAITS.has(n.toLowerCase()) ? `<button type="button" class="vv-ecoute" data-ecoute="${n}" aria-label="Écouter la voix ${n}" title="Écouter">▶</button>` : `<span class="vv-bientot" title="Extrait disponible prochainement">bientôt</span>`}</span>`).join("")}</div></div>`).join("");
     document.querySelectorAll("[data-voix]").forEach((b) => b.onclick = () => { R.voix = b.dataset.voix; majReglages(); });
     document.querySelectorAll("[data-ecoute]").forEach((b) => b.onclick = () => {
       if (audio) { audio.pause(); }
@@ -119,7 +132,7 @@
     return [...document.querySelectorAll(".vv-scene[data-i]")].map((c) => {
       const s = JSON.parse(c.dataset.base);
       s.texte = c.querySelector("[data-texte]").value;
-      c.querySelectorAll("[data-champ]").forEach((i) => { s.p = s.p || {}; s.p[i.dataset.champ] = i.value; });
+      c.querySelectorAll("[data-champ]").forEach((i) => { s.p = s.p || {}; if (i.value === "" && i.tagName === "SELECT") delete s.p[i.dataset.champ]; else s.p[i.dataset.champ] = i.value; });
       return s;
     });
   }
@@ -133,6 +146,11 @@
           <button type="button" class="lien-bouton" data-descendre="${i}" aria-label="Descendre la scène" ${i >= sc.length - 2 ? "disabled" : ""}>↓</button>
           <button type="button" class="lien-bouton" data-retirer="${i}" aria-label="Retirer la scène">✕</button></span></div>
         <label class="petit doux" for="vv-t${i}">Texte lu par la voix</label><textarea id="vv-t${i}" data-texte rows="2" maxlength="400">${echapper(s.texte)}</textarea>
+        ${(CHOIX[s.type] || []).length ? `<div class="vv-choix">${CHOIX[s.type].map(([k, l]) => {
+          const decorChamp = k === "decor", liste = decorChamp ? [["", "Automatique (selon la mise en scène)"], ...LIEUX] : PERSOS;
+          const val = s.p?.[k] ?? (decorChamp ? "" : k === "personnage_droite" ? "tom_age" : k === "personnage_gauche" ? "lea" : "tom");
+          return `<label class="vv-choix-un">${decorChamp ? "" : `<img src="/video-persos/${val}.png" alt="" width="44" height="44" data-portrait="${k}">`}<span>${l}<select data-champ="${k}">${liste.map(([id, nom]) => `<option value="${id}" ${id === val ? "selected" : ""}>${echapper(nom)}</option>`).join("")}</select></span></label>`;
+        }).join("")}</div>` : ""}
         ${champs.length ? `<div class="vv-champs">${champs.map(([k, l]) => `<label><span>${l}</span><input data-champ="${k}" value="${echapper(s.p?.[k] ?? "")}" maxlength="60"></label>`).join("")}</div>` : ""}
       </div>`;
     }).join("");
@@ -164,6 +182,7 @@
       <div class="actions">
         <button type="button" class="bouton gros-bouton" id="vv-lancer">🎬 Générer la vidéo · ≈ ${Math.ceil(fabrication(sc) / 60)} min</button>
         <button type="button" class="bouton bouton-discret" id="vv-sauver">Enregistrer le brouillon</button>
+        <button type="button" class="bouton bouton-discret" id="vv-graine" title="Change les décors, l'heure du jour, les objets et les tenues, sans toucher au texte">🎲 Autre mise en scène</button>
         <button type="button" class="bouton bouton-discret" id="vv-reproposer">↻ Un autre scénario</button>
       </div>
       <p class="doux petit">La fabrication tourne sur un robot gratuit (GitHub) : vous pouvez fermer la page, la vidéo arrivera dans « Mes vidéos ». ${reglages ? `${reglages.lancees_aujourdhui}/${reglages.limite_jour} aujourd'hui.` : ""}</p>
@@ -171,6 +190,7 @@
     $v("vv-fermer").onclick = () => { $v("vv-travail").hidden = true; courante = null; };
     const scenes = $v("vv-scenes");
     scenes.oninput = () => { $v("vv-duree-est").textContent = dureeEst(lireScenes()) + " s"; };
+    scenes.onchange = (e) => { const sel = e.target.closest("select[data-champ]"); if (!sel) return; const img = sel.closest(".vv-choix-un")?.querySelector("img"); if (img) img.src = `/video-persos/${sel.value}.png`; };
     scenes.onclick = (e) => {
       const b = e.target.closest("button"); if (!b) return;
       const l = lireScenes(), fin = l.pop();
@@ -185,6 +205,7 @@
       courante = r.video; return r.video;
     };
     $v("vv-sauver").onclick = async () => { try { const nv = await sauver(); afficherScenario(nv); notifier("Brouillon enregistré."); } catch (e) { notifier(e.message, true); } };
+    $v("vv-graine").onclick = async () => { try { const r = await appelApi(`/api/video/${v.id}/storyboard`, "POST", { scenes: lireScenes(), texte_post: $v("vv-post").value, nouvelle_graine: true }); courante = r.video; notifier("Nouvelle mise en scène tirée : décors, lumière, objets et tenues changeront."); } catch (e) { notifier(e.message, true); } };
     $v("vv-reproposer").onclick = () => { $v("vv-travail").hidden = true; document.getElementById("vv-nouvelle").scrollIntoView({ behavior: "smooth" }); proposer(); };
     $v("vv-lancer").onclick = async () => {
       const b = $v("vv-lancer"); b.disabled = true;

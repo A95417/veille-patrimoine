@@ -6,12 +6,8 @@ const ph = (S, k) => S.P[Math.max(0, Math.min(k, S.P.length - 1))];
 const phf = (S, k) => S.PF[Math.max(0, Math.min(k, S.PF.length - 1))];
 const nbP = (S) => S.P.length;
 const court = (s, n) => String(s ?? "").slice(0, n);
-function personnage(nom) {
-  if (nom === "lea") return { ...LEA };
-  if (nom === "tom_age") return { ...TOM, barbe: true, veste: true, haut: "#2C3345" };
-  if (nom === "conseil") return { ...CONS };
-  return { ...TOM };
-}
+// Personnage habillé pour cette vidéo (variante de tenue tirée de la graine).
+function personnage(nom) { return habille(PRESETS[nom] ? nom : "tom"); }
 const HUMEURS = new Set(["sourire", "neutre", "souci", "surpris"]);
 const humeur = (h, defaut = "sourire") => (HUMEURS.has(h) ? h : defaut);
 // Valeur numérique contenue dans un texte (« − 49 000 € » → 49000), pour animer un compteur.
@@ -35,41 +31,13 @@ function lignes(s, max, n = 2) {
 }
 const slam = (k) => `scale(${.6 + .4 * back(k)})`;
 
-// ---------------------------------------------------------------- décors
-function decor(nom, t) {
-  if (nom === "cafe") {
-    let o = fond("#EFE6E3", "#D9C8C4");
-    o += `<rect x="0" y="230" width="1080" height="150" fill="${BX}"/>` + Array.from({ length: 9 }, (_, i) => `<path d="M${i * 135} 380 q67 70 135 0z" fill="${i % 2 ? BX : BLANC}"/>`).join("");
-    o += `<rect x="0" y="1580" width="1080" height="340" fill="#C9B3AE"/>`;
-    o += `<rect x="600" y="1220" width="380" height="26" rx="12" fill="#3B2A2E"/><rect x="780" y="1240" width="20" height="340" fill="#3B2A2E"/><ellipse cx="790" cy="1580" rx="90" ry="14" fill="#3B2A2E"/>`;
-    o += `<path d="M820 1170 h70 l-8 50 h-54z" fill="${BLANC}"/><ellipse cx="855" cy="1222" rx="56" ry="9" fill="${BLANC}"/>`;
-    return o;
-  }
-  if (nom === "bureau") {
-    let o = fond("#F4EEEC", "#E2D3CF");
-    o += `<rect x="90" y="360" width="300" height="200" rx="12" fill="#E9DEDB"/><path d="M120 520 l70 -80 l60 50 l50 -60 l60 90z" fill="${ROSE}" opacity=".6"/>`;
-    o += `<rect x="0" y="1580" width="1080" height="340" fill="#D8C6C1"/><rect x="560" y="1240" width="460" height="28" rx="12" fill="#3B2A2E"/><rect x="600" y="1268" width="380" height="312" fill="#4A363B"/>`;
-    o += `<rect x="700" y="1150" width="200" height="94" rx="8" fill="#2A2629"/><rect x="712" y="1160" width="176" height="74" rx="4" fill="#9FB8CF"/>`;
-    return o;
-  }
-  if (nom === "nuit") {
-    return fond("#3A0915", "#16050A") + `<circle cx="540" cy="760" r="420" fill="${BX}" opacity=".45"/>`;
-  }
-  // appartement (par défaut)
-  let o = fond("#FBF4F1", "#EBD9D6");
-  o += `<rect x="640" y="360" width="320" height="400" rx="20" fill="#D9E6F2"/><rect x="640" y="360" width="320" height="400" rx="20" fill="none" stroke="${BLANC}" stroke-width="18"/><line x1="800" y1="360" x2="800" y2="760" stroke="${BLANC}" stroke-width="14"/><line x1="640" y1="560" x2="960" y2="560" stroke="${BLANC}" stroke-width="14"/>`;
-  o += `<rect x="0" y="1560" width="1080" height="360" fill="#E3CFCB"/>`;
-  o += `<path d="M150 1560 q-20 -120 30 -200 q30 60 10 200z" fill="#5E8F70"/><path d="M175 1560 q40 -150 90 -180 q-10 90 -60 180z" fill="#4C7C5E"/><rect x="120" y="1500" width="120" height="80" rx="14" fill="${BX}"/>`;
-  return o;
-}
-
 const GAB = {};
 
 // 1) Accroche : un personnage sur son téléphone, un gros chiffre ou mot qui claque.
 GAB.accroche = {
   dessin(S, t) {
     const p = S.p, kT = ph(S, 1) > S.debut ? ph(S, 1) : S.debut + (S.fin - S.debut) * .55;
-    let o = fond("#3A0915", "#16050A");
+    let o = p.decor ? decor(p.decor, t, S.i) + `<rect width="1080" height="1920" fill="#16050A" opacity=".55"/>` : fondMarque("sombre", S.i, t);
     const zoom = 1 + (t - S.debut) * .012;
     o += `<g transform="translate(540 960) scale(${zoom}) translate(-540 -960)"><circle cx="540" cy="820" r="420" fill="${BX}" opacity=".45"/>`;
     o += `<ellipse cx="560" cy="800" rx="260" ry="220" fill="#8FB3D9" opacity="${.10 + .04 * Math.sin(t * 7)}"/>`;
@@ -91,8 +59,8 @@ GAB.accroche = {
 // 2) Personnage en situation : décor, étiquette (nom/âge), notification, bocal qui se remplit, puces, bulle de pensée.
 GAB.personnage = {
   dessin(S, t) {
-    const p = S.p, perso0 = personnage(p.personnage), dec = p.decor || "appartement";
-    let o = decor(dec, t);
+    const p = S.p, perso0 = personnage(p.personnage), dec = DECORS[p.decor] ? p.decor : choisir(alea(GRAINE + S.i * 13), ["appartement", "salon", "cuisine", "bureau", "rue", "parc"]);
+    let o = decor(dec, t, S.i);
     const ke = eo(lin(t, S.debut, S.debut + .5));
     const avecTel = !!p.notification_titre;
     const bulleK = p.bulle ? lin(t, ph(S, nbP(S) - 1), ph(S, nbP(S) - 1) + .35) : 0;
@@ -100,7 +68,7 @@ GAB.personnage = {
     const pr = { ...perso0, x: 360, y: 1590, s: 1.32, humeur: humeur(p.humeur), regard: bulleK > 0 ? -.5 : .3, cligne: cligne(t, S.i) };
     if (avecTel) Object.assign(pr, { tel: true, bras: [8, 25], coudes: [0, 175], ecran: "#F3D3D8", regard: .4 });
     else if (tasse) Object.assign(pr, { bras: [14, 25], coudes: [0, 150], accessoire: (BG, BD) => `<path d="M${BD.hx - 30} ${BD.hy - 70} h64 l-8 70 h-48z" fill="${BLANC}"/><rect x="${BD.hx - 32}" y="${BD.hy - 46}" width="68" height="22" fill="${BX}"/><circle cx="${BD.hx}" cy="${BD.hy}" r="21" fill="${perso0.peau}"/>` });
-    const cote = perso0.type === "tom" ? 1 : -1;
+    const cote = S.i % 2 ? 1 : -1;
     o += g(perso(pr, t), `translate(${(1 - ke) * 900 * cote} 0)`);
     if (p.nom && bulleK === 0) o += etiquette(360, 530, lin(t, S.debut + .3, S.debut + .65), court(p.nom, 16), court(p.sous_nom, 16), perso0.type === "lea" ? BX : ARDOISE);
     if (avecTel) o += notif(540, 380, lin(t, ph(S, 1), ph(S, 1) + .4), court(p.notification_titre, 26), court(p.notification_texte, 36));
@@ -132,7 +100,7 @@ GAB.personnage = {
 GAB.marche = {
   dessin(S, t) {
     const p = S.p;
-    let o = fond("#2A0A12", "#140408");
+    let o = fondMarque("sombre", S.i, t);
     const pts = []; for (let i = 0; i <= 60; i++) { const x = 90 + i * 15; const y = 900 - Math.sin(i / 7) * 140 - (i < 25 ? i * 7 : 175 - (i - 25) * 9) + Math.sin(i * 1.9) * 22; pts.push([x, y]); }
     const kp = lin(t, S.debut + .1, S.fin - .4), n = Math.max(2, Math.floor(kp * pts.length));
     const d = pts.slice(0, n).map((q, i) => (i ? "L" : "M") + q[0] + " " + q[1]).join(" ");
@@ -155,7 +123,7 @@ GAB.marche = {
 GAB.calendrier = {
   dessin(S, t) {
     const p = S.p, de = Number(p.de) || 0, a = Number(p.a) || 0;
-    let o = fond("#FBF4F1", "#E9D7D3");
+    let o = DECORS[p.decor] ? decor(p.decor, t, S.i) + `<rect width="1080" height="1920" fill="#FFFFFF" opacity=".35"/>` : fondMarque("clair", S.i, t);
     const k = eio(lin(t, S.debut + .2, S.debut + 1.5)), v = Math.round(de + (a - de) * k);
     o += `<g transform="translate(540 640)"><rect x="-260" y="-230" width="520" height="470" rx="40" fill="${BLANC}"/><rect x="-260" y="-230" width="520" height="130" rx="40" fill="${BX}"/><rect x="-260" y="-140" width="520" height="40" fill="${BX}"/>`;
     o += `<circle cx="-150" cy="-230" r="20" fill="${NUIT}"/><circle cx="150" cy="-230" r="20" fill="${NUIT}"/>`;
@@ -186,7 +154,7 @@ GAB.calendrier = {
 GAB.comparaison = {
   dessin(S, t) {
     const p = S.p, G = p.gauche || {}, D = p.droite || {};
-    let o = fond("#3A0915", "#1A060B");
+    let o = fondMarque("sombre", S.i, t);
     if (p.bandeau) o += pill(540, 340, Math.max(420, court(p.bandeau, 24).length * 26 + 120), 84, ROSE, txt(540, 356, court(p.bandeau, 24).toUpperCase(), { size: 44, w: 900, f: BX, ls: 3 }));
     const base = 1080, H = 540, max = Math.max(Number(G.valeur) || 1, Number(D.valeur) || 1);
     const tg = ph(S, 0) + (phf(S, 0) - ph(S, 0)) * .4, td = nbP(S) > 1 ? ph(S, 1) : tg + 1.8;
@@ -222,7 +190,7 @@ GAB.comparaison = {
 GAB.egalite = {
   dessin(S, t) {
     const p = S.p;
-    let o = fond("#FBF4F1", "#E9D7D3");
+    let o = DECORS[p.decor] ? decor(p.decor, t, S.i) + `<rect width="1080" height="1920" fill="#FFFFFF" opacity=".35"/>` : fondMarque("clair", S.i, t);
     const k1 = lin(t, S.debut + .05, S.debut + .4);
     let s = perso({ ...personnage(p.personnage_gauche || "lea"), x: 290, y: 1340, s: .95, humeur: "sourire", cligne: cligne(t) }, t) + perso({ ...personnage(p.personnage_droite || "tom_age"), x: 790, y: 1340, s: .95, humeur: "neutre", cligne: cligne(t, 1.3) }, t);
     s += pill(290, 570, 340, 100, ROSE, txt(290, 588, court(p.gauche, 14), { size: 44, w: 900, f: BX })) + pill(790, 570, 340, 100, "#8B9BB0", txt(790, 588, court(p.droite, 14), { size: 44, w: 900, f: BLANC })) + txt(540, 604, p.signe === "≠" ? "≠" : "=", { size: 100, w: 900, f: BX });
@@ -237,7 +205,7 @@ GAB.egalite = {
 GAB.grand_mot = {
   dessin(S, t) {
     const p = S.p, k10 = lin(t, S.debut + .05, S.debut + .3), tb = nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2;
-    let o = fond("#FBF4F1", "#E9D7D3");
+    let o = fondMarque("clair", S.i, t);
     const mot = court(p.texte, 12).toUpperCase(), monte = p.boule ? eo(lin(t, tb - .2, tb + .4)) : 0;
     o += g(txt(0, 0, mot, { size: mot.length > 7 ? 170 : 230, w: 900, f: BX, fam: "Inter Display" }), `translate(540 ${mix(800, 500, monte)}) scale(${mix(1.25 - .25 * back(k10), .7, monte)})`, cl(k10 * 4));
     if (p.boule && t > tb - .2) {
@@ -257,7 +225,7 @@ GAB.grand_mot = {
 GAB.bocaux = {
   dessin(S, t) {
     const p = S.p;
-    let o = fond("#FBF4F1", "#EBD9D6");
+    let o = fondMarque("clair", S.i, t);
     const k0 = lin(t, S.debut + .05, S.debut + .35);
     if (p.titre) o += g(pill(540, 340, Math.max(500, court(p.titre, 30).length * 24 + 120), 96, BX, txt(540, 358, court(p.titre, 30), { size: 44, w: 900, f: BLANC })), `translate(540 340) scale(${back(k0)}) translate(-540 -340)`, cl(k0 * 3));
     const cols = (p.colonnes || []).slice(0, 3), xs = cols.length === 2 ? [330, 750] : [200, 540, 880];
@@ -285,7 +253,7 @@ GAB.bocaux = {
 GAB.chiffre = {
   dessin(S, t) {
     const p = S.p, k = lin(t, S.debut + .1, S.debut + .4);
-    let o = fond("#3A0915", "#16050A");
+    let o = fondMarque("sombre", S.i, t);
     if (p.bandeau) o += pill(540, 380, Math.max(420, court(p.bandeau, 26).length * 26 + 120), 84, ROSE, txt(540, 396, court(p.bandeau, 26).toUpperCase(), { size: 40, w: 900, f: BX, ls: 3 }));
     const v = compteurTexte(court(p.valeur, 14), lin(t, S.debut + .1, S.debut + 1.1));
     o += g(`<rect x="90" y="-200" width="900" height="400" rx="48" fill="${BLANC}"/>` + txt(540, 40, v, { size: v.length > 9 ? 150 : 200, w: 900, f: BX, fam: "Inter Display" }) + txt(540, 130, court(p.libelle, 34), { size: 42, w: 700, f: NUIT }),
@@ -301,7 +269,7 @@ GAB.chiffre = {
 GAB.liste = {
   dessin(S, t) {
     const p = S.p, pts = (p.points || []).slice(0, 3);
-    let o = fond("#FBF4F1", "#EBD9D6");
+    let o = fondMarque("clair", S.i, t);
     const k0 = lin(t, S.debut + .05, S.debut + .35);
     o += g(txt(540, 420, court(p.titre, 28), { size: 64, w: 900, f: BX, fam: "Inter Display" }), "", cl(k0 * 3));
     pts.forEach((s, i) => {
@@ -318,7 +286,7 @@ GAB.liste = {
 GAB.mythe = {
   dessin(S, t) {
     const p = S.p, tr = nbP(S) > 1 ? ph(S, 1) : S.debut + (S.fin - S.debut) / 2;
-    let o = fond("#FBF4F1", "#EBD9D6");
+    let o = fondMarque("clair", S.i, t);
     const k1 = lin(t, S.debut + .05, S.debut + .35), kx = lin(t, tr, tr + .2), k2 = lin(t, tr + .25, tr + .55);
     const carte = (lib, texte, fondC, coulT, coulL) => { const L = lignes(court(texte, 70), 28); return `<rect x="-440" y="-160" width="880" height="320" rx="40" fill="${fondC}"/>` + txt(0, -80, lib, { size: 36, w: 900, f: coulL, ls: 4 }) + L.map((l, i) => txt(0, (L.length === 1 ? 30 : 0) + i * 66, l, { size: 50, w: 800, f: coulT })).join(""); };
     o += g(carte("IDÉE REÇUE", p.mythe, BLANC, NUIT, "#B0475A"), `translate(540 ${560 - eo(kx) * 40}) scale(${1 - .08 * eo(kx)})`, cl(k1 * 3) * (1 - .45 * kx));
@@ -333,7 +301,7 @@ GAB.mythe = {
 GAB.sablier = {
   dessin(S, t) {
     const p = S.p;
-    let o = fond("#3A0915", "#16050A");
+    let o = fondMarque("sombre", S.i, t);
     const k = lin(t, S.debut, S.fin), ks = eo(lin(t, S.debut, S.debut + .4));
     let s = `<rect x="-200" y="-330" width="400" height="40" rx="14" fill="${ROSE}"/><rect x="-200" y="290" width="400" height="40" rx="14" fill="${ROSE}"/>`;
     s += `<path d="M-160 -290 Q-160 -40 -20 0 Q-160 40 -160 290 L160 290 Q160 40 20 0 Q160 -40 160 -290Z" fill="${BLANC}" fill-opacity=".12" stroke="${BLANC}" stroke-width="8"/>`;
