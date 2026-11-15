@@ -9,14 +9,14 @@ export const SERIES = [
   { id: "euribor3m", nom: "Euribor 3 mois", detail: "moyenne mensuelle", cle: "FM/M.U2.EUR.RT.MM.EURIBOR3MD_.HSTA", freq: "mois" },
   { id: "oat10", nom: "OAT 10 ans (France)", detail: "taux long terme, moyenne mensuelle", cle: "IRS/M.FR.L.L40.CI.0000.EUR.N.Z", freq: "mois" },
   { id: "bund10", nom: "Bund 10 ans (Allemagne)", detail: "taux long terme, moyenne mensuelle", cle: "IRS/M.DE.L.L40.CI.0000.EUR.N.Z", freq: "mois" },
-  { id: "inflation_fr", nom: "Inflation France", detail: "indice harmonisé, sur un an", cle: "ICP/M.FR.N.000000.4.ANR", freq: "mois" },
-  { id: "inflation_ze", nom: "Inflation zone euro", detail: "indice harmonisé, sur un an", cle: "ICP/M.U2.N.000000.4.ANR", freq: "mois" },
+  { id: "inflation_fr", nom: "Inflation France", detail: "indice harmonisé, sur un an", cle: "HICP/M.FR.N.000000.4D0.ANR", freq: "mois" },
+  { id: "inflation_ze", nom: "Inflation zone euro", detail: "indice harmonisé, sur un an", cle: "HICP/M.U2.N.000000.4D0.ANR", freq: "mois" },
 ];
 
 async function serie(s) {
-  const n = s.freq === "jour" ? 400 : 26;
+  const n = s.freq === "jour" ? 260 : 26;
   const url = `https://data-api.ecb.europa.eu/service/data/${s.cle}?format=csvdata&lastNObservations=${n}`;
-  const r = await fetch(url, { headers: { Accept: "text/csv", "User-Agent": "VeillePatrimoineBot/1.0" }, signal: AbortSignal.timeout(30000) });
+  const r = await fetch(url, { headers: { Accept: "text/csv", "User-Agent": "VeillePatrimoineBot/1.0" }, signal: AbortSignal.timeout(60000) });
   if (!r.ok) throw new Error(`${s.id} : HTTP ${r.status}`);
   const lignes = (await r.text()).trim().split("\n");
   const tete = lignes.shift().split(",");
@@ -25,7 +25,11 @@ async function serie(s) {
   if (!points.length) throw new Error(`${s.id} : aucune donnée`);
   // Quotidien : on garde un point par semaine sur un an (léger) + le dernier.
   const garde = s.freq === "jour" ? points.filter((_, i) => i % 5 === 0 || i === points.length - 1) : points;
-  return { id: s.id, nom: s.nom, detail: s.detail, freq: s.freq, source: "Banque centrale européenne", lien: `https://data.ecb.europa.eu/data/datasets/${s.cle.replace("/", "/").split("/")[0]}/${s.cle.replace("/", ".")}`, points: garde };
+  // Donnée trop ancienne (série arrêtée ou renommée) : on ne l'affiche pas comme si elle était à jour.
+  const dernier = garde.at(-1)[0], age = (Date.now() - new Date(dernier.length === 7 ? dernier + "-28" : dernier)) / 86400000;
+  if (age > (s.freq === "jour" ? 15 : 100)) throw new Error(`${s.id} : dernière donnée trop ancienne (${dernier})`);
+  const [jeu, cle] = s.cle.split("/");
+  return { id: s.id, nom: s.nom, detail: s.detail, freq: s.freq, source: "Banque centrale européenne", lien: `https://data.ecb.europa.eu/data/datasets/${jeu}/${jeu}.${cle}`, points: garde };
 }
 
 async function principal() {
