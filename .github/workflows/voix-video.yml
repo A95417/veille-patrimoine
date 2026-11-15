@@ -27,6 +27,10 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
           TEXTE_B64: ${{ inputs.texte_b64 }}
           VOIX: ${{ inputs.voix }}
+      - name: Transmettre la voix (FLAC encodé en base64 dans le journal)
+        run: |
+          ffmpeg -y -loglevel error -i voix.wav -c:a flac voix.flac
+          echo "=====DEBUT====="; base64 -w 0 voix.flac; echo; echo "=====FIN====="
       - uses: actions/upload-artifact@v4
         with:
           name: voix
