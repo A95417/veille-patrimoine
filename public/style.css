@@ -169,8 +169,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .hero-deco { position: absolute; right: -40px; top: -20px; width: 400px; height: 260px; opacity: .5; pointer-events: none; }
 .hero > *:not(.hero-deco) { position: relative; }
 .hero .surtitre { color: var(--encre-accent); text-transform: none; letter-spacing: 0; font-size: .9rem; font-weight: 500; }
-.hero h1 { font-size: 2.35rem; line-height: 1.1; margin: 0 0 14px; max-width: 620px; color: #fff; }
-.hero p { color: var(--encre-texte); font-size: 1.05rem; line-height: 1.6; margin: 0; max-width: 640px; }
+.hero h1 { font-size: clamp(1.45rem, 1.1rem + 1.1vw, 1.9rem); line-height: 1.15; margin: 0 0 12px; max-width: min(100%, 880px); color: #fff; }
+.hero p { color: var(--encre-texte); font-size: 1.05rem; line-height: 1.6; margin: 0; max-width: min(100%, 880px); }
 .hero .actions-hero { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .hero .bouton { background: #fff; color: #151a26; }
 .hero .bouton.second { background: var(--encre-2); color: #fff; font-weight: 500; }
@@ -288,7 +288,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
   .outils { margin-left: auto; }
   .page { padding: 16px 14px 40px; }
   .hero { padding: 22px 20px; border-radius: 18px; }
-  .hero h1 { font-size: 1.7rem; }
+  .hero h1 { font-size: 1.4rem; }
   .hero p { font-size: 1rem; }
   .hero-deco { opacity: .3; }
   .chiffre-valeur { font-size: 2.8rem; }

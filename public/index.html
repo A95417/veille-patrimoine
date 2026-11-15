@@ -269,14 +269,17 @@
     async function chargerBrief(marchesPromesse) {
       let brief = null;
       try { brief = (await appelApi("/api/brief")).brief; } catch {}
-      const h = Number(new Date().toLocaleTimeString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }));
-      const salut = h >= 18 ? "Bonsoir !" : "Bonjour !";
+      // Heure de Paris (0-23). En français, l'heure seule s'écrit « 22 h » : on la lit en format numérique pur.
+      const h = parseInt(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hour: "numeric", hourCycle: "h23" }).format(new Date()), 10);
+      const salut = h >= 18 || h < 5 ? "Bonsoir !" : "Bonjour !";
       const estDuJour = brief && brief.jour === aujourdhui();
+      const hier = new Date(Date.now() - 86400e3).toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
+      const soirDHier = brief && !estDuJour && brief.edition === "soir" && brief.jour === hier && h < 7;
       document.getElementById("hero-date").textContent = brief
-        ? `${majuscule(dateLongue(brief.jour))} · ${estDuJour ? (brief.edition === "soir" ? "point du soir de 18 h" : "brief de 7 h") : "dernier brief disponible"}`
+        ? `${majuscule(dateLongue(brief.jour))} · ${estDuJour || soirDHier ? (brief.edition === "soir" ? "point du soir de 18 h" : "brief de 7 h") : "dernier brief disponible"}`
         : majuscule(dateLongue(aujourdhui()));
-      document.getElementById("hero-titre").textContent = !estDuJour ? `${salut} Voici l'essentiel de l'actualité.`
-        : brief.edition === "soir" ? `${salut} Voici le point de la journée.` : `${salut} Voici ce qui compte ce matin.`;
+      document.getElementById("hero-titre").textContent = soirDHier ? `${salut} Voici le point d'hier soir.` : !estDuJour ? `${salut} Voici l'essentiel de l'actualité.`
+        : brief.edition === "soir" ? `${salut} Voici le point de la journée.` : `${salut} Voici ce qui compte ${h < 12 ? "ce matin" : "aujourd'hui"}.`;
       const actions = document.getElementById("hero-actions");
       if (brief) {
         const texte = brief.synthese || "Le brief de ce jour a été produit sans synthèse : retrouvez ses actualités majeures et les clôtures de marché.";
@@ -288,7 +291,7 @@
         actions.innerHTML = `<a class="bouton" href="/brief?jour=${brief.jour}&edition=${brief.edition || "matin"}">${brief.edition === "soir" ? "Lire le point du soir" : "Lire le brief"} · ${minutes} min</a>
           <a class="bouton second" href="/brief?jour=${brief.jour}&edition=${brief.edition || "matin"}&express=1">⚡ Express</a>
           <button type="button" class="bouton second" id="btn-ecouter">${ICONE_ECOUTE} Écouter</button>` +
-          `<a class="bouton second" href="/linkedin">✏️ Post LinkedIn</a>`;
+          `<a class="bouton second" href="/linkedin">✏️ Création Post</a>`;
         document.getElementById("btn-ecouter").onclick = (e) => ecouterBrief(brief, e.currentTarget);
       } else {
         document.getElementById("hero-texte").textContent = "Le premier brief sera rédigé demain matin vers 7 h, puis chaque jour, week-end compris.";
