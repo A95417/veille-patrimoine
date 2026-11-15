@@ -106,7 +106,7 @@ export async function generer(env, db, consignes, contenu, schema, preferer = "f
 }
 
 // Actualités récentes et importantes : la matière première des posts.
-async function sujetsRecents(db, n = 30) {
+export async function sujetsRecents(db, n = 30) {
   const depuis = new Date(Date.now() - 4 * 86400e3).toISOString();
   const { results } = await db.prepare(`SELECT s.id, COALESCE(s.titre_fr, s.titre) AS titre, s.importance, s.categories, s.resume_court, s.derniere_pub,
       (SELECT GROUP_CONCAT(DISTINCT a.source_nom) FROM articles a WHERE a.sujet_id = s.id) AS sources

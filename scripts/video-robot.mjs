@@ -7,7 +7,7 @@ import { choisirModeleVoix, genererVoix } from "./gemini.mjs";
 
 const SITE = (process.env.SITE_URL || "").replace(/\/$/, ""), JETON = process.env.ROBOT_TOKEN || "", ID = process.env.VIDEO_ID || "";
 const M = "video/moteur";
-const VOIX_OK = new Set(["Sadachbia", "Fenrir", "Kore", "Charon"]);
+const VOIX_OK = new Set(["Sadachbia", "Puck", "Zephyr", "Laomedeia", "Fenrir", "Leda", "Achird", "Kore", "Charon", "Sulafat", "Orus", "Gacrux"]);
 const MORCEAU = 524_288;   // 512 Ko par morceau, envoyés en base64 (lecture rapide côté site)
 const t0 = Date.now();
 

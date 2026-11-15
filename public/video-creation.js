@@ -2,13 +2,23 @@
 // (suivi en direct avec temps restant) → lecture, téléchargement, miniature, sous-titres, texte de publication. Galerie.
 (() => {
   const $v = (id) => document.getElementById(id);
-  const MODELES = [
-    { id: "deux_profils", ico: "👥", titre: "Deux profils, deux résultats", desc: "Une simulation chiffrée par le site : commencer tôt ou attendre." },
-    { id: "chiffre_semaine", ico: "📈", titre: "Le chiffre de la semaine", desc: "Un taux ou l'inflation (BCE), tiré de la page Marchés." },
-    { id: "echeance", ico: "📅", titre: "Échéance fiscale à ne pas rater", desc: "Depuis le calendrier officiel impots.gouv." },
-    { id: "mythe", ico: "💭", titre: "Mythe ou réalité ?", desc: "Corriger une idée reçue sur l'épargne." },
-    { id: "libre", ico: "✏️", titre: "Sujet libre", desc: "Votre thème, sans chiffre inventé." },
-  ];
+  // Menu « Sujet » : fiches Apprendre (par thème), actualités, échéances, chiffres, simulation, sujet libre.
+  const THEMES = { epargne: "Épargne", immo: "Immobilier", marches: "Marchés", fisc: "Fiscalité", transmission: "Transmission", regl: "Réglementation", economie: "Économie", crypto: "Crypto" };
+  const ANGLES_LIB = { expliquer: "Expliquer simplement", mythe: "Mythe ou réalité ?", reflexes: "3 réflexes à avoir", chiffre: "Le chiffre clé", deux_profils: "Histoire de deux profils", erreur: "Erreur fréquente à éviter" };
+  const ANGLE_DEFAUT = { fiche: "expliquer", actu: "expliquer", echeance: "reflexes", chiffre: "chiffre", simulation: "deux_profils", libre: "expliquer" };
+  const NOMS_SOURCES = { fiche: "Fiche Apprendre", actu: "Actualité", echeance: "Échéance fiscale", chiffre: "Chiffre de la semaine", simulation: "Commencer tôt ou attendre", libre: "Sujet libre",
+    deux_profils: "Deux profils", chiffre_semaine: "Chiffre de la semaine", mythe: "Mythe ou réalité" };
+  const sansAccent = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const LES_FICHES = () => (typeof FICHES !== "undefined" ? FICHES : []);
+  // Contenu vérifié d'une fiche, envoyé à l'IA comme source (ses chiffres sont alors autorisés).
+  function texteFiche(f) {
+    const l = [f.titre + (f.sousTitre ? " — " + f.sousTitre : ""), f.enUnePhrase || ""];
+    (f.chiffres || []).forEach((c) => l.push(`Chiffre : ${c.valeur} ${c.libelle}`));
+    (f.essentiel || []).forEach((e) => l.push(`${e.titre} : ${e.texte}`));
+    (f.pieges || []).forEach((p) => l.push("Piège : " + p));
+    (f.vraiFaux || []).forEach((v) => l.push(`${v.vrai ? "Vrai" : "Faux"} : ${v.texte} ${v.explication || ""}`));
+    return l.join("\n").slice(0, 5000);
+  }
   const NOMS_TYPES = { accroche: "Accroche", personnage: "Personnage", marche: "Marchés", calendrier: "Le temps passe", comparaison: "Comparaison chiffrée", egalite: "Même effort", grand_mot: "Mot géant", bocaux: "Chaque situation est unique", chiffre: "Chiffre clé", liste: "Liste", mythe: "Idée reçue", sablier: "Sablier", fin: "Carte de fin" };
   // Paramètres affichés à l'écran modifiables, par gabarit (les autres restent tels que proposés).
   const CHAMPS = {
@@ -40,8 +50,8 @@
   const EXTRAITS = new Set(["sadachbia", "fenrir", "kore", "charon", "zephyr", "laomedeia", "leda", "achird"]);
   const LIB_STATUT = { brouillon: "Brouillon", file: "En file d'attente", attente: "Démarrage", en_cours: "En fabrication", pret: "Prête", a_verifier: "Prête · à vérifier", erreur: "Échec", annule: "Annulée" };
   const EN_COURS = ["file", "attente", "en_cours"];
-  const R = { modele: "deux_profils", duree: 45, format: "9:16", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
-  let reglages = null, courante = null, suivi = null, chrono = null, audio = null;
+  const R = { sel: "simulation", angle: "deux_profils", angleManuel: false, angleIA: false, cherche: "", duree: 45, format: "9:16", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
+  let reglages = null, sources = null, courante = null, suivi = null, chrono = null, audio = null;
 
   const mots = (sc) => (sc || []).reduce((n, s) => n + String(s.texte || "").split(/\s+/).filter((m) => /[\p{L}\d]/u.test(m)).length, 0);
   const dureeEst = (sc) => Math.round(mots(sc) / 2.85 + 4);
@@ -60,10 +70,22 @@
       <section class="carte" id="vv-nouvelle">
         <h2>Créer une vidéo courte</h2>
         <p class="doux">Format TikTok, Reels ou LinkedIn : personnages animés, voix off, sous-titres, musique. L'IA propose un scénario que vous relisez avant toute fabrication.</p>
-        <div class="vv-modeles" id="vv-modeles"></div>
+        <div class="vv-idees-bloc"><span class="simu-lib">💡 Idées de vidéos du moment</span><div class="vv-idees" id="vv-idees"><div class="attente petit"><span class="rond"></span>Recherche dans les grosses actualités…</div></div></div>
+        <div class="vv-menus">
+          <div class="vv-menu-sujet">
+            <label class="simu-lib" for="vv-src">Sujet</label>
+            <input type="search" id="vv-cherche" placeholder="🔍 Rechercher : PER, BCE, donation…" aria-label="Rechercher un sujet" autocomplete="off">
+            <select id="vv-src"></select>
+          </div>
+          <div class="vv-menu-angle">
+            <label class="simu-lib" for="vv-angle">Angle <span class="vv-suggere" id="vv-angle-note"></span></label>
+            <select id="vv-angle">${Object.entries(ANGLES_LIB).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select>
+          </div>
+        </div>
+        <p class="petit doux" id="vv-src-info"></p>
         <div id="vv-sim" class="vv-sim"></div>
-        <label class="bloc-lib" for="vv-sujet" style="margin-top:14px">Sujet ou angle <span class="doux">(facultatif pour les modèles chiffrés)</span></label>
-        <textarea id="vv-sujet" rows="2" maxlength="300" placeholder="Ex. : pourquoi épargner chaque mois plutôt qu'attendre le bon moment"></textarea>
+        <label class="bloc-lib" for="vv-precision" style="margin-top:12px">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
+        <input id="vv-precision" maxlength="300" placeholder="Ex. : insister sur les jeunes actifs, ton rassurant…">
         <p class="alerte-donnees">N'indiquez jamais de nom ni d'information sur un client : le texte est envoyé à l'IA (Gemini).</p>
         <div class="reglages" style="margin-top:12px">
           <div><span class="simu-lib">Durée</span><div class="puces" id="vv-duree">${[30, 45, 60].map((d) => `<button type="button" class="puce" data-duree="${d}">${d} s</button>`).join("")}</div></div>
@@ -79,15 +101,16 @@
         <div class="vv-galerie" id="vv-galerie"><div class="attente"><span class="rond"></span>Chargement…</div></div>
       </section>
       <details class="carte precision" id="vv-coord"><summary>⚙️ Coordonnées du cabinet (carte de fin)</summary><div id="vv-coord-corps"></div></details>`;
-    $v("vv-modeles").innerHTML = MODELES.map((m) => `<button type="button" class="choix-carte" data-modele="${m.id}"><strong>${m.ico} ${m.titre}</strong><span class="petit">${m.desc}</span></button>`).join("");
-    document.querySelectorAll("[data-modele]").forEach((b) => b.onclick = () => { R.modele = b.dataset.modele; majReglages(); });
+    $v("vv-cherche").oninput = () => { R.cherche = $v("vv-cherche").value; remplirSujets(); };
+    $v("vv-src").onchange = () => choisirSujet($v("vv-src").value);
+    $v("vv-angle").onchange = () => { R.angle = $v("vv-angle").value; R.angleManuel = true; R.angleIA = false; majAngle(); };
+    remplirSujets();
     document.querySelectorAll("[data-duree]").forEach((b) => b.onclick = () => { R.duree = +b.dataset.duree; majReglages(); });
     document.querySelectorAll("[data-format-v]").forEach((b) => b.onclick = () => { R.format = b.dataset.formatV; majReglages(); });
     $v("vv-proposer").onclick = proposer;
   }
 
   function majReglages() {
-    document.querySelectorAll("[data-modele]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.modele === R.modele));
     document.querySelectorAll("[data-duree]").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.duree === R.duree));
     document.querySelectorAll("[data-format-v]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.formatV === R.format));
     const voix = reglages?.voix || ["Sadachbia"];
@@ -98,7 +121,7 @@
       audio = new Audio(`/voix/${b.dataset.ecoute.toLowerCase()}.m4a`); audio.play().catch(() => notifier("Lecture impossible sur cet appareil.", true));
     });
     const sim = $v("vv-sim");
-    if (R.modele === "deux_profils") {
+    if (R.sel === "simulation") {
       const s = R.sim, r = simuler(s);
       sim.hidden = false;
       sim.innerHTML = `<div class="vv-sim-grille">
@@ -113,7 +136,97 @@
         majReglages();
       });
     } else { sim.hidden = true; sim.innerHTML = ""; }
-    if (reglages) $v("vv-quota").textContent = `${reglages.lancees_aujourdhui}/${reglages.limite_jour} vidéos fabriquées aujourd'hui`;
+    majCompteurs();
+  }
+
+  // Compteurs : limite personnelle et voix restantes pour toute l'équipe (quota gratuit partagé).
+  function majCompteurs() {
+    if (!reglages) return;
+    const z = $v("vv-quota"), reste = reglages.restant_equipe, plein = reglages.lancees_aujourdhui >= reglages.limite_personne;
+    z.innerHTML = `<span class="vv-compteur${plein ? " ko" : ""}">${reglages.lancees_aujourdhui}/${reglages.limite_personne} aujourd'hui</span>`
+      + (reste <= 0 ? ` <span class="vv-equipe ko">Quota de voix épuisé pour aujourd'hui (toute l'équipe) : retour demain matin.</span>`
+        : reste <= 4 ? ` <span class="vv-equipe">Plus que ${reste} vidéo${reste > 1 ? "s" : ""} possible${reste > 1 ? "s" : ""} aujourd'hui pour toute l'équipe.</span>` : "");
+  }
+
+  // ---------------------------------------------------------------- menu « Sujet »
+  function optionsSujets() {
+    const g = [];
+    const parTheme = {};
+    LES_FICHES().forEach((f) => (parTheme[f.theme] = parTheme[f.theme] || []).push(f));
+    Object.entries(THEMES).forEach(([t, nom]) => { if (parTheme[t]) g.push([`🎓 Apprendre · ${nom}`, parTheme[t].map((f) => [`fiche:${f.id}`, f.titre, `${f.titre} ${f.sousTitre || ""} ${nom} ${f.recherche || ""}`])]); });
+    Object.entries(parTheme).forEach(([t, l]) => { if (!THEMES[t]) g.push(["🎓 Apprendre · Autres", l.map((f) => [`fiche:${f.id}`, f.titre, f.titre])]); });
+    if (sources?.actus?.length) g.push(["📰 Actualités du moment", sources.actus.map((a) => [`actu:${a.id}`, a.titre.length > 90 ? a.titre.slice(0, 88) + "…" : a.titre, `${a.titre} ${a.resume} actualite`])]);
+    if (sources?.echeances?.length) g.push(["📅 Échéances fiscales", sources.echeances.map((e) => [`echeance:${e.ref}`, `${dateCourte(e.date)} · ${e.titre}`, `${e.titre} echeance impot fiscal`])]);
+    if (sources?.chiffres?.length) g.push(["📈 Chiffres de la semaine (BCE)", [["chiffre:", "Taux et inflation : vue d'ensemble", "chiffre taux inflation bce"], ...sources.chiffres.map((c) => [`chiffre:${c.ref}`, c.libelle, `${c.libelle} chiffre taux bce`])]]);
+    g.push(["Autres", [["simulation", "👥 Commencer tôt ou attendre (simulation chiffrée)", "simulation commencer tot attendre epargne deux profils"], ["libre", "✏️ Sujet libre (décrit dans « Précision »)", "libre theme"]]]);
+    return g;
+  }
+  function dateCourte(d) { try { return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }); } catch { return d; } }
+  function remplirSujets() {
+    const q = sansAccent(R.cherche).trim().split(/\s+/).filter(Boolean);
+    const groupes = optionsSujets().map(([nom, l]) => [nom, l.filter(([v, , txt]) => v === R.sel || q.every((m) => sansAccent(txt).includes(m)))]).filter(([, l]) => l.length);
+    const sel = $v("vv-src");
+    sel.innerHTML = groupes.map(([nom, l]) => `<optgroup label="${echapper(nom)}">${l.map(([v, lib]) => `<option value="${echapper(v)}"${v === R.sel ? " selected" : ""}>${echapper(lib)}</option>`).join("")}</optgroup>`).join("");
+    // une recherche qui ne garde qu'une autre option : on la propose directement
+    const trouves = groupes.flatMap(([, l]) => l).filter(([v, , txt]) => q.every((m) => sansAccent(txt).includes(m)));
+    if (q.length && trouves.length && !trouves.some(([v]) => v === R.sel)) sel.value = trouves[0][0];
+    $v("vv-src-info").textContent = q.length ? (trouves.length ? `${trouves.length} sujet${trouves.length > 1 ? "s" : ""} trouvé${trouves.length > 1 ? "s" : ""} : choisissez dans le menu.` : "Aucun sujet ne correspond à la recherche.") : infoSujet();
+    if (q.length && sel.value && sel.value !== R.sel) choisirSujet(sel.value, true);
+  }
+  function infoSujet() {
+    const [type, ref] = R.sel.split(/:(.*)/s);
+    if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); return f ? `Contenu vérifié de la fiche « ${f.titre} » (le ${f.verifie || "—"}) : ses chiffres sont autorisés et la source sera citée.` : ""; }
+    if (type === "actu") { const a = sources?.actus?.find((x) => x.id === ref); return a ? `Résumé du site (parties gratuites des articles${a.sources.length ? " : " + a.sources.join(", ") : ""}) : la source sera citée.` : ""; }
+    if (type === "echeance") return "Calendrier officiel (impots.gouv.fr, service-public.gouv.fr).";
+    if (type === "chiffre") return "Derniers chiffres publiés par la BCE (page Marchés du site).";
+    if (type === "simulation") return "Chiffres calculés par le site, présentés comme exemple fictif.";
+    return "Sans source : l'IA reste qualitative (aucun chiffre inventé).";
+  }
+  function typeSel() { return R.sel.split(":")[0]; }
+  function choisirSujet(v, depuisRecherche = false) {
+    R.sel = v;
+    if (!R.angleManuel) { R.angle = ANGLE_DEFAUT[typeSel()] || "expliquer"; R.angleIA = false; }
+    if (!depuisRecherche) remplirSujets(); else $v("vv-src-info").textContent = infoSujet();
+    $v("vv-precision-note").textContent = typeSel() === "libre" ? "(obligatoire : décrivez le sujet)" : "(facultatif)";
+    majAngle(); majReglages();
+  }
+  function majAngle() {
+    $v("vv-angle").value = R.angle;
+    $v("vv-angle-note").textContent = R.angleManuel ? "" : R.angleIA ? "· suggéré par l'IA" : "· conseillé";
+  }
+
+  // ---------------------------------------------------------------- idées du moment (grosses actualités)
+  function ficheLiee(mots) {
+    const m = (mots || []).map(sansAccent).filter((x) => x.length > 2);
+    if (!m.length) return null;
+    let best = null, score = 0;
+    LES_FICHES().forEach((f) => {
+      const t = sansAccent(`${f.titre} ${f.sousTitre || ""} ${f.recherche || ""} ${THEMES[f.theme] || ""}`);
+      const sc = m.reduce((n, k) => n + (t.includes(k) ? (sansAccent(f.titre).includes(k) ? 2 : 1) : 0), 0);
+      if (sc > score) { score = sc; best = f; }
+    });
+    return score >= 1 ? best : null;
+  }
+  function afficherIdees() {
+    const z = $v("vv-idees");
+    const idees = sources?.idees || [];
+    if (!idees.length) { z.innerHTML = `<p class="petit doux">Pas d'actualité marquante pour l'instant : choisissez un sujet dans le menu.</p>`; return; }
+    z.innerHTML = idees.map((i, k) => {
+      const f = ficheLiee(i.mots_cles);
+      return `<div class="vv-idee"><button type="button" class="vv-idee-btn" data-idee="${k}"><strong>${echapper(i.titre)}</strong><span class="petit">🎯 ${ANGLES_LIB[i.angle] || ANGLES_LIB.expliquer}</span></button>${f ? `<button type="button" class="vv-idee-fiche lien-bouton" data-idee-fiche="${echapper(f.id)}" data-angle="${i.angle}">🎓 ou la fiche « ${echapper(f.titre)} »</button>` : ""}</div>`;
+    }).join("") + (sources.simple ? `<p class="petit doux vv-idees-note">Les plus grosses actualités du moment (idées de l'IA indisponibles pour l'instant).</p>` : "");
+    z.querySelectorAll("[data-idee]").forEach((b) => b.onclick = () => {
+      const i = idees[+b.dataset.idee];
+      R.cherche = ""; $v("vv-cherche").value = "";
+      R.angleManuel = false;
+      if (!sources.simple) $v("vv-precision").value = i.titre;
+      choisirSujet(`actu:${i.sujet_id}`); R.angleIA = !sources.simple; R.angle = i.angle || "expliquer"; majAngle();
+      z.querySelectorAll(".vv-idee").forEach((c, k) => c.classList.toggle("choisie", k === +b.dataset.idee));
+    });
+    z.querySelectorAll("[data-idee-fiche]").forEach((b) => b.onclick = () => {
+      R.cherche = ""; $v("vv-cherche").value = "";
+      R.angleManuel = false; choisirSujet(`fiche:${b.dataset.ideeFiche}`); R.angle = b.dataset.angle || "expliquer"; R.angleIA = true; majAngle();
+    });
   }
 
   // ---------------------------------------------------------------- scénario
@@ -121,7 +234,10 @@
     const b = $v("vv-proposer");
     b.disabled = true; $v("vv-msg").innerHTML = `<div class="attente"><span class="rond"></span>L'IA écrit le scénario, 10 à 40 secondes…</div>`;
     try {
-      const r = await appelApi("/api/video/scenario", "POST", { modele: R.modele, sujet: $v("vv-sujet").value, duree: R.duree, format: R.format, voix: R.voix, simulation: R.sim });
+      const [type, ref] = R.sel.split(/:(.*)/s);
+      const corps = { source: type, ref: ref || "", angle: R.angle, precision: $v("vv-precision").value, duree: R.duree, format: R.format, voix: R.voix, simulation: R.sim };
+      if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); if (f) corps.fiche = { id: f.id, titre: f.titre, verifie: f.verifie, contenu: texteFiche(f) }; }
+      const r = await appelApi("/api/video/scenario", "POST", corps);
       $v("vv-msg").innerHTML = "";
       ouvrir(r.video); chargerGalerie();
     } catch (e) { $v("vv-msg").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; }
@@ -185,7 +301,7 @@
         <button type="button" class="bouton bouton-discret" id="vv-graine" title="Change les décors, l'heure du jour, les objets et les tenues, sans toucher au texte">🎲 Autre mise en scène</button>
         <button type="button" class="bouton bouton-discret" id="vv-reproposer">↻ Un autre scénario</button>
       </div>
-      <p class="doux petit">La fabrication tourne sur un robot gratuit (GitHub) : vous pouvez fermer la page, la vidéo arrivera dans « Mes vidéos ». ${reglages ? `${reglages.lancees_aujourdhui}/${reglages.limite_jour} aujourd'hui.` : ""}</p>
+      <p class="doux petit">La fabrication tourne sur un robot gratuit (GitHub) : vous pouvez fermer la page, la vidéo arrivera dans « Mes vidéos ». ${reglages ? `${reglages.lancees_aujourdhui}/${reglages.limite_personne} aujourd'hui${reglages.restant_equipe <= 4 ? ` · plus que ${reglages.restant_equipe} pour toute l'équipe` : ""}.` : ""}</p>
       <div id="vv-msg2"></div>`;
     $v("vv-fermer").onclick = () => { $v("vv-travail").hidden = true; courante = null; };
     const scenes = $v("vv-scenes");
@@ -339,7 +455,7 @@
     try {
       const { videos } = await appelApi("/api/video/liste");
       const g = $v("vv-galerie");
-      if (!videos.length) { g.innerHTML = `<p class="doux">Aucune vidéo pour l'instant. Choisissez un modèle ci-dessus.</p>`; return; }
+      if (!videos.length) { g.innerHTML = `<p class="doux">Aucune vidéo pour l'instant. Choisissez un sujet ci-dessus.</p>`; return; }
       g.innerHTML = videos.map((v) => `<div class="vv-carte">
         <button type="button" class="vv-vignette ${v.format === "4:5" ? "f45" : ""}" data-ouvrir="${v.id}" aria-label="Ouvrir : ${echapper(v.sujet || "vidéo")}">${v.a_miniature ? `<img src="/api/video/${v.id}/miniature" alt="" loading="lazy">` : `<span>🎬</span>`}<em class="vv-statut s-${v.statut}">${LIB_STATUT[v.statut] || v.statut}</em></button>
         <div class="vv-carte-texte"><strong>${echapper(v.sujet || "Sans titre")}</strong><span class="doux petit">${quand(v.cree_le)}${v.auteur ? " · " + echapper(v.auteur) : ""}${v.duree ? " · " + Math.round(v.duree) + " s" : ""}</span></div>
@@ -377,7 +493,11 @@
 
   window.demarrerVideo = async () => {
     if ($v("vv-nouvelle")) { chargerGalerie(); return; }
-    monter(); majReglages();
+    // ?video_fiche=ID (bouton « Faire une vidéo » d'une fiche Apprendre) : la fiche est présélectionnée.
+    const q = new URLSearchParams(location.search).get("video_fiche");
+    if (q && LES_FICHES().some((f) => f.id === q)) { R.sel = `fiche:${q}`; R.angle = ANGLE_DEFAUT.fiche; }
+    monter(); majAngle(); majReglages(); choisirSujet(R.sel);
+    appelApi("/api/video/idees").then((s) => { sources = s; remplirSujets(); afficherIdees(); }).catch(() => { sources = { idees: [] }; afficherIdees(); });
     try { reglages = await appelApi("/api/video/reglages"); majReglages(); afficherCoordonnees(); } catch (e) { $v("vv-msg").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; }
     chargerGalerie();
   };

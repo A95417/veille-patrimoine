@@ -135,7 +135,27 @@
     #vue-video[hidden] { display: none; }
     #vue-video h2 { margin: 0 0 4px; font-size: 1.2rem; }
     #vue-video textarea { width: 100%; box-sizing: border-box; font: inherit; line-height: 1.5; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); resize: vertical; }
-    .vv-modeles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 12px 0 4px; }
+    #vue-video > .carte { min-width: 0; max-width: 100%; box-sizing: border-box; }
+    .vv-idees-bloc { margin: 12px 0 4px; min-width: 0; }
+    .vv-idees { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; margin-top: 6px; }
+    .vv-idee { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .vv-idee-btn { text-align: left; border: 1px solid var(--bord); background: var(--carte); color: var(--texte); border-radius: 12px; padding: 9px 11px; cursor: pointer; display: grid; gap: 3px; font: inherit; height: 100%; }
+    .vv-idee-btn strong { font-size: .9rem; line-height: 1.25; }
+    .vv-idee-btn .petit { color: var(--doux); }
+    .vv-idee-btn:hover, .vv-idee.choisie .vv-idee-btn { border-color: var(--accent); background: var(--accent-doux); }
+    .vv-idee-fiche { font-size: .78rem; text-align: left; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .vv-idees-note { grid-column: 1 / -1; margin: 0; }
+    .vv-menus { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; margin-top: 14px; }
+    .vv-menus > div { display: grid; gap: 6px; align-content: start; }
+    .vv-menus select, .vv-menus input, #vv-precision { width: 100%; min-width: 0; box-sizing: border-box; font: inherit; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); }
+    .vv-suggere { font-weight: 400; color: var(--accent); font-size: .8rem; }
+    #vv-src-info { margin: 6px 0 0; min-height: 1.2em; }
+    .vv-compteur { font-weight: 600; } .vv-compteur.ko, .vv-equipe.ko { color: var(--ko); } .vv-equipe { color: var(--doux); }
+    @media (max-width: 640px) {
+      .vv-menus { grid-template-columns: minmax(0, 1fr); }
+      .vv-idees { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+      .vv-idee { flex: 0 0 78%; scroll-snap-align: start; }
+    }
     .vv-sim { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--fond); }
     .vv-sim[hidden] { display: none; }
     .vv-sim-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
