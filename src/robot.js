@@ -156,6 +156,15 @@ export async function routeRobot(request, env, chemin) {
     return json({ ok: true });
   }
 
+  // 5 bis bis) Taux et inflation (API publique de la BCE), relevés une fois par jour.
+  if (chemin === "/api/robot/taux" && request.method === "POST") {
+    if (!Array.isArray(corps.series) || !corps.series.length) return json({ erreur: "Aucune série." }, 400);
+    const texte = JSON.stringify({ releve_le: corps.releve_le, series: corps.series.slice(0, 12), erreurs: (corps.erreurs || []).slice(0, 12) });
+    if (texte.length > 60000) return json({ erreur: "Relevé trop volumineux." }, 413);
+    await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES ('taux', ?, ?)").bind(texte, new Date().toISOString()).run();
+    return json({ ok: true, series: corps.series.length });
+  }
+
   // 5 ter) Rattrapage de l'historique des cours (lancé une fois à la main).
   if (chemin === "/api/robot/marches/historique" && request.method === "POST") {
     const n = await ajouterHistorique(db, corps.points || []);

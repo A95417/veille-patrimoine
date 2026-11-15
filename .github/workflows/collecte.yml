@@ -24,6 +24,10 @@ on:
         description: "Refaire les schémas du dernier brief (oui) — laisser vide en temps normal"
         required: false
         default: ""
+      taux:
+        description: "Relever les taux BCE maintenant (oui) — laisser vide en temps normal"
+        required: false
+        default: ""
 
 permissions:
   contents: write   # pour la petite note quotidienne qui garde le robot actif
@@ -70,6 +74,14 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
           MARCHES_FORCER: ${{ inputs.marches }}
+
+      - name: Relever les taux (BCE, une fois par jour vers 9 h)
+        if: ${{ always() }}
+        run: node scripts/taux.mjs | tee -a collecte.log
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          TAUX_FORCER: ${{ inputs.taux }}
 
       # Vers 7 h et vers 18 h (heure de Paris), le premier passage dans la fenêtre rédige le brief (matin, puis soir).
       - name: Brief matinal

@@ -41,6 +41,10 @@
     <h2 class="groupe-titre">Change, matières premières et crypto</h2>
     <div class="grille-cotations" id="autres"></div>
 
+    <h2 class="groupe-titre">Taux et inflation</h2>
+    <p class="doux petit" id="taux-info" style="margin:4px 0 0"></p>
+    <div class="grille-cotations" id="taux"></div>
+
     <section class="carte">
       <h2>D'où viennent ces chiffres ?</h2>
       <p class="doux" style="font-size:.92rem;margin:0">
@@ -50,7 +54,10 @@
         <strong>Quand ?</strong> Pendant la séance de New York (15 h 30 - 22 h, heure de Paris, en semaine), toutes les 30 minutes,
         et chaque matin vers 6 h pour les clôtures de la veille. En dehors de ces heures, les chiffres affichés sont ceux du dernier relevé.<br><br>
         <strong>Alerte :</strong> si l'un de ces marchés recule de plus de 2 % dans la séance, une alerte rouge apparaît dans « À la une ».<br><br>
-        Ce sont des estimations pour suivre la tendance du jour, pas des cotations officielles. Les taux OAT et Bund ne sont pas disponibles gratuitement et ne sont donc pas suivis.
+        Ce sont des estimations pour suivre la tendance du jour, pas des cotations officielles.<br><br>
+        <strong>Taux et inflation :</strong> séries officielles de la Banque centrale européenne (API publique et gratuite), relevées chaque matin vers 9 h.
+        L'€STR et le taux de dépôt sont quotidiens ; l'Euribor, l'OAT et le Bund 10 ans sont des moyennes mensuelles (taux « de convergence »),
+        l'inflation est l'indice des prix harmonisé sur un an. Ce ne sont pas des cotations en temps réel.
       </p>
     </section>
   </main>
@@ -70,6 +77,43 @@
         </div>
       </div>`;
     }
+    // Taux : valeur, écart sur un an (ou un mois pour les séries quotidiennes) et courbe.
+    const moisFr = (t) => t.length === 7 ? new Date(t + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) : new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+    const pct = (x) => x.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " %";
+    function tuileTaux(s) {
+      const pts = s.points, [t, v] = pts.at(-1);
+      const ref = s.freq === "jour" ? pts.at(-6) : pts.at(-13);   // ≈ 1 mois (relevé hebdo) ou 1 an
+      const ecart = ref ? Math.round((v - ref[1]) * 100) : null;
+      const courbe = sparkline(pts.slice(s.freq === "jour" ? -31 : -25), 200, 38).replace(/stroke="var\(--(ok|ko)\)"/, 'stroke="var(--accent)"')
+        .replace('class="sparkline"', 'class="sparkline" style="width:100%"').replace(/width="200"/, 'width="100%" preserveAspectRatio="none"');
+      return `<div class="cotation">
+        <div class="cotation-nom">${echapper(s.nom)}</div>
+        <div class="cotation-via">${echapper(s.detail)}</div>
+        <div class="cotation-chiffres"><span class="var-pos" style="color:var(--texte)">${s.id === "ecart" ? Math.round(v * 100) + " pb" : pct(v)}</span><span class="cotation-cours">${moisFr(t)}</span></div>
+        ${courbe}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <a class="doux petit" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">Source : BCE ↗</a>
+          ${ecart == null ? "" : `<span class="pilule">${ecart > 0 ? "+" : ecart < 0 ? "−" : ""}${Math.abs(ecart)} pb sur ${s.freq === "jour" ? "1 mois" : "1 an"}</span>`}
+        </div>
+      </div>`;
+    }
+    async function afficherTaux() {
+      try {
+        const { taux } = await appelApi("/api/marches");
+        if (!taux || !taux.series?.length) { document.getElementById("taux-info").textContent = "Premier relevé demain vers 9 h."; return; }
+        const series = [...taux.series];
+        const oat = series.find((s) => s.id === "oat10"), bund = series.find((s) => s.id === "bund10");
+        if (oat && bund) {   // écart de taux France - Allemagne, mois par mois
+          const b = new Map(bund.points);
+          const pts = oat.points.filter(([t]) => b.has(t)).map(([t, v]) => [t, Math.round((v - b.get(t)) * 1000) / 1000]);
+          if (pts.length) series.splice(series.indexOf(bund) + 1, 0, { id: "ecart", nom: "Écart OAT - Bund", detail: "prime de risque de la France sur l'Allemagne", freq: "mois", lien: oat.lien, points: pts });
+        }
+        document.getElementById("taux-info").innerHTML = `Dernier relevé : ${quand(taux.maj_le)}. « pb » = points de base (1 pb = 0,01 point de pourcentage).`;
+        document.getElementById("taux").innerHTML = series.map(tuileTaux).join("");
+      } catch (e) { document.getElementById("taux-info").textContent = "Taux indisponibles pour le moment."; }
+    }
+    afficherTaux();
+
     chargerEntete("/marches").then(async () => {
       try {
         const valeurs = await donneesMarches();
