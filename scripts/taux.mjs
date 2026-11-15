@@ -34,7 +34,7 @@ async function serie(s) {
 
 async function principal() {
   const heure = Number(new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric" }).format(new Date()));
-  if (!ESSAI && process.env.TAUX_FORCER !== "oui" && heure !== 9 || new Date().getUTCMinutes() >= 20) { console.log("Taux : pas l'heure (relevé vers 9 h), rien à faire."); return; }
+  if (!ESSAI && process.env.TAUX_FORCER !== "oui" && (heure !== 9 || new Date().getUTCMinutes() >= 20)) { console.log("Taux : pas l'heure (relevé vers 9 h), rien à faire."); return; }
   const resultats = [], erreurs = [];
   for (const s of SERIES) {
     try { resultats.push(await serie(s)); }
