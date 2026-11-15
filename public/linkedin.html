@@ -1,10 +1,10 @@
 <!doctype html>
-<!-- version 4.0 — Mes posts, Ma voix, conformité, partage, texte alternatif -->
+<!-- version 5.0 — Création Post : onglets Post LinkedIn et Vidéo -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LinkedIn · Veille Patrimoine</title>
+  <title>Création Post · Veille Patrimoine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
@@ -19,6 +19,7 @@
   <script src="/fiches-suite.js"></script>
   <script src="/fiches-nouvelles.js"></script>
   <script src="/visuels-linkedin.js"></script>
+  <script src="/video-creation.js"></script>
   <style>
     .li-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 16px; }
     .li-tete h1 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
@@ -123,13 +124,81 @@
     .post-ligne .actions-post .bouton { font-size: .8rem; padding: 6px 10px; }
     .sous-titre-idees { margin: 22px 0 10px; font-size: .95rem; }
     .reprise { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; border: 1px dashed var(--bord-fort); margin-bottom: 14px; font-size: .92rem; }
+
+    /* Création Post : onglets Post / Vidéo */
+    .cp-tete { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 6px 0 14px; }
+    .cp-tete h1 { margin: 0; font-size: clamp(1.4rem, 3vw, 1.9rem); }
+    .cp-onglets { display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: var(--carte); border: 1px solid var(--bord); }
+    .cp-onglets button { font: inherit; font-weight: 600; border: 0; background: none; color: var(--doux); padding: 9px 18px; border-radius: 999px; cursor: pointer; }
+    .cp-onglets button[aria-selected="true"] { background: var(--accent); color: var(--accent-texte); }
+    #vue-video { display: grid; gap: 16px; }
+    #vue-video[hidden] { display: none; }
+    #vue-video h2 { margin: 0 0 4px; font-size: 1.2rem; }
+    #vue-video textarea { width: 100%; box-sizing: border-box; font: inherit; line-height: 1.5; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); resize: vertical; }
+    .vv-modeles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 12px 0 4px; }
+    .vv-sim { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--fond); }
+    .vv-sim[hidden] { display: none; }
+    .vv-sim-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    @media (max-width: 520px) { .vv-sim-grille { grid-template-columns: 1fr 1fr; } }
+    .vv-galerie > p, .vv-galerie > .attente { grid-column: 1 / -1; }
+    #vv-travail { scroll-margin-top: 130px; }
+    .vv-sim-grille label, .vv-champs label { display: grid; gap: 4px; font-size: .85rem; font-weight: 600; }
+    .vv-sim-grille input, .vv-champs input { width: 100%; box-sizing: border-box; }
+    .vv-sim-res { margin: 10px 0 0; font-size: .9rem; }
+    .vv-voix { display: inline-flex; align-items: center; gap: 2px; }
+    .vv-ecoute { font: inherit; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--accent); cursor: pointer; }
+    .vv-infos { display: flex; gap: 16px; flex-wrap: wrap; font-size: .9rem; margin: 6px 0 12px; color: var(--doux); }
+    .vv-infos strong { color: var(--texte); }
+    .vv-scene { border: 1px solid var(--bord); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; background: var(--carte); display: grid; gap: 6px; }
+    .vv-scene.vv-fin { background: var(--fond); }
+    .vv-scene-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .vv-scene-actions { display: flex; gap: 2px; }
+    .vv-scene-actions .lien-bouton { text-decoration: none; min-width: 34px; }
+    .vv-scene-actions .lien-bouton:disabled { opacity: .3; cursor: default; }
+    .vv-lu { margin: 0; font-style: italic; color: var(--doux); }
+    .vv-champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+    .vv-ok { color: var(--ok); font-weight: 600; font-size: .92rem; margin: 8px 0; }
+    .vv-chrono { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 10px 0; }
+    .vv-chrono-temps { font-family: "Space Grotesk", sans-serif; font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 700; color: var(--accent-fonce); font-variant-numeric: tabular-nums; }
+    .vv-barre { height: 12px; border-radius: 999px; background: var(--fond); overflow: hidden; }
+    .vv-barre span { display: block; height: 100%; width: 2%; border-radius: 999px; background: var(--accent); transition: width .6s ease; }
+    .vv-etapes { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 6px; font-size: .92rem; }
+    .vv-etapes li { color: var(--doux); padding-left: 26px; position: relative; }
+    .vv-etapes li::before { content: "○"; position: absolute; left: 4px; }
+    .vv-etapes li.fait { color: var(--texte); } .vv-etapes li.fait::before { content: "✓"; color: var(--ok); font-weight: 700; }
+    .vv-etapes li.actif { color: var(--texte); font-weight: 600; } .vv-etapes li.actif::before { content: "●"; color: var(--accent); animation: clignote 1s infinite; }
+    @keyframes clignote { 50% { opacity: .3; } }
+    .vv-resultat { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 22px; align-items: start; }
+    @media (max-width: 700px) { .vv-resultat { grid-template-columns: minmax(0, 1fr); } }
+    .vv-lecteur { aspect-ratio: 9 / 16; background: #000; border-radius: 16px; overflow: hidden; max-width: 340px; width: 100%; margin: 0 auto; }
+    .vv-lecteur.f45 { aspect-ratio: 4 / 5; }
+    .vv-lecteur video { width: 100%; height: 100%; display: block; }
+    .vv-galerie { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin-top: 12px; }
+    .vv-carte { display: grid; gap: 6px; align-content: start; }
+    .vv-vignette { position: relative; aspect-ratio: 9 / 16; border-radius: 14px; overflow: hidden; border: 1px solid var(--bord); background: var(--fond); cursor: pointer; padding: 0; display: grid; place-items: center; font-size: 2rem; }
+    .vv-vignette img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .vv-statut { position: absolute; left: 8px; bottom: 8px; font-style: normal; font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; }
+    .vv-statut.s-pret { background: var(--ok); } .vv-statut.s-erreur { background: var(--ko); } .vv-statut.s-a_verifier { background: #a86400; }
+    .vv-carte-texte { display: grid; gap: 2px; font-size: .88rem; line-height: 1.3; }
+    .vv-carte-actions { display: flex; gap: 6px; }
+    .vv-carte-actions .lien-bouton { font-size: .85rem; padding: 2px 0; }
+    #vv-coord summary { font-weight: 600; }
+    body.vue-video .barre-mobile { display: none !important; }
+    @media (max-width: 760px) { body.vue-video.avec-barre { padding-bottom: 90px; } }
   </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
   <main class="page">
+    <div class="cp-tete"><h1>Création Post</h1>
+      <div class="cp-onglets" role="tablist" aria-label="Type de contenu">
+        <button type="button" role="tab" id="tab-post" aria-selected="true" aria-controls="vue-post">✏️ Post LinkedIn</button>
+        <button type="button" role="tab" id="tab-video" aria-selected="false" aria-controls="vue-video">🎬 Vidéo</button>
+      </div></div>
+    <div id="vue-video" role="tabpanel" aria-labelledby="tab-video" hidden></div>
+    <div id="vue-post" role="tabpanel" aria-labelledby="tab-post">
     <div class="li-tete">
-      <div><h1>Préparer un post LinkedIn</h1><p>Un sujet, une approche, et l'IA rédige un post court et professionnel. Vous gardez la main.</p></div>
+      <div><h2 style="margin:0;font-size:clamp(1.15rem,2.6vw,1.4rem)">Préparer un post LinkedIn</h2><p>Un sujet, une approche, et l'IA rédige un post court et professionnel. Vous gardez la main.</p></div>
       <button type="button" class="bouton bouton-discret" id="btn-brouillons">Mes posts</button>
     </div>
     <div id="zone-reprise"></div>
@@ -277,6 +346,7 @@
           </ul>
         </section>
       </aside>
+    </div>
     </div>
   </main>
   <div class="barre-mobile" id="barre-mobile" hidden><button type="button" class="bouton gros-bouton" data-rediger>✨ Rédiger le post</button></div>
@@ -619,6 +689,19 @@
     }
 
     // ---------------------------------------------------------------- Démarrage
+    // Onglets Création Post : Post LinkedIn / Vidéo (mémorisé dans l'adresse : ?onglet=video).
+    function choisirVue(vue, memoriser = true) {
+      const video = vue === "video";
+      $("vue-post").hidden = video; $("vue-video").hidden = !video;
+      $("tab-post").setAttribute("aria-selected", !video); $("tab-video").setAttribute("aria-selected", video);
+      document.body.classList.toggle("vue-video", video);
+      if (video) window.demarrerVideo();
+      if (memoriser) { const u = new URL(location.href); if (video) u.searchParams.set("onglet", "video"); else u.searchParams.delete("onglet"); history.replaceState(null, "", u); }
+    }
+    $("tab-post").onclick = () => choisirVue("post");
+    $("tab-video").onclick = () => choisirVue("video");
+    if (new URLSearchParams(location.search).get("onglet") === "video") choisirVue("video", false);
+
     chargerEntete("/linkedin").then(async () => {
       appelApi("/api/moi").then((m) => { etat.moi = m; if (etat.texte) afficherApercu(); }).catch(() => {});
       document.querySelectorAll(".etape-btn").forEach((b) => b.onclick = () => allerA(Number(b.dataset.etape)));

@@ -28,12 +28,12 @@ const LONGUEURS = {
 const jourParis = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
 const jourGoogle = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
 
-async function lireEtat(db, cle) {
+export async function lireEtat(db, cle) {
   const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = ?").bind(cle).first();
   if (!l) return null;
   try { return { valeur: JSON.parse(l.valeur), maj_le: l.maj_le }; } catch { return null; }
 }
-const ecrireEtat = (db, cle, valeur) =>
+export const ecrireEtat = (db, cle, valeur) =>
   db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)").bind(cle, JSON.stringify(valeur), new Date().toISOString()).run();
 
 // Compteur partagé avec le robot (même clé que /api/robot/ia/quota), pour ne pas dépasser l'offre gratuite.
@@ -89,7 +89,7 @@ async function appelGemini(env, modele, consignes, contenu, schema, temperature 
 }
 
 // Essaie Flash (meilleure plume) tant que son petit quota le permet, sinon Flash-Lite.
-async function generer(env, db, consignes, contenu, schema, preferer = "fort") {
+export async function generer(env, db, consignes, contenu, schema, preferer = "fort") {
   const m = await modeles(env, db);
   const lu = await lireEtat(db, "ia_quota");
   const compte = lu?.valeur?.jour === jourGoogle() ? lu.valeur.compteurs : {};

@@ -9,6 +9,7 @@ import {
 import { routeRobot } from "./robot.js";
 import { routeLecture, avecArticles, COLONNES } from "./lecture.js";
 import { routeLinkedin } from "./linkedin.js";
+import { routeVideo } from "./video.js";
 import { routeNotifications } from "./notifications.js";
 import { normaliser, identifiantValide, decouperNom, proposerIdentifiant, identifiantLibre, assurerIdentifiants } from "./identifiants.js";
 
@@ -158,6 +159,12 @@ async function api(request, env, url) {
 
   if (chemin.startsWith("/api/linkedin/")) {
     const r = await routeLinkedin(request, env, chemin, moi);
+    if (r) return r;
+  }
+
+  // Création Post › Vidéo (voir video.js).
+  if (chemin.startsWith("/api/video/")) {
+    const r = await routeVideo(request, env, chemin, moi, url);
     if (r) return r;
   }
 
@@ -337,6 +344,7 @@ const FICHIER_STATIQUE = /\.(js|css|png|svg|ico|webmanifest)$/;
 // ---------------------------------------------------------------- Pages
 async function pages(request, env, url) {
   let chemin = url.pathname.replace(/\.html$/, "").replace(/\/index$/, "/");
+  if (chemin === "/creation-post") return Response.redirect(`${url.origin}/linkedin${url.search}`, 302);
   if (PAGES_PUBLIQUES.has(chemin)) {
     if (!FICHIER_STATIQUE.test(url.pathname) || chemin === "/sw.js") return env.ASSETS.fetch(request);
     const r = await env.ASSETS.fetch(request);

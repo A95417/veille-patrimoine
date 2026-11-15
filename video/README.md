@@ -3,6 +3,32 @@
 Outils pour fabriquer des vidéos verticales 9:16 (1080×1920, 30 i/s) : personnages illustrés animés, voix off gratuite (Gemini), sous-titres mot à mot, musique et bruitages composés par code, donc libres de droits.
 Ce dossier ne fait pas partie du site : il n'est pas déployé, car seul `public/` l'est.
 
+## Depuis le site : Création Post › Vidéo
+
+La vidéo se fabrique maintenant directement depuis le site, dans **Création Post**, onglet **Vidéo**.
+
+1. On choisit un modèle (deux profils, chiffre de la semaine, échéance fiscale, mythe ou sujet libre), une durée, un format (9:16 ou 4:5) et une voix.
+2. Gemini propose un **scénario** sous forme de scènes typées avec le texte lu. On le relit et on le modifie. Les chiffres qui ne viennent ni du calcul du site ni de ses données officielles sont **signalés « à vérifier »**.
+3. Le site lance le robot GitHub `video.yml` (gratuit). Celui-ci exécute `scripts/video-robot.mjs` avec le moteur générique `moteur/`. Le site affiche l'étape en cours et le **temps restant**.
+4. La vidéo est renvoyée au site par morceaux de 512 Ko (base de données D1). On peut la lire, la télécharger, récupérer la miniature et les sous-titres `.srt`, et copier le texte de publication.
+
+Précautions :
+- 3 vidéos par jour.
+- Une seule fabrication à la fois, les autres en file d'attente.
+- 25 minutes au maximum, avec un bouton Annuler.
+- 10 vidéos gardées.
+- Contrôle automatique du son et des textes avant livraison.
+
+### Moteur générique (`moteur/`)
+
+| Fichier | Rôle |
+|---|---|
+| `moteur.html`, `base.js`, `gabarits.js` | 13 gabarits de scènes : accroche, personnage, marche, calendrier, comparaison, egalite, grand_mot, bocaux, chiffre, liste, mythe, sablier, fin. Chaque gabarit gère aussi ses bruitages. |
+| `calage.py` | Calage automatique sans reconnaissance vocale : choix global des pauses par programmation dynamique. Il donne 0 s d'écart sur « Le bon moment ». |
+| `rendu.mjs` | Rendu Playwright en parallèle, une vidéo par scène, miniature, liste des bruitages et alertes. |
+| `son.py` | Musique et bruitages qui suivent la vidéo. Aucun bruitage après la dernière phrase. |
+| `nettoyer_voix.py`, `monter.sh` | Copies des outils ci-dessous. |
+
 ## Contenu
 
 | Fichier | Rôle |

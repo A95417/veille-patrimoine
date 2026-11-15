@@ -1,0 +1,54 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;padding:0;background:#000;overflow:hidden}svg{display:block;font-family:Inter,"Inter Display",sans-serif}</style>
+</head><body>
+<svg id="s" xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
+<script src="base.js"></script>
+<script src="gabarits.js"></script>
+<script>
+// Moteur générique : un storyboard (scènes + paramètres) et un calage (phrases et mots datés) → une image pour chaque instant t.
+let CONFIG = {}, SCENES = [], ALERTES = new Set();
+const COUPE_4_5 = 285;   // le format 4:5 garde la bande y = 285 → 1635 de l'image 9:16
+
+window.init = (job, calage) => {
+  CONFIG = job.config || {};
+  MOTS = calage.mots;
+  SCENES = calage.scenes.map((c, i) => ({ i, type: job.scenes[i].type, p: job.scenes[i].p || {}, debut: c.debut, fin: c.fin, P: c.P, PF: c.PF }));
+  SCENES.forEach((S) => { if (!GAB[S.type]) { ALERTES.add("gabarit inconnu : " + S.type); S.type = "grand_mot"; S.p = { texte: "" }; } });
+  preparer();
+  const svg = document.getElementById("s");
+  if (job.format === "4:5") { svg.setAttribute("height", "1350"); svg.setAttribute("viewBox", `0 ${COUPE_4_5} 1080 1350`); }
+  return { scenes: SCENES.length, duree: SCENES[SCENES.length - 1].fin };
+};
+
+function volet(t) {
+  const S = SCENES.find((s) => s.i > 0 && t >= s.debut && t < s.debut + .3);
+  if (!S) return "";
+  const k = eo(lin(t, S.debut, S.debut + .28));
+  return `<rect x="${-1080 * k}" y="0" width="1080" height="1920" fill="${BX}"/><rect x="${-1080 * k + 1060}" y="0" width="20" height="1920" fill="${ROSE}"/>`;
+}
+
+window.draw = (t) => {
+  const S = SCENES.find((s) => t >= s.debut && t < s.fin) || SCENES[SCENES.length - 1];
+  const G = GAB[S.type];
+  let o = G.dessin(S, t);
+  if (!(G.masqueSousTitres && G.masqueSousTitres(S, t))) o += soustitres(t);
+  o += volet(t);
+  const el = document.getElementById("s");
+  el.innerHTML = o;
+  caleBoite();
+  // contrôle automatique : aucun reste de code ou de valeur manquante ne doit s'afficher
+  const vu = el.textContent;
+  if (/undefined|NaN|\{|\}|\[object/.test(vu)) ALERTES.add(`texte suspect à ${t.toFixed(2)} s : « ${vu.match(/.{0,20}(undefined|NaN|\{|\}|\[object).{0,20}/)?.[0]} »`);
+};
+
+window.alertes = () => [...ALERTES];
+
+// Bruitages : transitions douces + ceux de chaque gabarit. Jamais rien après la dernière phrase.
+window.evenements = () => {
+  const finVoix = MOTS.length ? MOTS[MOTS.length - 1].fin : 0, r = [];
+  SCENES.forEach((S) => { if (S.i > 0) r.push(["transition", S.debut - .05, .35]); (GAB[S.type].sons?.(S) || []).forEach((e) => r.push(e)); });
+  return r.filter((e) => e[1] >= 0 && e[1] < finVoix - .05).sort((a, b) => a[1] - b[1]);
+};
+</script>
+</body></html>

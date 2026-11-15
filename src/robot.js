@@ -1,5 +1,6 @@
 import { routeLinkedin } from "./linkedin.js";
 import { envoyerATous } from "./notifications.js";
+import { routeVideoRobot } from "./video.js";
 // Adresses réservées au robot de collecte (GitHub Actions).
 // Protégées par un jeton secret (ROBOT_TOKEN) : personne d'autre ne peut écrire dans la base.
 
@@ -28,6 +29,7 @@ const court = (t, n) => (t == null ? null : String(t).slice(0, n));
 
 export async function routeRobot(request, env, chemin) {
   if (!(await jetonValide(request, env))) return json({ erreur: "Accès refusé." }, 403);
+  if (chemin.startsWith("/api/robot/video/")) return routeVideoRobot(request, env, chemin);   // avant la lecture du corps (morceaux de vidéo)
   const db = env.DB;
   const corps = request.method === "POST" ? await request.json().catch(() => ({})) : {};
 

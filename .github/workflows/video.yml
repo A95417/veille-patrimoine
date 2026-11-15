@@ -1,0 +1,52 @@
+# Fabrication d'une vidéo demandée depuis le site (Création Post › Vidéo). Lancé par le site, une vidéo à la fois.
+# Gratuit : minutes GitHub Actions illimitées pour un dépôt public, voix Gemini (offre gratuite), musique composée par le code.
+name: Vidéo (Création Post)
+on:
+  workflow_dispatch:
+    inputs:
+      video_id:
+        description: "Identifiant de la vidéo à fabriquer"
+        required: true
+concurrency:
+  group: video-${{ inputs.video_id }}
+  cancel-in-progress: false
+jobs:
+  video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Signaler le démarrage au site
+        run: |
+          curl -sS -X POST "$SITE_URL/api/robot/video/$VIDEO_ID/etat" -H "Authorization: Bearer $ROBOT_TOKEN" -H "Content-Type: application/json" \
+            -d '{"etape":"Préparation du robot","progression":0.02,"eta_s":0,"preparation":true}' || true
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          VIDEO_ID: ${{ inputs.video_id }}
+      - name: Outils (ffmpeg, police Inter, navigateur sans écran)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-inter > /dev/null
+          python3 -c "import numpy" 2>/dev/null || pip install --quiet numpy
+          npm install --no-save --silent playwright@1.55.0
+          npx playwright install --with-deps chromium > /dev/null
+      - name: Fabriquer et envoyer la vidéo
+        run: node scripts/video-robot.mjs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          VIDEO_ID: ${{ inputs.video_id }}
+      - name: Prévenir le site en cas d'échec
+        if: failure() || cancelled()
+        run: |
+          curl -sS -X POST "$SITE_URL/api/robot/video/$VIDEO_ID/etat" -H "Authorization: Bearer $ROBOT_TOKEN" -H "Content-Type: application/json" \
+            -d "{\"erreur\":\"Le robot s'est arrêté avant la fin (délai dépassé ou incident technique).\"}" || true
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          VIDEO_ID: ${{ inputs.video_id }}
