@@ -1,0 +1,34 @@
+# Voix off d'une vidéo (lancement manuel). Le fichier WAV est disponible dans les « artefacts » de l'exécution (7 jours).
+name: Voix off vidéo
+on:
+  workflow_dispatch:
+    inputs:
+      texte_b64:
+        description: "Texte à lire, encodé en base64"
+        required: true
+      voix:
+        description: "Nom de la voix Gemini (ex. Puck, Charon, Kore, Aoede)"
+        required: false
+        default: "Puck"
+jobs:
+  voix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: node scripts/voix-video.mjs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          TEXTE_B64: ${{ inputs.texte_b64 }}
+          VOIX: ${{ inputs.voix }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voix
+          path: voix.wav
+          retention-days: 7
