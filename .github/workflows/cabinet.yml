@@ -1,0 +1,30 @@
+# Nom du cabinet affiché sous la signature des visuels LinkedIn, pour toute l'équipe.
+# (Même réglage que « Pour toute l'équipe » dans LinkedIn › Signature, réservé aux administrateurs.)
+name: Nom du cabinet (LinkedIn)
+
+on:
+  workflow_dispatch:
+    inputs:
+      nom:
+        description: "Nom du cabinet (lettres, chiffres, espaces, tirets, points, apostrophes ; 60 caractères au plus)"
+        required: true
+
+jobs:
+  cabinet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Préparer
+        id: sql
+        env:
+          NOM: ${{ inputs.nom }}
+        run: |
+          if ! printf '%s' "$NOM" | grep -qP "^[\p{L}0-9 .'&-]{1,60}$"; then echo "::error::Nom refusé (caractères non autorisés ou trop long)."; exit 1; fi
+          V=$(printf '%s' "$NOM" | sed "s/'/''/g")
+          echo "commande=d1 execute veille-db --remote --command \"INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES ('linkedin_cabinet', '\\\"$V\\\"', datetime('now'))\"" >> "$GITHUB_OUTPUT"
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: ${{ steps.sql.outputs.commande }}
