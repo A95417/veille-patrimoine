@@ -27,30 +27,14 @@
     "flux": [
       {
         "url": "https://www.senat.fr/rss/textes.rss",
-        "ok": true,
-        "titre": "S�nat - derniers textes",
-        "format": "RSS",
-        "nb_articles": 57,
-        "dernier_article": "2026-11-14T02:03:40.000Z",
-        "age_jours": 1,
-        "part_avec_resume": 100,
-        "longueur_resume_moy": 194,
-        "robots_ok": true,
-        "exemple": "Projet de loi de finances de fin de gestion pour 2026 - texte N� 172",
+        "ok": false,
+        "raison": "fetch failed : ETIMEDOUT",
         "origine": "connu"
       },
       {
         "url": "https://www.senat.fr/rss/rapports.rss",
-        "ok": true,
-        "titre": "S�nat - derniers rapports",
-        "format": "RSS",
-        "nb_articles": 43,
-        "dernier_article": "2026-11-14T02:03:41.000Z",
-        "age_jours": 1,
-        "part_avec_resume": 100,
-        "longueur_resume_moy": 280,
-        "robots_ok": true,
-        "exemple": "Reconna�tre une pr�somption de l�gitime d�fense pour les forces de l'ordre - rapport n� 167",
+        "ok": false,
+        "raison": "fetch failed : ETIMEDOUT",
         "origine": "connu"
       }
     ]
@@ -365,12 +349,12 @@
         "titre": "Homepage Economie - actualités",
         "format": "RSS",
         "nb_articles": 30,
-        "dernier_article": "2026-11-14T22:10:43.000Z",
+        "dernier_article": "2026-11-14T23:59:53.000Z",
         "age_jours": 0,
         "part_avec_resume": 93,
-        "longueur_resume_moy": 330,
+        "longueur_resume_moy": 337,
         "robots_ok": true,
-        "exemple": "Elon Musk",
+        "exemple": "Pascal Haté (SMARTANCE) : SMARTANCE, conseil et solutions en IA - 14/11",
         "origine": "connu"
       },
       {
@@ -827,5 +811,26 @@
     "nom": "Notaires de France",
     "groupe": "officielle",
     "flux": []
+  },
+  {
+    "id": "tresor",
+    "nom": "Direction générale du Trésor",
+    "groupe": "officielle",
+    "flux": [
+      {
+        "url": "https://www.tresor.economie.gouv.fr/Flux/Atom/Articles/Tags/news",
+        "ok": true,
+        "titre": "Trésor-Info - Publications de la direction générale du Trésor - news",
+        "format": "Atom",
+        "nb_articles": 13,
+        "dernier_article": "2024-05-14T22:00:00.000Z",
+        "age_jours": 914,
+        "part_avec_resume": 92,
+        "longueur_resume_moy": 268,
+        "robots_ok": true,
+        "exemple": "The Tibi Initiative : Phase-2 and Perspectives",
+        "origine": "connu"
+      }
+    ]
   }
 ]

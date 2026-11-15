@@ -1,6 +1,6 @@
 # Rapport de vérification des sources
 
-Généré le 15/11/2026 02:28:19 (heure de Paris).
+Généré le 15/11/2026 02:34:03 (heure de Paris).
 
 Légende : ✅ fonctionne · 🟡 titres seulement (résumés très courts) · 💤 inactif (rien depuis 30 jours) · ⛔ interdit par robots.txt · ❌ mort
 
@@ -9,8 +9,8 @@ Légende : ✅ fonctionne · 🟡 titres seulement (résumés très courts) · �
 | Source | Verdict | Flux | Articles | Dernier article | Résumés |
 |---|---|---|---|---|---|
 | **Service-public.fr (entreprises)** | ✅ fonctionne | https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss | 233 | 12/11/2026 | 100 % (moy. 240 car.) |
-| **Sénat** | ✅ fonctionne | https://www.senat.fr/rss/textes.rss | 57 | 14/11/2026 | 100 % (moy. 194 car.) |
-| **Sénat** | ✅ fonctionne | https://www.senat.fr/rss/rapports.rss | 43 | 14/11/2026 | 100 % (moy. 280 car.) |
+| **Sénat** | ❌ mort | https://www.senat.fr/rss/textes.rss | – | – | fetch failed : ETIMEDOUT |
+| **Sénat** | ❌ mort | https://www.senat.fr/rss/rapports.rss | – | – | fetch failed : ETIMEDOUT |
 | **BOFiP (doctrine fiscale)** | ✅ fonctionne | https://bofip.impots.gouv.fr/bofip/ext/rss.xml?actualites=1&maxR=50&maxJ=30 | 5 | ? | 100 % (moy. 268 car.) |
 | **INSEE** | ✅ fonctionne | https://www.insee.fr/fr/flux/1 | 306 | 13/11/2026 | 37 % (moy. 240 car.) |
 | **INSEE** | ✅ fonctionne | https://www.insee.fr/fr/flux/2 | 40 | 12/11/2026 | 78 % (moy. 902 car.) |
@@ -29,6 +29,7 @@ Légende : ✅ fonctionne · 🟡 titres seulement (résumés très courts) · �
 | **Ministère de l'Économie** | ❌ aucun flux trouvé | – | – | – | – |
 | **Légifrance (Journal officiel)** | ❌ aucun flux trouvé | – | – | – | – |
 | **Notaires de France** | ❌ aucun flux trouvé | – | – | – | – |
+| **Direction générale du Trésor** | 💤 inactif | https://www.tresor.economie.gouv.fr/Flux/Atom/Articles/Tags/news | 13 | 14/05/2024 | 92 % (moy. 268 car.) |
 
 ## Presse française
 
@@ -43,7 +44,7 @@ Légende : ✅ fonctionne · 🟡 titres seulement (résumés très courts) · �
 | **Capital** | ✅ fonctionne | https://feed.prismamediadigital.com/v1/cap/rss | 10 | 14/11/2026 | 100 % (moy. 247 car.) |
 | **Le Monde (Argent, Économie)** | ✅ fonctionne | https://www.lemonde.fr/argent/rss_full.xml | 20 | 14/11/2026 | 100 % (moy. 220 car.) |
 | **Le Monde (Argent, Économie)** | ✅ fonctionne | https://www.lemonde.fr/economie/rss_full.xml | 20 | 14/11/2026 | 100 % (moy. 247 car.) |
-| **BFM Business** | ✅ fonctionne | https://www.bfmtv.com/rss/economie/ | 30 | 14/11/2026 | 93 % (moy. 330 car.) |
+| **BFM Business** | ✅ fonctionne | https://www.bfmtv.com/rss/economie/ | 30 | 14/11/2026 | 93 % (moy. 337 car.) |
 | **BFM Business** | ✅ fonctionne | https://www.bfmtv.com/rss/economie/patrimoine/ | 30 | 14/11/2026 | 100 % (moy. 286 car.) |
 | **Boursier.com** | ❌ mort | https://www.boursier.com/rss/actualites.rss | – | – | erreur HTTP 403 |
 | **Franceinfo Économie** | ✅ fonctionne | https://www.franceinfo.fr/economie.rss | 20 | 14/11/2026 | 100 % (moy. 246 car.) |
