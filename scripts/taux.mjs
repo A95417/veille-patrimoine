@@ -34,10 +34,13 @@ async function serie(s) {
 
 async function principal() {
   const heure = Number(new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric" }).format(new Date()));
-  if (!ESSAI && process.env.TAUX_FORCER !== "oui" && heure !== 9) { console.log("Taux : pas l'heure (relevé vers 9 h), rien à faire."); return; }
+  if (!ESSAI && process.env.TAUX_FORCER !== "oui" && heure !== 9 || new Date().getUTCMinutes() >= 20) { console.log("Taux : pas l'heure (relevé vers 9 h), rien à faire."); return; }
   const resultats = [], erreurs = [];
   for (const s of SERIES) {
-    try { resultats.push(await serie(s)); } catch (e) { erreurs.push(String(e.message)); }
+    try { resultats.push(await serie(s)); }
+    catch (e) {   // une seconde tentative : l'API de la BCE est parfois lente
+      try { resultats.push(await serie(s)); } catch (e2) { erreurs.push(`${s.id} : ${e2.message}`); }
+    }
   }
   for (const r of resultats) console.log(r.id, r.points.length, "points, dernier :", r.points.at(-1));
   if (erreurs.length) console.log("Erreurs :", erreurs);
