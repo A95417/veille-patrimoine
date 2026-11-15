@@ -491,3 +491,9 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 }
 
 #bandeau-hors-ligne { position: sticky; top: 0; z-index: 60; background: #3a3f55; color: #fff; text-align: center; font-size: .85rem; padding: 6px 12px; }
+
+/* La semaine en 5 sujets (page Aujourd'hui) */
+.semaine-liste { margin: 0; padding-left: 22px; }
+.semaine-liste li { padding: 6px 0; }
+.semaine-liste a { text-decoration: none; color: var(--texte); }
+.semaine-liste p { margin: 2px 0 0; line-height: 1.45; }

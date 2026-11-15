@@ -151,11 +151,17 @@
           <div id="marches-liste"></div>
           <p class="doux petit" style="margin:8px 0 0" id="marches-info"></p>
         </section>
+        <section class="carte" id="semaine" hidden>
+          <div class="titre-section" style="margin-bottom:6px"><h2 style="margin:0">📅 La semaine en 5 sujets</h2><span class="doux petit" id="semaine-info"></span></div>
+          <ol class="semaine-liste" id="semaine-liste"></ol>
+          <button type="button" class="bouton bouton-discret" id="semaine-copier" style="margin-top:8px">Copier pour la réunion d'équipe</button>
+        </section>
         <section class="carte" id="calendrier" hidden>
           <div class="titre-section" style="margin-bottom:6px"><h2 style="margin:0">📅 Échéances fiscales</h2>
             <a href="https://www.impots.gouv.fr/calendrier-fiscal?filter=part" class="petit" target="_blank" rel="noopener noreferrer">Calendrier officiel ↗</a></div>
           <ul class="echeances" id="calendrier-liste"></ul>
           <p class="doux petit" style="margin:6px 0 0">Source : impots.gouv.fr, à rappeler aux clients concernés.</p>
+          <p class="petit" style="margin:8px 0 0"><a href="/dossiers">📜 PLF et PLFSS 2027 : où en sont les textes ? →</a></p>
         </section>
         <section class="carte encart" id="encart-linkedin" hidden>
           <h2>✏️ Idée de post LinkedIn</h2>
@@ -338,6 +344,21 @@
         document.getElementById("encart-linkedin").hidden = false;
       } catch {}
     }
+
+    // ------------------------------------------------------------ La semaine en 5 sujets (repris des briefs, sans IA)
+    async function chargerSemaine() {
+      try {
+        const { sujets, briefs } = await appelApi("/api/brief/semaine");
+        if (!sujets?.length) return;
+        document.getElementById("semaine-info").textContent = `${briefs} briefs, 7 derniers jours`;
+        document.getElementById("semaine-liste").innerHTML = sujets.map((s) => `<li><a href="/sujet?id=${s.id}"><strong>${echapper(s.titre)}</strong></a>
+          <p class="doux petit">${echapper(s.retenir || s.resume || "")}</p></li>`).join("");
+        document.getElementById("semaine-copier").onclick = () => copier(`La semaine en 5 sujets (${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" })})\n\n` +
+          sujets.map((s, i) => `${i + 1}. ${s.titre}\n${s.retenir || s.resume || ""}${s.sources?.[0] ? `\nSource : ${s.sources[0].nom} — ${s.sources[0].lien}` : ""}`).join("\n\n"));
+        document.getElementById("semaine").hidden = false;
+      } catch {}
+    }
+    chargerSemaine();
 
     // ------------------------------------------------------------ Échéances fiscales (5 prochaines)
     async function chargerCalendrier() {

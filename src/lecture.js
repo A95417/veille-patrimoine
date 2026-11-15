@@ -179,6 +179,26 @@ export async function routeLecture(chemin, url, db) {
     });
   }
 
+  // Brief de la semaine : les 5 sujets qui ont le plus compté dans les briefs des 7 derniers jours.
+  // Aucun appel à l'IA : on reprend les actualités et les « à retenir » déjà publiés (importance + nombre d'éditions).
+  if (chemin === "/api/brief/semaine") {
+    const depuis = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const { results } = await db.prepare("SELECT jour, edition, contenu FROM briefs WHERE jour >= ? ORDER BY jour, edition").bind(depuis).all();
+    const sujets = new Map();
+    for (const r of results) {
+      let c; try { c = JSON.parse(r.contenu); } catch { continue; }
+      const retenir = new Map((c.a_retenir || []).map((x) => [x.sujet_id, x.texte]));
+      for (const a of c.actualites || []) {
+        const s = sujets.get(a.id) || { id: a.id, titre: a.titre, resume: a.resume, sources: a.sources || [], categories: a.categories || [], importance: 0, editions: 0, premier: r.jour, retenir: null };
+        s.importance = Math.max(s.importance, a.importance || 0); s.editions++;
+        if (retenir.get(a.id)) s.retenir = retenir.get(a.id);
+        sujets.set(a.id, s);
+      }
+    }
+    const top = [...sujets.values()].sort((a, b) => (b.importance * 2 + b.editions) - (a.importance * 2 + a.editions)).slice(0, 5);
+    return json({ du: depuis, briefs: results.length, sujets: top });
+  }
+
   // Quiz de l'actu : les questions rédigées par l'IA avec les derniers briefs (jeu de la rubrique Apprendre).
   if (chemin === "/api/quiz-actu") {
     const { results } = await db.prepare("SELECT jour, edition, contenu FROM briefs ORDER BY jour DESC, edition = 'soir' DESC LIMIT 14").all();

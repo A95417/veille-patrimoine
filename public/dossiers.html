@@ -1,0 +1,67 @@
+<!doctype html>
+<!-- version 1.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Textes en discussion · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <script src="/commun.js"></script>
+  <style>
+    .dossier { margin-bottom: 18px; }
+    .dossier h2 { margin: 0 0 4px; }
+    .liens-officiels { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
+    .chrono { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 3px solid var(--accent-doux); }
+    .chrono li { position: relative; padding: 0 0 14px 10px; }
+    .chrono li::before { content: ""; position: absolute; left: -26px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--accent); }
+    .chrono time { display: block; font-size: .8rem; color: var(--doux); font-weight: 600; }
+    .chrono a { font-weight: 600; text-decoration: none; }
+    .chrono p { margin: 2px 0 0; font-size: .92rem; color: var(--doux); }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page" style="max-width:860px">
+    <h1>Textes en discussion</h1>
+    <p class="doux">Où en sont les textes qui changent la fiscalité et l'épargne : l'avancement officiel est sur les dossiers de l'Assemblée nationale et du Sénat ; dessous, la chronologie des actualités du site qui en parlent.</p>
+    <div id="dossiers"></div>
+  </main>
+  <script>
+    // Dossiers suivis : liens officiels (Assemblée nationale, Sénat) et mots-clés de la chronologie.
+    const DOSSIERS = [
+      { titre: "Projet de loi de finances pour 2027", court: "PLF 2027", sous: "Impôt sur le revenu, IFI, transmission, épargne : les mesures fiscales de l'année prochaine.",
+        requetes: ["loi de finances 2027", "PLF 2027", "budget 2027"],
+        liens: [["Assemblée nationale · texte n° 3210", "https://www.assemblee-nationale.fr/dyn/17/textes/l17b3210_projet-loi"], ["Sénat · dossier législatif", "https://www.senat.fr/dossier-legislatif/pjlf2027.html"], ["Sénat · la loi en clair", "https://www.senat.fr/travaux-parlementaires/textes-legislatifs/la-loi-en-clair/projet-de-loi-de-finances-pour-2027.html"]] },
+      { titre: "Projet de loi de financement de la Sécurité sociale pour 2027", court: "PLFSS 2027", sous: "Prélèvements sociaux, CSG, retraites : le budget de la Sécurité sociale.",
+        requetes: ["PLFSS", "financement de la sécurité sociale", "budget de la Sécu"],
+        liens: [["Assemblée nationale · dossier législatif", "https://www.assemblee-nationale.fr/dyn/17/dossiers/PLFSS_2027"], ["Sénat · dossier législatif", "https://www.senat.fr/dossier-legislatif/plfss2027.html"], ["securite-sociale.fr · le PLFSS", "https://www.securite-sociale.fr/la-secu-en-detail/loi-de-financement/annee-en-cours"]] },
+    ];
+    async function chronologie(d) {
+      const vus = new Map();
+      for (const q of d.requetes) {
+        try { const { sujets } = await appelApi("/api/recherche?q=" + encodeURIComponent(q)); sujets.forEach((s) => vus.set(s.id, s)); } catch {}
+      }
+      return [...vus.values()].sort((a, b) => (b.derniere_pub || "").localeCompare(a.derniere_pub || "")).slice(0, 15);
+    }
+    chargerEntete("/dossiers").then(async () => {
+      const zone = document.getElementById("dossiers");
+      zone.innerHTML = DOSSIERS.map((d, i) => `<section class="carte dossier"><h2>${echapper(d.court)}</h2><p class="doux" style="margin:0">${echapper(d.titre)} — ${echapper(d.sous)}</p>
+        <div class="liens-officiels">${d.liens.map(([n, u]) => `<a class="pilule" href="${u}" target="_blank" rel="noopener noreferrer">${echapper(n)} ↗</a>`).join("")}</div>
+        <h3 style="font-size:1rem;margin:0 0 10px">Chronologie de l'actualité</h3><ol class="chrono" id="chrono-${i}"><li><p>Chargement…</p></li></ol></section>`).join("");
+      DOSSIERS.forEach(async (d, i) => {
+        const liste = await chronologie(d), z = document.getElementById("chrono-" + i);
+        z.innerHTML = liste.length ? liste.map((s) => `<li><time>${new Date(s.derniere_pub).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</time>
+          <a href="/sujet?id=${s.id}">${echapper(s.titre_fr || s.titre)}</a>${s.resume_court ? `<p>${echapper(s.resume_court)}</p>` : ""}</li>`).join("")
+          : "<li><p>Aucune actualité récente sur ce texte dans les 3 derniers mois.</p></li>";
+      });
+    });
+  </script>
+</body>
+</html>
