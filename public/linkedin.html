@@ -136,25 +136,78 @@
     #vue-video h2 { margin: 0 0 4px; font-size: 1.2rem; }
     #vue-video textarea { width: 100%; box-sizing: border-box; font: inherit; line-height: 1.5; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); resize: vertical; }
     #vue-video > .carte { min-width: 0; max-width: 100%; box-sizing: border-box; }
-    .vv-idees-bloc { margin: 12px 0 4px; min-width: 0; }
-    .vv-idees { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; margin-top: 6px; }
-    .vv-idee { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .vv-idee-btn { text-align: left; border: 1px solid var(--bord); background: var(--carte); color: var(--texte); border-radius: 12px; padding: 9px 11px; cursor: pointer; display: grid; gap: 3px; font: inherit; height: 100%; }
-    .vv-idee-btn strong { font-size: .9rem; line-height: 1.25; }
-    .vv-idee-btn .petit { color: var(--doux); }
-    .vv-idee-btn:hover, .vv-idee.choisie .vv-idee-btn { border-color: var(--accent); background: var(--accent-doux); }
-    .vv-idee-fiche { font-size: .78rem; text-align: left; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .vv-idees-note { grid-column: 1 / -1; margin: 0; }
-    .vv-menus { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; margin-top: 14px; }
-    .vv-menus > div { display: grid; gap: 6px; align-content: start; }
-    .vv-menus select, .vv-menus input, #vv-precision { width: 100%; min-width: 0; box-sizing: border-box; font: inherit; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); }
-    .vv-suggere { font-weight: 400; color: var(--accent); font-size: .8rem; }
-    #vv-src-info { margin: 6px 0 0; min-height: 1.2em; }
+    /* Vidéo : parcours en 3 étapes */
+    .vv-form { display: grid; gap: 4px; }
+    .vv-intro h2 { margin: 0 0 2px; }
+    .vv-intro p { margin: 0 0 10px; }
+    .vv-etape { border-top: 1px solid var(--bord); padding: 16px 0 6px; min-width: 0; }
+    .vv-etape-tete { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 1.05rem; }
+    .vv-etape-tete .n { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: .9rem; font-weight: 700; background: var(--accent); color: var(--accent-texte); }
+    .vv-etape.vv-faite .vv-etape-tete .n { background: var(--ok); color: #fff; font-size: 0; }
+    .vv-etape.vv-faite .vv-etape-tete .n::before { content: "✓"; font-size: .9rem; }
+    .vv-etape.vv-attente .vv-etape-tete { color: var(--doux); margin-bottom: 4px; }
+    .vv-etape.vv-attente .vv-etape-tete .n { background: var(--fond); color: var(--doux); }
+    .vv-etape-corps { padding-left: 38px; min-width: 0; }
+    .vv-etape-corps[hidden] { display: none; }
+    @media (max-width: 640px) { .vv-etape-corps { padding-left: 0; } }
+    .vv-onglets { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--bord); margin-bottom: 12px; }
+    .vv-onglets::-webkit-scrollbar { display: none; }
+    .vv-onglets button { flex: 0 0 auto; font: inherit; font-size: .9rem; font-weight: 600; color: var(--doux); background: none; border: 0; border-bottom: 2.5px solid transparent; padding: 8px 10px; cursor: pointer; white-space: nowrap; margin-bottom: -1px; }
+    .vv-onglets button:hover { color: var(--texte); }
+    .vv-onglets button[aria-selected="true"] { color: var(--accent-fonce); border-bottom-color: var(--accent); }
+    .vv-panneau { min-width: 0; }
+    .vv-idees { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+    .vv-idee { text-align: left; font: inherit; color: var(--texte); background: var(--carte); border: 1.5px solid var(--bord); border-radius: 14px; padding: 12px 14px; cursor: pointer; display: grid; gap: 8px; align-content: space-between; transition: border-color .15s; }
+    .vv-idee strong { line-height: 1.3; font-size: .95rem; }
+    .vv-idee:hover { border-color: var(--accent); }
+    .vv-tag { width: fit-content; padding: 2px 9px; border-radius: 999px; background: var(--accent-doux); color: var(--accent-fonce); font-size: .76rem; font-weight: 700; }
+    .vv-note { margin: 8px 0 0; }
+    .vv-vide { margin: 6px 0; }
+    .vv-cherche { width: 100%; box-sizing: border-box; font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); margin-bottom: 10px; }
+    .vv-liste { display: grid; gap: 14px; max-height: 360px; overflow-y: auto; padding-right: 4px; overscroll-behavior: contain; }
+    .vv-groupe { display: grid; gap: 2px; }
+    .vv-groupe-nom { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--doux); margin: 0 0 4px; }
+    .vv-ligne { display: grid; gap: 1px; text-align: left; font: inherit; color: var(--texte); background: none; border: 0; border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+    .vv-ligne strong { font-weight: 600; font-size: .93rem; line-height: 1.3; }
+    .vv-ligne span { font-size: .8rem; color: var(--doux); }
+    .vv-ligne:hover { background: var(--fond); }
+    .vv-ligne[aria-pressed="true"] { background: var(--accent-doux); }
+    .vv-choisi { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--accent-doux); border: 1.5px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+    .vv-choisi[hidden] { display: none; }
+    .vv-choisi-ico { font-size: 1.4rem; flex: 0 0 auto; }
+    .vv-choisi > div { display: grid; gap: 2px; min-width: 0; flex: 1; }
+    .vv-choisi strong { line-height: 1.3; }
+    .vv-choisi > div > span { font-size: .82rem; color: var(--doux); }
+    .vv-choisi .bouton { flex: 0 0 auto; }
+    .vv-angles { display: flex; flex-wrap: wrap; gap: 6px; }
+    .vv-angles .puce.vv-conseille { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+    .vv-angle-desc { margin: 10px 0 14px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--fond); border-radius: 0 10px 10px 0; font-size: .9rem; }
+    .vv-suggere { color: var(--accent-fonce); font-weight: 600; font-size: .82rem; white-space: nowrap; }
+    #vv-precision { width: 100%; box-sizing: border-box; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); }
+    .vv-reglages > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--bord); border-radius: 12px; cursor: pointer; }
+    .vv-reglages > summary::-webkit-details-marker { display: none; }
+    .vv-reglages[open] > summary { border-color: var(--accent); }
+    .vv-modifier { color: var(--accent); font-weight: 600; font-size: .9rem; }
+    .vv-reglages[open] .vv-modifier { font-size: 0; } .vv-reglages[open] .vv-modifier::after { content: "Fermer"; font-size: .9rem; }
+    .vv-reglages-corps { padding: 14px 2px 4px; }
+    .vv-coord { margin-top: 10px; border-top: 1px solid var(--bord); padding-top: 10px; }
+    .vv-coord > summary { cursor: pointer; font-size: .88rem; color: var(--doux); }
+    .vv-action { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--bord); padding-top: 16px; margin-top: 10px; }
+    .vv-action #vv-quota { display: grid; gap: 2px; }
+    .vv-action .bouton:disabled { opacity: .5; cursor: not-allowed; }
     .vv-compteur { font-weight: 600; } .vv-compteur.ko, .vv-equipe.ko { color: var(--ko); } .vv-equipe { color: var(--doux); }
+    .vv-galerie-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .vv-galerie-tete h2 { margin: 0; }
     @media (max-width: 640px) {
-      .vv-menus { grid-template-columns: minmax(0, 1fr); }
       .vv-idees { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
       .vv-idee { flex: 0 0 78%; scroll-snap-align: start; }
+      .vv-choisi { flex-wrap: wrap; gap: 8px 10px; align-items: flex-start; }
+      .vv-choisi-ico { font-size: 1.15rem; }
+      .vv-choisi > div { flex: 1 1 calc(100% - 40px); }
+      .vv-choisi .bouton { margin-left: auto; padding: 6px 14px; font-size: .88rem; }
+      .vv-angles { display: grid; grid-template-columns: 1fr 1fr; }
+      .vv-angles .puce { justify-content: center; text-align: center; white-space: normal; line-height: 1.2; padding: 8px 6px; font-size: .86rem; }
+      .vv-action .gros-bouton { flex: 1 1 100%; justify-content: center; }
     }
     .vv-sim { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--fond); }
     .vv-sim[hidden] { display: none; }

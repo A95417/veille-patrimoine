@@ -306,11 +306,13 @@ function avecChiffres(scenes, donnees) {
 async function lanceesPar(db, uid) { const c = (await lireEtat(db, "video_jour:" + uid))?.valeur; return c?.jour === jourParis() ? c.n : 0; }
 async function voixEquipe(db) { const c = (await lireEtat(db, "video_voix"))?.valeur; return c?.jour === jourGoogle() ? c : { jour: jourGoogle(), n: 0, epuise: false }; }
 async function restantEquipe(db) { const c = await voixEquipe(db); return c.epuise ? 0 : Math.max(0, VOIX_JOUR - c.n); }
-async function compterLancement(db, uid, k = 1) {
+async function compterLancement(db, uid, k = 1, epuise = false) {
   const n = Math.max(0, (await lanceesPar(db, uid)) + k), c = await voixEquipe(db);
   await ecrireEtat(db, "video_jour:" + uid, { jour: jourParis(), n });
-  await ecrireEtat(db, "video_voix", { ...c, n: Math.max(0, c.n + k), ...(k < 0 ? { epuise: true } : {}) });
+  await ecrireEtat(db, "video_voix", { ...c, n: Math.max(0, c.n + k), ...(epuise ? { epuise: true } : {}) });
 }
+// Une vidéo qui n'a jamais démarré (file d'attente annulée, robot jamais lancé) n'a pas utilisé de voix : on la rend.
+const rendre = (db, uid) => compterLancement(db, uid, -1);
 async function compteurs(db, uid) { return { limite_personne: LIMITE_PERSONNE, lancees_aujourdhui: await lanceesPar(db, uid), restant_equipe: await restantEquipe(db), voix_jour: VOIX_JOUR }; }
 async function coordonnees(db) { return (await lireEtat(db, "video_coordonnees"))?.valeur || COORD_FICTIVES; }
 function mentions(v, coord) {
@@ -339,14 +341,16 @@ async function declencher(env, id) {
 // Délais dépassés, file d'attente : remis en ordre à chaque consultation (pas besoin de minuteur).
 async function entretenir(env) {
   const db = env.DB, maintenant = Date.now(), iso = new Date().toISOString();
-  const { results } = await db.prepare("SELECT id, statut, lance_le, demarre_le, maj_le FROM videos WHERE statut IN ('attente', 'en_cours', 'file')").all();
+  const { results } = await db.prepare("SELECT id, utilisateur_id, statut, lance_le, demarre_le, maj_le FROM videos WHERE statut IN ('attente', 'en_cours', 'file')").all();
   for (const v of results) {
     const depuis = (x) => (maintenant - new Date(x || 0)) / 1000;
     let msg = null;
     if (v.statut === "attente" && depuis(v.lance_le) > 420) msg = "Le robot n'a pas démarré (GitHub ne l'a pas lancé à temps). Relancez la génération.";
     if (v.statut === "en_cours" && depuis(v.maj_le) > 420) msg = "Le robot ne donne plus de nouvelles (incident technique). Relancez la génération.";
     if ((v.statut === "en_cours" || v.statut === "attente") && depuis(v.lance_le) > 1500) msg = "Délai maximum dépassé (25 min). Relancez la génération.";
-    if (msg) await db.prepare("UPDATE videos SET statut = 'erreur', erreur = ?, maj_le = ? WHERE id = ?").bind(msg, iso, v.id).run();
+    if (!msg) continue;
+    const r = await db.prepare("UPDATE videos SET statut = 'erreur', erreur = ?, maj_le = ? WHERE id = ? AND statut = ?").bind(msg, iso, v.id, v.statut).run();
+    if (r.meta.changes === 1 && v.statut === "attente" && !v.demarre_le) await rendre(db, v.utilisateur_id);
   }
   const suivante = await db.prepare("SELECT id FROM videos WHERE statut = 'file' ORDER BY lance_le LIMIT 1").first();
   if (suivante) {
@@ -354,7 +358,7 @@ async function entretenir(env) {
       WHERE id = ? AND statut = 'file' AND NOT EXISTS (SELECT 1 FROM videos WHERE statut IN ('attente', 'en_cours'))`).bind(iso, iso, suivante.id).run();
     if (go.meta.changes === 1) {
       const pb = await declencher(env, suivante.id);
-      if (pb) await db.prepare("UPDATE videos SET statut = 'erreur', erreur = ? WHERE id = ?").bind(pb, suivante.id).run();
+      if (pb) { await db.prepare("UPDATE videos SET statut = 'erreur', erreur = ? WHERE id = ?").bind(pb, suivante.id).run(); await rendre(db, (await db.prepare("SELECT utilisateur_id FROM videos WHERE id = ?").bind(suivante.id).first())?.utilisateur_id); }
     }
   }
 }
@@ -511,6 +515,7 @@ Angles possibles (valeur exacte) : ${Object.keys(ANGLES).filter((k) => k !== "de
     if (!proprio(v)) return erreur("Seul l'auteur peut annuler.", 403);
     if (!["attente", "en_cours", "file"].includes(v.statut)) return erreur("Cette vidéo n'est pas en cours de fabrication.");
     await db.batch([db.prepare("UPDATE videos SET statut = 'annule', etape = NULL, maj_le = ?, lance_le = NULL WHERE id = ?").bind(iso, id), db.prepare("DELETE FROM video_morceaux WHERE video_id = ?").bind(id)]);
+    if (v.statut === "file") await rendre(db, v.utilisateur_id);   // annulée avant de démarrer : rien n'a été utilisé
     await entretenir(env);
     return json({ ok: true });
   }
@@ -526,6 +531,7 @@ Angles possibles (valeur exacte) : ${Object.keys(ANGLES).filter((k) => k !== "de
     if (!proprio(v)) return erreur("Seul l'auteur ou l'administrateur peut supprimer cette vidéo.", 403);
     if (["attente", "en_cours"].includes(v.statut)) return erreur("Annulez d'abord la fabrication en cours.", 409);
     await db.batch([db.prepare("DELETE FROM video_morceaux WHERE video_id = ?").bind(id), db.prepare("DELETE FROM videos WHERE id = ?").bind(id)]);
+    if (v.statut === "file") await rendre(db, v.utilisateur_id);
     return json({ ok: true });
   }
 
@@ -595,7 +601,7 @@ export async function routeVideoRobot(request, env, chemin) {
     if (v.statut === "annule") return json({ annule: true });
     if (d.erreur) {
       // Échec dû au quota de la voix : la vidéo ne compte pas dans la limite de l'auteur, et l'équipe est prévenue que le quota est épuisé.
-      if (/quota/i.test(d.erreur) && ["attente", "en_cours"].includes(v.statut)) await compterLancement(db, v.utilisateur_id, -1);
+      if (/quota/i.test(d.erreur) && ["attente", "en_cours"].includes(v.statut)) await compterLancement(db, v.utilisateur_id, -1, true);
       if (!["pret", "a_verifier"].includes(v.statut)) await db.batch([db.prepare("UPDATE videos SET statut = 'erreur', erreur = ?, maj_le = ? WHERE id = ?").bind(court(d.erreur, 300), iso, id), db.prepare("DELETE FROM video_morceaux WHERE video_id = ?").bind(id)]);
       await entretenir(env);
       return json({ ok: true });

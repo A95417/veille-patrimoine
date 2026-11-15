@@ -50,7 +50,7 @@
   const EXTRAITS = new Set(["sadachbia", "fenrir", "kore", "charon", "zephyr", "laomedeia", "leda", "achird"]);
   const LIB_STATUT = { brouillon: "Brouillon", file: "En file d'attente", attente: "Démarrage", en_cours: "En fabrication", pret: "Prête", a_verifier: "Prête · à vérifier", erreur: "Échec", annule: "Annulée" };
   const EN_COURS = ["file", "attente", "en_cours"];
-  const R = { sel: "simulation", angle: "deux_profils", angleManuel: false, angleIA: false, cherche: "", duree: 45, format: "9:16", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
+  const R = { sel: null, onglet: "idees", titreIdee: null, angle: "expliquer", angleManuel: false, angleIA: false, cherche: "", duree: 45, format: "9:16", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
   let reglages = null, sources = null, courante = null, suivi = null, chrono = null, audio = null;
 
   const mots = (sc) => (sc || []).reduce((n, s) => n + String(s.texte || "").split(/\s+/).filter((m) => /[\p{L}\d]/u.test(m)).length, 0);
@@ -64,55 +64,94 @@
     return { a, b, ecart: a - b, va: m * 12 * (s.age_fin - s.age1), vb: m * 12 * (s.age_fin - s.age2) };
   }
 
-  // ---------------------------------------------------------------- squelette
+  // ---------------------------------------------------------------- squelette : un parcours en 3 étapes
+  const ANGLES_DESC = {
+    expliquer: "L'enjeu, comment ça marche, ce qu'il faut retenir.",
+    mythe: "Une idée reçue, puis la réalité.",
+    reflexes: "Trois réflexes concrets et prudents.",
+    chiffre: "Toute la vidéo autour d'un chiffre de la source.",
+    deux_profils: "Deux personnages, deux choix, deux résultats.",
+    erreur: "Une erreur courante, ce qu'elle coûte, puis le bon réflexe.",
+  };
+  const ONGLETS_SUJET = [["idees", "💡 Idées du moment"], ["fiches", "🎓 Fiches Apprendre"], ["actus", "📰 Actualités"], ["chiffres", "📅 Échéances et chiffres"], ["autre", "✏️ Autre"]];
+
   function monter() {
     $v("vue-video").innerHTML = `
-      <section class="carte" id="vv-nouvelle">
-        <h2>Créer une vidéo courte</h2>
-        <p class="doux">Format TikTok, Reels ou LinkedIn : personnages animés, voix off, sous-titres, musique. L'IA propose un scénario que vous relisez avant toute fabrication.</p>
-        <div class="vv-idees-bloc"><span class="simu-lib">💡 Idées de vidéos du moment</span><div class="vv-idees" id="vv-idees"><div class="attente petit"><span class="rond"></span>Recherche dans les grosses actualités…</div></div></div>
-        <div class="vv-menus">
-          <div class="vv-menu-sujet">
-            <label class="simu-lib" for="vv-src">Sujet</label>
-            <input type="search" id="vv-cherche" placeholder="🔍 Rechercher : PER, BCE, donation…" aria-label="Rechercher un sujet" autocomplete="off">
-            <select id="vv-src"></select>
-          </div>
-          <div class="vv-menu-angle">
-            <label class="simu-lib" for="vv-angle">Angle <span class="vv-suggere" id="vv-angle-note"></span></label>
-            <select id="vv-angle">${Object.entries(ANGLES_LIB).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select>
+      <section class="carte vv-form" id="vv-nouvelle">
+        <div class="vv-intro">
+          <h2>Créer une vidéo courte</h2>
+          <p class="doux">TikTok, Reels ou LinkedIn. L'IA écrit le scénario, vous le relisez avant la fabrication.</p>
+        </div>
+
+        <div class="vv-etape" id="vv-e1">
+          <h3 class="vv-etape-tete"><span class="n" aria-hidden="true">1</span>De quoi parle la vidéo ?</h3>
+          <div class="vv-etape-corps">
+            <div class="vv-choisi" id="vv-choisi" hidden></div>
+            <div id="vv-choix-sujet">
+              <div class="vv-onglets" role="tablist" aria-label="Type de sujet">${ONGLETS_SUJET.map(([k, l]) => `<button type="button" role="tab" id="vv-tab-${k}" aria-controls="vv-panneau" data-tab="${k}">${l}</button>`).join("")}</div>
+              <div class="vv-panneau" id="vv-panneau" role="tabpanel"></div>
+            </div>
+            <div id="vv-sim" class="vv-sim" hidden></div>
           </div>
         </div>
-        <p class="petit doux" id="vv-src-info"></p>
-        <div id="vv-sim" class="vv-sim"></div>
-        <label class="bloc-lib" for="vv-precision" style="margin-top:12px">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
-        <input id="vv-precision" maxlength="300" placeholder="Ex. : insister sur les jeunes actifs, ton rassurant…">
-        <p class="alerte-donnees">N'indiquez jamais de nom ni d'information sur un client : le texte est envoyé à l'IA (Gemini).</p>
-        <div class="reglages" style="margin-top:12px">
-          <div><span class="simu-lib">Durée</span><div class="puces" id="vv-duree">${[30, 45, 60].map((d) => `<button type="button" class="puce" data-duree="${d}">${d} s</button>`).join("")}</div></div>
-          <div><span class="simu-lib">Format</span><div class="puces" id="vv-format"><button type="button" class="puce" data-format-v="9:16">9:16 · TikTok, Reels</button><button type="button" class="puce" data-format-v="4:5">4:5 · LinkedIn</button></div></div>
+
+        <div class="vv-etape" id="vv-e2">
+          <h3 class="vv-etape-tete"><span class="n" aria-hidden="true">2</span>Comment la raconter ?</h3>
+          <div class="vv-etape-corps">
+            <div class="vv-angles" role="group" aria-label="Angle de la vidéo">${Object.entries(ANGLES_LIB).map(([k, l]) => `<button type="button" class="puce" data-angle="${k}">${l}</button>`).join("")}</div>
+            <p class="vv-angle-desc" id="vv-angle-desc"></p>
+            <label class="bloc-lib" for="vv-precision">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
+            <input id="vv-precision" maxlength="300" autocomplete="off" placeholder="Ex. : pour les jeunes actifs, ton rassurant…">
+            <p class="alerte-donnees">Jamais de nom ni d'information sur un client : ce texte est envoyé à l'IA (Gemini).</p>
+          </div>
         </div>
-        <span class="simu-lib">Voix</span><div class="puces" id="vv-voix"></div>
-        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button type="button" class="bouton gros-bouton" id="vv-proposer">✨ Proposer un scénario</button><span class="doux petit" id="vv-quota"></span></div>
-        <div id="vv-msg"></div>
+
+        <div class="vv-etape" id="vv-e3">
+          <h3 class="vv-etape-tete"><span class="n" aria-hidden="true">3</span>Réglages</h3>
+          <div class="vv-etape-corps">
+            <details class="vv-reglages" id="vv-reglages">
+              <summary><span id="vv-resume-reglages"></span><span class="vv-modifier">Modifier</span></summary>
+              <div class="vv-reglages-corps">
+                <div class="reglages">
+                  <div><span class="simu-lib">Durée</span><div class="puces">${[30, 45, 60].map((d) => `<button type="button" class="puce" data-duree="${d}">${d} s</button>`).join("")}</div></div>
+                  <div><span class="simu-lib">Format</span><div class="puces"><button type="button" class="puce" data-format-v="9:16">9:16 · TikTok, Reels</button><button type="button" class="puce" data-format-v="4:5">4:5 · LinkedIn</button></div></div>
+                </div>
+                <span class="simu-lib">Voix</span><div id="vv-voix"></div>
+                <details class="vv-coord" id="vv-coord"><summary>Carte de fin : <span id="vv-coord-resume">coordonnées du cabinet</span></summary><div id="vv-coord-corps"></div></details>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="vv-action">
+          <button type="button" class="bouton gros-bouton" id="vv-proposer">✨ Proposer un scénario</button>
+          <span class="doux petit" id="vv-quota"></span>
+        </div>
+        <div id="vv-msg" aria-live="polite"></div>
       </section>
       <section class="carte" id="vv-travail" hidden></section>
       <section class="carte" id="vv-galerie-bloc">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">Mes vidéos</h2><span class="doux petit">Les 10 dernières vidéos terminées sont conservées.</span></div>
+        <div class="vv-galerie-tete"><h2>Mes vidéos</h2><span class="doux petit">Les 10 dernières vidéos terminées sont gardées.</span></div>
         <div class="vv-galerie" id="vv-galerie"><div class="attente"><span class="rond"></span>Chargement…</div></div>
-      </section>
-      <details class="carte precision" id="vv-coord"><summary>⚙️ Coordonnées du cabinet (carte de fin)</summary><div id="vv-coord-corps"></div></details>`;
-    $v("vv-cherche").oninput = () => { R.cherche = $v("vv-cherche").value; remplirSujets(); };
-    $v("vv-src").onchange = () => choisirSujet($v("vv-src").value);
-    $v("vv-angle").onchange = () => { R.angle = $v("vv-angle").value; R.angleManuel = true; R.angleIA = false; majAngle(); };
-    remplirSujets();
+      </section>`;
+    document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { R.onglet = b.dataset.tab; R.cherche = ""; afficherPanneau(); });
+    // flèches gauche/droite entre les onglets (clavier)
+    $v("vv-choix-sujet").querySelector(".vv-onglets").onkeydown = (e) => {
+      if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+      const l = ONGLETS_SUJET.map(([k]) => k), i = (l.indexOf(R.onglet) + (e.key === "ArrowRight" ? 1 : l.length - 1)) % l.length;
+      R.onglet = l[i]; R.cherche = ""; afficherPanneau(); $v("vv-tab-" + l[i]).focus();
+    };
+    document.querySelectorAll("[data-angle]").forEach((b) => b.onclick = () => { R.angle = b.dataset.angle; R.angleManuel = true; majAngle(); });
     document.querySelectorAll("[data-duree]").forEach((b) => b.onclick = () => { R.duree = +b.dataset.duree; majReglages(); });
     document.querySelectorAll("[data-format-v]").forEach((b) => b.onclick = () => { R.format = b.dataset.formatV; majReglages(); });
+    $v("vv-precision").oninput = majEtat;
     $v("vv-proposer").onclick = proposer;
   }
 
   function majReglages() {
     document.querySelectorAll("[data-duree]").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.duree === R.duree));
     document.querySelectorAll("[data-format-v]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.formatV === R.format));
+    $v("vv-resume-reglages").innerHTML = `<b>${R.duree} s</b> · ${R.format === "4:5" ? "4:5 LinkedIn" : "9:16 TikTok, Reels"} · voix ${R.voix}`;
     const voix = reglages?.voix || ["Sadachbia"];
     $v("vv-voix").innerHTML = ["Dynamiques", "Posées"].map((gr) => `<div class="vv-voix-groupe"><span class="petit doux">${gr}</span><div class="puces">${voix.filter((n) => (VOIX_INFO[n]?.[0] || "Posées") === gr).map((n) => `<span class="vv-voix"><button type="button" class="puce" data-voix="${n}" aria-pressed="${n === R.voix}">${n} <small>· ${VOIX_INFO[n]?.[1] || ""}</small></button>${EXTRAITS.has(n.toLowerCase()) ? `<button type="button" class="vv-ecoute" data-ecoute="${n}" aria-label="Écouter la voix ${n}" title="Écouter">▶</button>` : `<span class="vv-bientot" title="Extrait disponible prochainement">bientôt</span>`}</span>`).join("")}</div></div>`).join("");
     document.querySelectorAll("[data-voix]").forEach((b) => b.onclick = () => { R.voix = b.dataset.voix; majReglages(); });
@@ -120,119 +159,150 @@
       if (audio) { audio.pause(); }
       audio = new Audio(`/voix/${b.dataset.ecoute.toLowerCase()}.m4a`); audio.play().catch(() => notifier("Lecture impossible sur cet appareil.", true));
     });
-    const sim = $v("vv-sim");
-    if (R.sel === "simulation") {
-      const s = R.sim, r = simuler(s);
-      sim.hidden = false;
-      sim.innerHTML = `<div class="vv-sim-grille">
-        ${[["mensuel", "Épargne par mois (€)", 10, 5000, 10], ["taux", "Rendement fictif (%/an)", 0, 10, .5], ["age1", "Profil 1 commence à", 16, 80, 1], ["age2", "Profil 2 commence à", 17, 85, 1], ["age_fin", "Jusqu'à l'âge de", 20, 90, 1]]
-          .map(([k, l, mi, ma, pas]) => `<label><span>${l}</span><input type="number" inputmode="decimal" data-sim="${k}" value="${s[k]}" min="${mi}" max="${ma}" step="${pas}"></label>`).join("")}</div>
-        <p class="vv-sim-res">Calculé par le site (versements en fin de mois, intérêts capitalisés chaque mois) : <strong>≈ ${nbFr(r.a)} €</strong> contre <strong>≈ ${nbFr(r.b)} €</strong>, soit <strong>${nbFr(r.ecart)} € d'écart</strong> pour ${nbFr(r.va - r.vb)} € de versements en plus. <span class="doux">Exemple fictif, rendement non garanti.</span></p>`;
-      sim.querySelectorAll("[data-sim]").forEach((i) => i.onchange = () => {
-        const v = parseFloat(String(i.value).replace(",", "."));
-        if (Number.isFinite(v)) R.sim[i.dataset.sim] = Math.max(+i.min, Math.min(+i.max, v));
-        if (R.sim.age2 <= R.sim.age1) R.sim.age2 = R.sim.age1 + 1;
-        if (R.sim.age_fin <= R.sim.age2) R.sim.age_fin = R.sim.age2 + 1;
-        majReglages();
-      });
-    } else { sim.hidden = true; sim.innerHTML = ""; }
+    majSimulation();
     majCompteurs();
+  }
+
+  // Réglages de la simulation « commencer tôt ou attendre » (seulement si ce sujet est choisi).
+  function majSimulation() {
+    const sim = $v("vv-sim");
+    if (R.sel !== "simulation") { sim.hidden = true; sim.innerHTML = ""; return; }
+    const s = R.sim, r = simuler(s);
+    sim.hidden = false;
+    sim.innerHTML = `<div class="vv-sim-grille">
+      ${[["mensuel", "Épargne par mois (€)", 10, 5000, 10], ["taux", "Rendement fictif (%/an)", 0, 10, .5], ["age1", "Profil 1 commence à", 16, 80, 1], ["age2", "Profil 2 commence à", 17, 85, 1], ["age_fin", "Jusqu'à l'âge de", 20, 90, 1]]
+        .map(([k, l, mi, ma, pas]) => `<label><span>${l}</span><input type="number" inputmode="decimal" data-sim="${k}" value="${s[k]}" min="${mi}" max="${ma}" step="${pas}"></label>`).join("")}</div>
+      <p class="vv-sim-res"><strong>≈ ${nbFr(r.a)} €</strong> contre <strong>≈ ${nbFr(r.b)} €</strong> : <strong>${nbFr(r.ecart)} € d'écart</strong> pour ${nbFr(r.va - r.vb)} € versés en plus. <span class="doux">Calcul du site, exemple fictif, rendement non garanti.</span></p>`;
+    sim.querySelectorAll("[data-sim]").forEach((i) => i.onchange = () => {
+      const v = parseFloat(String(i.value).replace(",", "."));
+      if (Number.isFinite(v)) R.sim[i.dataset.sim] = Math.max(+i.min, Math.min(+i.max, v));
+      if (R.sim.age2 <= R.sim.age1) R.sim.age2 = R.sim.age1 + 1;
+      if (R.sim.age_fin <= R.sim.age2) R.sim.age_fin = R.sim.age2 + 1;
+      majSimulation();
+    });
   }
 
   // Compteurs : limite personnelle et voix restantes pour toute l'équipe (quota gratuit partagé).
   function majCompteurs() {
-    if (!reglages) return;
+    if (!reglages || $v("vv-quota").dataset.manque) return;
     const z = $v("vv-quota"), reste = reglages.restant_equipe, plein = reglages.lancees_aujourdhui >= reglages.limite_personne;
-    z.innerHTML = `<span class="vv-compteur${plein ? " ko" : ""}">${reglages.lancees_aujourdhui}/${reglages.limite_personne} aujourd'hui</span>`
-      + (reste <= 0 ? ` <span class="vv-equipe ko">Quota de voix épuisé pour aujourd'hui (toute l'équipe) : retour demain matin.</span>`
-        : reste <= 4 ? ` <span class="vv-equipe">Plus que ${reste} vidéo${reste > 1 ? "s" : ""} possible${reste > 1 ? "s" : ""} aujourd'hui pour toute l'équipe.</span>` : "");
+    z.innerHTML = `<span class="vv-compteur${plein ? " ko" : ""}">${reglages.lancees_aujourdhui}/${reglages.limite_personne} vidéos aujourd'hui</span>`
+      + (reste <= 0 ? `<span class="vv-equipe ko">Quota de voix épuisé pour toute l'équipe : retour demain matin.</span>`
+        : reste <= 4 ? `<span class="vv-equipe">Plus que ${reste} vidéo${reste > 1 ? "s" : ""} possible${reste > 1 ? "s" : ""} aujourd'hui pour toute l'équipe.</span>` : "");
   }
 
-  // ---------------------------------------------------------------- menu « Sujet »
-  function optionsSujets() {
-    const g = [];
-    const parTheme = {};
-    LES_FICHES().forEach((f) => (parTheme[f.theme] = parTheme[f.theme] || []).push(f));
-    Object.entries(THEMES).forEach(([t, nom]) => { if (parTheme[t]) g.push([`🎓 Apprendre · ${nom}`, parTheme[t].map((f) => [`fiche:${f.id}`, f.titre, `${f.titre} ${f.sousTitre || ""} ${nom} ${f.recherche || ""}`])]); });
-    Object.entries(parTheme).forEach(([t, l]) => { if (!THEMES[t]) g.push(["🎓 Apprendre · Autres", l.map((f) => [`fiche:${f.id}`, f.titre, f.titre])]); });
-    if (sources?.actus?.length) g.push(["📰 Actualités du moment", sources.actus.map((a) => [`actu:${a.id}`, a.titre.length > 90 ? a.titre.slice(0, 88) + "…" : a.titre, `${a.titre} ${a.resume} actualite`])]);
-    if (sources?.echeances?.length) g.push(["📅 Échéances fiscales", sources.echeances.map((e) => [`echeance:${e.ref}`, `${dateCourte(e.date)} · ${e.titre}`, `${e.titre} echeance impot fiscal`])]);
-    if (sources?.chiffres?.length) g.push(["📈 Chiffres de la semaine (BCE)", [["chiffre:", "Taux et inflation : vue d'ensemble", "chiffre taux inflation bce"], ...sources.chiffres.map((c) => [`chiffre:${c.ref}`, c.libelle, `${c.libelle} chiffre taux bce`])]]);
-    g.push(["Autres", [["simulation", "👥 Commencer tôt ou attendre (simulation chiffrée)", "simulation commencer tot attendre epargne deux profils"], ["libre", "✏️ Sujet libre (décrit dans « Précision »)", "libre theme"]]]);
-    return g;
-  }
-  function dateCourte(d) { try { return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }); } catch { return d; } }
-  function remplirSujets() {
-    const q = sansAccent(R.cherche).trim().split(/\s+/).filter(Boolean);
-    const groupes = optionsSujets().map(([nom, l]) => [nom, l.filter(([v, , txt]) => v === R.sel || q.every((m) => sansAccent(txt).includes(m)))]).filter(([, l]) => l.length);
-    const sel = $v("vv-src");
-    sel.innerHTML = groupes.map(([nom, l]) => `<optgroup label="${echapper(nom)}">${l.map(([v, lib]) => `<option value="${echapper(v)}"${v === R.sel ? " selected" : ""}>${echapper(lib)}</option>`).join("")}</optgroup>`).join("");
-    // une recherche qui ne garde qu'une autre option : on la propose directement
-    const trouves = groupes.flatMap(([, l]) => l).filter(([v, , txt]) => q.every((m) => sansAccent(txt).includes(m)));
-    if (q.length && trouves.length && !trouves.some(([v]) => v === R.sel)) sel.value = trouves[0][0];
-    $v("vv-src-info").textContent = q.length ? (trouves.length ? `${trouves.length} sujet${trouves.length > 1 ? "s" : ""} trouvé${trouves.length > 1 ? "s" : ""} : choisissez dans le menu.` : "Aucun sujet ne correspond à la recherche.") : infoSujet();
-    if (q.length && sel.value && sel.value !== R.sel) choisirSujet(sel.value, true);
-  }
-  function infoSujet() {
-    const [type, ref] = R.sel.split(/:(.*)/s);
-    if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); return f ? `Contenu vérifié de la fiche « ${f.titre} » (le ${f.verifie || "—"}) : ses chiffres sont autorisés et la source sera citée.` : ""; }
-    if (type === "actu") { const a = sources?.actus?.find((x) => x.id === ref); return a ? `Résumé du site (parties gratuites des articles${a.sources.length ? " : " + a.sources.join(", ") : ""}) : la source sera citée.` : ""; }
-    if (type === "echeance") return "Calendrier officiel (impots.gouv.fr, service-public.gouv.fr).";
-    if (type === "chiffre") return "Derniers chiffres publiés par la BCE (page Marchés du site).";
-    if (type === "simulation") return "Chiffres calculés par le site, présentés comme exemple fictif.";
-    return "Sans source : l'IA reste qualitative (aucun chiffre inventé).";
-  }
-  function typeSel() { return R.sel.split(":")[0]; }
-  function choisirSujet(v, depuisRecherche = false) {
-    R.sel = v;
-    if (!R.angleManuel) { R.angle = ANGLE_DEFAUT[typeSel()] || "expliquer"; R.angleIA = false; }
-    if (!depuisRecherche) remplirSujets(); else $v("vv-src-info").textContent = infoSujet();
-    $v("vv-precision-note").textContent = typeSel() === "libre" ? "(obligatoire : décrivez le sujet)" : "(facultatif)";
-    majAngle(); majReglages();
-  }
-  function majAngle() {
-    $v("vv-angle").value = R.angle;
-    $v("vv-angle-note").textContent = R.angleManuel ? "" : R.angleIA ? "· suggéré par l'IA" : "· conseillé";
-  }
+  // ---------------------------------------------------------------- étape 1 : le sujet
+  function dateCourte(d) { try { const x = new Date(d); return Number.isNaN(+x) ? d : x.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }); } catch { return d; } }
+  const ligne = (v, titre, sous, extra = "") => `<button type="button" class="vv-ligne" data-sujet="${echapper(v)}" aria-pressed="${v === R.sel}"><strong>${echapper(titre)}</strong>${sous ? `<span>${echapper(sous)}</span>` : ""}${extra}</button>`;
+  const vide = (t) => `<p class="doux petit vv-vide">${t}</p>`;
+  const chargement = () => (sources ? "" : `<div class="attente petit"><span class="rond"></span>Chargement…</div>`);
 
-  // ---------------------------------------------------------------- idées du moment (grosses actualités)
-  function ficheLiee(mots) {
-    const m = (mots || []).map(sansAccent).filter((x) => x.length > 2);
-    if (!m.length) return null;
-    let best = null, score = 0;
-    LES_FICHES().forEach((f) => {
-      const t = sansAccent(`${f.titre} ${f.sousTitre || ""} ${f.recherche || ""} ${THEMES[f.theme] || ""}`);
-      const sc = m.reduce((n, k) => n + (t.includes(k) ? (sansAccent(f.titre).includes(k) ? 2 : 1) : 0), 0);
-      if (sc > score) { score = sc; best = f; }
-    });
-    return score >= 1 ? best : null;
-  }
-  function afficherIdees() {
-    const z = $v("vv-idees");
-    const idees = sources?.idees || [];
-    if (!idees.length) { z.innerHTML = `<p class="petit doux">Pas d'actualité marquante pour l'instant : choisissez un sujet dans le menu.</p>`; return; }
-    z.innerHTML = idees.map((i, k) => {
-      const f = ficheLiee(i.mots_cles);
-      return `<div class="vv-idee"><button type="button" class="vv-idee-btn" data-idee="${k}"><strong>${echapper(i.titre)}</strong><span class="petit">🎯 ${ANGLES_LIB[i.angle] || ANGLES_LIB.expliquer}</span></button>${f ? `<button type="button" class="vv-idee-fiche lien-bouton" data-idee-fiche="${echapper(f.id)}" data-angle="${i.angle}">🎓 ou la fiche « ${echapper(f.titre)} »</button>` : ""}</div>`;
-    }).join("") + (sources.simple ? `<p class="petit doux vv-idees-note">Les plus grosses actualités du moment (idées de l'IA indisponibles pour l'instant).</p>` : "");
+  function afficherPanneau() {
+    document.querySelectorAll("[data-tab]").forEach((b) => { const on = b.dataset.tab === R.onglet; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; });
+    $v("vv-panneau").setAttribute("aria-labelledby", "vv-tab-" + R.onglet);
+    const z = $v("vv-panneau");
+    let h = "";
+    if (R.onglet === "idees") {
+      const idees = sources?.idees || [];
+      h = chargement() || (idees.length ? `<div class="vv-idees">${idees.map((i, k) => `<button type="button" class="vv-idee" data-idee="${k}"><strong>${echapper(i.titre)}</strong><span class="vv-tag">${ANGLES_LIB[i.angle] || ANGLES_LIB.expliquer}</span></button>`).join("")}</div>
+        <p class="doux petit vv-note">${sources.simple ? "Les plus grosses actualités du moment (idées de l'IA indisponibles pour l'instant)." : "Proposées par l'IA à partir des grosses actualités du site, mises à jour toutes les 4 heures."}</p>`
+        : vide("Pas d'actualité marquante pour l'instant : choisissez une fiche Apprendre ou un autre sujet."));
+    } else if (R.onglet === "fiches") {
+      const q = sansAccent(R.cherche).trim().split(/\s+/).filter(Boolean);
+      const ok = (f) => q.every((m) => sansAccent(`${f.titre} ${f.sousTitre || ""} ${THEMES[f.theme] || ""} ${f.recherche || ""}`).includes(m));
+      const groupes = Object.entries(THEMES).map(([t, nom]) => [nom, LES_FICHES().filter((f) => f.theme === t && ok(f))]).filter(([, l]) => l.length);
+      h = `<input type="search" class="vv-cherche" id="vv-cherche" placeholder="🔍 Rechercher une fiche : PER, donation, SCPI…" aria-label="Rechercher une fiche" autocomplete="off" value="${echapper(R.cherche)}">
+        <div class="vv-liste">${groupes.length ? groupes.map(([nom, l]) => `<div class="vv-groupe"><span class="vv-groupe-nom">${nom}</span>${l.map((f) => ligne(`fiche:${f.id}`, f.titre, f.sousTitre)).join("")}</div>`).join("") : vide("Aucune fiche ne correspond.")}</div>`;
+    } else if (R.onglet === "actus") {
+      const a = sources?.actus || [];
+      h = chargement() || (a.length ? `<div class="vv-liste">${a.map((x) => ligne(`actu:${x.id}`, x.titre, [x.sources.join(", "), dateCourte(x.date)].filter(Boolean).join(" · "))).join("")}</div>` : vide("Aucune actualité importante ces derniers jours."));
+    } else if (R.onglet === "chiffres") {
+      const e = sources?.echeances || [], c = sources?.chiffres || [];
+      h = chargement() || `<div class="vv-liste">
+        <div class="vv-groupe"><span class="vv-groupe-nom">Échéances fiscales · impots.gouv.fr</span>${e.length ? e.map((x) => ligne(`echeance:${x.ref}`, x.titre, dateCourte(x.date))).join("") : vide("Calendrier pas encore disponible.")}</div>
+        <div class="vv-groupe"><span class="vv-groupe-nom">Chiffres de la semaine · BCE</span>${c.length ? ligne("chiffre:", "Taux et inflation : vue d'ensemble", "Tous les derniers chiffres") + c.map((x) => ligne(`chiffre:${x.ref}`, x.libelle, `${String(x.valeur).replace(".", ",")} %${x.date ? " · " + x.date : ""}`)).join("") : vide("Chiffres pas encore disponibles.")}</div>
+      </div>`;
+    } else {
+      h = `<div class="vv-idees">
+        <button type="button" class="vv-idee" data-sujet="simulation"><strong>👥 Commencer tôt ou attendre</strong><span class="petit doux">Deux profils, une simulation chiffrée par le site (exemple fictif).</span></button>
+        <button type="button" class="vv-idee" data-sujet="libre"><strong>✏️ Mon propre sujet</strong><span class="petit doux">Vous le décrivez à l'étape 2. L'IA ne citera aucun chiffre.</span></button>
+      </div>`;
+    }
+    z.innerHTML = h;
+    z.querySelectorAll("[data-sujet]").forEach((b) => b.onclick = () => choisirSujet(b.dataset.sujet));
     z.querySelectorAll("[data-idee]").forEach((b) => b.onclick = () => {
-      const i = idees[+b.dataset.idee];
-      R.cherche = ""; $v("vv-cherche").value = "";
-      R.angleManuel = false;
-      if (!sources.simple) $v("vv-precision").value = i.titre;
-      choisirSujet(`actu:${i.sujet_id}`); R.angleIA = !sources.simple; R.angle = i.angle || "expliquer"; majAngle();
-      z.querySelectorAll(".vv-idee").forEach((c, k) => c.classList.toggle("choisie", k === +b.dataset.idee));
+      const i = sources.idees[+b.dataset.idee];
+      choisirSujet(`actu:${i.sujet_id}`, { angle: i.angle || "expliquer", ia: !sources.simple, titre: i.titre });
+      // le titre de l'idée sert de précision (modifiable), seulement si le champ est vide
+      if (!sources.simple && !$v("vv-precision").value) { $v("vv-precision").value = R.precisionAuto = i.titre; majEtat(); }
     });
-    z.querySelectorAll("[data-idee-fiche]").forEach((b) => b.onclick = () => {
-      R.cherche = ""; $v("vv-cherche").value = "";
-      R.angleManuel = false; choisirSujet(`fiche:${b.dataset.ideeFiche}`); R.angle = b.dataset.angle || "expliquer"; R.angleIA = true; majAngle();
+    const c = $v("vv-cherche");
+    if (c) c.oninput = () => { R.cherche = c.value; const pos = c.selectionStart; afficherPanneau(); const n = $v("vv-cherche"); n.focus(); n.setSelectionRange(pos, pos); };
+  }
+
+  // Titre et source du sujet choisi (bandeau « ✓ Sujet »).
+  function decrireSujet() {
+    const [type, ref] = (R.sel || "").split(/:(.*)/s);
+    if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); return f && { ico: "🎓", titre: f.titre, source: `Fiche Apprendre vérifiée le ${f.verifie || "—"} : ses chiffres sont autorisés et elle sera citée.` }; }
+    if (type === "actu") { const a = sources?.actus?.find((x) => x.id === ref); return { ico: "📰", titre: a?.titre || R.titreIdee || "Actualité du moment", source: `Résumé du site (parties gratuites des articles)${a?.sources?.length ? " · source citée : " + a.sources.join(", ") : ""}.` }; }
+    if (type === "echeance") { const e = sources?.echeances?.find((x) => x.ref === ref); return { ico: "📅", titre: e ? `${e.titre} (${dateCourte(e.date)})` : "Échéance fiscale", source: "Calendrier officiel (impots.gouv.fr, service-public.gouv.fr)." }; }
+    if (type === "chiffre") return { ico: "📈", titre: ref || "Taux et inflation : vue d'ensemble", source: "Derniers chiffres publiés par la BCE (page Marchés)." };
+    if (type === "simulation") return { ico: "👥", titre: "Commencer tôt ou attendre", source: "Chiffres calculés par le site, présentés comme exemple fictif." };
+    if (type === "libre") return { ico: "✏️", titre: "Mon propre sujet", source: "À décrire à l'étape 2. Sans source, l'IA ne citera aucun chiffre." };
+    return null;
+  }
+
+  function choisirSujet(v, opts = {}) {
+    R.sel = v; R.titreIdee = opts.titre || null;
+    // une précision remplie automatiquement par une idée ne suit pas vers un autre sujet
+    if (R.precisionAuto && $v("vv-precision").value === R.precisionAuto) $v("vv-precision").value = "";
+    R.precisionAuto = null;
+    const type = v.split(":")[0];
+    if (opts.angle) { R.angle = opts.angle; R.angleIA = !!opts.ia; R.angleManuel = false; }
+    else if (!R.angleManuel) { R.angle = ANGLE_DEFAUT[type] || "expliquer"; R.angleIA = false; }
+    afficherChoisi(); majAngle(); majSimulation(); majEtat();
+    if (type === "libre") setTimeout(() => $v("vv-precision").focus(), 50);
+  }
+
+  function afficherChoisi() {
+    const d = decrireSujet(), z = $v("vv-choisi");
+    if (!d) { z.hidden = true; $v("vv-choix-sujet").hidden = false; afficherPanneau(); return; }
+    z.hidden = false; $v("vv-choix-sujet").hidden = true;
+    z.innerHTML = `<span class="vv-choisi-ico" aria-hidden="true">${d.ico}</span><div><strong>${echapper(d.titre)}</strong><span>${echapper(d.source)}</span></div><button type="button" class="bouton bouton-discret" id="vv-changer">Changer</button>`;
+    $v("vv-changer").onclick = () => { $v("vv-choix-sujet").hidden = false; z.hidden = true; afficherPanneau(); $v("vv-tab-" + R.onglet).focus(); };
+  }
+
+  // ---------------------------------------------------------------- étape 2 : l'angle
+  function majAngle() {
+    document.querySelectorAll("[data-angle]").forEach((b) => {
+      const on = b.dataset.angle === R.angle;
+      b.setAttribute("aria-pressed", on);
+      b.classList.toggle("vv-conseille", !R.angleManuel && on);
     });
+    $v("vv-angle-desc").innerHTML = `${ANGLES_DESC[R.angle] || ""}${!R.angleManuel ? ` <span class="vv-suggere">✨ ${R.angleIA ? "suggéré par l'IA" : "conseillé pour ce sujet"}</span>` : ""}`;
+  }
+
+  // Étapes 2 et 3 actives seulement une fois le sujet choisi ; bouton prêt quand tout est complet.
+  function majEtat() {
+    const choisi = !!R.sel, libre = (R.sel || "").startsWith("libre");
+    ["vv-e2", "vv-e3"].forEach((id) => { $v(id).classList.toggle("vv-attente", !choisi); $v(id).querySelector(".vv-etape-corps").hidden = !choisi; });
+    $v("vv-e1").classList.toggle("vv-faite", choisi);
+    $v("vv-precision-note").textContent = libre ? "(obligatoire : décrivez votre sujet)" : "(facultatif)";
+    $v("vv-precision").placeholder = libre ? "Ex. : pourquoi épargner chaque mois plutôt qu'attendre le bon moment" : "Ex. : pour les jeunes actifs, ton rassurant…";
+    const manque = !choisi ? "Choisissez d'abord un sujet (étape 1)." : libre && !$v("vv-precision").value.trim() ? "Décrivez votre sujet dans « Précision »." : "";
+    const b = $v("vv-proposer");
+    b.disabled = !!manque || b.dataset.occupe === "1";
+    b.title = manque;
+    $v("vv-quota").dataset.manque = manque;
+    if (manque) $v("vv-quota").innerHTML = `<span class="vv-equipe">${manque}</span>`; else majCompteurs();
   }
 
   // ---------------------------------------------------------------- scénario
   async function proposer() {
     const b = $v("vv-proposer");
-    b.disabled = true; $v("vv-msg").innerHTML = `<div class="attente"><span class="rond"></span>L'IA écrit le scénario, 10 à 40 secondes…</div>`;
+    if (!R.sel) return;
+    b.disabled = true; b.dataset.occupe = "1";
+    $v("vv-msg").innerHTML = `<div class="attente"><span class="rond"></span>L'IA écrit le scénario, 10 à 40 secondes…</div>`;
     try {
       const [type, ref] = R.sel.split(/:(.*)/s);
       const corps = { source: type, ref: ref || "", angle: R.angle, precision: $v("vv-precision").value, duree: R.duree, format: R.format, voix: R.voix, simulation: R.sim };
@@ -241,7 +311,7 @@
       $v("vv-msg").innerHTML = "";
       ouvrir(r.video); chargerGalerie();
     } catch (e) { $v("vv-msg").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; }
-    b.disabled = false;
+    b.dataset.occupe = ""; majEtat();
   }
 
   function lireScenes() {
@@ -475,6 +545,7 @@
   // ---------------------------------------------------------------- coordonnées du cabinet
   function afficherCoordonnees() {
     const c = reglages.coordonnees, z = $v("vv-coord-corps"), ro = !reglages.admin ? "disabled" : "";
+    $v("vv-coord-resume").textContent = `${c.cabinet} · ${c.mail}${c.fictives ? " (fictives)" : ""}`;
     z.innerHTML = `${c.fictives ? `<p class="conformite" style="margin-top:10px">Coordonnées <strong>fictives</strong> pour l'instant (contact@example.com, 06 39 98 12 34 : numéro réservé à la fiction par l'Arcep). Remplacez-les par les vraies avant de publier.</p>` : ""}
       <div class="vv-champs" style="margin-top:10px">
         <label><span>Nom affiché</span><input id="vc-cabinet" value="${echapper(c.cabinet)}" maxlength="30" ${ro}></label>
@@ -495,9 +566,11 @@
     if ($v("vv-nouvelle")) { chargerGalerie(); return; }
     // ?video_fiche=ID (bouton « Faire une vidéo » d'une fiche Apprendre) : la fiche est présélectionnée.
     const q = new URLSearchParams(location.search).get("video_fiche");
-    if (q && LES_FICHES().some((f) => f.id === q)) { R.sel = `fiche:${q}`; R.angle = ANGLE_DEFAUT.fiche; }
-    monter(); majAngle(); majReglages(); choisirSujet(R.sel);
-    appelApi("/api/video/idees").then((s) => { sources = s; remplirSujets(); afficherIdees(); }).catch(() => { sources = { idees: [] }; afficherIdees(); });
+    monter(); majReglages(); majAngle();
+    if (q && LES_FICHES().some((f) => f.id === q)) { R.onglet = "fiches"; choisirSujet(`fiche:${q}`); } else afficherChoisi();
+    majEtat();
+    appelApi("/api/video/idees").then((s) => { sources = s; }).catch(() => { sources = { idees: [], actus: [], echeances: [], chiffres: [] }; })
+      .then(() => { if (R.sel) afficherChoisi(); else afficherPanneau(); });
     try { reglages = await appelApi("/api/video/reglages"); majReglages(); afficherCoordonnees(); } catch (e) { $v("vv-msg").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; }
     chargerGalerie();
   };

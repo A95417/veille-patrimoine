@@ -310,7 +310,7 @@ FICHES.push(
     illu: "cadeau",
     titre: "Les donations",
     sousTitre: "Transmettre de son vivant, au bon moment",
-    theme: "crypto",
+    theme: "transmission",
     duree: 7,
     verifie: "10 novembre 2026",
     recherche: "donation",
