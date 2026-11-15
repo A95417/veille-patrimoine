@@ -7,6 +7,8 @@ on:
       video_id:
         description: "Identifiant de la vidéo à fabriquer"
         required: true
+permissions:
+  contents: read
 concurrency:
   group: video-${{ inputs.video_id }}
   cancel-in-progress: false
@@ -41,8 +43,17 @@ jobs:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
           VIDEO_ID: ${{ inputs.video_id }}
+      - name: Garder la vidéo d'essai (7 jours)
+        if: inputs.video_id == 'essai'
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-essai
+          path: |
+            video.mp4
+            calage.json
+          retention-days: 7
       - name: Prévenir le site en cas d'échec
-        if: failure() || cancelled()
+        if: (failure() || cancelled()) && inputs.video_id != 'essai'
         run: |
           curl -sS -X POST "$SITE_URL/api/robot/video/$VIDEO_ID/etat" -H "Authorization: Bearer $ROBOT_TOKEN" -H "Content-Type: application/json" \
             -d "{\"erreur\":\"Le robot s'est arrêté avant la fin (délai dépassé ou incident technique).\"}" || true

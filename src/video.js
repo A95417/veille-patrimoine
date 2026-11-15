@@ -66,21 +66,33 @@ function nettoyerP(p, type) {
     else if (r[0] === "liste" && Array.isArray(v)) o[k] = v.map((x) => court(x, r[1])).filter(Boolean).slice(0, r[2]);
     else if (r[0] === "colonnes" && Array.isArray(v)) o[k] = v.slice(0, 3).map((c) => ({ libelle: court(c?.libelle, 12), niveau: Math.max(.1, Math.min(.95, Number(c?.niveau) || .5)) }));
   }
-  if (type === "comparaison") { o.gauche_nom ??= "Profil 1"; o.droite_nom ??= "Profil 2"; }
   return o;
 }
 
 // Calcul d'épargne mensuelle (versements en fin de mois, capitalisation mensuelle) : chiffres « exemple fictif ».
 export function simuler(s) {
-  const m = Math.max(10, Math.min(5000, Number(s.mensuel) || 100)), taux = Math.max(0, Math.min(10, Number(s.taux) || 4)) / 100;
-  const a1 = Math.max(16, Math.min(80, Number(s.age1) || 25)), a2 = Math.max(a1 + 1, Math.min(85, Number(s.age2) || 35)), fin = Math.max(a2 + 1, Math.min(90, Number(s.age_fin) || 65));
+  const nb = (x, d) => (x !== "" && x != null && Number.isFinite(Number(x)) ? Number(x) : d);
+  const m = Math.max(10, Math.min(5000, nb(s.mensuel, 100))), taux = Math.max(0, Math.min(10, nb(s.taux, 4))) / 100;
+  const a1 = Math.max(16, Math.min(80, nb(s.age1, 25))), a2 = Math.max(a1 + 1, Math.min(85, nb(s.age2, 35))), fin = Math.max(a2 + 1, Math.min(90, nb(s.age_fin, 65)));
   const fv = (mois) => { const i = taux / 12; return i ? m * ((1 + i) ** mois - 1) / i : m * mois; };
   const A = { versements: m * 12 * (fin - a1), capital: fv(12 * (fin - a1)) }, B = { versements: m * 12 * (fin - a2), capital: fv(12 * (fin - a2)) };
   return { mensuel: m, taux: taux * 100, age1: a1, age2: a2, age_fin: fin, A, B, ecart: A.capital - B.capital, attente: a2 - a1 };
 }
 
 // Chiffres présents dans un texte (« 49 000 € », « 4 % », « 2,44 »).
-const nombres = (t) => (String(t).match(/\d[\d\s  ]*(?:[.,]\d+)?/g) || []).map((x) => parseFloat(x.replace(/[\s  ]/g, "").replace(",", "."))).filter(Number.isFinite);
+// Chiffres d'un texte, avec ce qui suit (unité) : « 49 000 € », « 4,4 % », « 7 ans ». Les milliers ne sont séparés que par une
+// espace suivie d'exactement 3 chiffres (« en 2026 12 000 » donne bien 2026 et 12 000).
+function nombresUnites(t) {
+  const r = [], re = /\d{1,3}(?:[ \u202f\u00a0]\d{3})+(?![\d])(?:[.,]\d+)?|\d+(?:[.,]\d+)?/g;
+  let m;
+  while ((m = re.exec(String(t)))) {
+    const brut = m[0].replace(/[ \u202f\u00a0]/g, "");
+    const v = /^\d{1,3}\.\d{3}$/.test(brut) ? parseFloat(brut.replace(".", "")) : parseFloat(brut.replace(",", "."));   // « 2.000 » = 2 000
+    if (Number.isFinite(v)) r.push({ v, unite: /^\s*(%|€|euros?|ans?\b|mois\b)/i.test(String(t).slice(re.lastIndex)) });
+  }
+  return r;
+}
+const nombres = (t) => nombresUnites(t).map((x) => x.v);
 function autorises(valeurs) {
   const s = new Set();
   // valeur exacte, et arrondis raisonnables (« près de 118 000 » pour 118 196) : jamais d'arrondi grossier sur un petit nombre
@@ -93,12 +105,20 @@ function autorises(valeurs) {
   return s;
 }
 // Signale les chiffres du scénario qui ne viennent ni du calcul, ni des données, ni du sujet saisi.
-function chiffresAVerifier(scenes, permis) {
+function chiffresAVerifier(scenes, permis, post = "") {
   const r = [];
+  const ok = ({ v, unite }) => (Number.isInteger(v) ? permis.has(v) || (!unite && v <= 3) : permis.has(+v.toFixed(2)) || permis.has(+v.toFixed(1)));
+  const verifier = (t, scene) => { for (const x of nombresUnites(t)) if (!ok(x)) r.push({ scene, chiffre: x.v, texte: court(t, 80) }); };
   scenes.forEach((s, i) => {
-    const textes = [s.texte, ...Object.values(s.p || {}).flatMap((v) => (typeof v === "string" ? [v] : Array.isArray(v) ? v.map((x) => (typeof x === "string" ? x : x?.libelle || "")) : []))];
-    for (const t of textes) for (const n of nombres(t)) if (!permis.has(+n.toFixed(2)) && !permis.has(Math.round(n)) && !(Number.isInteger(n) && n <= 12)) r.push({ scene: i + 1, chiffre: n, texte: court(t, 80) });
+    if (s.type === "fin") return;
+    verifier(s.texte, i + 1);
+    for (const v of Object.values(s.p || {})) {
+      if (typeof v === "string") verifier(v, i + 1);
+      else if (typeof v === "number") { if (!ok({ v, unite: true })) r.push({ scene: i + 1, chiffre: v, texte: String(v) }); }
+      else if (Array.isArray(v)) v.forEach((x) => verifier(typeof x === "string" ? x : x?.libelle || "", i + 1));
+    }
   });
+  if (post) verifier(post.replace(/#\S+/g, ""), "texte de publication");
   return r;
 }
 
@@ -179,18 +199,19 @@ Termine par texte_post (2 à 4 lignes pour accompagner la vidéo, avec « Invest
     .map((s) => ({ type: s.type, texte: court(s.texte, 400), p: nettoyerP(s.p, s.type) })).slice(0, 11);
   if (!sim) scenes = scenes.filter((s) => s.type !== "comparaison");
   if (scenes.length < 3) throw new Error("Le scénario proposé est incomplet. Réessayez.");
-  if (scenes[0].type !== "accroche") scenes[0] = { ...scenes[0] };
   scenes.push(fin(coord.cabinet));
   const permis = autorises([...(sim ? [sim.mensuel, sim.taux, sim.age1, sim.age2, sim.age_fin, sim.attente, sim.A.versements, sim.A.capital, sim.B.versements, sim.B.capital, sim.ecart,
       sim.A.capital - sim.A.versements, sim.B.capital - sim.B.versements, sim.A.versements - sim.B.versements, ...[.5, 1.5, 2, 3].map((k) => sim.mensuel * k)] : []),
+    ...(data.length ? [new Date().getFullYear(), new Date().getFullYear() + 1] : []),
     ...data.flatMap((x) => [x.valeur, x.precedent, ...nombres(x.date || ""), ...nombres(x.titre || ""), ...nombres(x.detail || "")]), ...nombres(sujet)]);
   const tags = (r.donnees.hashtags || []).map((h) => "#" + String(h).replace(/^#/, "").replace(/\s+/g, "")).filter((h) => h.length > 2).slice(0, 5);
   let post = court(r.donnees.texte_post, 900);
   if (!/perte en capital/i.test(post)) post += "\nInvestir comporte un risque de perte en capital.";
   if (sim && !/fictif/i.test(post)) post += "\nExemple fictif à visée pédagogique.";
+  const texte_post = post + (tags.length ? "\n\n" + tags.join(" ") : "");
   return {
-    modele, sujet: sujet || court(r.donnees.titre, 120), duree, scenes, texte_post: post + (tags.length ? "\n\n" + tags.join(" ") : ""),
-    donnees: { simulation: sim, data, permis: [...permis] }, a_verifier: chiffresAVerifier(scenes, permis),
+    modele, sujet: sujet || court(r.donnees.titre, 120), duree, scenes, texte_post,
+    donnees: { simulation: sim, data, permis: [...permis] }, a_verifier: chiffresAVerifier(scenes, permis, texte_post),
   };
 }
 
@@ -201,16 +222,18 @@ function avecChiffres(scenes, donnees) {
     if (s.type !== "comparaison" || !sim) return s;
     return { ...s, p: { ...s.p, unite: "€", gauche: { nom: s.p.gauche_nom || `Dès ${sim.age1} ans`, valeur: Math.round(sim.A.capital), verse: Math.round(sim.A.versements), personnage: "lea" },
       droite: { nom: s.p.droite_nom || `Dès ${sim.age2} ans`, valeur: Math.round(sim.B.capital), verse: Math.round(sim.B.versements), personnage: "tom_age" },
-      note: s.p.note || `Exemple fictif : ${sim.mensuel} €/mois, ${String(sim.taux).replace(".", ",")} %/an, non garanti` } };
+      note: `Exemple fictif : ${sim.mensuel} €/mois, ${String(sim.taux).replace(".", ",")} %/an, non garanti` } };
   });
 }
 
+async function lanceesDuJour(db) { const c = (await lireEtat(db, "video_jour"))?.valeur; return c?.jour === jourParis() ? c.n : 0; }
+async function compterLancement(db) { await ecrireEtat(db, "video_jour", { jour: jourParis(), n: (await lanceesDuJour(db)) + 1 }); }
 async function coordonnees(db) { return (await lireEtat(db, "video_coordonnees"))?.valeur || COORD_FICTIVES; }
 function mentions(v, coord) {
   const m = [];
   const donnees = JSON.parse(v.donnees || "{}");
   if (donnees.simulation) m.push("Exemple fictif à visée pédagogique, rendement non garanti.");
-  else if (donnees.data?.length) m.push("Sources : " + [...new Set(donnees.data.map((x) => x.source))].join(", ") + ".");
+  else if (donnees.data?.length) m.push("Sources : " + [...new Set(donnees.data.map((x) => x.source).filter(Boolean))].join(", ") + ".");
   m.push("Investir comporte un risque de perte en capital.");
   if (coord.fictives) m.push("Coordonnées fictives (provisoires).");
   return m;
@@ -240,18 +263,21 @@ async function entretenir(env) {
     if ((v.statut === "en_cours" || v.statut === "attente") && depuis(v.lance_le) > 1500) msg = "Délai maximum dépassé (25 min). Relancez la génération.";
     if (msg) await db.prepare("UPDATE videos SET statut = 'erreur', erreur = ?, maj_le = ? WHERE id = ?").bind(msg, iso, v.id).run();
   }
-  const occupe = await db.prepare("SELECT 1 FROM videos WHERE statut IN ('attente', 'en_cours') LIMIT 1").first();
-  if (!occupe) {
-    const suivante = await db.prepare("SELECT id FROM videos WHERE statut = 'file' ORDER BY lance_le LIMIT 1").first();
-    if (suivante) {
+  const suivante = await db.prepare("SELECT id FROM videos WHERE statut = 'file' ORDER BY lance_le LIMIT 1").first();
+  if (suivante) {
+    const go = await db.prepare(`UPDATE videos SET statut = 'attente', lance_le = ?, maj_le = ?, etape = 'Démarrage du robot', progression = 0
+      WHERE id = ? AND statut = 'file' AND NOT EXISTS (SELECT 1 FROM videos WHERE statut IN ('attente', 'en_cours'))`).bind(iso, iso, suivante.id).run();
+    if (go.meta.changes === 1) {
       const pb = await declencher(env, suivante.id);
-      await db.prepare("UPDATE videos SET statut = ?, erreur = ?, lance_le = ?, maj_le = ?, etape = ?, progression = 0 WHERE id = ?")
-        .bind(pb ? "erreur" : "attente", pb, iso, iso, pb ? null : "Démarrage du robot", suivante.id).run();
+      if (pb) await db.prepare("UPDATE videos SET statut = 'erreur', erreur = ? WHERE id = ?").bind(pb, suivante.id).run();
     }
   }
 }
 
+export { entretenir as entretenirVideos };
 async function nettoyerAnciennes(db) {
+  // morceaux des vidéos échouées ou annulées : inutiles, on libère la place
+  await db.prepare("DELETE FROM video_morceaux WHERE video_id IN (SELECT id FROM videos WHERE statut IN ('erreur', 'annule', 'brouillon'))").run();
   const { results } = await db.prepare("SELECT id FROM videos WHERE statut IN ('pret', 'a_verifier') ORDER BY termine_le DESC LIMIT -1 OFFSET ?").bind(GARDER).all();
   for (const v of results) await db.batch([db.prepare("DELETE FROM video_morceaux WHERE video_id = ?").bind(v.id), db.prepare("DELETE FROM videos WHERE id = ?").bind(v.id)]);
 }
@@ -270,8 +296,7 @@ export async function routeVideo(request, env, chemin, moi, url) {
   const proprio = (v) => v && (v.utilisateur_id === moi.id || moi.role === "admin");
 
   if (chemin === "/api/video/reglages" && methode === "GET") {
-    const lancees = (await db.prepare("SELECT lance_le FROM videos WHERE lance_le IS NOT NULL ORDER BY lance_le DESC LIMIT 20").all()).results
-      .filter((x) => new Date(x.lance_le).toLocaleDateString("en-CA", { timeZone: "Europe/Paris" }) === jourParis()).length;
+    const lancees = await lanceesDuJour(db);
     return json({ coordonnees: await coordonnees(db), voix: VOIX, formats: FORMATS, limite_jour: LIMITE_JOUR, lancees_aujourdhui: lancees, admin: moi.role === "admin" });
   }
   if (chemin === "/api/video/reglages" && methode === "POST") {
@@ -328,37 +353,42 @@ export async function routeVideo(request, env, chemin, moi, url) {
       .map((s) => s.type === "fin" ? null : { type: s.type, texte: court(s.texte, 400), p: nettoyerP(s.p, s.type) }).filter((s) => s && s.texte).slice(0, 11);
     if (scenes.length < 2) return erreur("Il faut au moins deux scènes avec du texte.");
     scenes.push(fin((await coordonnees(db)).cabinet));
-    const permis = new Set(JSON.parse(v.donnees || "{}").permis || []);
+    const don = JSON.parse(v.donnees || "{}"), permis = new Set(don.permis || []);
+    let post = court(d.texte_post ?? v.texte_post, 1500);
+    if (!/perte en capital/i.test(post)) post += "\nInvestir comporte un risque de perte en capital.";
+    if (don.simulation && !/fictif/i.test(post)) post += "\nExemple fictif à visée pédagogique.";
     const format = FORMATS.includes(d.format) ? d.format : v.format, voix = VOIX.includes(d.voix) ? d.voix : v.voix;
     await db.prepare("UPDATE videos SET storyboard = ?, a_verifier = ?, texte_post = ?, format = ?, voix = ?, statut = 'brouillon', erreur = NULL, maj_le = ? WHERE id = ?")
-      .bind(JSON.stringify(scenes), JSON.stringify(chiffresAVerifier(scenes, permis)), court(d.texte_post ?? v.texte_post, 1500), format, voix, iso, id).run();
+      .bind(JSON.stringify(scenes), JSON.stringify(chiffresAVerifier(scenes, permis, post)), post, format, voix, iso, id).run();
     return json({ video: sortie(await db.prepare(`SELECT ${COLS}, v.storyboard, v.a_verifier, v.texte_post, v.donnees FROM videos v LEFT JOIN utilisateurs u ON u.id = v.utilisateur_id WHERE v.id = ?`).bind(id).first(), true) });
   }
 
   if (action === "lancer" && methode === "POST") {
     if (!proprio(v)) return erreur("Seul l'auteur peut lancer cette vidéo.", 403);
     if (!["brouillon", "erreur", "annule"].includes(v.statut)) return erreur("Cette vidéo est déjà lancée.", 409);
-    const recentes = (await db.prepare("SELECT lance_le FROM videos WHERE lance_le IS NOT NULL ORDER BY lance_le DESC LIMIT 20").all()).results
-      .filter((x) => new Date(x.lance_le).toLocaleDateString("en-CA", { timeZone: "Europe/Paris" }) === jourParis()).length;
-    if (recentes >= LIMITE_JOUR) return erreur(`Limite atteinte : ${LIMITE_JOUR} vidéos par jour pour préserver le quota gratuit de la voix. Réessayez demain.`, 429);
+    if ((await lanceesDuJour(db)) >= LIMITE_JOUR) return erreur(`Limite atteinte : ${LIMITE_JOUR} vidéos par jour pour préserver le quota gratuit de la voix. Réessayez demain.`, 429);
     const taille = (await db.prepare("SELECT 1").run()).meta?.size_after || 0;
     if (taille > TAILLE_MAX_BASE) return erreur("La base du site est presque pleine : supprimez d'anciennes vidéos avant d'en créer une nouvelle.", 507);
     await entretenir(env);
-    const occupe = await db.prepare("SELECT 1 FROM videos WHERE statut IN ('attente', 'en_cours') LIMIT 1").first();
-    if (occupe) {
-      await db.prepare("UPDATE videos SET statut = 'file', lance_le = ?, maj_le = ?, etape = 'En file d''attente', progression = 0, erreur = NULL, alertes = NULL WHERE id = ?").bind(iso, iso, id).run();
-    } else {
-      await db.prepare("UPDATE videos SET statut = 'attente', lance_le = ?, maj_le = ?, demarre_le = NULL, etape = 'Démarrage du robot', progression = 0, eta_s = NULL, erreur = NULL, alertes = NULL WHERE id = ?").bind(iso, iso, id).run();
+    await db.prepare("DELETE FROM video_morceaux WHERE video_id = ?").bind(id).run();
+    // Démarrage immédiat seulement si aucune fabrication n'est en cours (vérifié dans la même requête : pas de double lancement).
+    const go = await db.prepare(`UPDATE videos SET statut = 'attente', lance_le = ?, maj_le = ?, demarre_le = NULL, etape = 'Démarrage du robot', progression = 0, eta_s = NULL, erreur = NULL, alertes = NULL
+      WHERE id = ? AND statut IN ('brouillon', 'erreur', 'annule') AND NOT EXISTS (SELECT 1 FROM videos WHERE statut IN ('attente', 'en_cours'))`).bind(iso, iso, id).run();
+    if (go.meta.changes === 1) {
       const pb = await declencher(env, id);
       if (pb) { await db.prepare("UPDATE videos SET statut = 'erreur', erreur = ?, lance_le = NULL WHERE id = ?").bind(pb, id).run(); return erreur(pb, 502); }
+    } else {
+      const r2 = await db.prepare("UPDATE videos SET statut = 'file', lance_le = ?, maj_le = ?, etape = 'En file d''attente', progression = 0, erreur = NULL, alertes = NULL WHERE id = ? AND statut IN ('brouillon', 'erreur', 'annule')").bind(iso, iso, id).run();
+      if (r2.meta.changes !== 1) return erreur("Cette vidéo est déjà lancée.", 409);
     }
+    await compterLancement(db);
     return json({ ok: true });
   }
 
   if (action === "annuler" && methode === "POST") {
     if (!proprio(v)) return erreur("Seul l'auteur peut annuler.", 403);
     if (!["attente", "en_cours", "file"].includes(v.statut)) return erreur("Cette vidéo n'est pas en cours de fabrication.");
-    await db.prepare("UPDATE videos SET statut = 'annule', etape = NULL, maj_le = ?, lance_le = NULL WHERE id = ?").bind(iso, id).run();
+    await db.batch([db.prepare("UPDATE videos SET statut = 'annule', etape = NULL, maj_le = ?, lance_le = NULL WHERE id = ?").bind(iso, id), db.prepare("DELETE FROM video_morceaux WHERE video_id = ?").bind(id)]);
     await entretenir(env);
     return json({ ok: true });
   }
@@ -397,6 +427,18 @@ export async function routeVideo(request, env, chemin, moi, url) {
       if (debut >= total || debut > finO) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${total}` } });
       finO = Math.min(finO, debut + MORCEAU * 2 - 1);   // au plus deux morceaux par réponse
     }
+    const tel = url.searchParams.get("telecharger") ? { "Content-Disposition": `attachment; filename="video-${id.slice(0, 8)}.mp4"` } : {};
+    const ent = { "Content-Type": "video/mp4", "Accept-Ranges": "bytes", "Cache-Control": "private, max-age=86400", ...tel };
+    if (!plage && total > MORCEAU * 2) {
+      // sans plage : envoi en flux, un morceau à la fois (jamais toute la vidéo en mémoire)
+      const { readable, writable } = new TransformStream();
+      (async () => {
+        const w = writable.getWriter();
+        try { for (let n = 0; n < (v.morceaux || 0); n++) { const r = await db.prepare("SELECT donnees FROM video_morceaux WHERE video_id = ? AND n = ?").bind(id, n).first(); if (!r) throw new Error("morceau manquant"); await w.write(deBase64(r.donnees)); } await w.close(); }
+        catch (e) { await w.abort(e).catch(() => {}); }
+      })();
+      return new Response(readable, { headers: { ...ent, "Content-Length": String(total) } });
+    }
     const n1 = Math.floor(debut / MORCEAU), n2 = Math.floor(finO / MORCEAU);
     const { results } = await db.prepare("SELECT n, donnees FROM video_morceaux WHERE video_id = ? AND n BETWEEN ? AND ? ORDER BY n").bind(id, n1, n2).all();
     if (results.length !== n2 - n1 + 1) return erreur("Fichier incomplet.", 500);
@@ -406,14 +448,6 @@ export async function routeVideo(request, env, chemin, moi, url) {
       const b = deBase64(r.donnees), base = r.n * MORCEAU;
       const a = Math.max(debut, base) - base, z = Math.min(finO + 1, base + b.length) - base;
       out.set(b.subarray(a, z), pos); pos += z - a;
-    }
-    const tel = url.searchParams.get("telecharger") ? { "Content-Disposition": `attachment; filename="video-${id.slice(0, 8)}.mp4"` } : {};
-    const ent = { "Content-Type": "video/mp4", "Accept-Ranges": "bytes", "Cache-Control": "private, max-age=86400", ...tel };
-    if (!plage && total > MORCEAU * 2) {
-      // sans plage : on renvoie tout en flux, morceau par morceau
-      const { readable, writable } = new TransformStream();
-      (async () => { const w = writable.getWriter(); for (let n = 0; n < (v.morceaux || 0); n++) { const r = await db.prepare("SELECT donnees FROM video_morceaux WHERE video_id = ? AND n = ?").bind(id, n).first(); await w.write(deBase64(r.donnees)); } await w.close(); })();
-      return new Response(readable, { headers: { ...ent, "Content-Length": String(total) } });
     }
     return new Response(out, plage ? { status: 206, headers: { ...ent, "Content-Range": `bytes ${debut}-${finO}/${total}` } } : { headers: ent });
   }
@@ -438,7 +472,7 @@ export async function routeVideoRobot(request, env, chemin) {
     const d = await request.json().catch(() => ({}));
     if (v.statut === "annule") return json({ annule: true });
     if (d.erreur) {
-      if (!["pret", "a_verifier"].includes(v.statut)) await db.prepare("UPDATE videos SET statut = 'erreur', erreur = ?, maj_le = ? WHERE id = ?").bind(court(d.erreur, 300), iso, id).run();
+      if (!["pret", "a_verifier"].includes(v.statut)) await db.batch([db.prepare("UPDATE videos SET statut = 'erreur', erreur = ?, maj_le = ? WHERE id = ?").bind(court(d.erreur, 300), iso, id), db.prepare("DELETE FROM video_morceaux WHERE video_id = ?").bind(id)]);
       await entretenir(env);
       return json({ ok: true });
     }

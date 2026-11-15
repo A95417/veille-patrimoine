@@ -9,7 +9,7 @@ import {
 import { routeRobot } from "./robot.js";
 import { routeLecture, avecArticles, COLONNES } from "./lecture.js";
 import { routeLinkedin } from "./linkedin.js";
-import { routeVideo } from "./video.js";
+import { routeVideo, entretenirVideos } from "./video.js";
 import { routeNotifications } from "./notifications.js";
 import { normaliser, identifiantValide, decouperNom, proposerIdentifiant, identifiantLibre, assurerIdentifiants } from "./identifiants.js";
 
@@ -403,6 +403,7 @@ async function declencherRobot(env) {
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(declencherRobot(env));
+    ctx.waitUntil(entretenirVideos(env).catch((e) => console.error("vidéos :", e)));
   },
 
   async fetch(request, env) {

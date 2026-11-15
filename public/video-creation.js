@@ -132,7 +132,7 @@
           <button type="button" class="lien-bouton" data-monter="${i}" aria-label="Monter la scène" ${i === 0 ? "disabled" : ""}>↑</button>
           <button type="button" class="lien-bouton" data-descendre="${i}" aria-label="Descendre la scène" ${i >= sc.length - 2 ? "disabled" : ""}>↓</button>
           <button type="button" class="lien-bouton" data-retirer="${i}" aria-label="Retirer la scène">✕</button></span></div>
-        <label class="petit doux">Texte lu par la voix</label><textarea data-texte rows="2" maxlength="400">${echapper(s.texte)}</textarea>
+        <label class="petit doux" for="vv-t${i}">Texte lu par la voix</label><textarea id="vv-t${i}" data-texte rows="2" maxlength="400">${echapper(s.texte)}</textarea>
         ${champs.length ? `<div class="vv-champs">${champs.map(([k, l]) => `<label><span>${l}</span><input data-champ="${k}" value="${echapper(s.p?.[k] ?? "")}" maxlength="60"></label>`).join("")}</div>` : ""}
       </div>`;
     }).join("");
@@ -214,8 +214,8 @@
     z.innerHTML = `
       <div class="recap"><span><strong>Vidéo :</strong> ${echapper(v.sujet || "")}</span><button type="button" class="lien-bouton" id="vv-fermer">Fermer</button></div>
       <h2>Fabrication en cours</h2>
-      <div class="vv-chrono"><span class="vv-chrono-temps" id="vv-chrono">…</span><span class="doux" id="vv-etape"></span></div>
-      <div class="vv-barre" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="vv-barre"><span id="vv-barre-rempli"></span></div>
+      <div class="vv-chrono"><span class="vv-chrono-temps" id="vv-chrono">…</span><span class="doux" id="vv-etape" aria-live="polite"></span></div>
+      <div class="vv-barre" role="progressbar" aria-label="Avancement de la fabrication" aria-valuemin="0" aria-valuemax="100" id="vv-barre"><span id="vv-barre-rempli"></span></div>
       <ol class="vv-etapes">${["Démarrage du robot", "Voix off", "Nettoyage et calage de la voix", "Animation des scènes", "Musique et montage", "Contrôle qualité", "Envoi de la vidéo"].map((e) => `<li data-etape="${e}">${e}</li>`).join("")}</ol>
       <p class="doux petit">Vous pouvez fermer cette page : la vidéo continue d'être fabriquée et apparaîtra dans « Mes vidéos ».</p>
       <button type="button" class="bouton bouton-discret" id="vv-annuler">Annuler la fabrication</button>`;
@@ -265,7 +265,7 @@
           <p class="doux">${v.duree ? Math.round(v.duree) + " s" : ""} · ${v.format} · ${v.taille ? (v.taille / 1e6).toFixed(1).replace(".", ",") + " Mo" : ""}${v.duree_fabrication ? ` · fabriquée en ${mmss(v.duree_fabrication)}` : ""}</p>
           ${(v.alertes || []).length ? `<div class="conformite"><strong>Le contrôle automatique demande une vérification :</strong><ul>${v.alertes.map((a) => `<li>${echapper(a)}</li>`).join("")}</ul>Regardez la vidéo avant de la publier.</div>` : `<p class="vv-ok">✓ Contrôle automatique réussi (son, textes, durée).</p>`}
           <div class="actions">
-            <a class="bouton" href="${src}?telecharger=1" download>⬇ Télécharger la vidéo (MP4)</a>
+            <button type="button" class="bouton" id="vv-telecharger">⬇ Télécharger la vidéo (MP4)</button>
             <button type="button" class="bouton bouton-discret" id="vv-partager" hidden>Partager</button>
             ${v.a_miniature ? `<a class="bouton bouton-discret" href="/api/video/${v.id}/miniature" download="miniature.jpg">Miniature</a>` : ""}
             <a class="bouton bouton-discret" href="/api/video/${v.id}/srt">Sous-titres .srt</a>
@@ -278,13 +278,19 @@
       </div>`;
     $v("vv-fermer").onclick = () => { $v("vv-travail").hidden = true; courante = null; };
     $v("vv-copier").onclick = () => copier($v("vv-post2").value);
+    $v("vv-telecharger").onclick = async (e) => {
+      const b = e.currentTarget, lib = b.textContent; b.disabled = true;
+      try { const blob = await parPlages(src, v.taille, (k) => { b.textContent = `Téléchargement… ${Math.round(k * 100)} %`; }); telechargerBlob(blob, `video-bsc-${v.id.slice(0, 8)}.mp4`); }
+      catch (er) { notifier("Téléchargement impossible : " + er.message, true); }
+      b.disabled = false; b.textContent = lib;
+    };
     $v("vv-dupliquer").onclick = async () => { try { const r = await appelApi(`/api/video/${v.id}/dupliquer`, "POST", {}); const n = await appelApi(`/api/video/${r.id}`); ouvrir(n.video); chargerGalerie(); } catch (e) { notifier(e.message, true); } };
     if (navigator.canShare && navigator.share) {
       const b = $v("vv-partager"); b.hidden = false;
       b.onclick = async () => {
         b.disabled = true; b.textContent = "Préparation…";
         try {
-          const blob = await (await fetch(src + "?telecharger=1", { credentials: "same-origin" })).blob();
+          const blob = await parPlages(src, v.taille);
           const f = new File([blob], "video-bsc.mp4", { type: "video/mp4" });
           if (navigator.canShare({ files: [f] })) await navigator.share({ files: [f], text: $v("vv-post2").value });
           else notifier("Le partage de vidéo n'est pas possible sur cet appareil : téléchargez-la.", true);
@@ -292,6 +298,19 @@
         b.disabled = false; b.textContent = "Partager";
       };
     }
+  }
+
+  // Récupère la vidéo par tranches de 1 Mo (chaque demande reste légère pour le serveur gratuit).
+  async function parPlages(src, total, progres) {
+    const parts = [], T = 1 << 20;
+    for (let a = 0; a < total; ) {
+      const r = await fetch(src, { credentials: "same-origin", headers: { Range: `bytes=${a}-${Math.min(total, a + T) - 1}` } });
+      if (r.status !== 206 && r.status !== 200) throw new Error("erreur " + r.status);
+      const b = await r.arrayBuffer(); if (!b.byteLength) throw new Error("réponse vide");
+      parts.push(b); a += b.byteLength; progres?.(a / total);
+      if (r.status === 200) break;
+    }
+    return new Blob(parts, { type: "video/mp4" });
   }
 
   // ---------------------------------------------------------------- galerie

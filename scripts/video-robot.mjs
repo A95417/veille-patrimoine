@@ -11,14 +11,28 @@ const VOIX_OK = new Set(["Sadachbia", "Fenrir", "Kore", "Charon"]);
 const MORCEAU = 524_288;   // 512 Ko par morceau, envoyés en base64 (lecture rapide côté site)
 const t0 = Date.now();
 
+// Appel au site, avec 4 essais en cas de coupure réseau ou d'erreur 5xx (connexion fermée, surcharge passagère).
+// Mode « essai » (lancement manuel avec video_id = essai) : vidéo d'exemple, rien n'est envoyé au site.
+const ESSAI = ID === "essai";
 async function site(chemin, corps, methode = "POST", type = "application/json") {
-  const r = await fetch(`${SITE}/api/robot/video/${ID}${chemin}`, {
-    method: methode, headers: { Authorization: `Bearer ${JETON}`, ...(corps !== undefined ? { "Content-Type": type } : {}) },
-    body: corps === undefined ? undefined : type === "application/json" ? JSON.stringify(corps) : corps,
-  });
-  const t = await r.text();
-  if (!r.ok) throw new Error(`site ${chemin} : HTTP ${r.status} ${t.slice(0, 200)}`);
-  return t ? JSON.parse(t) : {};
+  if (ESSAI) return chemin === "" ? { statut: "attente", job: { ...JSON.parse(readFileSync(`${M}/essai.json`, "utf8")), voix: "Sadachbia", duree_estimee: 55 } } : {};
+  for (let essai = 1; ; essai++) {
+    try {
+      const r = await fetch(`${SITE}/api/robot/video/${ID}${chemin}`, {
+        method: methode, headers: { Authorization: `Bearer ${JETON}`, Connection: "close", ...(corps !== undefined ? { "Content-Type": type } : {}) },
+        body: corps === undefined ? undefined : type === "application/json" ? JSON.stringify(corps) : corps,
+        signal: AbortSignal.timeout(60000),
+      });
+      const t = await r.text();
+      if (r.status >= 500 && essai < 4) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) throw Object.assign(new Error(`site ${chemin} : HTTP ${r.status} ${t.slice(0, 200)}`), { definitif: true });
+      return t ? JSON.parse(t) : {};
+    } catch (e) {
+      if (e.definitif || essai >= 4) throw e;
+      console.log(`nouvel essai (${essai}) ${chemin} : ${e.message}`);
+      await new Promise((ok) => setTimeout(ok, 2000 * essai));
+    }
+  }
 }
 class Annule extends Error {}
 let derniereMaj = 0;
@@ -33,7 +47,8 @@ const py = (...a) => execFileSync("python3", a, { encoding: "utf8", stdio: ["ign
 try {
   if (!ID) throw new Error("identifiant de vidéo manquant");
   const { job, statut } = await site("", undefined, "GET");
-  if (statut !== "attente") { console.log("Vidéo déjà traitée ou annulée :", statut); process.exit(0); }
+  // « en_cours » : l'étape de préparation du workflow a déjà prévenu le site
+  if (!["attente", "en_cours"].includes(statut)) { console.log("Vidéo déjà traitée ou annulée :", statut); process.exit(0); }
   const nbImages = Math.round(job.duree_estimee * 30);
   let vitesse = 22;   // images par seconde, ajustée pendant le rendu
   const restant = (dejaImages = 0) => 25 + Math.max(0, nbImages - dejaImages) / vitesse + 25;
@@ -101,6 +116,7 @@ print(json.dumps({"pics": sat[:20], "debut": round(float(np.abs(v[:240]).max()),
   const hms = (s) => { const ms = Math.round(s * 1000), h = Math.floor(ms / 3600e3), m = Math.floor(ms / 60e3) % 60, se = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(se).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`; };
   const srt = cal.phrases.map((p, i) => `${i + 1}\n${hms(p.debut)} --> ${hms(p.fin + .3)}\n${p.texte.replace(/ /g, " ")}\n`).join("\n");
 
+  if (ESSAI) { console.log(`ESSAI RÉUSSI : ${(statSync("video.mp4").size / 1e6).toFixed(1)} Mo, ${son.duree} s, alertes : ${JSON.stringify(alertes)}, fabrication ${Math.round((Date.now() - t0) / 1000)} s`); process.exit(0); }
   // 6) Envoi au site, par morceaux.
   const octets = readFileSync("video.mp4"), n = Math.ceil(octets.length / MORCEAU);
   for (let i = 0; i < n; i++) {

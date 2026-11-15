@@ -31,7 +31,7 @@ if (mode === "stills") {
 }
 
 const N = Math.max(1, Math.min(4, Number(mode) || 3));
-const scenes = cal.scenes.map((s, i) => ({ i, a: s.debut, z: s.fin, n: Math.round((s.fin - s.debut) * FPS) }));
+const scenes = cal.scenes.map((s, i) => ({ i, a: Math.round(s.debut * FPS) / FPS, z: s.fin, n: Math.round(s.fin * FPS) - Math.round(s.debut * FPS) }));
 const total = scenes.reduce((x, s) => x + s.n, 0);
 let fait = 0, dernier = 0;
 const alertes = new Set();

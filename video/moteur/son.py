@@ -35,7 +35,7 @@ def ajoute(piste, son, debut, gain=1.0):
 
 # ---------------------------------------------------------------- Musique
 BPM = 100; BEAT = 60 / BPM; MES = 4 * BEAT
-musique = np.zeros(int(DUREE * SR) + SR)
+musique = np.zeros(int(DUREE * SR))
 def kick():
     t = t_(0.35); f = 120 * np.exp(-t * 22) + 45
     return np.sin(2 * np.pi * np.cumsum(f) / SR) * env(len(t), 0.002, 0.18)
