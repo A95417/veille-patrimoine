@@ -1,6 +1,6 @@
 # Rapport de vérification des sources
 
-Généré le 09/11/2026 16:13:04 (heure de Paris).
+Généré le 15/11/2026 02:28:19 (heure de Paris).
 
 Légende : ✅ fonctionne · 🟡 titres seulement (résumés très courts) · 💤 inactif (rien depuis 30 jours) · ⛔ interdit par robots.txt · ❌ mort
 
@@ -8,61 +8,73 @@ Légende : ✅ fonctionne · 🟡 titres seulement (résumés très courts) · �
 
 | Source | Verdict | Flux | Articles | Dernier article | Résumés |
 |---|---|---|---|---|---|
-| **Service-public.fr (entreprises)** | ✅ fonctionne | https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss | 235 | 04/11/2026 | 100 % (moy. 240 car.) |
-| **Sénat** | ✅ fonctionne | https://www.senat.fr/rss/textes.rss | 64 | 06/11/2026 | 100 % (moy. 194 car.) |
-| **Sénat** | ✅ fonctionne | https://www.senat.fr/rss/rapports.rss | 42 | 06/11/2026 | 100 % (moy. 275 car.) |
-| **BOFiP (doctrine fiscale)** | ✅ fonctionne | https://bofip.impots.gouv.fr/bofip/ext/rss.xml?actualites=1&maxR=50&maxJ=30 | 7 | ? | 100 % (moy. 260 car.) |
-| **INSEE** | ✅ fonctionne | https://www.insee.fr/fr/flux/1 | 325 | 05/11/2026 | 35 % (moy. 223 car.) |
-| **INSEE** | ✅ fonctionne | https://www.insee.fr/fr/flux/2 | 39 | 05/11/2026 | 77 % (moy. 910 car.) |
-| **INSEE** | ✅ fonctionne | https://www.insee.fr/fr/flux/3 | 104 | 05/11/2026 | 80 % (moy. 357 car.) |
-| **BCE** | 🟡 titres seulement | https://www.ecb.europa.eu/rss/press.html | 15 | 07/11/2026 | 0 % (moy. 0 car.) |
-| **BRI – discours des banquiers centraux (Fed, BCE, Banque de France…)** | ✅ fonctionne | https://www.bis.org/doclist/cbspeeches.rss | 50 | 09/11/2026 | 100 % (moy. 180 car.) |
-| **BRI – discours des banquiers centraux (Fed, BCE, Banque de France…)** | ❌ mort | https://www.bis.org/doclist/all_pressrels.rss | – | – | flux vide |
-| **BRI – discours des banquiers centraux (Fed, BCE, Banque de France…)** | ✅ fonctionne | https://www.bis.org/rss.xml | 10 | 30/10/2026 | 100 % (moy. 11531 car.) |
+| **Service-public.fr (entreprises)** | ✅ fonctionne | https://www.service-public.gouv.fr/abonnements/rss/actu-actu-pro.rss | 233 | 12/11/2026 | 100 % (moy. 240 car.) |
+| **Sénat** | ✅ fonctionne | https://www.senat.fr/rss/textes.rss | 57 | 14/11/2026 | 100 % (moy. 194 car.) |
+| **Sénat** | ✅ fonctionne | https://www.senat.fr/rss/rapports.rss | 43 | 14/11/2026 | 100 % (moy. 280 car.) |
+| **BOFiP (doctrine fiscale)** | ✅ fonctionne | https://bofip.impots.gouv.fr/bofip/ext/rss.xml?actualites=1&maxR=50&maxJ=30 | 5 | ? | 100 % (moy. 268 car.) |
+| **INSEE** | ✅ fonctionne | https://www.insee.fr/fr/flux/1 | 306 | 13/11/2026 | 37 % (moy. 240 car.) |
+| **INSEE** | ✅ fonctionne | https://www.insee.fr/fr/flux/2 | 40 | 12/11/2026 | 78 % (moy. 902 car.) |
+| **INSEE** | ✅ fonctionne | https://www.insee.fr/fr/flux/3 | 105 | 13/11/2026 | 79 % (moy. 355 car.) |
+| **BCE** | 🟡 titres seulement | https://www.ecb.europa.eu/rss/press.html | 15 | 13/11/2026 | 0 % (moy. 0 car.) |
+| **BRI – discours des banquiers centraux (Fed, BCE, Banque de France…)** | ✅ fonctionne | https://www.bis.org/doclist/cbspeeches.rss | 50 | 12/11/2026 | 100 % (moy. 186 car.) |
+| **Service-public.fr (particuliers)** | ❌ mort | https://www.service-public.gouv.fr/abonnements/rss/actu-actu-part.rss | – | – | erreur HTTP 404 |
+| **Réserve fédérale (Fed)** | ❌ mort | https://www.federalreserve.gov/feeds/press_monetary.xml | – | – | erreur HTTP 403 |
+| **AMF** | ✅ fonctionne | https://www.amf-france.org/fr/flux-rss/display/30 | 200 | 10/11/2026 | 99 % (moy. 156 car.) |
+| **AMF** | ✅ fonctionne | https://www.amf-france.org/fr/flux-rss/display/23 | 200 | 21/10/2026 | 100 % (moy. 205 car.) |
+| **AMF** | ✅ fonctionne | https://www.amf-france.org/fr/flux-rss/display/28 | 200 | 22/10/2026 | 100 % (moy. 217 car.) |
+| **ACPR** | ❌ aucun flux trouvé | – | – | – | – |
+| **Banque de France** | ❌ aucun flux trouvé | – | – | – | – |
+| **Assemblée nationale** | ❌ aucun flux trouvé | – | – | – | – |
+| **impots.gouv.fr** | ❌ aucun flux trouvé | – | – | – | – |
+| **Ministère de l'Économie** | ❌ aucun flux trouvé | – | – | – | – |
+| **Légifrance (Journal officiel)** | ❌ aucun flux trouvé | – | – | – | – |
+| **Notaires de France** | ❌ aucun flux trouvé | – | – | – | – |
 
 ## Presse française
 
 | Source | Verdict | Flux | Articles | Dernier article | Résumés |
 |---|---|---|---|---|---|
-| **L'Agefi** | ✅ fonctionne | https://www.agefi.fr/index.rss | 250 | 09/11/2026 | 95 % (moy. 204 car.) |
-| **Le Revenu** | ✅ fonctionne | https://www.lerevenu.com/rss.xml | 50 | 09/11/2026 | 100 % (moy. 205 car.) |
-| **Le Figaro (Patrimoine, Placement, Impôts, Économie)** | ✅ fonctionne | https://www.lefigaro.fr/rss/figaro_patrimoine.xml | 20 | 09/11/2026 | 100 % (moy. 228 car.) |
+| **L'Agefi** | ✅ fonctionne | https://www.agefi.fr/index.rss | 250 | 14/11/2026 | 94 % (moy. 194 car.) |
+| **Le Revenu** | ✅ fonctionne | https://www.lerevenu.com/rss.xml | 50 | 14/11/2026 | 100 % (moy. 210 car.) |
+| **Le Figaro (Patrimoine, Placement, Impôts, Économie)** | ✅ fonctionne | https://www.lefigaro.fr/rss/figaro_patrimoine.xml | 20 | 14/11/2026 | 100 % (moy. 225 car.) |
 | **Le Figaro (Patrimoine, Placement, Impôts, Économie)** | ✅ fonctionne | https://www.lefigaro.fr/rss/figaro_placement.xml | 20 | 03/11/2026 | 100 % (moy. 199 car.) |
-| **Le Figaro (Patrimoine, Placement, Impôts, Économie)** | ✅ fonctionne | https://www.lefigaro.fr/rss/figaro_impots.xml | 20 | 14/10/2026 | 95 % (moy. 146 car.) |
-| **Le Figaro (Patrimoine, Placement, Impôts, Économie)** | ✅ fonctionne | https://www.lefigaro.fr/rss/figaro_economie.xml | 20 | 09/11/2026 | 100 % (moy. 185 car.) |
-| **Capital** | ✅ fonctionne | https://feed.prismamediadigital.com/v1/cap/rss | 10 | 09/11/2026 | 100 % (moy. 269 car.) |
-| **Le Monde (Argent, Économie)** | ✅ fonctionne | https://www.lemonde.fr/argent/rss_full.xml | 20 | 09/11/2026 | 100 % (moy. 242 car.) |
-| **Le Monde (Argent, Économie)** | ✅ fonctionne | https://www.lemonde.fr/economie/rss_full.xml | 20 | 09/11/2026 | 100 % (moy. 234 car.) |
-| **BFM Business** | ✅ fonctionne | https://www.bfmtv.com/rss/economie/ | 30 | 09/11/2026 | 100 % (moy. 243 car.) |
-| **BFM Business** | ✅ fonctionne | https://www.bfmtv.com/rss/economie/patrimoine/ | 30 | 09/11/2026 | 100 % (moy. 275 car.) |
-| **BFM Business** | ❌ mort | https://www.bfmtv.com/rss/economie/finances-publiques/ | – | – | erreur HTTP 404 |
+| **Le Figaro (Patrimoine, Placement, Impôts, Économie)** | 💤 inactif | https://www.lefigaro.fr/rss/figaro_impots.xml | 20 | 14/10/2026 | 95 % (moy. 146 car.) |
+| **Le Figaro (Patrimoine, Placement, Impôts, Économie)** | ✅ fonctionne | https://www.lefigaro.fr/rss/figaro_economie.xml | 20 | 14/11/2026 | 100 % (moy. 212 car.) |
+| **Capital** | ✅ fonctionne | https://feed.prismamediadigital.com/v1/cap/rss | 10 | 14/11/2026 | 100 % (moy. 247 car.) |
+| **Le Monde (Argent, Économie)** | ✅ fonctionne | https://www.lemonde.fr/argent/rss_full.xml | 20 | 14/11/2026 | 100 % (moy. 220 car.) |
+| **Le Monde (Argent, Économie)** | ✅ fonctionne | https://www.lemonde.fr/economie/rss_full.xml | 20 | 14/11/2026 | 100 % (moy. 247 car.) |
+| **BFM Business** | ✅ fonctionne | https://www.bfmtv.com/rss/economie/ | 30 | 14/11/2026 | 93 % (moy. 330 car.) |
+| **BFM Business** | ✅ fonctionne | https://www.bfmtv.com/rss/economie/patrimoine/ | 30 | 14/11/2026 | 100 % (moy. 286 car.) |
 | **Boursier.com** | ❌ mort | https://www.boursier.com/rss/actualites.rss | – | – | erreur HTTP 403 |
-| **Franceinfo Économie** | ✅ fonctionne | https://www.franceinfo.fr/economie.rss | 18 | 09/11/2026 | 100 % (moy. 221 car.) |
+| **Franceinfo Économie** | ✅ fonctionne | https://www.franceinfo.fr/economie.rss | 20 | 14/11/2026 | 100 % (moy. 246 car.) |
 | **L'Argus de l'assurance** | ❌ mort | https://www.argusdelassurance.com/rss | – | – | erreur HTTP 404 |
 | **Option Finance** | ❌ aucun flux trouvé | – | – | – | – |
 | **Funds Magazine** | ❌ aucun flux trouvé | – | – | – | – |
+| **Les Echos** | ❌ mort | https://services.lesechos.fr/rss/les-echos-finance-marches.xml | – | – | erreur HTTP 403 |
+| **La Tribune** | ❌ mort | https://www.latribune.fr/feed.xml | – | – | erreur HTTP 403 |
 
 ## International
 
 | Source | Verdict | Flux | Articles | Dernier article | Résumés |
 |---|---|---|---|---|---|
-| **CNBC** | ✅ fonctionne | https://www.cnbc.com/id/100003114/device/rss/rss.html | 30 | 09/11/2026 | 93 % (moy. 130 car.) |
-| **CNBC** | ✅ fonctionne | https://www.cnbc.com/id/10000664/device/rss/rss.html | 30 | 07/11/2026 | 93 % (moy. 119 car.) |
-| **CNBC** | ✅ fonctionne | https://www.cnbc.com/id/20910258/device/rss/rss.html | 30 | 09/11/2026 | 87 % (moy. 119 car.) |
-| **Bloomberg** | ✅ fonctionne | https://www.bloomberg.com/feeds/markets/news.rss | 20 | 09/11/2026 | 100 % (moy. 201 car.) |
-| **Bloomberg** | ✅ fonctionne | https://www.bloomberg.com/feeds/economics/news.rss | 14 | 09/11/2026 | 93 % (moy. 177 car.) |
-| **MarketWatch** | ✅ fonctionne | https://feeds.content.dowjones.io/public/rss/mw_topstories | 10 | 09/11/2026 | 90 % (moy. 118 car.) |
-| **The Guardian (Business)** | ✅ fonctionne | https://www.theguardian.com/us/business/rss | 20 | 09/11/2026 | 100 % (moy. 641 car.) |
-| **The Guardian (Business)** | ✅ fonctionne | https://www.theguardian.com/business/economics/rss | 20 | 09/11/2026 | 100 % (moy. 732 car.) |
-| **BBC (Business)** | ✅ fonctionne | https://feeds.bbci.co.uk/news/business/rss.xml | 50 | 09/11/2026 | 96 % (moy. 104 car.) |
+| **CNBC** | ✅ fonctionne | https://www.cnbc.com/id/100003114/device/rss/rss.html | 30 | 14/11/2026 | 100 % (moy. 138 car.) |
+| **CNBC** | ✅ fonctionne | https://www.cnbc.com/id/10000664/device/rss/rss.html | 30 | 14/11/2026 | 97 % (moy. 130 car.) |
+| **CNBC** | ✅ fonctionne | https://www.cnbc.com/id/20910258/device/rss/rss.html | 30 | 13/11/2026 | 87 % (moy. 121 car.) |
+| **Bloomberg** | ✅ fonctionne | https://www.bloomberg.com/feeds/markets/news.rss | 20 | 14/11/2026 | 90 % (moy. 350 car.) |
+| **Bloomberg** | ✅ fonctionne | https://www.bloomberg.com/feeds/economics/news.rss | 9 | 15/11/2026 | 100 % (moy. 189 car.) |
+| **MarketWatch** | ✅ fonctionne | https://feeds.content.dowjones.io/public/rss/mw_topstories | 10 | 15/11/2026 | 70 % (moy. 91 car.) |
+| **The Guardian (Business)** | ✅ fonctionne | https://www.theguardian.com/us/business/rss | 20 | 14/11/2026 | 100 % (moy. 638 car.) |
+| **The Guardian (Business)** | ✅ fonctionne | https://www.theguardian.com/business/economics/rss | 20 | 14/11/2026 | 100 % (moy. 690 car.) |
+| **BBC (Business)** | ✅ fonctionne | https://feeds.bbci.co.uk/news/business/rss.xml | 57 | 15/11/2026 | 91 % (moy. 102 car.) |
 | **Yahoo Finance** | ❌ mort | https://finance.yahoo.com/news/rssindex | – | – | erreur HTTP 404 |
+| **Financial Times** | ❌ mort | https://www.ft.com/rss/home | – | – | erreur HTTP 403 |
 
 ## Crypto
 
 | Source | Verdict | Flux | Articles | Dernier article | Résumés |
 |---|---|---|---|---|---|
-| **CoinDesk** | ✅ fonctionne | https://www.coindesk.com/arc/outboundfeeds/rss | 25 | 09/11/2026 | 92 % (moy. 139 car.) |
-| **Journal du Coin** | ✅ fonctionne | https://journalducoin.com/feed/ | 10 | 09/11/2026 | 100 % (moy. 293 car.) |
-| **Cryptoast** | ✅ fonctionne | https://cryptoast.fr/feed/ | 20 | 09/11/2026 | 100 % (moy. 405 car.) |
+| **CoinDesk** | ✅ fonctionne | https://www.coindesk.com/arc/outboundfeeds/rss | 25 | 14/11/2026 | 96 % (moy. 143 car.) |
+| **Journal du Coin** | ✅ fonctionne | https://journalducoin.com/feed/ | 10 | 14/11/2026 | 100 % (moy. 281 car.) |
+| **Cryptoast** | ✅ fonctionne | https://cryptoast.fr/feed/ | 20 | 14/11/2026 | 100 % (moy. 434 car.) |
 | **Decrypt** | ❌ mort | https://decrypt.co/feed | – | – | erreur HTTP 403 |
 
