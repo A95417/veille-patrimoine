@@ -1,0 +1,521 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+html,body{margin:0;padding:0;background:#000;width:1080px;height:1920px;overflow:hidden}
+svg{display:block;font-family:Inter,"Inter Display",sans-serif}
+</style></head>
+<body>
+<svg id="s" xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
+<script>
+const BX = "#6E0B1F", BX2 = "#4A0614", NUIT = "#2A0A12", ROSE = "#D8919C", ROSE2 = "#F3D3D8", CREME = "#F7F1EE", BLANC = "#FFFFFF";
+const ARDOISE = "#55657A", OR = "#E2B45A", OR2 = "#C8963A", PEAU1 = "#F1C7A8", PEAU2 = "#C98E6B", GRIS = "#8E8288", VERT = "#3E8E6B";
+let MOTS = [];
+// ---------------------------------------------------------------- utilitaires
+const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lin = (t, a, b) => cl((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - cl(x), 3);
+const eio = (x) => { x = cl(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const back = (x) => { x = cl(x); const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const mix = (a, b, k) => a + (b - a) * k;
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const nb = (n) => Math.round(n).toLocaleString("fr-FR").replace(/\s/g, " ");
+function txt(x, y, s, o = {}) {
+  const a = o.anchor || "middle", w = o.w || 800, f = o.f || BLANC, sz = o.size || 60, op = o.op ?? 1;
+  const st = o.stroke ? `stroke="${o.stroke}" stroke-width="${o.sw || 10}" stroke-linejoin="round" paint-order="stroke"` : "";
+  return `<text x="${x}" y="${y}" text-anchor="${a}" font-size="${sz}" font-weight="${w}" fill="${f}" opacity="${op}" ${st} letter-spacing="${o.ls || 0}" ${o.fam ? `font-family="${o.fam}"` : ""}>${esc(s)}</text>`;
+}
+const g = (inner, tr = "", op = 1) => `<g transform="${tr}" opacity="${op}">${inner}</g>`;
+function pill(cx, cy, w, h, fill, inner, o = {}) {
+  return `<rect x="${cx - w / 2}" y="${cy - h / 2}" width="${w}" height="${h}" rx="${o.r ?? h / 2}" fill="${fill}" ${o.stroke ? `stroke="${o.stroke}" stroke-width="${o.sw || 4}"` : ""}/>` + inner;
+}
+function ombre(cx, cy, rx, op = .14) { return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${rx * .14}" fill="#000" opacity="${op}"/>`; }
+
+// ---------------------------------------------------------------- personnage (style plat, adulte)
+// p: {x,y,s, peau, cheveux, haut, bas, type:'lea'|'tom'|'conseil', bras:[angG,angD] (deg, 0 = vers le bas), humeur:'sourire'|'neutre'|'souci'|'surpris', regard:-1..1, cligne:0..1, tel:bool, barbe}
+// Personnages v2 : style « illustration éditoriale », proportions adultes, ombres douces.
+// Origine = pieds. Hauteur ≈ 660 px à s = 1. bras:[g,d] en degrés depuis la verticale (vers l'extérieur), coudes:[g,d] pliage.
+function fonce(hex, k) { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(v * (1 - k)))); return "#" + [n >> 16, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, "0")).join(""); }
+function eclaircit(hex, k) { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.round(v + (255 - v) * k); return "#" + [n >> 16, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, "0")).join(""); }
+function perso(p, t) {
+  const S = p.s || 1, r = Math.sin(t * 2.4 + (p.ph || 0)) * 2.5;
+  const peau = p.peau, peauO = fonce(peau, .12), haut = p.haut, hautO = fonce(haut, .16), bas = p.bas, basO = fonce(bas, .2);
+  const ch = p.cheveux, chC = eclaircit(ch, .22);
+  let o = ombre(p.x, p.y + 4 * S, 130 * S, .16);
+  let c = "";
+  // ---- jambes et chaussures
+  const chaus = p.chaussure || "#F4F1EE", chausO = fonce(chaus, .25);
+  c += `<path d="M-60 -312 L-6 -312 L-10 -24 L-48 -24 Z" fill="${bas}"/><path d="M6 -312 L60 -312 L48 -24 L10 -24 Z" fill="${bas}"/>`;
+  c += `<path d="M-6 -312 L-10 -24 L-22 -24 L-14 -300Z" fill="${basO}" opacity=".5"/><path d="M60 -312 L48 -24 L36 -24 L46 -300Z" fill="${basO}" opacity=".6"/>`;
+  c += `<path d="M-54 -28 h46 q6 0 8 10 l2 12 q0 8 -8 8 h-62 q-8 0 -6 -10 q4 -16 20 -20z" fill="${chaus}"/><path d="M-70 -4 h70" stroke="${chausO}" stroke-width="6"/>`;
+  c += `<path d="M8 -28 h46 q16 4 20 20 q2 10 -6 10 h-62 q-8 0 -8 -8 l2 -12 q2 -10 8 -10z" fill="${chaus}"/><path d="M2 -4 h70" stroke="${chausO}" stroke-width="6"/>`;
+  // ---- bras (géométrie)
+  const bras = (sx, a1, a2) => {
+    const L1 = 132, L2 = 122, sy = -488 + r;
+    const ra = a1 * Math.PI / 180, rb = a2 * Math.PI / 180;
+    const ex = sx + Math.sin(ra) * L1, ey = sy + Math.cos(ra) * L1, hx = ex + Math.sin(rb) * L2, hy = ey + Math.cos(rb) * L2;
+    const manche = `<path d="M${sx} ${sy} L${ex} ${ey}" stroke="${haut}" stroke-width="40" stroke-linecap="round"/><path d="M${ex} ${ey} L${mix(ex, hx, .82)} ${mix(ey, hy, .82)}" stroke="${haut}" stroke-width="34" stroke-linecap="round"/>` +
+      `<path d="M${sx} ${sy} L${ex} ${ey}" stroke="#000" stroke-opacity=".07" stroke-width="16" stroke-linecap="round" transform="translate(8 0)"/>`;
+    const main = `<g transform="translate(${hx} ${hy}) rotate(${-a2})"><path d="M-14 -8 Q-16 14 -6 20 Q4 24 12 16 Q16 6 14 -8Z" fill="${peau}"/><path d="M12 -6 Q22 2 18 12" stroke="${peau}" stroke-width="9" stroke-linecap="round" fill="none"/></g>`;
+    return { d: manche + main, hx, hy, ex, ey };
+  };
+  const bg = p.bras || [6, 6], cd = p.coudes || [0, 0];
+  const BG = bras(-80, -(bg[0] + 4), -(bg[0] + 4) - cd[0]);
+  const BD = bras(80, bg[1] + 4, bg[1] + 4 + cd[1]);
+  // ---- torse
+  const torse = `M-74 ${-500 + r} Q-96 ${-494 + r} -96 ${-466 + r} L-74 -322 Q-70 -300 -60 -296 L60 -296 Q70 -300 74 -322 L96 ${-466 + r} Q96 ${-494 + r} 74 ${-500 + r} Q40 ${-512 + r} 0 ${-510 + r} Q-40 ${-512 + r} -74 ${-500 + r}Z`;
+  let corps = `<path d="${torse}" fill="${haut}"/>`;
+  corps += `<path d="M40 ${-508 + r} Q96 ${-494 + r} 96 ${-466 + r} L74 -322 Q70 -300 60 -296 L30 -296 Q60 -380 40 ${-508 + r}Z" fill="#000" opacity=".08"/>`;
+  if (p.type === "lea") {
+    corps += `<path d="M-30 ${-506 + r} L30 ${-506 + r} L24 -296 L-24 -296Z" fill="${p.dessous || "#F7EFEA"}"/>`;
+    corps += `<path d="M-30 ${-506 + r} L-6 ${-408 + r} L-26 -296 L-34 -296 L-46 ${-470 + r}Z" fill="${hautO}"/><path d="M30 ${-506 + r} L6 ${-408 + r} L26 -296 L34 -296 L46 ${-470 + r}Z" fill="${hautO}"/>`;
+    corps += `<path d="M-22 ${-504 + r} Q0 ${-478 + r} 22 ${-504 + r}" fill="${peau}"/><circle cx="0" cy="${-478 + r}" r="5" fill="${OR}"/><path d="M-18 ${-500 + r} Q0 ${-480 + r} 18 ${-500 + r}" stroke="${OR}" stroke-width="2.5" fill="none"/>`;
+  } else if (p.type === "tom" && p.veste) {
+    corps += `<path d="M-28 ${-506 + r} L28 ${-506 + r} L24 -296 L-24 -296Z" fill="#EDE6E2"/><path d="M-24 ${-504 + r} Q0 ${-486 + r} 24 ${-504 + r}" fill="${peau}"/>`;
+    corps += `<path d="M-28 ${-506 + r} L-4 ${-420 + r} L-22 -296 L-30 -296 L-42 ${-470 + r}Z" fill="${hautO}"/><path d="M28 ${-506 + r} L4 ${-420 + r} L22 -296 L30 -296 L42 ${-470 + r}Z" fill="${hautO}"/>`;
+  } else if (p.type === "tom") {
+    corps += `<path d="M-50 ${-506 + r} Q0 ${-470 + r} 50 ${-506 + r} Q30 ${-528 + r} 0 ${-526 + r} Q-30 ${-528 + r} -50 ${-506 + r}Z" fill="${hautO}"/>`;
+    corps += `<path d="M-14 ${-494 + r} l-4 70 M14 ${-494 + r} l4 70" stroke="${eclaircit(haut, .6)}" stroke-width="4" stroke-linecap="round"/><circle cx="-18" cy="${-422 + r}" r="4" fill="${eclaircit(haut, .6)}"/><circle cx="18" cy="${-422 + r}" r="4" fill="${eclaircit(haut, .6)}"/>`;
+    corps += `<path d="M-54 -386 L54 -386 L62 -320 L-62 -320Z" fill="${hautO}" opacity=".55"/><rect x="-74" y="-322" width="148" height="26" rx="10" fill="${hautO}"/>`;
+  } else {
+    corps += `<path d="M-26 ${-506 + r} L26 ${-506 + r} L0 ${-410 + r}Z" fill="${BLANC}"/><path d="M-6 ${-492 + r} L6 ${-492 + r} L9 ${-380 + r} L0 ${-366 + r} L-9 ${-380 + r}Z" fill="${BX}"/>`;
+    corps += `<path d="M-26 ${-506 + r} L0 ${-410 + r} L-20 -296 L-60 -296 L-44 ${-470 + r}Z" fill="${hautO}"/><path d="M26 ${-506 + r} L0 ${-410 + r} L20 -296 L60 -296 L44 ${-470 + r}Z" fill="${hautO}"/>`;
+  }
+  // ceinture / bas du haut
+  corps += `<path d="M-60 -296 L60 -296 L60 -312 L-60 -312Z" fill="#000" opacity=".1"/>`;
+  // ---- tête
+  const hy = -592 + r * 1.2, rg = (p.regard || 0) * 6, h = p.humeur || "neutre";
+  let tete = "";
+  if (p.type === "lea") tete += `<path d="M-56 ${hy - 20} Q-70 ${hy + 60} -66 ${hy + 104} Q-60 ${hy + 128} -36 ${hy + 132} L36 ${hy + 132} Q60 ${hy + 128} 66 ${hy + 104} Q70 ${hy + 60} 56 ${hy - 20} Q50 ${hy - 74} 0 ${hy - 76} Q-50 ${hy - 74} -56 ${hy - 20}Z" fill="${ch}"/>`;
+  tete += `<path d="M-15 ${hy + 40} L-15 ${hy + 86} L15 ${hy + 86} L15 ${hy + 40}Z" fill="${peau}"/><path d="M-15 ${hy + 40} L15 ${hy + 40} L15 ${hy + 66} Q0 ${hy + 74} -15 ${hy + 62}Z" fill="${peauO}"/>`;
+  tete += `<ellipse cx="-47" cy="${hy + 4}" rx="9" ry="14" fill="${peauO}"/><ellipse cx="47" cy="${hy + 4}" rx="9" ry="14" fill="${peauO}"/>`;
+  tete += `<path d="M-47 ${hy - 6} Q-50 ${hy + 34} -28 ${hy + 52} Q-12 ${hy + 64} 0 ${hy + 64} Q12 ${hy + 64} 28 ${hy + 52} Q50 ${hy + 34} 47 ${hy - 6} Q46 ${hy - 62} 0 ${hy - 62} Q-46 ${hy - 62} -47 ${hy - 6}Z" fill="${peau}"/>`;
+  tete += `<path d="M20 ${hy - 58} Q46 ${hy - 50} 47 ${hy - 6} Q50 ${hy + 34} 28 ${hy + 52} Q34 ${hy + 10} 20 ${hy - 58}Z" fill="${peauO}" opacity=".45"/>`;
+  if (p.type === "lea") tete += `<circle cx="-46" cy="${hy + 20}" r="4" fill="${OR}"/><circle cx="46" cy="${hy + 20}" r="4" fill="${OR}"/>`;
+  if (p.barbe) tete += `<path d="M-46 ${hy + 4} Q-46 ${hy + 40} -26 ${hy + 56} Q-10 ${hy + 70} 0 ${hy + 70} Q10 ${hy + 70} 26 ${hy + 56} Q46 ${hy + 40} 46 ${hy + 4} Q40 ${hy + 30} 22 ${hy + 34} Q0 ${hy + 26} -22 ${hy + 34} Q-40 ${hy + 30} -46 ${hy + 4}Z" fill="${ch}" opacity=".9"/><path d="M-12 ${hy + 46} Q0 ${hy + 52} 12 ${hy + 46}" stroke="${peauO}" stroke-width="6" fill="none"/>`;
+  // yeux
+  const cli = 1 - (p.cligne || 0) * .92;
+  const oeil = (ex) => `<ellipse cx="${ex + rg}" cy="${hy + 2}" rx="5.5" ry="${6.5 * cli}" fill="#22171A"/><circle cx="${ex + rg + 2}" cy="${hy}" r="${1.8 * cli}" fill="#fff"/><path d="M${ex - 9} ${hy - 5} Q${ex} ${hy - 11} ${ex + 9} ${hy - 5}" stroke="#22171A" stroke-width="${p.type === "lea" ? 3.5 : 2.5}" fill="none" stroke-linecap="round"/>`;
+  tete += oeil(-18) + oeil(18);
+  if (p.type === "lea") tete += `<path d="M-28 ${hy - 7} l-5 -4 M28 ${hy - 7} l5 -4" stroke="#22171A" stroke-width="2.5" stroke-linecap="round"/>`;
+  const bs = h === "souci" ? 1 : 0, bsur = h === "surpris" ? -5 : 0;
+  tete += `<path d="M-30 ${hy - 16 + bsur + bs * 2} Q-18 ${hy - 24 + bsur + bs * 6} -7 ${hy - 18 + bsur - bs * 4}" stroke="${p.sourcil || fonce(ch, .1)}" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+  tete += `<path d="M30 ${hy - 16 + bsur + bs * 2} Q18 ${hy - 24 + bsur + bs * 6} 7 ${hy - 18 + bsur - bs * 4}" stroke="${p.sourcil || fonce(ch, .1)}" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+  tete += `<path d="M-1 ${hy + 4} Q-7 ${hy + 22} -1 ${hy + 25} Q4 ${hy + 27} 7 ${hy + 23}" stroke="${fonce(peau, .35)}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const levre = p.type === "lea" ? "#B4505E" : fonce(peau, .45);
+  if (h === "sourire") tete += `<path d="M-15 ${hy + 36} Q0 ${hy + 52} 15 ${hy + 36} Q0 ${hy + 41} -15 ${hy + 36}Z" fill="#6E1E2A"/><path d="M-11 ${hy + 39} Q0 ${hy + 43} 11 ${hy + 39} L10 ${hy + 41} Q0 ${hy + 44} -10 ${hy + 41}Z" fill="#fff"/><ellipse cx="-30" cy="${hy + 26}" rx="8" ry="5" fill="${ROSE}" opacity=".35"/><ellipse cx="30" cy="${hy + 26}" rx="8" ry="5" fill="${ROSE}" opacity=".35"/>`;
+  else if (h === "souci") tete += `<path d="M-11 ${hy + 43} Q0 ${hy + 36} 11 ${hy + 43}" stroke="${levre}" stroke-width="4.5" stroke-linecap="round" fill="none"/>`;
+  else if (h === "surpris") tete += `<ellipse cx="0" cy="${hy + 41}" rx="7" ry="9" fill="#6E1E2A"/>`;
+  else tete += `<path d="M-11 ${hy + 39} Q0 ${hy + 44} 11 ${hy + 39}" stroke="${levre}" stroke-width="4.5" stroke-linecap="round" fill="none"/>`;
+  // cheveux (devant)
+  if (p.type === "lea") {
+    tete += `<path d="M-50 ${hy + 10} Q-56 ${hy - 56} -6 ${hy - 70} Q46 ${hy - 76} 54 ${hy - 20} Q56 ${hy + 6} 50 ${hy + 24} Q44 ${hy - 30} 10 ${hy - 40} Q-20 ${hy - 44} -38 ${hy - 20} Q-46 ${hy - 6} -50 ${hy + 10}Z" fill="${ch}"/>`;
+    tete += `<path d="M-30 ${hy - 50} Q0 ${hy - 70} 34 ${hy - 54}" stroke="${chC}" stroke-width="5" fill="none" stroke-linecap="round" opacity=".8"/><path d="M-60 ${hy + 40} Q-62 ${hy + 80} -56 ${hy + 110}" stroke="${chC}" stroke-width="4" fill="none" opacity=".6"/>`;
+  } else if (p.type === "tom") {
+    tete += `<path d="M-48 ${hy - 4} Q-54 ${hy - 50} -30 ${hy - 66} Q-10 ${hy - 82} 14 ${hy - 76} Q44 ${hy - 72} 50 ${hy - 40} Q52 ${hy - 20} 48 ${hy - 4} Q44 ${hy - 30} 30 ${hy - 38} Q8 ${hy - 30} -14 ${hy - 40} Q-36 ${hy - 34} -44 ${hy - 20}Z" fill="${ch}"/>`;
+    tete += `<path d="M-24 ${hy - 66} q8 -6 16 0 M2 ${hy - 72} q8 -6 16 0 M22 ${hy - 64} q8 -4 14 2" stroke="${chC}" stroke-width="4" fill="none" stroke-linecap="round" opacity=".8"/>`;
+  } else {
+    tete += `<path d="M-48 ${hy - 4} Q-52 ${hy - 60} -4 ${hy - 70} Q46 ${hy - 72} 50 ${hy - 16} L48 ${hy - 4} Q46 ${hy - 36} 28 ${hy - 44} L-30 ${hy - 40} Q-44 ${hy - 30} -48 ${hy - 4}Z" fill="${ch}"/><path d="M-30 ${hy - 56} Q0 ${hy - 70} 30 ${hy - 58}" stroke="${GRIS}" stroke-width="4" fill="none" opacity=".7"/>`;
+  }
+  // téléphone
+  let tel = "";
+  if (p.tel) tel = `<g transform="translate(${BD.hx} ${BD.hy - 46}) rotate(-10)"><rect x="-24" y="-44" width="48" height="88" rx="10" fill="#1C1719"/><rect x="-20" y="-38" width="40" height="74" rx="6" fill="${p.ecran || "#8FB3D9"}"/></g>` +
+    `<g transform="translate(${BD.hx} ${BD.hy}) rotate(${-(bg[1] + 4 + cd[1])})"><path d="M-14 -8 Q-16 14 -6 20 Q4 24 12 16 Q16 6 14 -8Z" fill="${peau}"/></g>`;
+  const acc = p.accessoire ? p.accessoire(BG, BD) : "";
+  const tout = c + BG.d + corps + tete + BD.d + tel + acc;
+  return o + `<g transform="translate(${p.x} ${p.y}) scale(${S})">${tout}</g>`;
+}
+const LEA = { type: "lea", peau: "#F2C9AE", cheveux: "#3E2219", haut: ROSE, bas: "#2F3448", chaussure: "#F4F1EE", ph: 0 };
+const TOM = { type: "tom", peau: "#C48A66", cheveux: "#1F1513", haut: "#4F6075", bas: "#3B4A63", chaussure: "#ECE7E3", ph: 1.3 };
+const CONS = { type: "conseil", peau: "#E7B694", cheveux: "#33241F", haut: "#262A36", bas: "#262A36", chaussure: "#1E1A1C", ph: 2.1 };
+const cligne = (t, ph = 0) => { const c = (t + ph) % 3.7; return c < .12 ? Math.sin(c / .12 * Math.PI) : 0; };
+
+// ---------------------------------------------------------------- éléments
+function bocal(cx, by, w, h, niv, coul = OR, label = "") {
+  const top = by - h;
+  let pieces = "";
+  const nivy = by - 14 - (h - 50) * cl(niv);
+  pieces += `<clipPath id="cb${cx}"><rect x="${cx - w / 2 + 10}" y="${top + 40}" width="${w - 20}" height="${h - 50}" rx="26"/></clipPath>`;
+  let fill = `<rect x="${cx - w / 2}" y="${nivy}" width="${w}" height="${by - nivy}" fill="${coul}"/>`;
+  for (let i = 0; i < 6; i++) fill += `<path d="M${cx - w / 2} ${nivy + 18 + i * 34} q${w / 6} -14 ${w / 3} 0 t${w / 3} 0 t${w / 3} 0" stroke="${OR2}" stroke-width="5" fill="none" opacity=".55"/>`;
+  pieces += `<g clip-path="url(#cb${cx})">${fill}</g>`;
+  pieces += `<rect x="${cx - w / 2 + 6}" y="${top + 34}" width="${w - 12}" height="${h - 40}" rx="32" fill="${BLANC}" fill-opacity=".18" stroke="${BLANC}" stroke-width="7" stroke-opacity=".9"/>`;
+  pieces += `<rect x="${cx - w / 2 + 26}" y="${top + 60}" width="14" height="${h * .45}" rx="7" fill="${BLANC}" opacity=".5"/>`;
+  pieces += `<rect x="${cx - w / 2 - 6}" y="${top}" width="${w + 12}" height="40" rx="12" fill="${GRIS}"/>`;
+  if (label) pieces += txt(cx, by + 70, label, { size: 44, w: 800, f: BLANC });
+  return pieces;
+}
+function piece(cx, cy, r = 30, rot = 0) {
+  return `<g transform="translate(${cx} ${cy}) rotate(${rot})"><ellipse rx="${r}" ry="${r * .92}" fill="${OR}"/><ellipse rx="${r * .7}" ry="${r * .64}" fill="none" stroke="${OR2}" stroke-width="4"/><text y="${r * .32}" text-anchor="middle" font-size="${r * .9}" font-weight="900" fill="${OR2}">€</text></g>`;
+}
+function notif(cx, cy, k, titre, sous) {
+  const s = back(k), w = 760;
+  return `<g transform="translate(${cx} ${cy - (1 - eo(k)) * 160}) scale(${0.85 + .15 * s})" opacity="${cl(k * 2)}">
+    <rect x="${-w / 2}" y="-70" width="${w}" height="140" rx="34" fill="${BLANC}" opacity=".97"/>
+    <rect x="${-w / 2 + 26}" y="-42" width="84" height="84" rx="22" fill="${BX}"/>
+    <path d="M${-w / 2 + 50} -2 l14 14 l26 -30" stroke="${BLANC}" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    ${txt(-w / 2 + 136, -10, titre, { anchor: "start", size: 36, w: 800, f: NUIT })}
+    ${txt(-w / 2 + 136, 38, sous, { anchor: "start", size: 32, w: 500, f: "#6B5B60" })}
+    ${txt(w / 2 - 34, -10, "maint.", { anchor: "end", size: 26, w: 500, f: "#9A8B90" })}
+  </g>`;
+}
+function etiquette(cx, cy, k, s1, s2, fond = BX) {
+  const sc = back(k);
+  const w = 120 + s1.length * 30 + (s2 ? s2.length * 22 : 0);
+  return `<g transform="translate(${cx} ${cy}) scale(${sc})" opacity="${cl(k * 3)}"><rect x="${-w / 2}" y="-44" width="${w}" height="88" rx="44" fill="${fond}"/>${txt(s2 ? -w / 2 + 40 : 0, 16, s1, { anchor: s2 ? "start" : "middle", size: 46, w: 900, f: BLANC })}${s2 ? txt(w / 2 - 40, 16, s2, { anchor: "end", size: 40, w: 600, f: ROSE2 }) : ""}</g>`;
+}
+function bulle(cx, cy, k, texte, qx, qy) {
+  const sc = back(k), w = 560;
+  return `<g opacity="${cl(k * 3)}"><circle cx="${qx}" cy="${qy}" r="${14 * sc}" fill="${BLANC}"/><circle cx="${mix(qx, cx, .4)}" cy="${mix(qy, cy + 70, .45)}" r="${22 * sc}" fill="${BLANC}"/>
+  <g transform="translate(${cx} ${cy}) scale(${sc})"><path d="M${-w / 2 + 40} 60 Q${-w / 2 - 20} 60 ${-w / 2 + 10} 0 Q${-w / 2 - 10} -80 ${-w / 2 + 90} -78 Q-60 -130 30 -96 Q120 -140 ${w / 2 - 70} -80 Q${w / 2 + 20} -60 ${w / 2 - 6} 10 Q${w / 2 + 10} 74 ${w / 2 - 80} 70 Q0 110 ${-w / 2 + 40} 60Z" fill="${BLANC}"/>${txt(0, 10, texte, { size: 54, w: 800, f: BX, fam: "Inter Display" })}</g></g>`;
+}
+function horloge(cx, cy, r, t, vitesse = 1, coul = BX) {
+  const a = t * 360 * vitesse, b = t * 30 * vitesse;
+  let tics = ""; for (let i = 0; i < 12; i++) { const an = i * Math.PI / 6; tics += `<line x1="${Math.sin(an) * r * .78}" y1="${-Math.cos(an) * r * .78}" x2="${Math.sin(an) * r * .88}" y2="${-Math.cos(an) * r * .88}" stroke="${coul}" stroke-width="6" stroke-linecap="round"/>`; }
+  return `<g transform="translate(${cx} ${cy})"><circle r="${r}" fill="${BLANC}" stroke="${coul}" stroke-width="12"/>${tics}<line x1="0" y1="0" x2="0" y2="${-r * .5}" stroke="${NUIT}" stroke-width="10" stroke-linecap="round" transform="rotate(${b})"/><line x1="0" y1="0" x2="0" y2="${-r * .72}" stroke="${ROSE}" stroke-width="7" stroke-linecap="round" transform="rotate(${a})"/><circle r="10" fill="${NUIT}"/></g>`;
+}
+function fond(c1, c2) { return `<defs><linearGradient id="fd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="1080" height="1920" fill="url(#fd)"/>`; }
+function grain(t) { return ""; }
+function confettis(t, t0, n = 26) {
+  if (t < t0) return ""; let o = ""; const k = t - t0;
+  for (let i = 0; i < n; i++) { const a = (i * 137.5) % 360 * Math.PI / 180, v = 380 + (i * 53) % 260; const x = 540 + Math.cos(a) * v * k, y = 640 + Math.sin(a) * v * k + 500 * k * k; o += `<rect x="${x}" y="${y}" width="18" height="10" fill="${[ROSE, OR, BLANC][i % 3]}" transform="rotate(${i * 40 + k * 300} ${x} ${y})" opacity="${cl(1.6 - k)}"/>`; }
+  return o;
+}
+
+// ---------------------------------------------------------------- sous-titres (mot à mot)
+let BLOCS = [];
+function preparer() {
+  const grp = {};
+  MOTS.forEach((m) => (grp[m.groupe] ??= []).push(m));
+  for (const k of Object.keys(grp).sort((a, b) => +a - +b)) {
+    const ws = grp[k]; let cur = [];
+    ws.forEach((m, i) => {
+      cur.push(m);
+      const lg = cur.map((x) => x.mot.trim()).join(" ").length, suiv = ws[i + 1] ? ws[i + 1].mot.trim().length + 1 : 0;
+      const fin = /[,.?…!]$/.test(m.mot.trim()) || lg + suiv > 24 || cur.length >= 4 || i === ws.length - 1;
+      if (fin) { BLOCS.push(cur); cur = []; }
+    });
+  }
+  BLOCS.forEach((b, i) => { b.debut = b[0].debut; b.fin = Math.min(b[b.length - 1].fin + .35, i + 1 < BLOCS.length ? BLOCS[i + 1][0].debut : 99); });
+}
+function soustitres(t, y = 1480) {
+  const b = BLOCS.find((b) => t >= b.debut - .02 && t < b.fin);
+  if (!b) return "";
+  const k = (t - b.debut) / .14, sc = .88 + .12 * back(k);
+  let o = `<rect id="stb" rx="26" fill="${NUIT}" fill-opacity=".82"/><text id="st" x="540" y="${y}" text-anchor="middle" font-size="76" font-weight="800" font-family="Inter Display">`;
+  b.forEach((m, j) => {
+    const courant = t >= m.debut - .03 && t < m.fin + .05, passe = t >= m.debut - .03;
+    o += `<tspan fill="${courant ? "#FFB3C1" : passe ? BLANC : "#CDBFC3"}">${j ? " " : ""}${esc(m.mot.trim())}</tspan>`;
+  });
+  o += `</text>`;
+  return `<g id="stg" transform="translate(540 ${y - 26}) scale(${sc}) translate(-540 ${-(y - 26)})" opacity="${cl(k * 2.5)}">${o}</g>`;
+}
+function caleBoite() {
+  const t = document.getElementById("st"), r = document.getElementById("stb");
+  if (!t || !r) return;
+  let bb = t.getBBox();
+  if (bb.width > 940) { t.setAttribute("font-size", String(76 * 940 / bb.width)); bb = t.getBBox(); }
+  r.setAttribute("x", bb.x - 30); r.setAttribute("y", bb.y - 12); r.setAttribute("width", bb.width + 60); r.setAttribute("height", bb.height + 24);
+}
+
+// ---------------------------------------------------------------- scènes
+const SCENES = [
+  [0, 7.65, accroche], [7.65, 14.7, sceneLea], [14.7, 23.75, sceneTom], [23.75, 27.7, sceneMarches],
+  [27.7, 33.15, sceneDixAns], [33.15, 39.0, sceneResultat], [39.0, 45.45, sceneBouleNeige], [45.45, 49.55, sceneTemps], [49.55, 57.5, sceneFin],
+];
+function transition(t, a) { return ""; }
+const COUPES = [4.45, 9.75, 14.35, 17.95, 22.9, 28.6, 35.0, 41.25, 45.15];
+function volet(tn) {
+  const c = COUPES.find((c) => tn >= c && tn < c + .3); if (c === undefined) return "";
+  const k = eo(lin(tn, c, c + .28));
+  return `<rect x="${-1080 * k}" y="0" width="1080" height="1920" fill="${BX}"/><rect x="${-1080 * k + 1060}" y="0" width="20" height="1920" fill="${ROSE}"/>`;
+}
+
+function accroche(t) {
+  // Tom, le soir, regarde son téléphone : écran bordeaux sombre
+  let o = fond("#3A0915", "#16050A");
+  const zoom = 1 + t * .012;
+  o += `<g transform="translate(540 960) scale(${zoom}) translate(-540 -960)">`;
+  o += `<circle cx="540" cy="760" r="420" fill="${BX}" opacity=".45"/>`;
+  // halo écran sur le visage
+  o += `<ellipse cx="560" cy="760" rx="260" ry="220" fill="#8FB3D9" opacity="${.10 + .04 * Math.sin(t * 7)}"/>`;
+  o += perso({ ...TOM, x: 540, y: 1520, s: 1.45, humeur: t > 5.8 ? "surpris" : "souci", tel: true, bras: [10, 25], coudes: [0, 175], ecran: "#BBD2EA", regard: .3, cligne: cligne(t) }, t);
+  o += `</g>`;
+  // titre du haut
+  const k0 = 1;
+  o += g(pill(540, 190, 560, 84, ROSE, txt(540, 206, "LE COÛT D'ATTENDRE", { size: 40, w: 900, f: BX, ls: 3 })), `translate(0 ${(1 - eo(k0)) * -60})`, k0);
+  // compteur qui claque
+  const k = lin(t, 5.8, 6.05);
+  if (t > 5.75) {
+    const sh = t < 6.4 ? Math.sin(t * 90) * 14 * (1 - lin(t, 5.9, 6.4)) : 0;
+    const v = nb(Math.round(49000 * eo(lin(t, 5.8, 6.6)) / 10) * 10);
+    o += `<rect width="1080" height="1920" fill="${BLANC}" opacity="${(1 - lin(t, 5.8, 6.0)) * .55}"/>`;
+    o += g(`<rect x="90" y="-130" width="900" height="250" rx="40" fill="${BLANC}"/>` + txt(540, 30, "− " + v + " €", { size: 150, w: 900, f: BX, fam: "Inter Display" }) + txt(540, 92, "exemple fictif", { size: 32, w: 600, f: "#9A8B90" }), `translate(${sh} 400) rotate(${-3 * (1 - back(k))}) scale(${.6 + .4 * back(k)})`, cl(k * 3));
+  }
+  return o;
+}
+function sceneLea(t) {
+  const t0 = 7.65;
+  let o = fond("#FBF4F1", "#EBD9D6");
+  // décor : appartement (fenêtre, plante)
+  o += `<rect x="640" y="360" width="320" height="400" rx="20" fill="#D9E6F2"/><rect x="640" y="360" width="320" height="400" rx="20" fill="none" stroke="${BLANC}" stroke-width="18"/><line x1="800" y1="360" x2="800" y2="760" stroke="${BLANC}" stroke-width="14"/><line x1="640" y1="560" x2="960" y2="560" stroke="${BLANC}" stroke-width="14"/>`;
+  o += `<rect x="0" y="1560" width="1080" height="360" fill="#E3CFCB"/>`;
+  o += `<path d="M150 1560 q-20 -120 30 -200 q30 60 10 200z" fill="#5E8F70"/><path d="M175 1560 q40 -150 90 -180 q-10 90 -60 180z" fill="#4C7C5E"/><rect x="120" y="1500" width="120" height="80" rx="14" fill="${BX}"/>`;
+  const ke = eo(lin(t, t0, t0 + .5));
+  o += g(perso({ ...LEA, x: 360, y: 1580, s: 1.35, humeur: "sourire", tel: true, bras: [8, 25], coudes: [0, 175], ecran: "#F3D3D8", regard: .4, cligne: cligne(t, .7) }, t), `translate(${(1 - ke) * -800} 0)`);
+  o += etiquette(360, 420, lin(t, 8.5, 8.85), "Léa", "25 ans", BX);
+  // notification + bocal
+  o += notif(540, 280, lin(t, 10.2, 10.6), "Virement programmé", "100 € → épargne · chaque mois");
+  const kb = lin(t, 10.6, 11.0);
+  o += g(bocal(800, 1420, 260, 360, .05 + .55 * eo(lin(t, 10.9, 14.6)), OR, ""), `translate(0 ${(1 - eo(kb)) * 600})`, cl(kb * 2));
+  // pièces qui tombent
+  [10.95, 11.4, 11.8, 12.3, 12.75, 13.2, 13.65, 14.1].forEach((d, i) => {
+    const k = lin(t, d, d + .45); if (k > 0 && k < 1) o += piece(800 + ((i % 3) - 1) * 40, mix(960, 1330 - i * 20, k * k), 30, k * 400);
+  });
+  // automatiquement : badge
+  const ka = lin(t, 12.74, 13.1);
+  if (ka > 0) o += g(`<circle r="62" fill="${VERT}"/><path d="M-26 2 l18 18 l36 -40" stroke="${BLANC}" stroke-width="13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`, `translate(985 880) scale(${back(ka) * .7})`, cl(ka * 3));
+  o += `<g opacity="${cl(lin(t, 11, 11.4))}">` + pill(800, 880, 260, 66, BX, txt(800, 903, "mois " + Math.min(12, 1 + Math.floor(lin(t, 11, 14.6) * 11)), { size: 36, w: 800, f: BLANC })) + `</g>`;
+  return o;
+}
+function sceneTom(t) {
+  const t0 = 14.7;
+  let o = fond("#EFE6E3", "#D9C8C4");
+  // terrasse de café
+  o += `<rect x="0" y="230" width="1080" height="150" fill="${BX}"/>` + Array.from({ length: 9 }, (_, i) => `<path d="M${i * 135} 380 q67 70 135 0z" fill="${i % 2 ? BX : BLANC}"/>`).join("");
+  o += `<rect x="0" y="1580" width="1080" height="340" fill="#C9B3AE"/>`;
+  // table et café
+  o += `<rect x="600" y="1220" width="380" height="26" rx="12" fill="#3B2A2E"/><rect x="780" y="1240" width="20" height="340" fill="#3B2A2E"/><ellipse cx="790" cy="1580" rx="90" ry="14" fill="#3B2A2E"/>`;
+  o += `<path d="M820 1170 h70 l-8 50 h-54z" fill="${BLANC}"/><ellipse cx="855" cy="1222" rx="56" ry="9" fill="${BLANC}"/>`;
+  // sacs de shopping
+  o += `<rect x="860" y="1440" width="120" height="140" rx="10" fill="${ROSE}"/><path d="M890 1440 q30 -60 60 0" stroke="${BX}" stroke-width="8" fill="none"/>`;
+  o += `<rect x="920" y="1470" width="100" height="110" rx="10" fill="${ARDOISE}"/><path d="M945 1470 q25 -50 50 0" stroke="#2E2F38" stroke-width="8" fill="none"/>`;
+  const ke = eo(lin(t, t0, t0 + .5));
+  const hum = t > 21.7 ? "neutre" : "sourire";
+  o += g(perso({ ...TOM, x: 380, y: 1590, s: 1.35, humeur: hum, bras: [14, 25], coudes: [0, 150], accessoire: (BG, BD) => `<path d="M${BD.hx - 30} ${BD.hy - 70} h64 l-8 70 h-48z" fill="${BLANC}"/><rect x="${BD.hx - 32}" y="${BD.hy - 46}" width="68" height="22" fill="${BX}"/><circle cx="${BD.hx}" cy="${BD.hy}" r="21" fill="${TOM.peau}"/>`, regard: t > 21.7 ? -.6 : .2, cligne: cligne(t, 1.9) }, t), `translate(${(1 - ke) * 900} 0)`);
+  if (t < 21.7) o += etiquette(330, 520, lin(t, 15.85, 16.2), "Tom", "25 ans", ARDOISE);
+  // même âge / même salaire
+  const c1 = lin(t, 17.3, 17.6), c2 = lin(t, 18.6, 18.9);
+  const chip = (y, k, s) => g(`<rect x="-230" y="-48" width="460" height="96" rx="48" fill="${BLANC}"/><circle cx="-180" cy="0" r="30" fill="${VERT}"/><path d="M-194 0 l10 10 l20 -22" stroke="${BLANC}" stroke-width="7" fill="none" stroke-linecap="round"/>` + txt(20, 16, s, { size: 44, w: 800, f: NUIT }), `translate(760 ${y}) scale(${back(k)})`, cl(k * 3));
+  if (t < 21.6) { o += chip(560, c1, "Même âge"); o += chip(680, c2, "Même salaire"); }
+  // bulle « le bon moment… »
+  const kb = lin(t, 21.75, 22.1);
+  if (kb > 0) o += bulle(640, 610, kb, "le bon moment…", 500, 860) + horloge(640, 430, 56 * back(kb), t, .6);
+  // « Mais Tom, lui… » : petit zoom
+  return o;
+}
+function sceneMarches(t) {
+  const t0 = 23.75;
+  let o = fond("#2A0A12", "#140408");
+  // graphique de marché
+  const pts = []; for (let i = 0; i <= 60; i++) { const x = 90 + i * 15; const y = 900 - Math.sin(i / 7) * 140 - (i < 25 ? i * 7 : 175 - (i - 25) * 9) + Math.sin(i * 1.9) * 22; pts.push([x, y]); }
+  const kp = lin(t, t0 + .1, 27.2), n = Math.max(2, Math.floor(kp * pts.length));
+  const d = pts.slice(0, n).map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" ");
+  for (let i = 0; i < 6; i++) o += `<line x1="90" y1="${560 + i * 110}" x2="990" y2="${560 + i * 110}" stroke="${BLANC}" stroke-opacity=".08" stroke-width="3"/>`;
+  const up = n < 26;
+  o += `<path d="${d}" stroke="${up ? "#6FCF97" : "#F27C8A"}" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const last = pts[n - 1]; o += `<circle cx="${last[0]}" cy="${last[1]}" r="20" fill="${up ? "#6FCF97" : "#F27C8A"}"/><circle cx="${last[0]}" cy="${last[1]}" r="${20 + (t * 40 % 30)}" fill="none" stroke="${up ? "#6FCF97" : "#F27C8A"}" opacity="${1 - (t * 40 % 30) / 30}" stroke-width="4"/>`;
+  o += txt(540, 330, up ? "Les marchés montent ↗" : "Les marchés baissent ↘", { size: 62, w: 900, f: BLANC, fam: "Inter Display" });
+  // Tom en buste, hésite
+  o += perso({ ...TOM, x: 540, y: 2230, s: .95, humeur: "souci", bras: [10, 10], regard: Math.sin(t * 3) * .8, cligne: cligne(t, .4) }, t);
+  const tampon = (k, s, c) => g(`<rect x="-320" y="-80" width="640" height="160" rx="24" fill="none" stroke="${c}" stroke-width="14"/>` + txt(0, 28, s, { size: 80, w: 900, f: c, fam: "Inter Display" }), `translate(540 1060) rotate(-8) scale(${1.6 - .6 * eo(k)})`, cl(k * 4));
+  const k1 = lin(t, 24.99, 25.15), k2 = lin(t, 26.63, 26.8);
+  if (t < 25.85) o += tampon(k1, "TROP TARD", "#F27C8A");
+  else if (t < 26.5) o += "";
+  else o += tampon(k2, "TROP RISQUÉ", "#F27C8A");
+  return o;
+}
+function sceneDixAns(t) {
+  const t0 = 27.7;
+  let o = fond("#FBF4F1", "#E9D7D3");
+  // calendrier qui défile 25 → 35 ans
+  const k = eio(lin(t, 27.9, 29.2)), age = Math.round(25 + 10 * k);
+  const flip = (t * 7.7) % 1;
+  o += `<g transform="translate(540 600)"><rect x="-260" y="-230" width="520" height="470" rx="40" fill="${BLANC}"/><rect x="-260" y="-230" width="520" height="130" rx="40" fill="${BX}"/><rect x="-260" y="-140" width="520" height="40" fill="${BX}"/>`;
+  o += `<circle cx="-150" cy="-230" r="20" fill="${NUIT}"/><circle cx="150" cy="-230" r="20" fill="${NUIT}"/>`;
+  o += txt(0, -140, "ÂGE DE TOM", { size: 44, w: 900, f: BLANC, ls: 3 });
+  const bump = 1 + .08 * Math.max(0, Math.sin(((25 + 10 * k) % 1) * Math.PI)) * (k < 1 ? 1 : 0);
+  o += `<g transform="translate(0 50) scale(${bump}) translate(0 -50)">` + txt(0, 130, String(age), { size: 230, w: 900, f: NUIT, fam: "Inter Display" }) + `</g>`;
+  o += txt(0, 205, "ans", { size: 48, w: 700, f: GRIS });
+  o += `</g>`;
+  // Tom se lance (barbe légère, plus mûr)
+  const kt = lin(t, 29.2, 29.6);
+  o += g(perso({ ...TOM, x: 340, y: 1600, s: 1.05, barbe: true, veste: true, haut: "#2C3345", humeur: "sourire", tel: true, bras: [8, 25], coudes: [0, 175], ecran: "#F3D3D8", regard: .4, cligne: cligne(t, 2.3) }, t), `translate(${(1 - eo(kt)) * -800} 0)`, cl(kt * 4));
+  const kb = lin(t, 31.4, 31.8);
+  o += g(bocal(800, 1360, 220, 300, .05 + .1 * lin(t, 31.5, 33), OR), `translate(0 ${(1 - eo(kb)) * 500})`, cl(kb * 2));
+  [31.5, 32.2].forEach((d) => { const k = lin(t, d, d + .45); if (k > 0 && k < 1) o += piece(800, mix(940, 1290, k * k), 28, k * 300); });
+  o += etiquette(800, 960, lin(t, 31.45, 31.8), "100 € / mois", "", ARDOISE);
+  return o;
+}
+function sceneResultat(t) {
+  const t0 = 33.15;
+  let o = fond("#3A0915", "#1A060B");
+  o += pill(540, 250, 470, 84, ROSE, txt(540, 266, "À 65 ANS", { size: 44, w: 900, f: BX, ls: 3 }));
+  // deux colonnes
+  const base = 1060, H = 560;
+  const kl = eo(lin(t, 34.35, 36.1)), kt = eo(lin(t, 36.67, 38.4));
+  const col = (cx, v, max, k, nom, coul, txtv, peau, data) => {
+    const h = H * v / max * k;
+    let s = `<rect x="${cx - 150}" y="${base - H}" width="300" height="${H}" rx="30" fill="${BLANC}" opacity=".06"/>`;
+    s += `<rect x="${cx - 150}" y="${base - h}" width="300" height="${h}" rx="30" fill="${coul}"/>`;
+    // part versée vs intérêts
+    const hv = H * data / max * k; s += `<rect x="${cx - 150}" y="${base - hv}" width="300" height="${hv}" rx="30" fill="#000" opacity=".22"/>`;
+    s += txt(cx, base - h - 40, (k > .12 ? "≈ " + nb(k > .985 ? Math.round(v / 1000) * 1000 : v * k) + " €" : ""), { size: 64, w: 900, f: BLANC, fam: "Inter Display" });
+    return s;
+  };
+  o += col(300, 118196, 118196, kl, "Léa", ROSE, "", PEAU1, 48000);
+  o += col(780, 69405, 118196, kt, "Tom", "#8B9BB0", "", PEAU2, 36000);
+  // têtes des personnages sous les colonnes
+  o += `<g>` + perso({ ...LEA, x: 300, y: 1930, s: .5, humeur: "sourire", cligne: cligne(t) }, t) + perso({ ...TOM, x: 780, y: 1930, s: .5, barbe: true, veste: true, haut: "#2C3345", humeur: t > 37.4 ? "souci" : "neutre", cligne: cligne(t, 1) }, t) + `</g>`;
+  o += txt(300, 1120, "Léa · dès 25 ans", { size: 40, w: 800, f: BLANC }) + txt(780, 1120, "Tom · dès 35 ans", { size: 40, w: 800, f: BLANC });
+  // légende
+  o += `<rect x="150" y="1170" width="34" height="34" rx="8" fill="#9E5A66"/>` + txt(200, 1198, "versé", { anchor: "start", size: 32, w: 600, f: ROSE2 });
+  o += `<rect x="360" y="1170" width="34" height="34" rx="8" fill="${ROSE}"/>` + txt(410, 1198, "intérêts accumulés", { anchor: "start", size: 32, w: 600, f: ROSE2 });
+  o += txt(540, 1250, "Exemple fictif : 100 €/mois, 4 %/an, non garanti", { size: 30, w: 500, f: ROSE2, op: .9 });
+  return o;
+}
+function sceneBouleNeige(t) {
+  const t0 = 39.0;
+  let o = fond("#FBF4F1", "#E9D7D3");
+  // même effort : Léa et Tom côte à côte
+  const k1 = lin(t, 39.07, 39.4);
+  if (t < 41.8) {
+    const sortie = lin(t, 41.5, 41.85);
+    let p2 = perso({ ...LEA, x: 290, y: 1330, s: .95, humeur: "sourire", cligne: cligne(t) }, t) + perso({ ...TOM, x: 790, y: 1330, s: .95, barbe: true, veste: true, haut: "#2C3345", humeur: "neutre", cligne: cligne(t, 1.3) }, t);
+    p2 += pill(290, 560, 330, 100, ROSE, txt(290, 578, "100 €/mois", { size: 46, w: 900, f: BX })) + pill(790, 560, 330, 100, "#8B9BB0", txt(790, 578, "100 €/mois", { size: 46, w: 900, f: BLANC })) + txt(540, 594, "=", { size: 100, w: 900, f: BX });
+    o += g(p2, `translate(540 900) scale(${(.85 + .15 * back(k1)) * (1 - .1 * sortie)}) translate(-540 -900)`, cl(k1 * 3) * (1 - sortie));
+    const kq = lin(t, 40.56, 40.9);
+    o += txt(540, 330, "La seule différence ?", { size: 70, w: 900, f: NUIT, fam: "Inter Display", op: cl(kq * 3) * (1 - sortie) });
+  }
+  // 10 ANS qui claque
+  const k10 = lin(t, 41.87, 42.1);
+  if (t > 41.8) {
+    o += g(txt(0, 0, "10 ANS", { size: 230, w: 900, f: BX, fam: "Inter Display" }), `translate(540 ${mix(560, 470, eo(lin(t, 42.6, 43.2)))}) scale(${mix(1.25 - .25 * back(k10), .7, eo(lin(t, 42.6, 43.2)))})`, cl(k10 * 4));
+  }
+  // boule de neige qui roule et grossit (intérêts sur intérêts)
+  if (t > 42.6) {
+    const kk = lin(t, 42.75, 45.3);
+    o += `<path d="M-20 900 L1100 1380 L1100 1920 L-20 1920Z" fill="#F6E6E8"/><path d="M-20 900 L1100 1380" stroke="${ROSE}" stroke-width="8"/>`;
+    for (let i = 0; i < 14; i++) { const xx = 1100 - ((i * 97 + t * 260) % 1180), yy = 900 + (xx + 20) * 480 / 1120 + 30 + (i % 4) * 40; o += `<circle cx="${xx}" cy="${yy}" r="${4 + i % 3}" fill="${ROSE}" opacity=".35"/>`; }
+    const x = mix(150, 760, eio(kk)), y = 900 + (x + 20) * 480 / 1120, r = mix(50, 185, eio(kk));
+    const rot = kk * 900;
+    o += `<g transform="translate(${x} ${y - r})"><circle r="${r}" fill="${ROSE}"/><circle r="${r}" fill="none" stroke="${BX}" stroke-width="8"/><g transform="rotate(${rot})"><path d="M${-r * .6} ${-r * .2} q${r * .3} ${-r * .3} ${r * .6} 0" stroke="${BX}" stroke-width="7" fill="none" opacity=".5"/><path d="M${-r * .1} ${r * .4} q${r * .3} ${-r * .2} ${r * .6} 0" stroke="${BX}" stroke-width="7" fill="none" opacity=".5"/></g>` +
+      (r > 90 ? txt(0, r * .12, "€", { size: r * .8, w: 900, f: BX }) : "") + `</g>`;
+    o += txt(540, 760, "Intérêts sur intérêts", { size: 64, w: 900, f: NUIT, fam: "Inter Display", op: cl(lin(t, 43.2, 43.5) * 3) });
+  }
+  return o;
+}
+function sceneTemps(t) {
+  const t0 = 45.45;
+  let o = fond("#3A0915", "#16050A");
+  // sablier
+  const k = lin(t, 45.5, 49.5), ks = eo(lin(t, t0, t0 + .4));
+  const cx = 540, cy = 680;
+  let s = `<rect x="-200" y="-330" width="400" height="40" rx="14" fill="${ROSE}"/><rect x="-200" y="290" width="400" height="40" rx="14" fill="${ROSE}"/>`;
+  s += `<path d="M-160 -290 Q-160 -40 -20 0 Q-160 40 -160 290 L160 290 Q160 40 20 0 Q160 -40 160 -290Z" fill="${BLANC}" fill-opacity=".12" stroke="${BLANC}" stroke-width="8"/>`;
+  const top = mix(0.95, .1, k), bot = mix(.08, .9, k);
+  s += `<clipPath id="ch"><path d="M-160 -290 Q-160 -40 -20 0 Q-160 40 -160 290 L160 290 Q160 40 20 0 Q160 -40 160 -290Z"/></clipPath>`;
+  s += `<g clip-path="url(#ch)"><rect x="-170" y="${-290 * top}" width="340" height="${290 * top}" fill="${OR}"/><path d="M-170 290 L-170 ${290 - 220 * bot} Q0 ${290 - 300 * bot} 170 ${290 - 220 * bot} L170 290Z" fill="${OR}"/><rect x="-5" y="0" width="10" height="290" fill="${OR}"/>${Array.from({ length: 6 }, (_, i) => `<circle cx="${Math.sin(i * 2.1) * 3}" cy="${((t * 400 + i * 48) % 280)}" r="5" fill="${OR2}"/>`).join("")}</g>`;
+  o += g(s, `translate(${cx} ${cy}) scale(${.6 + .4 * back(ks)}) rotate(${Math.sin(t * 1.2) * 2})`);
+  // points d'interrogation sur « personne ne le connaît »
+  if (t > 46.5 && t < 47.8) for (let i = 0; i < 3; i++) { const kk = lin(t, 46.6 + i * .15, 47 + i * .15); o += txt(260 + i * 280, 400 - kk * 40, "?", { size: 120, w: 900, f: ROSE, op: cl(kk * 3) * (1 - lin(t, 47.5, 47.8)) }); }
+  const kf = lin(t, 47.83, 48.2);
+  o += g(txt(540, 0, "Votre meilleur allié :", { size: 56, w: 700, f: ROSE2 }) + txt(540, 120, "LE TEMPS", { size: 140, w: 900, f: BLANC, fam: "Inter Display" }), `translate(0 ${1080 + (1 - eo(kf)) * 60})`, kf);
+  return o;
+}
+function sceneFin(t) {
+  const t0 = 49.55;
+  let o = fond("#FBF4F1", "#EAD6D2");
+  const fin = lin(t, 53.9, 54.4); // bascule vers la carte de fin
+  // bureau : conseiller + Léa et Tom
+  if (fin < 1) {
+    let s = `<rect x="0" y="1300" width="1080" height="620" fill="#E0CBC6"/>`;
+    s += perso({ ...CONS, x: 540, y: 1320, s: 1.0, humeur: "sourire", bras: [20, 40], coudes: [40, 70], regard: Math.sin(t * .8) * .5, cligne: cligne(t, .3) }, t);
+    s += `<rect x="120" y="1180" width="840" height="40" rx="14" fill="#3B2A2E"/><rect x="160" y="1210" width="760" height="420" fill="#4A363B"/>`;
+    s += `<rect x="460" y="1090" width="160" height="100" rx="8" fill="${BLANC}"/><path d="M480 1120 h120 M480 1145 h90 M480 1168 h110" stroke="${GRIS}" stroke-width="6"/>`;
+    s += `<g transform="translate(250 1180)"><rect x="-40" y="-90" width="80" height="90" rx="8" fill="${BLANC}"/><path d="M40 -70 q30 0 30 25 q0 25 -30 25" stroke="${BLANC}" stroke-width="10" fill="none"/></g>`;
+    s += perso({ ...LEA, x: 200, y: 1990, s: .95, humeur: "sourire", bras: [10, 10], regard: .6, cligne: cligne(t, 1.1) }, t);
+    s += perso({ ...TOM, x: 880, y: 1990, s: .95, barbe: true, veste: true, haut: "#2C3345", humeur: "sourire", bras: [10, 10], regard: -.6, cligne: cligne(t, 2) }, t);
+    const kb = lin(t, 49.73, 50.1);
+    s += g(`<rect x="-400" y="-120" width="800" height="240" rx="50" fill="${BX}"/><path d="M-40 118 l40 50 l30 -50z" fill="${BX}"/>` + txt(0, -14, "Et si on prenait le temps", { size: 56, w: 900, f: BLANC }) + txt(0, 60, "d'en parler ?", { size: 56, w: 900, f: ROSE2 }), `translate(540 ${560}) scale(${back(kb)})`, cl(kb * 3));
+    o += g(s, "", 1 - fin);
+  }
+  if (fin > 0) {
+    const kk = eo(fin);
+    let s = `<rect width="1080" height="1920" fill="${BX}"/>`;
+    s += `<circle cx="540" cy="700" r="${600 * kk}" fill="${BX2}" opacity=".6"/>`;
+    s += txt(540, 470, "Et si on prenait le temps", { size: 60, w: 800, f: ROSE2 }) + txt(540, 545, "d'en parler ?", { size: 60, w: 800, f: ROSE2 });
+    s += `<line x1="390" y1="640" x2="690" y2="640" stroke="${ROSE}" stroke-width="5"/>`;
+    s += txt(540, 790, "BSC", { size: 170, w: 900, f: BLANC, fam: "Inter Display", ls: 14 });
+    s += txt(540, 880, "PATRIMOINE", { size: 70, w: 700, f: BLANC, ls: 22 });
+    s += txt(540, 950, "Conseil en gestion de patrimoine", { size: 36, w: 500, f: ROSE2 });
+    const kc = lin(t, 54.2, 54.6);
+    s += g(pill(540, 1110, 860, 120, BLANC, txt(540, 1132, "Échange offert · sans engagement", { size: 42, w: 900, f: BX })), `translate(540 1110) scale(${back(kc)}) translate(-540 -1110)`, cl(kc * 3));
+    s += txt(540, 1680, "Exemple fictif à visée pédagogique, rendement non garanti.", { size: 28, w: 500, f: ROSE2 }) + txt(540, 1722, "Investir comporte un risque de perte en capital.", { size: 28, w: 500, f: ROSE2 });
+    o += g(s, "", kk);
+  }
+  return o;
+}
+
+
+// ---------------------------------------------------------------- v2 : chaque situation est unique
+function sceneSituation(t) {
+  let o = fond("#FBF4F1", "#EBD9D6");
+  const k0 = lin(t, 35.05, 35.35);
+  o += g(pill(540, 300, 700, 96, BX, txt(540, 318, "Chaque situation est unique", { size: 46, w: 900, f: BLANC })), `translate(540 300) scale(${back(k0)}) translate(-540 -300)`, cl(k0 * 3));
+  const cols = [[200, "50 €", .3], [540, "150 €", .6], [880, "300 €", .95]];
+  const kr = eo(lin(t, 37.03, 38.3));
+  cols.forEach(([cx, m, niv], i) => {
+    const ki = lin(t, 35.5 + i * .25, 35.9 + i * .25);
+    o += g(bocal(cx, 1230, 270, 400, .06 + (niv - .06) * kr, OR) + pill(cx, 1300, 250, 72, i === 2 ? BX : "#FFFFFF", txt(cx, 1324, m + "/mois", { size: 38, w: 800, f: i === 2 ? BLANC : BX })), `translate(0 ${(1 - eo(ki)) * 120})`, cl(ki * 2.5));
+    if (t > 37.03 && t < 38.6) for (let j = 0; j < 1 + i; j++) { const d = 37.05 + j * .3 + i * .08, k = lin(t, d, d + .4); if (k > 0 && k < 1) o += piece(cx, mix(760, 1100, k * k), 30, k * 300); }
+  });
+  // « plus tôt » : horloge ; « plus votre capital… » : flèche montante
+  const kt = lin(t, 38.06, 38.4);
+  if (kt > 0) o += g(horloge(0, 0, 60, t, .5) + txt(90, 18, "Commencer tôt", { anchor: "start", size: 44, w: 900, f: BX }), `translate(330 450) scale(${back(kt) * 1.15})`, cl(kt * 3));
+  const kc = lin(t, 39.36, 40.6);
+  if (kc > 0) {
+    const n = 40, pts = []; for (let i = 0; i <= n; i++) { const x = 150 + i * 19, y = 760 - Math.pow(i / n, 2.2) * 150; pts.push(`${i ? "L" : "M"}${x} ${y}`); }
+    o += `<path d="${pts.slice(0, Math.max(2, Math.round(kc * (n + 1)))).join(" ")}" stroke="${VERT}" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (kc > .9) o += g(txt(0, 0, "Capital ↗", { size: 48, w: 900, f: VERT }), `translate(900 570) scale(${back(lin(t, 40.2, 40.5))})`);
+  }
+  return o;
+}
+// ---------------------------------------------------------------- v2 : fin professionnelle
+function icone(type, x, y) {
+  if (type === "mail") return `<g transform="translate(${x} ${y})"><circle r="40" fill="${ROSE}"/><rect x="-20" y="-14" width="40" height="28" rx="4" fill="none" stroke="${BX}" stroke-width="5"/><path d="M-18 -11 L0 3 L18 -11" stroke="${BX}" stroke-width="5" fill="none" stroke-linejoin="round"/></g>`;
+  return `<g transform="translate(${x} ${y})"><circle r="40" fill="${ROSE}"/><path d="M-14 -20 q-6 0 -6 8 q2 22 20 32 q8 4 14 -2 l4 -6 q2 -4 -2 -6 l-8 -5 q-4 -2 -6 2 l-3 4 q-8 -4 -12 -12 l4 -3 q4 -2 2 -6 l-5 -8 q-2 -3 -6 -2z" fill="${BX}" transform="translate(2 0)"/></g>`;
+}
+function sceneFinPro(t) {
+  let o = fond("#7A0F24", "#3E0611") + `<g transform="translate(0 140)">`;
+  // motif discret : cercles concentriques (le temps)
+  for (let i = 0; i < 5; i++) o += `<circle cx="540" cy="760" r="${220 + i * 120 + (t * 12) % 120}" fill="none" stroke="${BLANC}" stroke-opacity="${.05 - i * .008}" stroke-width="2"/>`;
+  const k1 = lin(t, 45.3, 45.75);
+  o += g(txt(540, 330, "Et si on prenait le temps", { size: 64, w: 700, f: ROSE2 }) + txt(540, 410, "d'en parler ?", { size: 64, w: 700, f: ROSE2 }), `translate(0 ${(1 - eo(k1)) * 40})`, k1);
+  const k2 = lin(t, 46.9, 47.4);
+  o += g(`<line x1="400" y1="500" x2="680" y2="500" stroke="${ROSE}" stroke-width="4"/>` + txt(540, 660, "BSC", { size: 180, w: 900, f: BLANC, fam: "Inter Display", ls: 16 }) + txt(540, 750, "PATRIMOINE", { size: 66, w: 600, f: BLANC, ls: 24 }) + txt(540, 815, "Conseil en gestion de patrimoine", { size: 34, w: 500, f: ROSE2, ls: 1 }), `translate(540 640) scale(${.92 + .08 * eo(k2)}) translate(-540 -640)`, k2);
+  const k3 = lin(t, 48.06, 48.4);
+  o += g(pill(540, 940, 820, 104, BLANC, txt(540, 958, "Premier échange offert · sans engagement", { size: 36, w: 800, f: BX })), `translate(540 940) scale(${back(k3)}) translate(-540 -940)`, cl(k3 * 3));
+  const k4 = lin(t, 49.2, 49.6), k5 = lin(t, 49.5, 49.9);
+  o += g(`<rect x="150" y="1060" width="780" height="280" rx="36" fill="#000" opacity=".22"/>` + icone("mail", 240, 1140) + txt(305, 1154, "contact@example.com", { anchor: "start", size: 44, w: 700, f: BLANC }), `translate(${(1 - eo(k4)) * -60} 0)`, k4);
+  o += g(icone("tel", 240, 1260) + txt(305, 1276, "06 39 98 12 34", { anchor: "start", size: 48, w: 800, f: BLANC, ls: 1 }), `translate(${(1 - eo(k5)) * -60} 0)`, k5);
+  o += `</g>`;
+  o += txt(540, 1590, "Exemple fictif à visée pédagogique : 100 €/mois, 4 %/an, rendement non garanti.", { size: 27, w: 500, f: ROSE2 }) + txt(540, 1632, "Investir comporte un risque de perte en capital.", { size: 27, w: 500, f: ROSE2 }) + txt(540, 1674, "Coordonnées fictives (provisoires).", { size: 24, w: 500, f: ROSE2, op: .7 });
+  return o;
+}
+let ANCRES = [];
+function ancien(t) { for (let i = 1; i < ANCRES.length; i++) { const [n0, o0] = ANCRES[i - 1], [n1, o1] = ANCRES[i]; if (t <= n1) return o0 + (o1 - o0) * (t - n0) / (n1 - n0); } const [n, o] = ANCRES[ANCRES.length - 1]; return o + (t - n); }
+function draw(tn) {
+  const t = ancien(tn);
+  let o;
+  if (tn >= 35.0 && tn < 41.25) o = sceneSituation(tn);
+  else if (tn >= 45.15) o = sceneFinPro(tn);
+  else { const sc = SCENES.find((s) => t >= s[0] && t < s[1]) || SCENES[SCENES.length - 1]; o = sc[2](t); if (sc[0] > 0) o += transition(t, sc[0]); }
+  if (!(t > 47.75 && tn < 45.15) && tn < 45.15) o += soustitres(tn);
+  o += volet(tn);
+  document.getElementById("s").innerHTML = o;
+  caleBoite();
+}
+window.init = (mots, ancres) => { MOTS = mots; ANCRES = ancres; preparer(); };
+window.draw = draw;
+</script>
+</body></html>
