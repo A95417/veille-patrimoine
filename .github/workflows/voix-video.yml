@@ -30,7 +30,7 @@ jobs:
       - name: Transmettre la voix (FLAC encodé en base64 dans le journal)
         run: |
           ffmpeg -y -loglevel error -i voix.wav -c:a flac voix.flac
-          echo "=====DEBUT====="; base64 -w 0 voix.flac; echo; echo "=====FIN====="
+          echo "=====DEBUT====="; base64 -w 3000 voix.flac; echo "=====FIN====="
       - uses: actions/upload-artifact@v4
         with:
           name: voix
