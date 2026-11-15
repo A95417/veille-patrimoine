@@ -348,7 +348,7 @@
       "nom": "AMF",
       "groupe": "officielle",
       "langue": "fr",
-      "actif": false,
+      "actif": true,
       "site": "https://www.amf-france.org/fr/abonnements-flux-rss",
       "flux": [
         "https://www.amf-france.org/fr/flux-rss/display/30",
@@ -364,7 +364,8 @@
       "langue": "fr",
       "actif": false,
       "site": "https://acpr.banque-france.fr/",
-      "flux": []
+      "flux": [],
+      "note": "Aucun flux RSS public trouvé par le robot de vérification (novembre 2026) : désactivée."
     },
     {
       "id": "banque-de-france",
@@ -373,7 +374,8 @@
       "langue": "fr",
       "actif": false,
       "site": "https://www.banque-france.fr/fr",
-      "flux": []
+      "flux": [],
+      "note": "Aucun flux RSS public trouvé par le robot de vérification (novembre 2026) : désactivée."
     },
     {
       "id": "assemblee-nationale",
@@ -382,7 +384,8 @@
       "langue": "fr",
       "actif": false,
       "site": "https://www.assemblee-nationale.fr/",
-      "flux": []
+      "flux": [],
+      "note": "Aucun flux RSS public trouvé par le robot de vérification (novembre 2026) : désactivée."
     },
     {
       "id": "impots-gouv",
@@ -391,7 +394,8 @@
       "langue": "fr",
       "actif": false,
       "site": "https://www.impots.gouv.fr/",
-      "flux": []
+      "flux": [],
+      "note": "Aucun flux RSS public trouvé par le robot de vérification (novembre 2026) : désactivée."
     },
     {
       "id": "economie-gouv",
@@ -399,7 +403,7 @@
       "groupe": "officielle",
       "langue": "fr",
       "actif": false,
-      "site": "https://www.economie.gouv.fr/",
+      "site": "https://www.economie.gouv.fr/node/3234578",
       "flux": []
     },
     {
@@ -409,7 +413,8 @@
       "langue": "fr",
       "actif": false,
       "site": "https://www.legifrance.gouv.fr/",
-      "flux": []
+      "flux": [],
+      "note": "Aucun flux RSS public trouvé par le robot de vérification (novembre 2026) : désactivée."
     },
     {
       "id": "notaires-de-france",
@@ -418,7 +423,19 @@
       "langue": "fr",
       "actif": false,
       "site": "https://www.notaires.fr/fr",
-      "flux": []
+      "flux": [],
+      "note": "Aucun flux RSS public trouvé par le robot de vérification (novembre 2026) : désactivée."
+    },
+    {
+      "id": "tresor",
+      "nom": "Direction générale du Trésor",
+      "groupe": "officielle",
+      "langue": "fr",
+      "actif": false,
+      "site": "https://www.tresor.economie.gouv.fr/",
+      "flux": [
+        "https://www.tresor.economie.gouv.fr/Flux/Atom/Articles/Tags/news"
+      ]
     }
   ]
 }
