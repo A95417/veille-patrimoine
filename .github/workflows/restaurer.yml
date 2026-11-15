@@ -1,0 +1,54 @@
+# Sauvegarde de la base : Cloudflare garde automatiquement l'historique des 7 derniers jours (« Time Travel », gratuit).
+# Ce bouton permet 1) de vérifier que l'historique est bien là, 2) en cas de problème, de remettre la base
+# telle qu'elle était à une date et une heure données. ATTENTION : une restauration remplace toute la base actuelle.
+name: Sauvegarde de la base
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "verifier (sans risque) ou restaurer"
+        required: true
+        default: "verifier"
+      moment:
+        description: "Pour restaurer : date et heure de Paris, au format 2026-11-14 08:00 (7 derniers jours)"
+        required: false
+        default: ""
+      confirmation:
+        description: "Pour restaurer : écrire RESTAURER en majuscules"
+        required: false
+        default: ""
+
+concurrency:
+  group: mise-en-ligne
+  cancel-in-progress: false
+
+jobs:
+  base:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Préparer la commande
+        id: cmd
+        env:
+          ACTION: ${{ inputs.action }}
+          MOMENT: ${{ inputs.moment }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$ACTION" = "restaurer" ]; then
+            if [ "$CONFIRMATION" != "RESTAURER" ]; then echo "::error::Confirmation absente : écrire RESTAURER."; exit 1; fi
+            TS=$(TZ=Europe/Paris date -d "$MOMENT" +%s) || { echo "::error::Date illisible : utiliser le format 2026-11-14 08:00"; exit 1; }
+            AGE=$(( $(date +%s) - TS ))
+            if [ $AGE -lt 0 ] || [ $AGE -gt 604800 ]; then echo "::error::La date doit être dans les 7 derniers jours."; exit 1; fi
+            echo "commande=d1 time-travel restore veille-db --timestamp=$TS" >> "$GITHUB_OUTPUT"
+          else
+            echo "commande=d1 time-travel info veille-db" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Exécuter
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: ${{ steps.cmd.outputs.commande }}

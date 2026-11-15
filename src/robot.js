@@ -105,8 +105,9 @@ export async function routeRobot(request, env, chemin) {
   // 4) Nettoyage : on ne garde que 3 mois.
   if (chemin === "/api/robot/nettoyer" && request.method === "POST") {
     const limite = new Date(Date.now() - RETENTION_JOURS * 86400 * 1000).toISOString();
-    const r1 = await db.prepare("DELETE FROM articles WHERE publie_le < ?").bind(limite).run();
-    const r2 = await db.prepare("DELETE FROM sujets WHERE id NOT IN (SELECT DISTINCT sujet_id FROM articles)").run();
+    // Les sujets mis dans « Ma sélection » par au moins un utilisateur sont conservés (avec leurs articles).
+    const r1 = await db.prepare("DELETE FROM articles WHERE publie_le < ? AND sujet_id NOT IN (SELECT sujet_id FROM favoris)").bind(limite).run();
+    const r2 = await db.prepare("DELETE FROM sujets WHERE id NOT IN (SELECT DISTINCT sujet_id FROM articles) AND id NOT IN (SELECT sujet_id FROM favoris)").run();
     await db.prepare("DELETE FROM recherche WHERE sujet_id NOT IN (SELECT id FROM sujets)").run();
     await db.prepare("DELETE FROM favoris WHERE sujet_id NOT IN (SELECT id FROM sujets)").run();
     return json({ ok: true, articles_supprimes: r1.meta.changes, sujets_supprimes: r2.meta.changes });
