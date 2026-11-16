@@ -659,7 +659,7 @@
     $("lp-planifier").onclick = () => { const z = $("lp-planif"); if (!z.hidden) { z.hidden = true; return; } afficherPlanif(); if (E.datePrevue) $("lp-date").value = E.datePrevue; };
     $("btn-marquer").onclick = async () => { try { await enregistrer("publie", jourIso(new Date())); $("publie-barre").hidden = true; notifier("Ajouté à Mes posts, comme publié."); } catch (e) { notifier(e.message, true); } };
     $("lp-video").onclick = () => {
-      const s = E.source || {}, cible = s.type === "sujet" ? { sel: `actu:${s.sujet_id}` } : s.type === "fiche" ? { sel: `fiche:${s.fiche_id}` } : { sel: "libre", precision: (s.theme || s.libelle || E.texte.split("\n")[0]).slice(0, 300) };
+      const s = E.source || {}, cible = s.type === "sujet" ? { sel: `actu:${s.sujet_id}` } : s.type === "fiche" ? { sel: `fiche:${s.fiche_id}` } : s.type === "texte" ? { sel: "libre", precision: s.texte.slice(0, 5000), media: s.media } : { sel: "libre", precision: (s.theme || s.libelle || E.texte.split("\n")[0]).slice(0, 300) };
       if (typeof window.videoDepuisPost === "function") window.videoDepuisPost(cible);
     };
     let confirmer = false;

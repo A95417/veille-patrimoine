@@ -92,6 +92,13 @@
               <div class="vv-panneau" id="vv-panneau" role="tabpanel"></div>
             </div>
             <div id="vv-sim" class="vv-sim" hidden></div>
+            <div id="vv-libre" class="vv-libre" hidden>
+              <div class="vv-libre-tete"><label class="bloc-lib" for="vv-libre-texte">Votre sujet ou votre texte</label><button type="button" class="bouton bouton-discret" id="vv-coller" hidden>📋 Coller</button></div>
+              <textarea id="vv-libre-texte" rows="6" maxlength="5000" placeholder="Un sujet en une phrase (« pourquoi épargner chaque mois plutôt qu'attendre le bon moment »)&#10;ou un texte complet : collez ici un article en accès libre, une note, un communiqué…"></textarea>
+              <div class="vv-libre-etat" id="vv-libre-etat" aria-live="polite"></div>
+              <div class="vv-libre-media" id="vv-libre-media" hidden><label for="vv-media">Média ou source (facultatif, cité dans la vidéo)</label><input id="vv-media" maxlength="60" placeholder="Ex. : Les Echos, AMF, ma note interne"></div>
+              <p class="alerte-donnees">Jamais de donnée client (nom, téléphone, e-mail…) : le texte est envoyé à l'IA (Gemini). Pour un article payant, seulement la partie en accès libre.</p>
+            </div>
           </div>
         </div>
 
@@ -145,6 +152,11 @@
     document.querySelectorAll("[data-duree]").forEach((b) => b.onclick = () => { R.duree = +b.dataset.duree; majReglages(); });
     document.querySelectorAll("[data-format-v]").forEach((b) => b.onclick = () => { R.format = b.dataset.formatV; majReglages(); });
     $v("vv-precision").oninput = majEtat;
+    $v("vv-libre-texte").oninput = majEtat;
+    if (navigator.clipboard?.readText) {
+      $v("vv-coller").hidden = false;
+      $v("vv-coller").onclick = async () => { try { const t = await navigator.clipboard.readText(); if (t) { $v("vv-libre-texte").value = t.slice(0, 5000); majEtat(); } } catch { notifier("Collage impossible : utilisez « Coller » dans la zone de texte.", true); } };
+    }
     $v("vv-proposer").onclick = proposer;
   }
 
@@ -180,6 +192,18 @@
       if (R.sim.age_fin <= R.sim.age2) R.sim.age_fin = R.sim.age2 + 1;
       majSimulation();
     });
+  }
+
+  // Sujet libre : sujet court ou texte complet (même règle que le serveur : plus de 280 caractères ou 3 phrases = texte).
+  const estTexte = (t) => { const x = String(t || "").trim(); return x.length >= 280 || (x.match(/[.!?…](\s|$)/g) || []).length >= 3; };
+  function majLibre() {
+    const z = $v("vv-libre"); if (!z) return;
+    const actif = (R.sel || "") === "libre"; z.hidden = !actif; if (!actif) return;
+    const t = $v("vv-libre-texte").value.trim(), texte = estTexte(t), n = t.length;
+    $v("vv-libre-media").hidden = !texte;
+    $v("vv-libre-etat").innerHTML = !t ? "" : texte
+      ? `<span class="vv-libre-type texte">📋 Texte collé · ${n.toLocaleString("fr-FR")} / 5 000 caractères</span> L'IA va le reformuler en scénario oral ; ses chiffres sont autorisés, rien ne sera ajouté.`
+      : `<span class="vv-libre-type">✏️ Sujet court</span> Sans texte source, l'IA ne citera aucun chiffre. Collez un texte complet pour qu'elle s'appuie dessus.`;
   }
 
   // Compteurs : limite personnelle et voix restantes pour toute l'équipe (quota gratuit partagé).
@@ -225,7 +249,7 @@
     } else {
       h = `<div class="vv-idees">
         <button type="button" class="vv-idee" data-sujet="simulation"><strong>👥 Commencer tôt ou attendre</strong><span class="petit doux">Deux profils, une simulation chiffrée par le site (exemple fictif).</span></button>
-        <button type="button" class="vv-idee" data-sujet="libre"><strong>✏️ Mon propre sujet</strong><span class="petit doux">Vous le décrivez à l'étape 2. L'IA ne citera aucun chiffre.</span></button>
+        <button type="button" class="vv-idee" data-sujet="libre"><strong>✏️ Mon sujet ou mon texte</strong><span class="petit doux">Écrivez un sujet, ou collez un texte complet (article en accès libre, note) : l'IA le reformule en scénario.</span></button>
       </div>`;
     }
     z.innerHTML = h;
@@ -248,7 +272,7 @@
     if (type === "echeance") { const e = sources?.echeances?.find((x) => x.ref === ref); return { ico: "📅", titre: e ? `${e.titre} (${dateCourte(e.date)})` : "Échéance fiscale", source: "Calendrier officiel (impots.gouv.fr, service-public.gouv.fr)." }; }
     if (type === "chiffre") return { ico: "📈", titre: ref || "Taux et inflation : vue d'ensemble", source: "Derniers chiffres publiés par la BCE (page Marchés)." };
     if (type === "simulation") return { ico: "👥", titre: "Commencer tôt ou attendre", source: "Chiffres calculés par le site, présentés comme exemple fictif." };
-    if (type === "libre") return { ico: "✏️", titre: "Mon propre sujet", source: "À décrire à l'étape 2. Sans source, l'IA ne citera aucun chiffre." };
+    if (type === "libre") return { ico: "✏️", titre: "Mon sujet ou mon texte", source: "Écrivez un sujet ou collez un texte ci-dessous." };
     return null;
   }
 
@@ -261,7 +285,7 @@
     if (opts.angle) { R.angle = opts.angle; R.angleIA = !!opts.ia; R.angleManuel = false; }
     else if (!R.angleManuel) { R.angle = ANGLE_DEFAUT[type] || "expliquer"; R.angleIA = false; }
     afficherChoisi(); majAngle(); majSimulation(); majEtat();
-    if (type === "libre") setTimeout(() => $v("vv-precision").focus(), 50);
+    if (type === "libre") setTimeout(() => $v("vv-libre-texte").focus(), 50);
   }
 
   function afficherChoisi() {
@@ -287,9 +311,10 @@
     const choisi = !!R.sel, libre = (R.sel || "").startsWith("libre");
     ["vv-e2", "vv-e3"].forEach((id) => { $v(id).classList.toggle("vv-attente", !choisi); $v(id).querySelector(".vv-etape-corps").hidden = !choisi; });
     $v("vv-e1").classList.toggle("vv-faite", choisi);
-    $v("vv-precision-note").textContent = libre ? "(obligatoire : décrivez votre sujet)" : "(facultatif)";
-    $v("vv-precision").placeholder = libre ? "Ex. : pourquoi épargner chaque mois plutôt qu'attendre le bon moment" : "Ex. : pour les jeunes actifs, ton rassurant…";
-    const manque = !choisi ? "Choisissez d'abord un sujet (étape 1)." : libre && !$v("vv-precision").value.trim() ? "Décrivez votre sujet dans « Précision »." : "";
+    $v("vv-precision-note").textContent = "(facultatif)";
+    $v("vv-precision").placeholder = "Ex. : pour les jeunes actifs, ton rassurant…";
+    majLibre();
+    const manque = !choisi ? "Choisissez d'abord un sujet (étape 1)." : libre && !$v("vv-libre-texte").value.trim() ? "Écrivez votre sujet ou collez votre texte (étape 1)." : "";
     const b = $v("vv-proposer");
     b.disabled = !!manque || b.dataset.occupe === "1";
     b.title = manque;
@@ -307,6 +332,7 @@
       const [type, ref] = R.sel.split(/:(.*)/s);
       const corps = { source: type, ref: ref || "", angle: R.angle, precision: $v("vv-precision").value, duree: R.duree, format: R.format, voix: R.voix, simulation: R.sim };
       if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); if (f) corps.fiche = { id: f.id, titre: f.titre, verifie: f.verifie, contenu: texteFiche(f) }; }
+      if (type === "libre") { corps.libre = $v("vv-libre-texte").value.trim(); corps.media = $v("vv-media").value.trim(); }
       const r = await appelApi("/api/video/scenario", "POST", corps);
       $v("vv-msg").innerHTML = "";
       ouvrir(r.video); chargerGalerie();
@@ -761,11 +787,12 @@
   }
 
   // Depuis un post LinkedIn : « En faire une vidéo » (même sujet présélectionné).
-  window.videoDepuisPost = ({ sel, precision }) => {
+  window.videoDepuisPost = ({ sel, precision, media }) => {
     if (typeof window.choisirVue === "function") window.choisirVue("video"); else window.demarrerVideo();
     if (!$v("vv-nouvelle")) return;
     choisirSujet(sel);
-    if (precision) { $v("vv-precision").value = precision; majEtat(); }
+    if (media) $v("vv-media").value = media;
+    if (precision) { if (sel === "libre") $v("vv-libre-texte").value = precision; else $v("vv-precision").value = precision; majEtat(); }
     scrollTo({ top: 0, behavior: "smooth" });
   };
   window.demarrerVideo = async () => {

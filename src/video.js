@@ -265,6 +265,11 @@ async function sourceDe(db, d, source) {
     if (!a) throw new Error("Cette actualité n'est plus disponible : choisissez-en une autre.");
     return { data: [], texte: a.contenu, ref: { type: "actu", id: court(d.ref, 80), titre: court(a.titre, 120), sources: a.sources } };
   }
+  // Sujet libre : un texte complet collé (article en accès libre, note, communiqué) devient la seule source du scénario.
+  if (source === "libre" && estTexte(d.libre)) {
+    const media = court(d.media, 60);
+    return { data: [], texte: court(d.libre, 5000), ref: { type: "texte", titre: "", media, sources: media ? [media] : [] } };
+  }
   if (source === "fiche" && d.fiche?.titre) {
     return { data: [], texte: court(d.fiche.contenu, 5000), ref: { type: "fiche", titre: court(d.fiche.titre, 120), id: court(d.fiche.id, 60), verifie: court(d.fiche.verifie, 20) } };
   }
@@ -314,17 +319,24 @@ async function caler(env, db, scenes, duree, finScene, contexte, sim) {
   return { scenes: meilleur, essais };
 }
 
+// Un « sujet libre » de plus de quelques phrases est traité comme un texte à reformuler (sinon, c'est un simple sujet).
+const estTexte = (t) => { const x = String(t || "").trim(); return x.length >= 280 || (x.match(/[.!?…](\s|$)/g) || []).length >= 3; };
+
 async function proposerScenario(env, db, d, coord) {
   const source = SOURCES.includes(d.source) ? d.source : ANCIENS[d.modele] || "libre";
   const angle = ANGLES[d.angle] ? d.angle : ANGLE_PAR_DEFAUT[source];
   const duree = [30, 45, 60].includes(Number(d.duree)) ? Number(d.duree) : 45;
+  const libre = String(d.libre || "").trim(), texteColle = source === "libre" && estTexte(libre);
+  // sujet court écrit dans « Mon sujet ou mon texte » : il sert de sujet ; la précision reste à côté
+  const sujetCourt = source === "libre" && libre && !texteColle ? court(libre, 300) : "";
   const precision = court(d.precision ?? d.sujet, 300);
   const sim = source === "simulation" ? simuler(d.simulation || {}) : null;
+  if (source === "libre" && !libre && !precision) throw new Error("Écrivez votre sujet ou collez votre texte.");
+  // Aucune donnée personnelle envoyée à l'IA (dans un article collé, les noms de personnalités publiques sont acceptés).
+  const perso = donneesPerso([precision, sujetCourt].join("\n")) || (texteColle ? donneesPerso(libre, false) : null);
+  if (perso) throw new Error(`Le texte semble contenir ${perso}. Retirez-le avant de l'envoyer à l'IA (aucune donnée client ne doit être transmise).`);
   const src = await sourceDe(db, d, source), data = src.data;
-  const titreSujet = src.ref?.titre || (sim ? "Commencer tôt ou attendre : le temps est le meilleur allié" : "");
-  if (source === "libre" && !precision) throw new Error("Décrivez le sujet de la vidéo dans le champ « Précision ».");
-  const perso = donneesPerso(precision);
-  if (perso) throw new Error(`La précision semble contenir ${perso}. Retirez-le avant de l'envoyer à l'IA (aucune donnée client ne doit être transmise).`);
+  const titreSujet = src.ref?.titre || sujetCourt || (sim ? "Commencer tôt ou attendre : le temps est le meilleur allié" : "");
   // budget de mots calculé avec une fin type (question personnalisée)
   const finType = fin(coord.cabinet, { question: "Votre épargne travaille-t-elle vraiment pour vous ?" });
   const mots = cibleMots(duree, finType), [nA, nB] = SCENES_CONSEIL[duree];
@@ -334,7 +346,9 @@ async function proposerScenario(env, db, d, coord) {
 - Profil 2 commence à ${sim.age2} ans (il attend ${sim.attente} ans) : à ${sim.age_fin} ans il a versé ${nbFr(sim.B.versements)} € et dispose d'environ ${nbFr(sim.B.capital)} €.
 - Écart : environ ${nbFr(sim.ecart)} €. Arrondis permis : au millier le plus proche.`;
   else if (data.length) donnees = "DONNÉES OFFICIELLES (seuls chiffres et dates autorisés, cite la source) :\n" + data.map((x) => "- " + JSON.stringify(x)).join("\n");
-  if (src.texte) donnees += `\nSOURCE (${src.ref.type === "fiche" ? `fiche pédagogique vérifiée « ${src.ref.titre} »` : `actualité « ${src.ref.titre} », résumé de la partie gratuite des articles`}) — ne t'appuie que sur ce texte, ses chiffres sont autorisés tels quels :\n"""\n${src.texte}\n"""`;
+  if (src.texte) donnees += src.ref.type === "texte"
+    ? `\nSOURCE (texte fourni par le conseiller${src.ref.media ? `, média : ${src.ref.media}` : ""}) — REFORMULE-LE entièrement en scénario oral (ne le recopie pas) : garde les idées et les faits essentiels, choisis l'angle le plus parlant, ajoute une histoire avec des personnages et des décors adaptés. Ne t'appuie que sur ce texte : ses chiffres sont autorisés tels quels, n'ajoute aucun fait absent. Donne un « titre » court et accrocheur à la vidéo (moins de 70 caractères) :\n"""\n${src.texte}\n"""`
+    : `\nSOURCE (${src.ref.type === "fiche" ? `fiche pédagogique vérifiée « ${src.ref.titre} »` : `actualité « ${src.ref.titre} », résumé de la partie gratuite des articles`}) — ne t'appuie que sur ce texte, ses chiffres sont autorisés tels quels :\n"""\n${src.texte}\n"""`;
   const consignes = `Tu écris le scénario d'une vidéo courte verticale (TikTok, Reels, LinkedIn) pour le cabinet ${coord.cabinet || "BSC Patrimoine"}, conseil en gestion de patrimoine.
 Public : 18-29 ans et un peu plus âgés. Ton énergique, clair, professionnel, jamais enfantin. Français impeccable.
 RÈGLES STRICTES :
@@ -359,7 +373,7 @@ Termine par :
 - fin_question : la phrase d'appel de la carte de fin, une question courte (moins de 55 caractères, sans chiffre) adaptée au sujet, qui donne envie d'en parler à un conseiller. Exemples : « Votre PER est-il bien dimensionné ? », « Votre transmission est-elle prête ? ».
 - fin_theme : le thème du sujet, une valeur exacte parmi ${Object.keys(THEMES_FIN).join(", ")}.
 - texte_post (2 à 4 lignes pour accompagner la vidéo, avec « Investir comporte un risque de perte en capital. »${sim ? " et « Exemple fictif. »" : ""}) et 3 à 5 hashtags.`;
-  const demande = `SUJET : ${titreSujet || precision}\n${precision && titreSujet ? `PRÉCISION DE L'UTILISATEUR : ${precision}\n` : ""}DURÉE VISÉE : ${duree} secondes (≈ ${mots} mots)\n${donnees}`;
+  const demande = `SUJET : ${titreSujet || precision || "voir le texte fourni ci-dessous"}\n${precision && titreSujet ? `PRÉCISION DE L'UTILISATEUR : ${precision}\n` : ""}DURÉE VISÉE : ${duree} secondes (≈ ${mots} mots)\n${donnees}`;
   const schema = { ...SCHEMA, properties: { ...SCHEMA.properties, fin_question: { type: "STRING" }, fin_theme: { type: "STRING", enum: Object.keys(THEMES_FIN) } } };
   let r = await generer(env, db, consignes, demande, schema, "fort");
   // Si Gemini refuse le schéma (trop détaillé), on redemande en JSON libre : le site filtre de toute façon chaque champ.
@@ -369,6 +383,7 @@ Termine par :
   let scenes = nettoyerScenes(r.donnees.scenes, sim);
   if (scenes.length < 3) throw new Error("Le scénario proposé est incomplet. Réessayez.");
   const finScene = fin(coord.cabinet, { question: r.donnees.fin_question, style: THEMES_FIN[r.donnees.fin_theme] || "cercles" });
+  if (texteColle) src.ref.titre = court(r.donnees.titre, 100) || "Texte collé";
   const contexte = court(demande, 7000);
   const calage = await caler(env, db, scenes, duree, finScene, contexte, sim);
   scenes = [...calage.scenes, finScene];
@@ -385,7 +400,7 @@ Termine par :
   if (cite && !post.includes(cite)) post += "\n" + cite;
   const texte_post = post + (tags.length ? "\n\n" + tags.join(" ") : "");
   return {
-    modele: source, angle, sujet: court(titreSujet ? (precision ? `${titreSujet} — ${precision}` : titreSujet) : precision || r.donnees.titre, 160), duree, scenes, texte_post,
+    modele: source, angle, sujet: court(texteColle ? `${court(r.donnees.titre, 100) || "Texte collé"}${precision ? " — " + precision : ""}` : titreSujet ? (precision ? `${titreSujet} — ${precision}` : titreSujet) : precision || r.donnees.titre, 160), duree, scenes, texte_post,
     donnees: { simulation: sim, data, source: src.ref, angle, permis: [...permis], contexte, theme: THEMES_FIN[r.donnees.fin_theme] ? r.donnees.fin_theme : "general", fin_proposee: finScene.p.question, reecritures: calage.essais },
     a_verifier: chiffresAVerifier(scenes, permis, texte_post),
   };
