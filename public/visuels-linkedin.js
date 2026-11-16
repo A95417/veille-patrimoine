@@ -123,6 +123,27 @@ function dessinerQuestion(ctx, v, z) {
   y += paragraphe(ctx, v.titre, M, y, L - 2 * M, { taille: 76, poids: 600, police: CHARTE.titre, maxLignes: 5, interligne: 1.15 });
   conclusion(ctx, v, z, y);
 }
+// Idée reçue barrée, puis la réalité (format « Mythe ou réalité »).
+function dessinerMythe(ctx, v, z) {
+  let y = z.haut + 10;
+  if (v.titre) y += paragraphe(ctx, v.titre, M, y, L - 2 * M, { taille: 52, poids: 600, police: CHARTE.titre, maxLignes: 2 }) + 44;
+  const w = L - 2 * M, dispo = z.bas - y - (v.conclusion ? 150 : 20);
+  const h1 = Math.min(300, dispo * .42), h2 = Math.min(380, dispo * .52), ecart = Math.max(30, dispo - h1 - h2);
+  // carte « Idée reçue »
+  rectArrondi(ctx, M, y, w, h1, 28); ctx.fillStyle = CHARTE.carte; ctx.fill();
+  espace(ctx, "Idée reçue", M + 40, y + 36, { taille: 24, ecart: 6, couleur: CHARTE.doux });
+  const hm = paragraphe(ctx, v.mythe, M + 40, y + 90, w - 160, { taille: 46, couleur: CHARTE.doux, maxLignes: 3, interligne: 1.2 });
+  ctx.strokeStyle = "#F27C8A"; ctx.lineWidth = 12; ctx.lineCap = "round";
+  const cx = L - M - 70, cy = y + 70;
+  ctx.beginPath(); ctx.moveTo(cx - 28, cy - 28); ctx.lineTo(cx + 28, cy + 28); ctx.moveTo(cx + 28, cy - 28); ctx.lineTo(cx - 28, cy + 28); ctx.stroke();
+  trait(ctx, M + 40, y + 90 + hm / 2, M + 40 + Math.min(w - 200, 640), y + 90 + hm / 2, "rgba(242,124,138,.7)", 4);
+  y += h1 + ecart / 2;
+  // carte « En réalité »
+  rectArrondi(ctx, M, y, w, h2, 28); ctx.fillStyle = "rgba(216,145,156,.16)"; ctx.fill(); ctx.strokeStyle = CHARTE.rose; ctx.lineWidth = 3; ctx.stroke();
+  espace(ctx, "En réalité", M + 40, y + 36, { taille: 24, ecart: 6, couleur: CHARTE.rose });
+  paragraphe(ctx, v.realite, M + 40, y + 90, w - 80, { taille: 48, poids: 600, police: CHARTE.titre, maxLignes: 5, interligne: 1.18 });
+  conclusion(ctx, v, z, y + h2);
+}
 function conclusion(ctx, v, z, yMin) {
   if (!v.conclusion) return;
   ctx.font = `500 38px ${CHARTE.texte}`;
@@ -143,6 +164,7 @@ function texteAlternatif(v) {
   if (w.modele === "chiffre" && w.chiffre) parts.push(`Chiffre clé : ${w.chiffre}${w.chiffre_legende ? ", " + w.chiffre_legende : ""}`);
   if ((w.modele === "points" || w.modele === "etapes") && w.points.length) parts.push((w.modele === "etapes" ? "Étapes : " : "Points clés : ") + w.points.map((p, i) => `${i + 1}. ${p}`).join(" ; "));
   if (w.modele === "comparaison") parts.push(`${w.gauche_titre} : ${w.gauche.join(", ")}. ${w.droite_titre} : ${w.droite.join(", ")}`);
+  if (w.modele === "mythe") parts.push(`Idée reçue : ${w.mythe}. En réalité : ${w.realite}`);
   if (w.conclusion) parts.push(w.conclusion);
   return parts.map((p) => p.replace(/[.\s]+$/, "")).join(". ") + ".";
 }
@@ -153,7 +175,7 @@ async function dessinerVisuel(v, sig) {
   await chargerPolices();
   const c = document.createElement("canvas"); c.width = L; c.height = H;
   const ctx = c.getContext("2d"), z = cadre(ctx, v, sig);
-  ({ chiffre: dessinerChiffre, points: dessinerPoints, etapes: (a, b, d) => dessinerPoints(a, b, d, true), comparaison: dessinerComparaison, question: dessinerQuestion }[v.modele] || dessinerQuestion)(ctx, v, z);
+  ({ chiffre: dessinerChiffre, points: dessinerPoints, etapes: (a, b, d) => dessinerPoints(a, b, d, true), comparaison: dessinerComparaison, question: dessinerQuestion, mythe: dessinerMythe }[v.modele] || dessinerQuestion)(ctx, v, z);
   return c;
 }
 
@@ -193,6 +215,40 @@ async function dessinerCarrousel(v, sig) {
   if (v.conclusion) y += paragraphe(ctx, v.conclusion, M, y, L - 2 * M, { taille: 72, poids: 600, police: CHARTE.titre, maxLignes: 5, interligne: 1.15 }) + 60;
   trait(ctx, M, y, M + 160, y, CHARTE.rose, 6);
   paragraphe(ctx, "Parlons-en en commentaire ou en message.", M, y + 50, L - 2 * M, { taille: 38, couleur: CHARTE.doux, maxLignes: 2 });
+  return pages;
+}
+
+// Carrousel rédigé diapositive par diapositive (format « Carrousel ») : couverture, une idée par page, page finale.
+async function dessinerDiapos(meta, diapos, sig) {
+  await chargerPolices();
+  const d = diapos.map((x) => typo(x)), v = typo(meta), total = d.length, pages = [];
+  d.forEach((x, i) => {
+    const c = document.createElement("canvas"); c.width = L; c.height = H; pages.push(c);
+    const ctx = c.getContext("2d"), z = cadre(ctx, v, sig, { page: i + 1, total });
+    if (i === 0) {   // couverture
+      ctx.font = `700 92px ${CHARTE.titre}`;
+      let y = z.haut + Math.max(50, (z.bas - z.haut - Math.min(5, lignes(ctx, x.titre, L - 2 * M).length) * 103 - 200) / 2);
+      y += paragraphe(ctx, x.titre, M, y, L - 2 * M, { taille: 92, poids: 700, police: CHARTE.titre, maxLignes: 5, interligne: 1.1 }) + 40;
+      trait(ctx, M, y, M + 160, y, CHARTE.rose, 6); y += 40;
+      if (x.texte) paragraphe(ctx, x.texte, M, y, L - 2 * M, { taille: 42, couleur: CHARTE.doux, maxLignes: 3 });
+      espace(ctx, "Faites défiler  →", M, z.bas - 30, { taille: 26, ecart: 6 });
+    } else if (i === total - 1) {   // fin
+      ctx.font = `600 72px ${CHARTE.titre}`;
+      let y = z.haut + Math.max(50, (z.bas - z.haut - 420) / 2);
+      y += paragraphe(ctx, x.titre, M, y, L - 2 * M, { taille: 72, poids: 600, police: CHARTE.titre, maxLignes: 4, interligne: 1.15 }) + 40;
+      trait(ctx, M, y, M + 160, y, CHARTE.rose, 6); y += 44;
+      paragraphe(ctx, x.texte || "Parlons-en en commentaire ou en message.", M, y, L - 2 * M, { taille: 40, couleur: CHARTE.doux, maxLignes: 4 });
+    } else {   // une idée
+      ctx.font = `600 64px ${CHARTE.titre}`;
+      const hT = Math.min(3, lignes(ctx, x.titre, L - 2 * M).length) * 76;
+      ctx.font = `400 44px ${CHARTE.texte}`;
+      const hX = Math.min(6, lignes(ctx, x.texte, L - 2 * M).length) * 58;
+      let y = z.haut + Math.max(20, (z.bas - z.haut - (170 + hT + 40 + hX)) / 2);
+      ctx.font = `700 150px ${CHARTE.titre}`; ctx.fillStyle = CHARTE.rose; ctx.textBaseline = "top"; ctx.fillText(String(i).padStart(2, "0"), M - 6, y); y += 170;
+      y += paragraphe(ctx, x.titre, M, y, L - 2 * M, { taille: 64, poids: 600, police: CHARTE.titre, maxLignes: 3, interligne: 1.15 }) + 40;
+      paragraphe(ctx, x.texte, M, y, L - 2 * M, { taille: 44, couleur: CHARTE.doux, maxLignes: 6, interligne: 1.3 });
+    }
+  });
   return pages;
 }
 

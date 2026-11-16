@@ -679,7 +679,8 @@
     $v("vv-fermer").onclick = () => { $v("vv-travail").hidden = true; courante = null; };
     $v("vv-copier").onclick = () => copier($v("vv-post2").value);
     $v("vv-vers-post").onclick = () => {
-      if (typeof window.versPostLinkedIn === "function") window.versPostLinkedIn({ theme: String(v.sujet || "").slice(0, 300) });
+      const src = v.donnees?.source;
+      if (typeof window.versPostLinkedIn === "function") window.versPostLinkedIn({ theme: String(v.sujet || "").slice(0, 300), fiche_id: src?.type === "fiche" ? src.id : null });
       else { copier($v("vv-post2").value); notifier("Texte copié : ouvrez l'onglet Post LinkedIn."); }
     };
     $v("vv-telecharger").onclick = async (e) => {
@@ -759,6 +760,14 @@
     const f = $v("vc-fictif"); if (f) f.onclick = async () => { const r = await appelApi("/api/video/reglages", "POST", { fictives: true }); reglages.coordonnees = r.coordonnees; afficherCoordonnees(); };
   }
 
+  // Depuis un post LinkedIn : « En faire une vidéo » (même sujet présélectionné).
+  window.videoDepuisPost = ({ sel, precision }) => {
+    if (typeof window.choisirVue === "function") window.choisirVue("video"); else window.demarrerVideo();
+    if (!$v("vv-nouvelle")) return;
+    choisirSujet(sel);
+    if (precision) { $v("vv-precision").value = precision; majEtat(); }
+    scrollTo({ top: 0, behavior: "smooth" });
+  };
   window.demarrerVideo = async () => {
     if ($v("vv-nouvelle")) { chargerGalerie(); return; }
     // ?video_fiche=ID (bouton « Faire une vidéo » d'une fiche Apprendre) : la fiche est présélectionnée.

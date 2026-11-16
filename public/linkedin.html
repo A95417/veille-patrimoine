@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 5.0 — Création Post : onglets Post LinkedIn et Vidéo -->
+<!-- version 6.0 — Création Post : Post LinkedIn (formats, aperçu fidèle, planning) et Vidéo -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -21,6 +21,7 @@
   <script src="/visuels-linkedin.js"></script>
   <script src="/video-apercu.js"></script>
   <script src="/video-creation.js"></script>
+  <script src="/post-creation.js"></script>
   <style>
     .li-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 16px; }
     .li-tete h1 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
@@ -281,6 +282,157 @@
     .vv-carte-actions .lien-bouton { font-size: .85rem; padding: 2px 0; }
     #vv-coord summary { font-weight: 600; }
     body.vue-video .barre-mobile { display: none !important; }
+    /* Post LinkedIn (version 6) : un écran, aperçu fidèle à droite, planning */
+    #vue-post[hidden] { display: none; }
+    .lp-vues { display: flex; gap: 4px; border-bottom: 1px solid var(--bord); margin: 0 0 16px; }
+    .lp-vues button { font: inherit; font-weight: 600; color: var(--doux); background: none; border: 0; border-bottom: 2.5px solid transparent; padding: 9px 12px; cursor: pointer; margin-bottom: -1px; display: inline-flex; gap: 6px; align-items: center; }
+    .lp-vues button[aria-selected="true"] { color: var(--accent-fonce); border-bottom-color: var(--accent); }
+    .lp-nb:not(:empty) { font-size: .72rem; background: var(--accent); color: var(--accent-texte); border-radius: 999px; padding: 1px 7px; }
+    .lp-grille { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 22px; align-items: start; }
+    .lp-gauche { display: grid; gap: 14px; min-width: 0; }
+    .lp-droite { position: sticky; top: 130px; display: grid; gap: 10px; min-width: 0; }
+    @media (max-width: 1060px) { .lp-grille { grid-template-columns: minmax(0, 1fr); } .lp-droite { position: static; } }
+    .lp-bloc { min-width: 0; display: grid; gap: 12px; }
+    .lp-bloc > *, #lp-resultat > *, #lp-format-zone > * { min-width: 0; }
+    #lp-resultat { display: grid; gap: 12px; min-width: 0; } #lp-resultat[hidden] { display: none; }
+    #lp-format-zone { display: grid; gap: 10px; min-width: 0; } #lp-format-zone:empty { display: none; }
+    .lp-titre { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 1.12rem; flex-wrap: wrap; }
+    .lp-n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: .9rem; background: var(--accent); color: var(--accent-texte); flex: 0 0 auto; }
+    .lp-bloc.fait .lp-n { background: var(--ok); color: #fff; font-size: 0; } .lp-bloc.fait .lp-n::before { content: "✓"; font-size: .9rem; }
+    .lp-format-tag { font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--accent-doux); color: var(--accent-fonce); }
+    .lp-idees { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+    .lp-idee { font: inherit; text-align: left; color: var(--texte); background: var(--carte); border: 1.5px solid var(--bord); border-radius: 14px; padding: 12px 14px; cursor: pointer; display: grid; gap: 6px; align-content: start; }
+    .lp-idee:hover { border-color: var(--accent); }
+    .lp-idee strong { line-height: 1.3; font-size: .95rem; }
+    .lp-idee .petit { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .lp-sous { display: block; margin: 14px 0 6px; }
+    .lp-courte { max-height: none; }
+    .lp-centre { text-align: center; margin: 10px 0 0; }
+    .lp-ligne { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .lp-ligne input { flex: 1 1 200px; min-width: 0; }
+    #vue-post input:not([type=checkbox]):not([type=range]), #vue-post textarea, #vue-post select { font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); box-sizing: border-box; }
+    #vue-post textarea { width: 100%; resize: vertical; line-height: 1.5; }
+    #lp-consigne, #lp-colle, #lp-theme { width: 100%; }
+    .lp-formats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 640px) { .lp-formats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .lp-format { font: inherit; text-align: left; border: 1.5px solid var(--bord); border-radius: 14px; background: var(--carte); color: var(--texte); padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; }
+    .lp-format:hover { border-color: var(--accent); }
+    .lp-format[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-doux); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+    .lp-format-ico { font-size: 1.3rem; }
+    .lp-format b { font-size: .92rem; } .lp-format small { font-size: .76rem; color: var(--doux); line-height: 1.25; }
+    .lp-reglages { display: flex; gap: 12px 22px; flex-wrap: wrap; }
+    .lp-reglages > div, .lp-reglages > div[hidden] + div { display: grid; gap: 6px; }
+    .lp-reglages > div[hidden] { display: none; }
+    .lp-plus > summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: .9rem; padding: 4px 0; }
+    .lp-plus[open] { display: grid; gap: 8px; }
+    .lp-plus[open] > summary { margin-bottom: 4px; }
+    .lp-voix { border-top: 1px solid var(--bord); padding-top: 8px; }
+    .lp-voix > summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+    .lp-case { display: flex !important; gap: 8px; align-items: center; font-weight: 500; font-size: .9rem; }
+    .lp-case input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .lp-go { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--bord); padding-top: 14px; }
+    .lp-go .bouton:disabled { opacity: .5; cursor: not-allowed; }
+    @media (max-width: 640px) { .lp-go .gros-bouton { flex: 1 1 100%; justify-content: center; } }
+    .lp-parties { display: flex; gap: 6px; flex-wrap: wrap; }
+    .lp-parties[hidden] { display: none; }
+    .lp-parties button { font: inherit; font-weight: 600; border: 1.5px solid var(--bord); background: var(--carte); color: var(--texte); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+    .lp-parties button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+    .lp-accroches { display: grid; gap: 6px; margin-top: 6px; }
+    .lp-accroche { font: inherit; text-align: left; display: flex; gap: 10px; align-items: flex-start; border: 1.5px solid var(--bord); border-radius: 12px; background: var(--carte); color: var(--texte); padding: 9px 12px; cursor: pointer; line-height: 1.35; }
+    .lp-accroche[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-doux); }
+    .lp-accroche-n { flex: 0 0 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .75rem; font-weight: 700; background: var(--fond); color: var(--doux); }
+    .lp-accroche[aria-pressed="true"] .lp-accroche-n { background: var(--accent); color: var(--accent-texte); }
+    .lp-texte { min-height: 220px; font-size: .97rem; }
+    .lp-ctas .puce { white-space: normal; text-align: left; line-height: 1.3; height: auto; border-radius: 14px; }
+    #lp-bloc-accroches[hidden], #lp-bloc-ctas[hidden], #lp-bloc-tags[hidden], .lp-image[hidden], .lp-planif[hidden] { display: none; }
+    .lp-image { border-top: 1px solid var(--bord); padding-top: 14px; display: grid; gap: 10px; }
+    .lp-image-tete { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .lp-image-grille { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 18px; align-items: start; }
+    @media (max-width: 640px) { .lp-image-grille { grid-template-columns: minmax(0, 1fr); } }
+    .lp-image-zone { display: grid; gap: 8px; }
+    .lp-image-zone img { width: 100%; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+    .lp-image-grille input { width: 100%; }
+    .lp-diapos-tete { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--bord); padding-top: 14px; }
+    .lp-diapos-vue { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+    .lp-diapos-vue img { flex: 0 0 180px; width: 180px; border-radius: 10px; scroll-snap-align: start; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+    .lp-diapos { padding-left: 0; list-style: none; display: grid; gap: 10px; margin: 0; }
+    .lp-diapos li { display: grid; gap: 6px; border: 1px solid var(--bord); border-radius: 12px; padding: 10px; }
+    .lp-diapo-tete { display: flex; justify-content: space-between; align-items: center; font-size: .88rem; }
+    .lp-diapos input { width: 100%; font-weight: 600; }
+    .lp-sondage { display: grid; gap: 8px; border-top: 1px solid var(--bord); padding-top: 14px; }
+    .lp-champ { display: grid; gap: 4px; font-size: .86rem; font-weight: 600; }
+    .lp-champ > span { display: flex; justify-content: space-between; } .lp-champ small { color: var(--doux); font-weight: 400; }
+    .lp-actions { display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--bord); padding-top: 14px; }
+    @media (max-width: 640px) { .lp-actions { display: grid; grid-template-columns: 1fr 1fr; } .lp-actions .gros-bouton { grid-column: 1 / -1; justify-content: center; } .lp-actions .bouton-discret { justify-content: center; font-size: .86rem; padding: 8px 6px; } }
+    .lp-planif { border: 1px solid var(--bord); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; background: var(--fond); }
+    .lp-planif-ligne { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .lp-date { display: grid; gap: 4px; font-size: .84rem; font-weight: 600; }
+    .lp-autres { display: flex; gap: 14px; flex-wrap: wrap; }
+    /* aperçu LinkedIn */
+    .lp-apercu-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .lp-bascule { display: flex; padding: 3px; border-radius: 999px; background: var(--fond); }
+    .lp-bascule button { font: inherit; font-size: .8rem; font-weight: 600; border: 0; background: none; color: var(--doux); padding: 5px 10px; border-radius: 999px; cursor: pointer; }
+    .lp-bascule button[aria-pressed="true"] { background: var(--carte); color: var(--texte); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .lp-apercu { --li-texte: #191919; --li-doux: #666; --li-fond: #fff; --li-bord: #e0dfdc; background: var(--li-fond); color: var(--li-texte); border: 1px solid var(--li-bord); border-radius: 10px; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; margin: 0 auto; width: 100%; }
+    .lp-apercu.mobile { max-width: 360px; border-radius: 0; border-width: 1px 0; box-shadow: 0 0 0 8px #1d1d1f, 0 10px 30px rgba(0,0,0,.25); border-radius: 18px; }
+    :root[data-theme="dark"] .lp-apercu { --li-texte: #e9e9e9; --li-doux: #a6a6a6; --li-fond: #1b1f23; --li-bord: #38434f; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lp-apercu { --li-texte: #e9e9e9; --li-doux: #a6a6a6; --li-fond: #1b1f23; --li-bord: #38434f; } }
+    .lp-ap-vide { padding: 40px 20px; text-align: center; color: var(--li-doux); } .lp-ap-vide span { font-size: 2rem; } .lp-ap-vide p { margin: 8px 0 0; font-size: .9rem; }
+    .lp-ap-tete { display: flex; gap: 8px; padding: 12px 14px 6px; align-items: flex-start; }
+    .lp-ap-avatar { width: 46px; height: 46px; border-radius: 50%; background: #6E0B1F; color: #fff; display: grid; place-items: center; font-weight: 700; flex: 0 0 46px; }
+    .lp-ap-qui { display: grid; line-height: 1.25; flex: 1; min-width: 0; } .lp-ap-qui b { font-size: .9rem; } .lp-ap-qui small { color: var(--li-doux); font-size: .74rem; }
+    .lp-ap-suivre { color: #0a66c2; font-weight: 600; font-size: .85rem; }
+    .lp-ap-texte { padding: 4px 14px 10px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .875rem; line-height: 1.43; }
+    .lp-apercu.bureau .lp-ap-texte { font-size: .875rem; }
+    .lp-ap-plus { font: inherit; background: none; border: 0; padding: 0; color: var(--li-doux); cursor: pointer; }
+    .lp-ap-img { width: 100%; display: block; }
+    .lp-ap-doc { border-top: 1px solid var(--li-bord); }
+    .lp-ap-doc-titre { padding: 8px 14px; font-size: .8rem; font-weight: 600; background: #f3f2ef; color: #191919; }
+    .lp-ap-doc-img { position: relative; } .lp-ap-doc-img img { width: 100%; display: block; }
+    .lp-ap-fl { position: absolute; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 1.2rem; cursor: pointer; }
+    .lp-ap-fl.g { left: 8px; } .lp-ap-fl.d { right: 8px; }
+    .lp-ap-pg { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,.6); color: #fff; font-size: .72rem; padding: 2px 8px; border-radius: 999px; }
+    .lp-ap-sondage { margin: 0 14px 10px; border: 1px solid var(--li-bord); border-radius: 8px; padding: 12px; display: grid; gap: 8px; }
+    .lp-ap-sondage small { color: var(--li-doux); font-size: .74rem; } .lp-ap-sondage b { font-size: .9rem; }
+    .lp-ap-opt { border: 1.5px solid #0a66c2; color: #0a66c2; border-radius: 999px; padding: 6px 12px; text-align: center; font-weight: 600; font-size: .85rem; }
+    .lp-ap-stats { display: flex; justify-content: space-between; padding: 8px 14px; font-size: .74rem; color: var(--li-doux); border-top: 1px solid var(--li-bord); }
+    .lp-ap-barre { display: flex; justify-content: space-around; padding: 6px 4px 8px; font-size: .78rem; font-weight: 600; color: var(--li-doux); border-top: 1px solid var(--li-bord); }
+    .lp-voir-apercu { display: none; }
+    @media (max-width: 1060px) {
+      .lp-voir-apercu:not([hidden]) { display: block; position: fixed; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 30; font: inherit; font-weight: 700; font-size: .9rem; border: 0; border-radius: 999px; padding: 11px 16px; background: var(--accent); color: var(--accent-texte); box-shadow: 0 6px 18px rgba(0,0,0,.25); cursor: pointer; }
+      .lp-droite { scroll-margin-top: 80px; }
+    }
+    .lp-compteurs { display: grid; gap: 2px; font-size: .8rem; color: var(--doux); }
+    .lp-compteurs .ok b { color: var(--ok); } .lp-compteurs .ko { color: #a86400; }
+    .lp-controle:empty { display: none; }
+    .lp-controle { border: 1px solid var(--bord); border-radius: 14px; padding: 12px 14px; background: var(--carte); display: grid; gap: 8px; }
+    .lp-ctrl-tete { display: flex; justify-content: space-between; align-items: center; } .lp-ctrl-tete .ok { color: var(--ok); } .lp-ctrl-tete .ko { color: #a86400; }
+    .lp-ctrl { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+    .lp-ctrl li { display: flex; gap: 8px; align-items: flex-start; font-size: .86rem; line-height: 1.3; }
+    .lp-ctrl li div { display: grid; } .lp-ctrl small { color: var(--doux); font-size: .78rem; }
+    .lp-ctrl li.ko b { color: #a86400; }
+    /* planning */
+    .lp-plan-grille { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+    @media (max-width: 1000px) { .lp-plan-grille { grid-template-columns: minmax(0, 1fr); } }
+    .lp-plan-tete { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .lp-plan-tete h2, .lp-semaine h2 { margin: 0; font-size: 1.15rem; }
+    .lp-plan-jour { font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; color: var(--doux); margin: 18px 0 6px; } .lp-plan-jour.ko { color: var(--ko); }
+    .lp-posts { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .lp-post { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--bord); border-left: 4px solid var(--bord-fort); border-radius: 12px; padding: 10px 12px; }
+    .lp-post.s-pret { border-left-color: var(--accent); } .lp-post.s-publie { border-left-color: var(--ok); opacity: .85; } .lp-post.retard { border-left-color: var(--ko); }
+    @media (max-width: 760px) { .lp-post { grid-template-columns: minmax(0, 1fr); } }
+    .lp-post-txt { display: grid; gap: 3px; min-width: 0; } .lp-post-txt strong { font-size: .92rem; line-height: 1.3; }
+    .lp-post-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: .75rem; color: var(--doux); align-items: center; }
+    .statut.pret { background: var(--accent-doux); color: var(--accent-fonce); }
+    .lp-post-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .lp-post-act input, .lp-post-act select { padding: 6px 8px !important; font-size: .82rem !important; width: auto !important; }
+    .lp-post-act input[type=date] { width: 140px !important; }
+    .lp-post-act .bouton { font-size: .8rem; padding: 6px 10px; }
+    .lp-jours { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+    .lp-jours li { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--bord); border-radius: 12px; padding: 10px; }
+    .lp-jour { font-weight: 700; font-size: .82rem; color: var(--accent-fonce); }
+    .lp-jours li div { display: grid; gap: 2px; } .lp-jours strong { font-size: .88rem; line-height: 1.3; } .lp-jours small { font-size: .76rem; color: var(--doux); }
+    .lp-jours .bouton { font-size: .8rem; padding: 6px 10px; }
     /* Vidéo : storyboard visuel avec aperçu animé */
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .vs-titre h2 { margin: 6px 0 2px; }
@@ -393,605 +545,25 @@
         <button type="button" role="tab" id="tab-video" aria-selected="false" aria-controls="vue-video">🎬 Vidéo</button>
       </div></div>
     <div id="vue-video" role="tabpanel" aria-labelledby="tab-video" hidden></div>
-    <div id="vue-post" role="tabpanel" aria-labelledby="tab-post">
-    <div class="li-tete">
-      <div><h2 style="margin:0;font-size:clamp(1.15rem,2.6vw,1.4rem)">Préparer un post LinkedIn</h2><p>Un sujet, une approche, et l'IA rédige un post court et professionnel. Vous gardez la main.</p></div>
-      <button type="button" class="bouton bouton-discret" id="btn-brouillons">Mes posts</button>
-    </div>
-    <div id="zone-reprise"></div>
-    <section class="carte" id="panneau-brouillons" hidden style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-        <h2 style="margin:0;font-size:1.1rem">Mes posts</h2>
-        <div class="puces" id="filtre-posts"><button type="button" class="puce" data-fp="" aria-pressed="true">Tous</button><button type="button" class="puce" data-fp="brouillon" aria-pressed="false">Brouillons</button><button type="button" class="puce" data-fp="publie" aria-pressed="false">Publiés</button></div>
-      </div>
-      <div id="brouillons"></div>
-      <p class="doux petit" style="margin:10px 0 0">Enregistrés sur votre compte : retrouvez-les sur tous vos appareils.</p>
-    </section>
-
-    <nav class="etapes" aria-label="Étapes">
-      <button type="button" class="etape-btn" data-etape="1"><span class="n">1</span><span class="t"><b>Le sujet</b><small id="resume-1">À choisir</small></span></button>
-      <button type="button" class="etape-btn" data-etape="2" disabled><span class="n">2</span><span class="t"><b>L'approche</b><small id="resume-2">—</small></span></button>
-      <button type="button" class="etape-btn" data-etape="3" disabled><span class="n">3</span><span class="t"><b>Le post</b><small id="resume-3">—</small></span></button>
-    </nav>
-
-    <div class="li-grille">
-      <div style="min-width:0">
-        <!-- Étape 1 -->
-        <section class="carte panneau" id="p1">
-          <h2>De quoi voulez-vous parler ?</h2>
-          <p class="doux">Choisissez une idée, une actualité, une fiche, ou écrivez votre thème.</p>
-          <div class="onglets" role="tablist">
-            <button type="button" class="puce" data-onglet="idees" aria-pressed="true">💡 Idées du moment</button>
-            <button type="button" class="puce" data-onglet="actus" aria-pressed="false">📰 Actualités</button>
-            <button type="button" class="puce" data-onglet="fiches" aria-pressed="false">🎓 Fiches Apprendre</button>
-            <button type="button" class="puce" data-onglet="libre" aria-pressed="false">✏️ Mon thème</button>
-          </div>
-          <div id="zone-sujet"><div class="attente"><span class="rond"></span>Recherche des sujets du moment…</div></div>
-        </section>
-
-        <!-- Étape 2 -->
-        <section class="carte panneau" id="p2" hidden>
-          <div class="recap"><span id="recap-sujet"></span><button type="button" class="lien-bouton" data-aller="1">Changer</button></div>
-          <h2>Comment l'aborder ?</h2>
-          <p class="doux">L'approche suggérée est déjà sélectionnée : vous pouvez rédiger tout de suite.</p>
-          <div class="approches" id="approches" role="group" aria-label="Approche"></div>
-          <p class="desc-approche" id="desc-approche" aria-live="polite"></p>
-          <div class="reglages">
-            <div><span class="simu-lib">Ton</span><div class="puces" id="tons">
-              <button type="button" class="puce" data-ton="sobre" aria-pressed="true">Sobre</button>
-              <button type="button" class="puce" data-ton="chaleureux" aria-pressed="false">Chaleureux</button>
-              <button type="button" class="puce" data-ton="expert" aria-pressed="false">Expert</button></div></div>
-            <div><span class="simu-lib">Longueur</span><div class="puces" id="longueurs">
-              <button type="button" class="puce" data-longueur="court" aria-pressed="true">Très court · 3 à 5 lignes</button>
-              <button type="button" class="puce" data-longueur="moyen" aria-pressed="false">Court · ≈ 700 caractères</button></div></div>
-          </div>
-          <details class="precision" id="bloc-voix"><summary>✍️ Écrire dans mon style (Ma voix)</summary>
-            <p class="doux petit" style="margin:8px 0">Collez 2 ou 3 de vos posts LinkedIn. L'IA imitera votre ton et votre rythme, sans reprendre leur contenu.</p>
-            <textarea id="voix-exemples" rows="6" maxlength="4000" style="width:100%;box-sizing:border-box" placeholder="Collez ici vos posts, séparés par une ligne vide"></textarea>
-            <label style="display:flex;gap:8px;align-items:center;margin:8px 0;font-weight:500"><input type="checkbox" id="voix-actif" style="width:auto"> Utiliser mon style pour les prochains posts</label>
-            <button type="button" class="bouton bouton-discret" id="btn-voix">Enregistrer</button></details>
-          <details class="precision"><summary>Ajouter une précision pour l'IA (facultatif)</summary>
-            <input id="consigne" maxlength="200" style="margin-top:8px" placeholder="Ex. : s'adresser aux chefs d'entreprise">
-            <p class="alerte-donnees">N'indiquez jamais de nom ni d'information sur un client.</p></details>
-          <div style="margin-top:18px" class="bouton-bureau"><button type="button" class="bouton gros-bouton" data-rediger>✨ Rédiger le post</button></div>
-        </section>
-
-        <!-- Étape 3 -->
-        <section class="carte panneau" id="p3" hidden>
-          <div id="p3-attente" class="attente" hidden><span class="rond"></span>Rédaction en cours, 10 à 20 secondes…</div>
-          <div id="p3-erreur" hidden></div>
-          <div id="p3-contenu" hidden>
-            <h2>Votre post est prêt</h2>
-            <p class="doux">Relisez l'aperçu, ajustez si besoin, puis copiez-le dans LinkedIn.</p>
-            <div class="publie-barre" id="publie-barre" hidden><span id="publie-texte">Publié ?</span><button type="button" class="bouton" id="btn-marquer">✓ Oui, marquer comme publié</button></div>
-            <div class="apercu" id="apercu"></div>
-            <p class="apercu-note">Aperçu approximatif : la partie surlignée est à peu près ce qui s'affiche avant « … voir plus ».</p>
-            <div id="conformite"></div>
-            <div class="actions">
-              <button type="button" class="bouton" id="btn-publier">Publier sur LinkedIn</button>
-              <button type="button" class="bouton bouton-discret" id="btn-copier">Copier le texte</button>
-              <button type="button" class="bouton bouton-discret" id="btn-modifier">✏️ Modifier le texte</button>
-              <button type="button" class="bouton bouton-discret" id="btn-brouillon">Enregistrer dans Mes posts</button>
-            </div>
-            <div id="zone-edition" hidden>
-              <label for="post" class="bloc-lib">Texte du post</label>
-              <textarea class="post" id="post"></textarea>
-              <div class="compteur" id="compteur"></div>
-            </div>
-            <section class="visuels" id="visuels" hidden>
-              <div class="visuels-tete"><h3>L'image du post</h3>
-                <div class="puces" role="group" aria-label="Format"><button type="button" class="puce" data-format="image" aria-pressed="true">Image</button><button type="button" class="puce" data-format="carrousel" aria-pressed="false">Carrousel</button></div></div>
-              <p class="doux petit" style="margin:0 0 12px" id="visuels-aide">Une image au format portrait (1080 × 1350), aux couleurs du cabinet.</p>
-              <div class="visuels-grille">
-                <div class="visuel-zone" id="visuel-zone"><div class="attente"><span class="rond"></span>Création de l'image…</div></div>
-                <div class="visuel-reglages">
-                  <span class="bloc-lib">Schéma</span>
-                  <div class="puces" id="modeles"></div>
-                  <div class="actions" style="margin:14px 0 6px">
-                    <button type="button" class="bouton" id="btn-png">Télécharger l'image</button>
-                    <button type="button" class="bouton bouton-discret" id="btn-partager-img" hidden>Partager</button>
-                  </div>
-                  <details class="precision"><summary>Modifier les textes de l'image</summary>
-                    <label for="v-titre" class="bloc-lib" style="margin-top:10px">Titre</label><input id="v-titre" maxlength="80">
-                    <label for="v-points" class="bloc-lib" style="margin-top:10px">Points (un par ligne)</label><textarea id="v-points" rows="4" style="width:100%;box-sizing:border-box"></textarea>
-                    <label for="v-conclusion" class="bloc-lib" style="margin-top:10px">Message final</label><input id="v-conclusion" maxlength="90">
-                    <p class="alerte-donnees">Tout chiffre ajouté à la main doit être vérifié.</p></details>
-                  <details class="precision" id="bloc-signature"><summary>Signature : <span id="signature-resume"></span></summary>
-                    <label for="sig-nom" class="bloc-lib" style="margin-top:10px">Nom du conseiller</label><input id="sig-nom" maxlength="60" placeholder="Prénom Nom">
-                    <label for="sig-cabinet" class="bloc-lib" style="margin-top:10px">Cabinet</label><input id="sig-cabinet" maxlength="60" placeholder="Nom du cabinet">
-                    <label id="bloc-pour-tous" style="display:none;gap:8px;align-items:center;margin:10px 0 0;font-weight:500"><input type="checkbox" id="sig-pour-tous" style="width:auto"> Utiliser ce cabinet pour toute l'équipe</label>
-                    <p style="margin:10px 0 0"><button type="button" class="bouton bouton-discret" id="btn-signature">Enregistrer ma signature</button></p></details>
-                  <div class="alt-texte" id="alt-texte"></div>
-                </div>
-              </div>
-            </section>
-            <div id="verif"></div>
-            <div class="perso" id="perso">
-              <h3 style="margin:0;font-size:1.05rem">Personnaliser</h3>
-              <div id="bloc-accroches"><span class="bloc-lib">L'accroche (la première ligne)</span><div class="accroches" id="accroches"></div></div>
-              <div id="bloc-ctas"><span class="bloc-lib">La conclusion</span><div class="puces" id="ctas"></div></div>
-              <div id="bloc-tags"><span class="bloc-lib">Les hashtags (touchez pour retirer ou remettre)</span><div class="puces" id="hashtags"></div></div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button type="button" class="bouton bouton-discret" id="btn-autre">↻ Une autre version</button>
-                <button type="button" class="bouton bouton-discret" data-aller="2">Changer d'approche</button>
-                <button type="button" class="bouton bouton-discret" id="btn-nouveau">Nouveau post</button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <aside class="li-cote">
-        <section class="carte boite conseils">
-          <details>
-          <summary>✍️ Un bon post en 5 points</summary>
-          <ol>
-            <li><strong>Une accroche</strong> courte : seules les premières lignes s'affichent avant « voir plus ».</li>
-            <li><strong>Le contexte</strong> en une ou deux phrases.</li>
-            <li><strong>Une seule idée clé</strong>, expliquée simplement.</li>
-            <li><strong>Une conclusion</strong> : une question ou une invitation à échanger.</li>
-            <li><strong>3 à 5 hashtags</strong> ciblés.</li>
-          </ol>
-          </details>
-          <details open>
-          <summary>✅ Avant de publier</summary>
-          <ul>
-            <li>Une information claire, exacte et non trompeuse.</li>
-            <li>Aucune promesse de rendement ; les risques sont mentionnés.</li>
-            <li>Pas de conseil personnalisé dans un post public.</li>
-            <li>Aucune donnée sur un client.</li>
-            <li>La source est citée et les chiffres vérifiés.</li>
-          </ul>
-          </details>
-        </section>
-      </aside>
-    </div>
-    </div>
+    <div id="vue-post" role="tabpanel" aria-labelledby="tab-post"></div>
   </main>
-  <div class="barre-mobile" id="barre-mobile" hidden><button type="button" class="bouton gros-bouton" data-rediger>✨ Rédiger le post</button></div>
   <script>
-    const ICONES = { decryptage: "🔎", pedagogie: "🎓", conseils: "✅", opinion: "💬", chiffre: "🔢", idee_recue: "💡", question: "❓" };
-    const NOMS = { decryptage: "Décryptage", pedagogie: "Pédagogie", conseils: "Points d'attention", opinion: "Point de vue", chiffre: "Le chiffre clé", idee_recue: "Idée reçue", question: "Question au réseau" };
-    const DESCRIPTIONS = {
-      decryptage: "Expliquer ce qui change, pour qui, et pourquoi c'est important.",
-      pedagogie: "Expliquer simplement la notion patrimoniale derrière le sujet.",
-      conseils: "Trois réflexes concrets à avoir, formulés de façon générale.",
-      opinion: "Votre point de vue, nuancé et argumenté, qui reste factuel.",
-      chiffre: "Partir d'un chiffre de la source et l'expliquer.",
-      idee_recue: "Corriger une croyance courante liée au sujet.",
-      question: "Présenter le sujet en quelques lignes et inviter votre réseau à réagir.",
-    };
-    const CLE_EN_COURS = "linkedin_en_cours";
-    const etat = { donnees: null, onglet: "idees", etape: 1, choix: null, approche: "decryptage", suggeree: null, ton: "sobre", longueur: "court",
-      post: null, texte: "", accroche: 0, cta: 0, tagsOff: [], modifie: false, nbActus: 10, moi: null };
-    const dateCourte = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-    const $ = (id) => document.getElementById(id);
-
-    // ---------------------------------------------------------------- Enregistrement du travail en cours (sur cet appareil)
-    function sauver() {
-      const { donnees, moi, ...a } = etat;
-      const choix = a.choix && a.choix.type === "fiche" ? { ...a.choix, fiche: undefined, fiche_id: a.choix.fiche.id } : a.choix;
-      try { localStorage.setItem(CLE_EN_COURS, JSON.stringify({ ...a, choix, le: Date.now() })); } catch {}
-    }
-    function lireEnCours() { try { return JSON.parse(localStorage.getItem(CLE_EN_COURS) || "null"); } catch { return null; } }
-    function effacerEnCours() { try { localStorage.removeItem(CLE_EN_COURS); } catch {} }
-
-    // ---------------------------------------------------------------- Navigation entre les étapes
-    function allerA(n) {
-      etat.etape = n;
-      [1, 2, 3].forEach((k) => { $("p" + k).hidden = k !== n; });
-      document.querySelectorAll(".etape-btn").forEach((b) => {
-        const k = Number(b.dataset.etape);
-        b.classList.toggle("actif", k === n);
-        b.classList.toggle("fait", k < n || (k === 1 && !!etat.choix) || (k === 2 && !!etat.post && n !== 2));
-        b.disabled = !(k === 1 || (k === 2 && etat.choix) || (k === 3 && (etat.post || etat.texte)));
-        if (k === n) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
-      });
-      $("resume-1").textContent = etat.choix ? etat.choix.libelle : "À choisir";
-      $("resume-2").textContent = etat.choix ? `${NOMS[etat.approche]} · ${etat.ton}` : "—";
-      $("resume-3").textContent = etat.texte ? `${etat.texte.length} caractères` : "—";
-      $("barre-mobile").hidden = n !== 2;
-      document.body.classList.toggle("avec-barre", n === 2);
-      const haut = document.querySelector(".etapes").getBoundingClientRect().top + scrollY - 90;
-      if (scrollY > haut) scrollTo({ top: Math.max(0, haut), behavior: "smooth" });
-      sauver();
-    }
-
-    // ---------------------------------------------------------------- Étape 1 : le sujet
-    function choisirSujet(choix, approcheSuggeree) {
-      etat.choix = choix;
-      etat.suggeree = approcheSuggeree || (choix.type === "fiche" ? "pedagogie" : "decryptage");
-      etat.approche = etat.suggeree;
-      etat.post = null; etat.texte = ""; etat.modifie = false;
-      $("recap-sujet").innerHTML = `<strong>Sujet :</strong> ${echapper(choix.libelle)}`;
-      afficherApproches();
-    }
-
-    function afficherOnglet() {
-      const z = $("zone-sujet"), d = etat.donnees;
-      document.querySelectorAll("[data-onglet]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.onglet === etat.onglet));
-      if (etat.onglet === "idees") {
-        // Idées « toujours d'actualité » : 3 fiches Apprendre (contenu vérifié), qui changent chaque jour.
-        const jour = new Date().toLocaleDateString("en-CA"), graine = [...jour].reduce((a, c) => a + c.charCodeAt(0), 0);
-        const fichesJour = [0, 1, 2].map((k) => FICHES[(graine + k * 5) % FICHES.length]);
-        const publies = new Set(MES_POSTS.filter((p) => p.statut === "publie" && p.sujet_id).map((p) => p.sujet_id));
-        z.innerHTML = (d.idees.length ? `<div class="idees">${d.idees.map((i, k) => `<div class="idee">
-          <button type="button" class="choix-carte" data-k="${k}">
-            <span class="tag">${i.simple ? "📰 À la une" : `${ICONES[i.approche] || ""} ${NOMS[i.approche] || ""}`}</span>${publies.has(i.sujet_id) ? '<span class="statut publie">✓ Déjà publié</span>' : ""}<strong>${echapper(i.titre)}</strong>
-            <span class="petit">${echapper(i.pourquoi)}</span></button>
-          <div class="idee-actions"><button type="button" data-direct="${k}">✨ Rédiger directement</button></div></div>`).join("")}</div>`
-          : '<p class="doux">Pas d\'idée tirée de l\'actualité pour le moment.</p>') +
-          `<h3 class="sous-titre-idees">🎓 Toujours d'actualité</h3><div class="liste-peda">${fichesJour.map((f) => `<div class="peda">
-            <button type="button" class="peda-choix" data-fj="${f.id}"><strong>${echapper(f.titre)} : l'essentiel en 3 lignes</strong><span>${echapper(f.sousTitre)}</span></button>
-            <button type="button" class="lien-bouton peda-direct" data-fjd="${f.id}">✨ Rédiger</button></div>`).join("")}</div>`;
-        z.querySelectorAll("[data-fj]").forEach((b) => b.onclick = () => { choisirFiche(b.dataset.fj); allerA(2); });
-        z.querySelectorAll("[data-fjd]").forEach((b) => b.onclick = () => { choisirFiche(b.dataset.fjd); rediger(); });
-        const prendre = (k) => { const i = d.idees[k]; choisirSujet({ type: "sujet", sujet_id: i.sujet_id, libelle: i.sujet.titre || i.titre }, i.simple ? null : i.approche); };
-        z.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => { prendre(Number(b.dataset.k)); allerA(2); });
-        z.querySelectorAll("[data-direct]").forEach((b) => b.onclick = () => { prendre(Number(b.dataset.direct)); rediger(); });
-      } else if (etat.onglet === "actus") {
-        const liste = d.sujets.slice(0, etat.nbActus);
-        z.innerHTML = d.sujets.length ? `<div class="liste-actus">${liste.map((s) => `<button type="button" class="choix-carte" data-id="${s.id}">
-          <strong>${echapper(s.titre)}</strong><span class="petit">${dateCourte(s.derniere_pub)} · ${echapper((s.categories || []).slice(0, 2).join(" · "))}${s.sources ? " · " + echapper(s.sources.split(",").slice(0, 2).join(", ")) : ""}</span></button>`).join("")}</div>
-          ${d.sujets.length > etat.nbActus ? '<p style="text-align:center;margin:12px 0 0"><button type="button" class="bouton bouton-discret" id="plus-actus">Afficher plus d\'actualités</button></p>' : ""}`
-          : '<p class="doux">Pas d\'actualité importante sur les 4 derniers jours.</p>';
-        z.querySelectorAll("[data-id]").forEach((b) => b.onclick = () => {
-          const s = d.sujets.find((x) => x.id === b.dataset.id);
-          choisirSujet({ type: "sujet", sujet_id: s.id, libelle: s.titre }); allerA(2);
-        });
-        const plus = $("plus-actus"); if (plus) plus.onclick = () => { etat.nbActus += 10; afficherOnglet(); };
-      } else if (etat.onglet === "fiches") {
-        z.innerHTML = `<p class="doux petit" style="margin-top:0">Contenu vérifié sur des sources officielles : idéal pour un post pédagogique.</p>
-          <div class="idees">${FICHES.map((f) => `<button type="button" class="choix-carte" data-f="${f.id}"><strong>${echapper(f.titre)}</strong><span class="petit">${echapper(f.sousTitre)}</span></button>`).join("")}</div>`;
-        z.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { choisirFiche(b.dataset.f); allerA(2); });
-      } else {
-        z.innerHTML = `<label for="theme" class="bloc-lib">Votre thème</label><textarea id="theme" rows="3" maxlength="300" style="width:100%;box-sizing:border-box" placeholder="Ex. : pourquoi faire le point sur sa clause bénéficiaire après un mariage">${etat.choix?.type === "libre" ? echapper(etat.choix.theme) : ""}</textarea>
-          <p class="alerte-donnees">Sans source, l'IA reste générale et n'écrit aucun chiffre. N'indiquez aucune donnée client.</p>
-          <p style="margin:12px 0 0"><button type="button" class="bouton" id="btn-theme">Continuer →</button></p>`;
-        $("btn-theme").onclick = () => {
-          const t = $("theme").value.trim();
-          if (!t) { notifier("Écrivez d'abord votre thème.", true); $("theme").focus(); return; }
-          choisirSujet({ type: "libre", theme: t, libelle: t }); allerA(2);
-        };
-      }
-    }
-    function choisirFiche(id) {
-      const f = FICHES.find((x) => x.id === id);
-      if (f) choisirSujet({ type: "fiche", fiche: f, libelle: "Fiche « " + f.titre + " »" }, "pedagogie");
-    }
-
-    // ---------------------------------------------------------------- Étape 2 : l'approche
-    function afficherApproches() {
-      $("approches").innerHTML = Object.keys(NOMS).map((a) => `<button type="button" class="puce ${a === etat.suggeree ? "suggeree" : ""}" data-approche="${a}" aria-pressed="${a === etat.approche}">${ICONES[a]} ${NOMS[a]}</button>`).join("");
-      $("approches").querySelectorAll("[data-approche]").forEach((b) => b.onclick = () => { etat.approche = b.dataset.approche; afficherApproches(); sauver(); });
-      $("desc-approche").textContent = DESCRIPTIONS[etat.approche];
-      document.querySelectorAll("[data-ton]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.ton === etat.ton));
-      document.querySelectorAll("[data-longueur]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.longueur === etat.longueur));
-    }
-
-    // ---------------------------------------------------------------- Étape 3 : rédaction et personnalisation
-    const texteFiche = (f) => [f.enUnePhrase, ...f.chiffres.map((c) => c.valeur + " : " + c.libelle), ...f.essentiel.map((e) => e.titre + " : " + e.texte), "À éviter : " + f.pieges.join(" ; ")].join("\n");
-
-    async function rediger() {
-      if (!etat.choix) { allerA(1); notifier("Choisissez d'abord un sujet.", true); return; }
-      const corps = { approche: etat.approche, ton: etat.ton, longueur: etat.longueur, consigne: $("consigne").value.trim(), ma_voix: $("voix-actif").checked };
-      if (etat.choix.type === "sujet") corps.sujet_id = etat.choix.sujet_id;
-      else if (etat.choix.type === "fiche") corps.fiche = { titre: etat.choix.fiche.titre, contenu: texteFiche(etat.choix.fiche) };
-      else corps.theme = etat.choix.theme;
-      etat.post = null; etat.texte = "";
-      allerA(3);
-      $("p3-attente").hidden = false; $("p3-contenu").hidden = true; $("p3-erreur").hidden = true;
-      try {
-        const p = await appelApi("/api/linkedin/rediger", "POST", corps);
-        etat.post = p; etat.visuel = p.visuel || null; etat.postId = null; $("publie-barre").hidden = true; etat.accroche = 0; etat.cta = 0; etat.tagsOff = []; etat.modifie = false;
-        etat.texte = construire();
-        afficherResultat();
-        if (p.restants <= 5) notifier(`Encore ${p.restants} rédaction${p.restants > 1 ? "s" : ""} possible${p.restants > 1 ? "s" : ""} aujourd'hui.`);
-      } catch (e) {
-        $("p3-erreur").hidden = false;
-        $("p3-erreur").innerHTML = `<p class="message ko">${echapper(e.message)}</p><p><button type="button" class="bouton" id="btn-reessayer">Réessayer</button> <button type="button" class="bouton bouton-discret" data-aller="2">Retour</button></p>`;
-        $("btn-reessayer").onclick = rediger;
-        $("p3-erreur").querySelector("[data-aller]").onclick = () => allerA(2);
-      } finally { $("p3-attente").hidden = true; allerA(3); }
-    }
-
-    // Texte complet à partir des choix : accroche, corps, conclusion, source, hashtags.
-    function construire() {
-      const p = etat.post;
-      const paras = p.corps.trim().split(/\n\s*\n/);
-      const source = /^source\s*:/i.test(paras[paras.length - 1] || "") ? paras.pop() : "";
-      const tags = p.hashtags.filter((h) => !etat.tagsOff.includes(h));
-      return [p.accroches[etat.accroche] || "", ...paras, p.appels_action[etat.cta] || "", source, tags.join(" ")].filter(Boolean).join("\n\n");
-    }
-
-    // Applique un changement de personnalisation SANS écraser les modifications faites à la main.
-    function appliquer(ancien, nouveau, repli) {
-      let t = etat.texte;
-      if (ancien && t.includes(ancien)) t = nouveau ? t.replace(ancien, nouveau) : t.replace(ancien, "").replace(/\n{3,}/g, "\n\n").trim();
-      else if (nouveau) t = repli(t, nouveau);
-      etat.texte = t; majTexte();
-    }
-    function majTexte(depuisZone) {
-      if (!depuisZone) $("post").value = etat.texte;
-      const n = etat.texte.length;
-      $("compteur").textContent = `${n.toLocaleString("fr-FR")} caractères${n > 3000 ? " — au-delà de la limite de LinkedIn (3 000)" : ""}`;
-      afficherApercu(); $("resume-3").textContent = `${n} caractères`; sauver();
-    }
-
-    function afficherApercu(ouvert) {
-      const t = etat.texte, nom = etat.moi?.nom || "Vous";
-      const initiales = nom.split(/\s+/).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
-      // Coupure approximative : environ 3 lignes, soit ~210 caractères ou les 3 premières lignes.
-      let coupe = Math.min(t.length, 210);
-      const lignes = t.split("\n"); let cumul = 0;
-      for (let i = 0; i < Math.min(3, lignes.length); i++) cumul += lignes[i].length + 1;
-      coupe = Math.min(coupe, cumul > 0 ? cumul - 1 : coupe);
-      const debut = t.slice(0, coupe), suite = t.slice(coupe);
-      $("apercu").innerHTML = `<div class="apercu-tete"><span class="avatar">${echapper(initiales)}</span><span><strong>${echapper(nom)}</strong><small>Conseiller en gestion de patrimoine · à l'instant</small></span></div>
-        <div class="apercu-texte"><span class="coupure">${echapper(debut)}</span>${suite ? (ouvert ? echapper(suite) : `<button type="button" class="voir-plus" id="voir-plus">… voir plus</button>`) : ""}</div>
-        ${imageApercu ? `<img class="apercu-img" alt="" src="${imageApercu}">` : ""}`;
-      const vp = $("voir-plus"); if (vp) vp.onclick = () => afficherApercu(true);
-      afficherConformite();
-    }
-
-    // ---------------------------------------------------------------- Visuels (image ou carrousel aux couleurs du cabinet)
-    const NOMS_MODELES = { chiffre: "Chiffre clé", points: "3 points", etapes: "Étapes", comparaison: "Avant / après", question: "Question" };
-    let signature = { nom: "", cabinet: "" }, formatVisuel = "image", derniersVisuels = [], minuteur = null, imageApercu = "";
-
-    // Formulations à risque au regard des règles de communication (information claire, exacte et non trompeuse).
-    const RISQUES = [
-      [/\bgaranti(e|s|es)?\b/i, "« garanti » : à n'employer que si la garantie est réelle, et en précisant laquelle et par qui."],
-      [/sans (aucun )?risques?|z[ée]ro risque/i, "« sans risque » : tout placement comporte des risques ; formulation trompeuse."],
-      [/(rendement|gain|performance|plus-value)s? (assur|garanti|certain|s[ûu]r)/i, "Promesse de rendement ou de gain : interdite."],
-      [/placement s[ûu]r|à coup s[ûu]r|100 ?% s[ûu]r/i, "« sûr » : laisse croire à une absence de risque."],
-      [/meilleur placement|placement id[ée]al|imbattable/i, "Superlatif commercial : à éviter."],
-      [/z[ée]ro imp[ôo]t|(plus|aucun) d'imp[ôo]ts?|d[ée]fiscalis\w* (totale|garantie)/i, "Promesse fiscale absolue : à nuancer (plafonds, conditions)."],
-      [/sans (aucuns? )?frais/i, "« sans frais » : à vérifier, des frais existent presque toujours."],
-    ];
-    function afficherConformite() {
-      const v = etat.visuel || {};
-      const texte = [etat.texte, v.titre, v.conclusion, v.chiffre_legende, ...(v.points || []), ...(v.gauche || []), ...(v.droite || [])].filter(Boolean).join("\n");
-      const trouves = RISQUES.filter(([re]) => re.test(texte)).map(([, m]) => m);
-      $("conformite").innerHTML = trouves.length ? `<div class="conformite"><strong>⚠️ Formulations à revoir avant de publier</strong><ul>${trouves.map((m) => `<li>${echapper(m)}</li>`).join("")}</ul></div>` : "";
-    }
-    function modelesPossibles(v) {
-      return Object.keys(NOMS_MODELES).filter((m) => m === "question" || (m === "chiffre" && v.chiffre) || ((m === "points" || m === "etapes") && v.points.length >= 2) || (m === "comparaison" && v.gauche.length && v.droite.length));
-    }
-    async function afficherVisuel() {
-      const v = etat.visuel, zone = $("visuel-zone");
-      $("visuels").hidden = !v;
-      if (!v) return;
-      $("modeles").innerHTML = modelesPossibles(v).map((m) => `<button type="button" class="puce" data-modele="${m}" aria-pressed="${m === v.modele}">${NOMS_MODELES[m]}</button>`).join("");
-      $("modeles").querySelectorAll("[data-modele]").forEach((b) => b.onclick = () => { v.modele = b.dataset.modele; sauver(); afficherVisuel(); });
-      document.querySelectorAll("[data-format]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.format === formatVisuel));
-      $("btn-png").textContent = formatVisuel === "image" ? "Télécharger l'image" : "Télécharger le carrousel (PDF)";
-      $("visuels-aide").textContent = formatVisuel === "image" ? "Une image au format portrait (1080 × 1350), aux couleurs du cabinet." : "Un document PDF à publier sur LinkedIn (« Ajouter un document ») : il s'affiche en pages que l'on fait défiler.";
-      $("signature-resume").textContent = [signature.nom, signature.cabinet].filter(Boolean).join(" · ") || "à compléter";
-      const sig = { nom: signature.nom || etat.moi?.nom || "", cabinet: signature.cabinet };
-      const donnees = { ...v, source: etat.post?.lien?.nom || "" };
-      try {
-        derniersVisuels = formatVisuel === "image" ? [await dessinerVisuel(donnees, sig)] : await dessinerCarrousel(donnees, sig);
-        imageApercu = derniersVisuels[0].toDataURL("image/jpeg", 0.85); afficherApercu();
-        $("alt-texte").innerHTML = `<strong>Texte alternatif</strong> (accessibilité, conseillé par LinkedIn)<p id="alt-contenu">${echapper(texteAlternatif(v))}</p>
-          <button type="button" class="bouton bouton-discret" id="btn-alt" style="font-size:.82rem;padding:6px 10px">Copier le texte alternatif</button>
-          <span class="doux petit"> Dans LinkedIn : sur l'image, « Texte alternatif ».</span>`;
-        $("btn-alt").onclick = () => copier(texteAlternatif(v));
-        zone.innerHTML = formatVisuel === "image" ? `<img alt="Aperçu de l'image du post" src="${derniersVisuels[0].toDataURL("image/png")}">`
-          : `<div class="carrousel">${derniersVisuels.map((c, i) => `<img alt="Page ${i + 1}" src="${c.toDataURL("image/jpeg", 0.85)}">`).join("")}</div>`;
-      } catch (e) { zone.innerHTML = `<p class="message ko">Image impossible à créer : ${echapper(e.message)}</p>`; }
-      $("btn-partager-img").hidden = !peutPartager();
-    }
-    function remplirTextesVisuel() {
-      const v = etat.visuel; if (!v) return;
-      $("v-titre").value = v.titre || ""; $("v-points").value = (v.points || []).join("\n"); $("v-conclusion").value = v.conclusion || "";
-    }
-    async function fichierVisuel() {
-      if (formatVisuel === "image") return new File([await versBlob(derniersVisuels[0])], "post-linkedin.png", { type: "image/png" });
-      return new File([await carrouselPdf(derniersVisuels)], "carrousel-linkedin.pdf", { type: "application/pdf" });
-    }
-
-    function afficherResultat() {
-      const p = etat.post;
-      $("p3-contenu").hidden = false;
-      remplirTextesVisuel(); afficherVisuel();
-      const avecPerso = !!p;
-      $("perso").querySelectorAll("#bloc-accroches, #bloc-ctas, #bloc-tags, #btn-autre").forEach((e) => e.hidden = !avecPerso);
-      if (avecPerso) {
-        $("accroches").innerHTML = p.accroches.map((a, k) => `<button type="button" class="choix-carte" data-a="${k}" aria-pressed="${k === etat.accroche}">${echapper(a)}</button>`).join("");
-        $("accroches").querySelectorAll("[data-a]").forEach((b) => b.onclick = () => {
-          const k = Number(b.dataset.a); if (k === etat.accroche) return;
-          appliquer(p.accroches[etat.accroche], p.accroches[k], (t, n) => n + "\n\n" + t);
-          etat.accroche = k; $("accroches").querySelectorAll("[data-a]").forEach((x) => x.setAttribute("aria-pressed", x === b)); sauver();
-        });
-        $("ctas").innerHTML = [...p.appels_action.map((c, k) => `<button type="button" class="puce" data-cta="${k}" aria-pressed="${k === etat.cta}">${echapper(c)}</button>`),
-          `<button type="button" class="puce" data-cta="-1" aria-pressed="${etat.cta === -1}">Sans conclusion</button>`].join("");
-        $("ctas").querySelectorAll("[data-cta]").forEach((b) => b.onclick = () => {
-          const k = Number(b.dataset.cta); if (k === etat.cta) return;
-          // Sans conclusion trouvée : on l'insère avant la ligne des hashtags.
-          appliquer(p.appels_action[etat.cta], p.appels_action[k] || "", (t, n) => { const l = t.split("\n\n"); const i = /^#/.test(l[l.length - 1]) ? l.length - 1 : l.length; l.splice(i, 0, n); return l.join("\n\n"); });
-          etat.cta = k; $("ctas").querySelectorAll("[data-cta]").forEach((x) => x.setAttribute("aria-pressed", x === b)); sauver();
-        });
-        $("hashtags").innerHTML = p.hashtags.map((h) => `<button type="button" class="puce" data-h="${echapper(h)}" aria-pressed="${!etat.tagsOff.includes(h)}">${echapper(h)}</button>`).join("");
-        $("hashtags").querySelectorAll("[data-h]").forEach((b) => b.onclick = () => {
-          const h = b.dataset.h, retire = !etat.tagsOff.includes(h);
-          if (retire) {
-            etat.tagsOff.push(h);
-            etat.texte = etat.texte.replace(new RegExp("(^|\\s)" + h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=\\s|$)"), "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-          } else {
-            etat.tagsOff = etat.tagsOff.filter((x) => x !== h);
-            const l = etat.texte.split("\n"); const der = l.length - 1;
-            if (/^#/.test(l[der].trim())) l[der] = l[der].trim() + " " + h; else l.push("", h);
-            etat.texte = l.join("\n");
-          }
-          b.setAttribute("aria-pressed", !etat.tagsOff.includes(h)); majTexte();
-        });
-        $("verif").innerHTML = (p.a_verifier?.length ? `<div class="avertissement"><strong>À vérifier avant de publier :</strong><ul style="margin:6px 0 0;padding-left:20px">${p.a_verifier.map((x) => `<li>${echapper(x)}</li>`).join("")}</ul></div>` : "") +
-          (p.lien ? `<p class="doux petit" style="margin:10px 0 0">Article source : <a href="${echapper(p.lien.url)}" target="_blank" rel="noopener noreferrer">${echapper(p.lien.nom)} ↗</a></p>` : "");
-      } else $("verif").innerHTML = "";
-      majTexte();
-    }
-
-    // ---------------------------------------------------------------- Mes posts (enregistrés sur le compte)
-    let MES_POSTS = [], filtrePosts = "";
-    const peutPartager = () => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File([""], "x.png", { type: "image/png" })] })); } catch { return false; } };
-    async function chargerPosts() {
-      try {
-        // Reprise unique des anciens brouillons gardés sur cet appareil.
-        let locaux = []; try { locaux = JSON.parse(localStorage.getItem("linkedin_brouillons") || "[]"); } catch {}
-        for (const x of locaux.reverse()) await appelApi("/api/linkedin/posts", "POST", { texte: x.texte, statut: "brouillon" });
-        if (locaux.length) try { localStorage.removeItem("linkedin_brouillons"); } catch {}
-        MES_POSTS = (await appelApi("/api/linkedin/posts")).posts;
-      } catch {}
-      afficherBrouillons();
-      if (etat.donnees && etat.onglet === "idees") afficherOnglet();
-    }
-    async function enregistrerPost(statut) {
-      if (!etat.texte) return null;
-      etat.postId = etat.postId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
-      const r = await appelApi("/api/linkedin/posts", "POST", { id: etat.postId, texte: etat.texte, visuel: etat.visuel, statut,
-        sujet: etat.choix?.libelle || "", sujet_id: etat.choix?.sujet_id || null });
-      MES_POSTS = r.posts; afficherBrouillons(); sauver();
-      return r;
-    }
-    function afficherBrouillons() {
-      const z = $("brouillons"), l = MES_POSTS.filter((p) => !filtrePosts || p.statut === filtrePosts);
-      $("btn-brouillons").textContent = `Mes posts${MES_POSTS.length ? " (" + MES_POSTS.length + ")" : ""}`;
-      if (!l.length) { z.innerHTML = `<p class="doux petit" style="margin:0">${MES_POSTS.length ? "Aucun post dans cette catégorie." : "Aucun post pour l'instant. Après une rédaction, touchez « Enregistrer dans Mes posts »."}</p>`; return; }
-      z.innerHTML = l.map((x) => `<div class="post-ligne"><span style="min-width:0;flex:1 1 260px"><span class="statut ${x.statut}">${x.statut === "publie" ? "Publié" : "Brouillon"}</span>
-          <strong style="display:block;margin-top:4px">${echapper(x.texte.split("\n")[0].slice(0, 90))}</strong><span class="doux petit">${new Date(x.maj_le).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}${x.sujet ? " · " + echapper(x.sujet.slice(0, 60)) : ""}</span></span>
-        <span class="actions-post"><button type="button" class="bouton bouton-discret" data-ouvrir="${x.id}">Ouvrir</button>
-          <button type="button" class="bouton bouton-discret" data-basculer="${x.id}">${x.statut === "publie" ? "Remettre en brouillon" : "✓ Publié"}</button>
-          <button type="button" class="bouton bouton-discret" data-suppr="${x.id}" aria-label="Supprimer ce post">✕</button></span></div>`).join("");
-      z.querySelectorAll("[data-ouvrir]").forEach((b) => b.onclick = () => {
-        const x = MES_POSTS.find((p) => p.id === b.dataset.ouvrir);
-        etat.post = null; etat.texte = x.texte; etat.visuel = x.visuel || null; etat.postId = x.id; etat.modifie = true;
-        $("panneau-brouillons").hidden = true; allerA(3); afficherResultat();
-        $("zone-edition").hidden = false;
-      });
-      z.querySelectorAll("[data-basculer]").forEach((b) => b.onclick = async () => {
-        const x = MES_POSTS.find((p) => p.id === b.dataset.basculer);
-        MES_POSTS = (await appelApi("/api/linkedin/posts", "POST", { id: x.id, statut: x.statut === "publie" ? "brouillon" : "publie" })).posts; afficherBrouillons();
-      });
-      z.querySelectorAll("[data-suppr]").forEach((b) => b.onclick = async () => {
-        if (b.dataset.confirme !== "1") { b.dataset.confirme = "1"; b.textContent = "Supprimer ?"; setTimeout(() => { b.dataset.confirme = ""; b.textContent = "✕"; }, 4000); return; }
-        MES_POSTS = (await appelApi("/api/linkedin/posts", "POST", { supprimer: b.dataset.suppr })).posts; afficherBrouillons();
-      });
-    }
-
-    function reprendre(sauve) {
-      Object.assign(etat, { ...sauve, donnees: etat.donnees, moi: etat.moi });
-      if (sauve.choix?.type === "fiche") { const f = FICHES.find((x) => x.id === sauve.choix.fiche_id); if (f) etat.choix = { ...sauve.choix, fiche: f }; else etat.choix = null; }
-      if (etat.choix) { $("recap-sujet").innerHTML = `<strong>Sujet :</strong> ${echapper(etat.choix.libelle)}`; afficherApproches(); }
-      const n = etat.texte ? 3 : etat.choix ? 2 : 1;
-      allerA(n);
-      if (n === 3) afficherResultat();
-    }
-
-    // ---------------------------------------------------------------- Démarrage
     // Onglets Création Post : Post LinkedIn / Vidéo (mémorisé dans l'adresse : ?onglet=video).
+    const $c = (id) => document.getElementById(id);
+    let postPret = false;
     function choisirVue(vue, memoriser = true) {
       const video = vue === "video";
-      $("vue-post").hidden = video; $("vue-video").hidden = !video;
-      $("tab-post").setAttribute("aria-selected", !video); $("tab-video").setAttribute("aria-selected", video);
+      $c("vue-post").hidden = video; $c("vue-video").hidden = !video;
+      $c("tab-post").setAttribute("aria-selected", !video); $c("tab-video").setAttribute("aria-selected", video);
       document.body.classList.toggle("vue-video", video);
       if (video) window.demarrerVideo();
+      else if (!postPret) { postPret = true; window.demarrerPost(); }
       if (memoriser) { const u = new URL(location.href); if (video) u.searchParams.set("onglet", "video"); else u.searchParams.delete("onglet"); history.replaceState(null, "", u); }
     }
-    $("tab-post").onclick = () => choisirVue("post");
-    // Depuis une vidéo terminée : « Transformer en post LinkedIn » (même sujet, l'IA rédige le post).
-    window.versPostLinkedIn = ({ theme }) => {
-      choisirVue("post");
-      etat.onglet = "libre"; afficherOnglet();
-      choisirSujet({ type: "libre", theme, libelle: theme }); allerA(2);
-      scrollTo({ top: 0, behavior: "smooth" });
-    };
-    $("tab-video").onclick = () => choisirVue("video");
-    if (new URLSearchParams(location.search).get("onglet") === "video") choisirVue("video", false);
-
-    chargerEntete("/linkedin").then(async () => {
-      appelApi("/api/moi").then((m) => { etat.moi = m; if (etat.texte) afficherApercu(); }).catch(() => {});
-      document.querySelectorAll(".etape-btn").forEach((b) => b.onclick = () => allerA(Number(b.dataset.etape)));
-      document.addEventListener("click", (e) => { const a = e.target.closest("[data-aller]"); if (a) allerA(Number(a.dataset.aller)); });
-      document.querySelectorAll("[data-rediger]").forEach((b) => b.onclick = rediger);
-      document.querySelectorAll("[data-ton]").forEach((b) => b.onclick = () => { etat.ton = b.dataset.ton; afficherApproches(); sauver(); });
-      document.querySelectorAll("[data-longueur]").forEach((b) => b.onclick = () => { etat.longueur = b.dataset.longueur; afficherApproches(); sauver(); });
-      document.querySelectorAll("[data-onglet]").forEach((b) => b.onclick = () => { etat.onglet = b.dataset.onglet; afficherOnglet(); });
-      $("post").oninput = (e) => { etat.texte = e.target.value; etat.modifie = true; majTexte(true); };
-      $("btn-modifier").onclick = () => { const z = $("zone-edition"); z.hidden = !z.hidden; if (!z.hidden) $("post").focus(); };
-      $("btn-copier").onclick = () => copier(etat.texte);
-      // Publier : sur téléphone, le texte est copié et l'image envoyée à l'application LinkedIn (partage) ;
-      // sur ordinateur, le texte est copié, l'image téléchargée et LinkedIn ouvert.
-      $("btn-publier").onclick = async () => {
-        copier(etat.texte);
-        if (peutPartager() && derniersVisuels.length) {
-          try { const f = await fichierVisuel(); await navigator.share({ files: [f], text: etat.texte }); } catch {}
-          $("publie-texte").textContent = "Texte copié : collez-le dans LinkedIn si besoin. Le post est publié ?";
-        } else {
-          window.open("https://www.linkedin.com/feed/", "_blank", "noopener");
-          if (derniersVisuels.length) { const f = await fichierVisuel(); telechargerBlob(f, f.name); }
-          $("publie-texte").textContent = "Texte copié et image téléchargée : dans LinkedIn, « Commencer un post », collez le texte, ajoutez l'image. C'est publié ?";
-        }
-        $("publie-barre").hidden = false;
-      };
-      $("btn-marquer").onclick = async () => { await enregistrerPost("publie"); $("publie-barre").hidden = true; notifier("Ajouté à Mes posts, comme publié."); };
-      $("btn-brouillon").onclick = async () => { try { await enregistrerPost("brouillon"); notifier("Enregistré dans Mes posts."); } catch (e) { notifier(e.message, true); } };
-      document.querySelectorAll("[data-fp]").forEach((b) => b.onclick = () => { filtrePosts = b.dataset.fp; document.querySelectorAll("[data-fp]").forEach((x) => x.setAttribute("aria-pressed", x === b)); afficherBrouillons(); });
-      // Ma voix
-      appelApi("/api/linkedin/voix").then((v) => { $("voix-exemples").value = v.exemples || ""; $("voix-actif").checked = !!(v.actif && v.exemples); }).catch(() => {});
-      $("btn-voix").onclick = async () => {
-        try { const v = await appelApi("/api/linkedin/voix", "POST", { exemples: $("voix-exemples").value, actif: $("voix-actif").checked }); $("voix-actif").checked = !!(v.actif && v.exemples); notifier("Votre style est enregistré."); }
-        catch (e) { notifier(e.message, true); }
-      };
-      let confirmer = false;
-      $("btn-autre").onclick = () => {
-        if (etat.modifie && !confirmer) { confirmer = true; $("btn-autre").textContent = "Vos modifications seront remplacées : confirmer ?"; setTimeout(() => { confirmer = false; $("btn-autre").textContent = "↻ Une autre version"; }, 5000); return; }
-        confirmer = false; $("btn-autre").textContent = "↻ Une autre version"; rediger();
-      };
-      $("btn-nouveau").onclick = () => { effacerEnCours(); Object.assign(etat, { choix: null, post: null, texte: "", modifie: false }); $("zone-edition").hidden = true; if (etat.donnees) afficherOnglet(); allerA(1); };
-      $("btn-brouillons").onclick = () => { const p = $("panneau-brouillons"); p.hidden = !p.hidden; };
-      // Visuels : format, textes, signature, téléchargement et partage.
-      appelApi("/api/linkedin/signature").then((s) => { signature = s; $("sig-nom").value = s.nom || ""; $("sig-cabinet").value = s.cabinet || ""; $("bloc-pour-tous").style.display = s.admin ? "flex" : "none"; if (etat.visuel) afficherVisuel(); }).catch(() => {});
-      document.querySelectorAll("[data-format]").forEach((b) => b.onclick = () => { formatVisuel = b.dataset.format; afficherVisuel(); });
-      const majTextes = () => {
-        if (!etat.visuel) return;
-        etat.visuel.titre = $("v-titre").value.trim(); etat.visuel.conclusion = $("v-conclusion").value.trim();
-        etat.visuel.points = $("v-points").value.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 4);
-        clearTimeout(minuteur); minuteur = setTimeout(() => { sauver(); afficherVisuel(); }, 400);
-      };
-      ["v-titre", "v-points", "v-conclusion"].forEach((id) => $(id).oninput = majTextes);
-      $("btn-signature").onclick = async () => {
-        try { signature = await appelApi("/api/linkedin/signature", "POST", { nom: $("sig-nom").value, cabinet: $("sig-cabinet").value, pour_tous: $("sig-pour-tous").checked }); notifier($("sig-pour-tous").checked ? "Cabinet enregistré pour toute l'équipe." : "Signature enregistrée."); $("bloc-signature").open = false; afficherVisuel(); }
-        catch (e) { notifier(e.message, true); }
-      };
-      $("btn-png").onclick = async () => { const f = await fichierVisuel(); telechargerBlob(f, f.name); };
-      $("btn-partager-img").onclick = async () => { const f = await fichierVisuel(); try { await navigator.share({ files: [f], text: etat.texte }); } catch {} };
-      const enCours = lireEnCours();   // lu avant le premier enregistrement automatique
-      chargerPosts();
-      allerA(1);
-
-      // Ouverture depuis une actualité, le brief ou une fiche : /linkedin?sujet=… ou ?fiche=…
-      const q = new URLSearchParams(location.search);
-      try { etat.donnees = await appelApi("/api/linkedin/sujets"); }
-      catch (e) { $("zone-sujet").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; return; }
-
-      afficherOnglet();
-      if (q.get("sujet")) {
-        const id = q.get("sujet");
-        let titre = etat.donnees.sujets.find((s) => s.id === id)?.titre;
-        if (!titre) titre = await appelApi("/api/sujet?id=" + encodeURIComponent(id)).then((s) => s.titre_fr || s.titre).catch(() => null);
-        const appr = q.get("approche");
-        if (titre) { choisirSujet({ type: "sujet", sujet_id: id, libelle: titre }, NOMS[appr] ? appr : null); allerA(2); }
-        history.replaceState(null, "", "/linkedin");
-      } else if (q.get("fiche")) {
-        choisirFiche(q.get("fiche")); if (etat.choix) allerA(2);
-        history.replaceState(null, "", "/linkedin");
-      } else if (enCours && (enCours.texte || enCours.choix) && Date.now() - enCours.le < 7 * 86400e3) {
-        $("zone-reprise").innerHTML = `<div class="reprise"><span>Vous aviez un post en cours${enCours.choix ? " : <strong>" + echapper(enCours.choix.libelle).slice(0, 80) + "</strong>" : ""}.</span>
-          <span style="display:flex;gap:8px"><button type="button" class="bouton" id="btn-reprendre">Reprendre</button><button type="button" class="bouton bouton-discret" id="btn-ignorer">Commencer un nouveau</button></span></div>`;
-        $("btn-reprendre").onclick = () => { $("zone-reprise").innerHTML = ""; reprendre(enCours); };
-        $("btn-ignorer").onclick = () => { $("zone-reprise").innerHTML = ""; effacerEnCours(); };
-      }
-    });
+    window.choisirVue = choisirVue;
+    $c("tab-post").onclick = () => choisirVue("post");
+    $c("tab-video").onclick = () => choisirVue("video");
+    chargerEntete("/linkedin").then(() => choisirVue(new URLSearchParams(location.search).get("onglet") === "video" ? "video" : "post", false));
   </script>
 </body>
 </html>
