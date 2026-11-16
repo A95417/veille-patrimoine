@@ -1,3 +1,4 @@
+import { nettoyerTout } from "./texte.js";
 // Création Post › Vidéo : scénario proposé par l'IA (validé et modifiable), fabrication par le robot GitHub (gratuit),
 // suivi en direct (étape, temps restant), galerie, téléchargement (MP4, miniature, sous-titres .srt).
 // Précautions : chiffres jamais inventés (calculés par le code ou tirés des données du site, sinon signalés « à vérifier »),
@@ -7,7 +8,7 @@ import { lireEtat, ecrireEtat, generer, sujetsRecents } from "./linkedin.js";
 import { routeLecture } from "./lecture.js";
 
 const json = (d, s = 200) =>
-  new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+  new Response(JSON.stringify(nettoyerTout(d)), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 const erreur = (m, s = 400) => json({ erreur: m }, s);
 const DEPOT = "A95417/veille-patrimoine";
 const LIMITE_PERSONNE = 5, VOIX_JOUR = 12, GARDER = 10, MORCEAU = 524_288, TAILLE_MAX_BASE = 420e6;   // morceaux de 512 Ko (base64)

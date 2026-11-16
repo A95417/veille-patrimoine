@@ -1,8 +1,11 @@
 // Lecture des actualités pour les pages du site (utilisateurs connectés).
 // Fil filtrable, bandeau « À la une », détail d'un sujet, listes pour les filtres.
 
+import { nettoyerTout } from "./texte.js";
+
+// Les textes déjà enregistrés avec des codes HTML (&#233;…) sont réparés au moment de l'affichage.
 const json = (d, s = 200) =>
-  new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+  new Response(JSON.stringify(nettoyerTout(d)), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 
 export const COLONNES = "s.id, s.titre, s.titre_fr, s.derniere_pub, s.nb_articles, s.importance, s.categories, s.resume_court, s.ia_statut";
 

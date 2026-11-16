@@ -2,12 +2,14 @@
 // L'IA (Gemini, offre gratuite) n'utilise que les informations fournies : actualité du site, fiche « Apprendre » ou sujet saisi.
 // Aucune donnée client ne doit être saisie (rappelé à l'écran).
 
+import { nettoyerTout } from "./texte.js";
+
 const API = "https://generativelanguage.googleapis.com/v1beta";
 const LIMITE_JOUR = 40;            // rédactions par jour, tous utilisateurs confondus (préserve le quota gratuit)
 const DUREE_IDEES_MS = 4 * 3600e3; // les idées du moment sont recalculées toutes les 4 heures au plus
 
 const json = (d, s = 200) =>
-  new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+  new Response(JSON.stringify(nettoyerTout(d)), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 const erreur = (m, s = 400) => json({ erreur: m }, s);
 
 export const APPROCHES = {
@@ -85,7 +87,7 @@ async function appelGemini(env, modele, consignes, contenu, schema, temperature 
   if (!r.ok) return { erreur: `HTTP ${r.status} : ${(await r.text()).slice(0, 200)}` };
   const d = await r.json();
   const t = d.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
-  try { return { donnees: JSON.parse(t) }; } catch { return { erreur: "réponse illisible" }; }
+  try { return { donnees: nettoyerTout(JSON.parse(t)) }; } catch { return { erreur: "réponse illisible" }; }
 }
 
 // Essaie Flash (meilleure plume) tant que son petit quota le permet, sinon Flash-Lite.

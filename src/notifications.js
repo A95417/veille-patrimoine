@@ -1,8 +1,9 @@
+import { nettoyerTout } from "./texte.js";
 // Notifications Web Push (brief de 7 h et de 18 h).
 // Clés VAPID : créées par le site lui-même la première fois et conservées dans la base (jamais dans le code).
 // Chiffrement du message : norme « aes128gcm » (RFC 8291), signature VAPID : ES256 (RFC 8292).
 
-const json = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+const json = (d, s = 200) => new Response(JSON.stringify(nettoyerTout(d)), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 const enc = new TextEncoder();
 const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const deb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));

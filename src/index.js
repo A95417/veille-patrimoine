@@ -1,3 +1,4 @@
+import { nettoyerTout } from "./texte.js";
 // Point d'entrée du site (le "serveur").
 // Chaque visite passe ici : on vérifie la connexion avant d'afficher une page.
 
@@ -18,7 +19,7 @@ const PAGES_PUBLIQUES = new Set(["/connexion", "/installation", "/style.css", "/
   "/manifest.webmanifest", "/icone-192.png", "/icone-512.png", "/apple-touch-icon.png", "/icone.svg", "/sw.js"]);
 
 const json = (donnees, statut = 200, entetes = {}) =>
-  new Response(JSON.stringify(donnees), {
+  new Response(JSON.stringify(nettoyerTout(donnees)), {
     status: statut,
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...entetes },
   });

@@ -1,6 +1,8 @@
 // Client minimal pour l'API Gemini (Google AI Studio, offre gratuite).
 // Choisit automatiquement les modèles disponibles, gère le rythme et les quotas.
 
+import { nettoyerTout } from "./texte.mjs";
+
 const API = "https://generativelanguage.googleapis.com/v1beta";
 const CLE = process.env.GEMINI_API_KEY || "";
 
@@ -63,7 +65,7 @@ export async function generer(modele, consignes, contenu, schema) {
     const d = JSON.parse(t);
     const texte = d.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
     if (!texte) throw new Error(`Réponse vide (${d.candidates?.[0]?.finishReason || d.promptFeedback?.blockReason || "?"})`);
-    return { donnees: JSON.parse(texte) };
+    return { donnees: nettoyerTout(JSON.parse(texte)) };   // l'IA écrit parfois les accents en codes HTML (&#233;)
   }
   return { quota: true };
 }

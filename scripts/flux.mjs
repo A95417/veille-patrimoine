@@ -40,11 +40,17 @@ const ENTITES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", r
   eacute: "é", egrave: "è", ecirc: "ê", agrave: "à", acirc: "â", ccedil: "ç", ocirc: "ô", ucirc: "û", icirc: "î",
   ugrave: "ù", euml: "ë", iuml: "ï", laquo: "«", raquo: "»", ndash: "–", mdash: "—", euro: "€", Eacute: "É" };
 
-export function decoderEntites(t) {
+function decoderUneFois(t) {
   return String(t)
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-f]{1,6});/gi, (m, h) => { const n = parseInt(h, 16); return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : m; })
+    .replace(/&#(\d{1,7});/g, (m, d) => { const n = Number(d); return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : m; })
     .replace(/&([a-z]+);/gi, (m, n) => ENTITES[n] ?? m);
+}
+// Décode jusqu'à ce qu'il ne reste plus de code (certains flux encodent deux ou trois fois : &amp;amp;#233;).
+export function decoderEntites(t) {
+  let s = String(t);
+  for (let i = 0; i < 4; i++) { const avant = s; s = decoderUneFois(s); if (s === avant) break; }
+  return s;
 }
 
 // Texte brut : enlève CDATA, balises HTML, espaces en trop.
