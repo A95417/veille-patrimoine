@@ -47,7 +47,7 @@
     Sadachbia: ["Dynamiques", "vivante, conseillée"], Puck: ["Dynamiques", "enjouée"], Zephyr: ["Dynamiques", "vive"], Laomedeia: ["Dynamiques", "entraînante"], Fenrir: ["Dynamiques", "énergique"], Leda: ["Dynamiques", "jeune"],
     Achird: ["Posées", "amicale"], Kore: ["Posées", "assurée"], Charon: ["Posées", "informative"], Sulafat: ["Posées", "chaleureuse"], Orus: ["Posées", "ferme"], Gacrux: ["Posées", "mature"],
   };
-  const EXTRAITS = new Set(["sadachbia", "fenrir", "kore", "charon", "zephyr", "laomedeia", "leda", "achird"]);
+  const EXTRAITS = new Set(["sadachbia", "fenrir", "kore", "charon", "zephyr", "laomedeia", "leda", "achird", "puck", "sulafat", "orus", "gacrux"]);
   const LIB_STATUT = { brouillon: "Brouillon", file: "En file d'attente", attente: "Démarrage", en_cours: "En fabrication", pret: "Prête", a_verifier: "Prête · à vérifier", erreur: "Échec", annule: "Annulée" };
   const EN_COURS = ["file", "attente", "en_cours"];
   const R = { sel: null, onglet: "idees", titreIdee: null, angle: "expliquer", angleManuel: false, angleIA: false, cherche: "", duree: 45, format: "9:16", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
