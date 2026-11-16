@@ -54,7 +54,7 @@
   let reglages = null, sources = null, courante = null, suivi = null, chrono = null, audio = null;
 
   const mots = (sc) => (sc || []).reduce((n, s) => n + String(s.texte || "").split(/\s+/).filter((m) => /[\p{L}\d]/u.test(m)).length, 0);
-  const dureeEst = (sc) => Math.round(mots(sc) / 2.85 + 4);
+  const dureeEst = (sc) => (window.VideoApercu ? VideoApercu.dureeEstimee(sc || []) : Math.round(mots(sc) / 2.68 + 3.6));
   const fabrication = (sc) => 75 + dureeEst(sc) * 30 / 22 + 50;   // démarrage du robot + images + son/montage/envoi (secondes)
   const mmss = (s) => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s` : `${s} s`; };
   const nbFr = (n) => Math.round(n).toLocaleString("fr-FR");
@@ -314,36 +314,8 @@
     b.dataset.occupe = ""; majEtat();
   }
 
-  function lireScenes() {
-    return [...document.querySelectorAll(".vv-scene[data-i]")].map((c) => {
-      const s = JSON.parse(c.dataset.base);
-      s.texte = c.querySelector("[data-texte]").value;
-      c.querySelectorAll("[data-champ]").forEach((i) => { s.p = s.p || {}; if (i.value === "" && i.tagName === "SELECT") delete s.p[i.dataset.champ]; else s.p[i.dataset.champ] = i.value; });
-      return s;
-    });
-  }
-  function scenesHtml(sc) {
-    return sc.map((s, i) => {
-      if (s.type === "fin") return `<div class="vv-scene vv-fin"><div class="vv-scene-tete"><b>${i + 1}. Carte de fin</b><span class="doux petit">ajoutée automatiquement</span></div><p class="vv-lu">« ${echapper(s.texte)} »</p></div>`;
-      const champs = (CHAMPS[s.type] || []).filter(([k]) => s.p?.[k] !== undefined || ["bandeau", "gros_texte", "texte", "valeur", "mythe", "realite", "titre", "gros"].includes(k));
-      return `<div class="vv-scene" data-i="${i}" data-base="${echapper(JSON.stringify(s))}">
-        <div class="vv-scene-tete"><b>${i + 1}. ${NOMS_TYPES[s.type] || s.type}</b><span class="vv-scene-actions">
-          <button type="button" class="lien-bouton" data-monter="${i}" aria-label="Monter la scène" ${i === 0 ? "disabled" : ""}>↑</button>
-          <button type="button" class="lien-bouton" data-descendre="${i}" aria-label="Descendre la scène" ${i >= sc.length - 2 ? "disabled" : ""}>↓</button>
-          <button type="button" class="lien-bouton" data-retirer="${i}" aria-label="Retirer la scène">✕</button></span></div>
-        <label class="petit doux" for="vv-t${i}">Texte lu par la voix</label><textarea id="vv-t${i}" data-texte rows="2" maxlength="400">${echapper(s.texte)}</textarea>
-        ${(CHOIX[s.type] || []).length ? `<div class="vv-choix">${CHOIX[s.type].map(([k, l]) => {
-          const decorChamp = k === "decor", liste = decorChamp ? [["", "Automatique (selon la mise en scène)"], ...LIEUX] : PERSOS;
-          const val = s.p?.[k] ?? (decorChamp ? "" : k === "personnage_droite" ? "tom_age" : k === "personnage_gauche" ? "lea" : "tom");
-          return `<label class="vv-choix-un">${decorChamp ? "" : `<img src="/video-persos/${val}.png" alt="" width="44" height="44" data-portrait="${k}">`}<span>${l}<select data-champ="${k}">${liste.map(([id, nom]) => `<option value="${id}" ${id === val ? "selected" : ""}>${echapper(nom)}</option>`).join("")}</select></span></label>`;
-        }).join("")}</div>` : ""}
-        ${champs.length ? `<div class="vv-champs">${champs.map(([k, l]) => `<label><span>${l}</span><input data-champ="${k}" value="${echapper(s.p?.[k] ?? "")}" maxlength="60"></label>`).join("")}</div>` : ""}
-      </div>`;
-    }).join("");
-  }
-
   function ouvrir(v) {
-    courante = v;
+    courante = v; lect?.arreter();
     const z = $v("vv-travail"); z.hidden = false;
     arreterSuivi();
     if (v.statut === "brouillon" || v.statut === "erreur" || v.statut === "annule") afficherScenario(v);
@@ -352,58 +324,278 @@
     z.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  // ---------------------------------------------------------------- scénario : storyboard visuel, aperçu animé, réglages
+  const FINS_LIB = { cercles: "Cercles", clair: "Clair", horizon: "Horizon", courbe: "Courbe", maison: "Maison", bandes: "Dynamique" };
+  const FINS_DESC = { cercles: "classique, tous sujets", clair: "sobre, fiscalité", horizon: "retraite, transmission", courbe: "épargne, placements", maison: "immobilier", bandes: "actualité, entreprise" };
+  const AMB = { dynamique: ["Dynamique", "rythmée, TikTok et Reels"], calme: ["Calme", "douce, sujet sérieux"], inspirante: ["Inspirante", "lumineuse, projet de vie"] };
+  const SOUS = { mot: ["Mot à mot", "le mot lu s'allume"], sobre: ["Sobre", "phrase blanche, sans fond"], clair: ["Encadré clair", "fond blanc, texte bordeaux"] };
+  const CLASSIQUE = "Et si on prenait le temps d'en parler ?", OFFRE = "Premier échange offert · sans engagement";
+  let S = null, lect = null, tVign = 0, tApercu = 0;
+  const A = () => window.VideoApercu;
+
+  function nomParle() {
+    const nom = String(reglages?.coordonnees?.cabinet || "BSC Patrimoine").slice(0, 30);
+    return nom === nom.toUpperCase() ? nom.split(" ").map((m, i) => (i === 0 && m.length <= 4 ? m : m.charAt(0) + m.slice(1).toLowerCase())).join(" ") : nom;
+  }
+  function questionPropre(q) {
+    let t = String(q || "").replace(/\s+/g, " ").trim();
+    if (!t || /\d/.test(t) || t.length > 60) return CLASSIQUE;
+    if (!/[?.!]$/.test(t)) t += " ?";
+    return t;
+  }
+  // Carte de fin telle que le serveur la reconstruira (texte lu compris : il compte dans la durée).
+  function finLocale() {
+    const q = questionPropre(S.fin.question), cl = q === CLASSIQUE;
+    return { type: "fin", texte: `${q}${cl ? "" : " Prenons le temps d'en parler."} ${nomParle()}. Premier échange offert, sans engagement.`, p: { question: q, offre: OFFRE, style: S.fin.style || "cercles" } };
+  }
+  function configApercu() {
+    const c = reglages?.coordonnees || {};
+    return { cabinet: c.cabinet, activite: c.activite, mail: c.mail, telephone: c.telephone, mentions: [...(S.v.mentions || []), ...(c.fictives ? ["Coordonnées fictives (provisoires)."] : [])] };
+  }
+  function videoApercu() {
+    return { scenes: A().avecChiffres([...S.scenes, finLocale()], S.v.donnees?.simulation), format: S.format, graine: S.v.graine || 1, sous_titres: S.reglages.sous_titres, config: configApercu() };
+  }
+  const dureeTotale = () => A().dureeEstimee([...S.scenes, finLocale()]);
+  const secondes = (s) => `≈ ${Math.max(1, Math.round(A().dureeScene(s)))} s`;
+
+  function etatDepuis(v) {
+    const sb = v.storyboard || [], f = sb.find((x) => x.type === "fin");
+    return { v, scenes: sb.filter((x) => x.type !== "fin").map((x) => ({ ...x, p: { ...(x.p || {}) } })),
+      fin: { question: f?.p?.question || CLASSIQUE, style: f?.p?.style || "cercles" }, finIA: v.donnees?.fin_proposee || null,
+      reglages: { ...(v.reglages || { ambiance: "dynamique", sous_titres: "mot", deux_formats: false }) }, format: v.format || "9:16", voix: v.voix || "Sadachbia",
+      duree: [30, 45, 60].includes(+v.duree_cible) ? +v.duree_cible : 45, ouverte: null };
+  }
+
+  function sceneHtml(s, i, n) {
+    const champs = (CHAMPS[s.type] || []).filter(([k]) => s.p?.[k] !== undefined || ["bandeau", "gros_texte", "texte", "valeur", "mythe", "realite", "titre", "gros"].includes(k));
+    const choix = CHOIX[s.type] || [];
+    return `<li class="vs-scene" data-i="${i}">
+      <button type="button" class="vs-vign ${S.format === "4:5" ? "f45" : ""}" data-voir="${i}" aria-label="Voir la scène ${i + 1} dans l'aperçu"><span data-vign="${i}"></span><em>▶</em></button>
+      <div class="vs-corps">
+        <div class="vs-tete-scene"><span class="vs-num">${i + 1}</span><b>${NOMS_TYPES[s.type] || s.type}</b><span class="vs-sec" data-sec="${i}">${secondes(s)}</span>
+          <span class="vs-actions">
+            <button type="button" class="vs-mini" data-refaire="${i}" title="Réécrire cette scène avec l'IA">↻ Refaire</button>
+            <button type="button" class="vs-ico" data-monter="${i}" aria-label="Monter la scène ${i + 1}" ${i === 0 ? "disabled" : ""}>↑</button>
+            <button type="button" class="vs-ico" data-descendre="${i}" aria-label="Descendre la scène ${i + 1}" ${i >= n - 1 ? "disabled" : ""}>↓</button>
+            <button type="button" class="vs-ico" data-retirer="${i}" aria-label="Retirer la scène ${i + 1}">✕</button>
+          </span></div>
+        <label class="sr" for="vs-t${i}">Texte lu, scène ${i + 1}</label>
+        <textarea id="vs-t${i}" data-texte="${i}" rows="2" maxlength="400">${echapper(s.texte)}</textarea>
+        <div class="vs-refaire" data-panneau="${i}" hidden>
+          <input data-consigne="${i}" maxlength="200" placeholder="Facultatif : « plus court », « avec Michel », « plus percutant »…" aria-label="Demande pour réécrire la scène ${i + 1}">
+          <button type="button" class="bouton" data-go="${i}">Réécrire</button>
+        </div>
+        ${choix.length || champs.length ? `<details class="vs-plus"${S.ouverte === i ? " open" : ""} data-plus="${i}"><summary>Personnages, décor et textes à l'écran</summary>
+          ${choix.length ? `<div class="vv-choix">${choix.map(([k, l]) => {
+            const dec = k === "decor", liste = dec ? [["", "Automatique (selon la scène)"], ...LIEUX] : PERSOS;
+            const val = s.p?.[k] ?? (dec ? "" : k === "personnage_droite" ? "tom_age" : k === "personnage_gauche" ? "lea" : "tom");
+            return `<label class="vv-choix-un">${dec ? "" : `<img src="/video-persos/${val}.png" alt="" width="44" height="44">`}<span>${l}<select data-champ="${k}" data-si="${i}">${liste.map(([id, nom]) => `<option value="${id}" ${id === val ? "selected" : ""}>${echapper(nom)}</option>`).join("")}</select></span></label>`;
+          }).join("")}</div>` : ""}
+          ${champs.length ? `<div class="vv-champs">${champs.map(([k, l]) => `<label><span>${l}</span><input data-champ="${k}" data-si="${i}" value="${echapper(s.p?.[k] ?? "")}" maxlength="60"></label>`).join("")}</div>` : ""}
+        </details>` : ""}
+      </div></li>`;
+  }
+  function finHtml(i) {
+    const f = finLocale(), sugg = [...new Set([S.finIA, CLASSIQUE].filter(Boolean))];
+    return `<li class="vs-scene vs-scene-fin" data-fin="1">
+      <button type="button" class="vs-vign ${S.format === "4:5" ? "f45" : ""}" data-voir="${i}" aria-label="Voir la carte de fin dans l'aperçu"><span data-vign="${i}"></span><em>▶</em></button>
+      <div class="vs-corps">
+        <div class="vs-tete-scene"><span class="vs-num">${i + 1}</span><b>Carte de fin</b><span class="vs-sec" data-sec="fin">${secondes(f)}</span></div>
+        <label class="vs-lib" for="vs-question">Phrase d'appel <span class="doux">(affichée et lue)</span></label>
+        <input id="vs-question" maxlength="60" value="${echapper(S.fin.question)}" autocomplete="off">
+        <div class="vs-sugg">${sugg.map((q) => `<button type="button" class="puce" data-q="${echapper(q)}" aria-pressed="${q === S.fin.question}">${q === CLASSIQUE ? "Classique : " : "✨ "}${echapper(q)}</button>`).join("")}</div>
+        <span class="vs-lib">Mise en scène</span>
+        <div class="vs-styles" role="group" aria-label="Mise en scène de la carte de fin">${Object.keys(FINS_LIB).map((k) => `<button type="button" class="vs-style s-${k}" data-style="${k}" aria-pressed="${k === S.fin.style}"><i aria-hidden="true"></i><b>${FINS_LIB[k]}</b><small>${FINS_DESC[k]}</small></button>`).join("")}</div>
+        <p class="doux petit vs-note">Toujours présents : votre logo, « ${OFFRE} », les coordonnées et les mentions obligatoires.</p>
+      </div></li>`;
+  }
+  // Zone de texte à la hauteur de son contenu (tout le texte lu reste visible, même sur téléphone).
+  function hauteur(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
+  function rendreScenes() {
+    const n = S.scenes.length;
+    $v("vs-scenes").innerHTML = S.scenes.map((s, i) => sceneHtml(s, i, n)).join("") + finHtml(n);
+    document.querySelectorAll("[data-texte]").forEach(hauteur);
+    majDuree(); planifierApercu(true);
+  }
+
+  function majDuree() {
+    const est = dureeTotale(), d = S.duree, ok = Math.abs(est - d) <= d * .1, max = d * 1.3;
+    const pc = (x) => Math.max(0, Math.min(100, x / max * 100)).toFixed(1);
+    $v("vs-duree").innerHTML = `<div class="vs-duree-l">
+        <span class="vs-duree-chiffre ${ok ? "ok" : "ko"}">≈ ${est} s</span>
+        <span class="vs-duree-txt">${ok ? "✓ Bonne durée" : est < d ? `Trop court pour ${d} s` : `Trop long pour ${d} s`}<small>estimée sur le texte lu · objectif</small></span>
+        <span class="puces vs-objectif" role="group" aria-label="Durée visée">${[30, 45, 60].map((x) => `<button type="button" class="puce" data-obj="${x}" aria-pressed="${x === d}">${x} s</button>`).join("")}</span>
+      </div>
+      <div class="vs-jauge" aria-hidden="true"><span class="vs-zone" style="left:${pc(d * .9)}%;width:${(+pc(d * 1.1) - +pc(d * .9)).toFixed(1)}%"></span><span class="vs-rempli ${ok ? "ok" : "ko"}" style="width:${pc(est)}%"></span></div>
+      ${ok ? "" : `<div class="vs-ajuster"><button type="button" class="bouton" id="vs-ajuster">✨ ${est < d ? "Allonger" : "Raccourcir"} à ${d} s avec l'IA</button><span class="doux petit">ou modifiez le texte des scènes vous-même.</span></div>`}`;
+    $v("vs-duree").querySelectorAll("[data-obj]").forEach((b) => b.onclick = () => { S.duree = +b.dataset.obj; majDuree(); });
+    const aj = $v("vs-ajuster"); if (aj) aj.onclick = ajuster;
+    $v("vs-lancer-duree").textContent = `${est} s`;
+  }
+
+  // Aperçu et vignettes, recalculés peu après chaque modification.
+  function planifierApercu(vignettesAussi) {
+    clearTimeout(tApercu);
+    tApercu = setTimeout(() => { if (lect && S) lect.charger(videoApercu()).catch(apercuIndispo); }, 350);
+    if (vignettesAussi) { clearTimeout(tVign); tVign = setTimeout(majVignettes, 500); }
+  }
+  async function majVignettes() {
+    if (!S) return;
+    try { const l = await A().vignettes(videoApercu()); l.forEach((svg, i) => { const z = document.querySelector(`[data-vign="${i}"]`); if (z) z.innerHTML = svg; }); }
+    catch { document.querySelectorAll(".vs-vign").forEach((b) => b.classList.add("vide")); }
+  }
+  function apercuIndispo() { const z = $v("vs-lecteur"); if (z) z.innerHTML = `<p class="doux petit">Aperçu indisponible sur cet appareil. La vidéo sera fabriquée normalement.</p>`; }
+  function surTemps(t, cal) {
+    const r = $v("vs-pos"); if (!r || !cal) return;
+    r.max = cal.duree_totale.toFixed(2); r.value = t.toFixed(2);
+    $v("vs-temps").textContent = `${Math.floor(t)} s / ${Math.round(cal.duree_totale)} s`;
+    $v("vs-lire").textContent = lect.etat.lecture ? "❚❚" : "▶"; $v("vs-lire").setAttribute("aria-label", lect.etat.lecture ? "Pause" : "Lire l'aperçu");
+    const i = cal.scenes.findIndex((s) => t >= s.debut && t < s.fin);
+    document.querySelectorAll(".vs-scene").forEach((li, k) => li.classList.toggle("vs-active", k === i && lect.etat.lecture));
+  }
+
+  async function sauver() {
+    const r = await appelApi(`/api/video/${S.v.id}/storyboard`, "POST", { scenes: S.scenes, texte_post: $v("vv-post").value, fin: S.fin, reglages: S.reglages, format: S.format, voix: S.voix, duree: S.duree });
+    courante = r.video; S.v = r.video; return r.video;
+  }
+  function recharger(v, garderOuverte = true) {
+    const ouv = S?.ouverte, post = $v("vv-post")?.value;
+    courante = v; S = etatDepuis(v); if (garderOuverte) S.ouverte = ouv;
+    if (post != null && v.texte_post) $v("vv-post").value = v.texte_post;
+    majVerif(); rendreScenes();
+  }
+  function occupe(b, oui, txt) { if (!b) return; if (oui) { b.dataset.lib = b.textContent; b.textContent = txt; b.disabled = true; } else { b.textContent = b.dataset.lib || b.textContent; b.disabled = false; } }
+  async function ajuster() {
+    const b = $v("vs-ajuster"); occupe(b, true, "L'IA ajuste la longueur, 10 à 40 s…");
+    try {
+      await sauver();
+      const r = await appelApi(`/api/video/${S.v.id}/ajuster`, "POST", { duree: S.duree });
+      recharger(r.video); notifier(`Scénario ajusté : ≈ ${r.apres} s (avant ≈ ${r.avant} s).`);
+    } catch (e) { notifier(e.message, true); occupe(b, false); }
+  }
+  async function refaire(i) {
+    const b = document.querySelector(`[data-go="${i}"]`); occupe(b, true, "Réécriture…");
+    try {
+      await sauver();
+      const r = await appelApi(`/api/video/${S.v.id}/scene`, "POST", { i, consigne: document.querySelector(`[data-consigne="${i}"]`)?.value || "" });
+      recharger(r.video); notifier(`Scène ${i + 1} réécrite.`);
+      document.querySelector(`.vs-scene[data-i="${i}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (e) { notifier(e.message, true); occupe(b, false); }
+  }
+  function majVerif() {
+    const verif = S.v.a_verifier || [];
+    $v("vs-verif").innerHTML = verif.length ? (() => { const li = (x) => `<li>Scène ${x.scene} : <strong>${echapper(String(x.chiffre).replace(".", ","))}</strong> dans « ${echapper(x.texte)} »</li>`;
+      return `<div class="conformite"><strong>${verif.length} chiffre${verif.length > 1 ? "s" : ""} à vérifier</strong> (ni calculés par le site, ni tirés de ses données officielles) :<ul>${verif.slice(0, 3).map(li).join("")}</ul>${verif.length > 3 ? `<details><summary>Voir les ${verif.length - 3} autres</summary><ul>${verif.slice(3).map(li).join("")}</ul></details>` : ""}Corrigez-les ou retirez-les si vous n'avez pas de source officielle.</div>`; })() : `<p class="vv-ok">✓ Tous les chiffres viennent du calcul du site ou de ses données officielles.</p>`;
+  }
+  function reglagesHtml() {
+    const R2 = S.reglages, autre = S.format === "4:5" ? "9:16 (TikTok, Reels)" : "4:5 (LinkedIn)";
+    return `<div class="vs-reg"><span class="vs-lib">Musique</span><div class="vs-cartes">${Object.entries(AMB).map(([k, [n, d]]) => `<button type="button" class="vs-carte" data-amb="${k}" aria-pressed="${k === R2.ambiance}"><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
+      <div class="vs-reg"><span class="vs-lib">Sous-titres</span><div class="vs-cartes">${Object.entries(SOUS).map(([k, [n, d]]) => `<button type="button" class="vs-carte vs-st-${k}" data-st="${k}" aria-pressed="${k === R2.sous_titres}"><span class="vs-st-ex" aria-hidden="true"><i>Votre</i> épargne</span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
+      <div class="vs-reg"><span class="vs-lib">Format</span><div class="puces">${[["9:16", "9:16 · TikTok, Reels"], ["4:5", "4:5 · LinkedIn"]].map(([k, l]) => `<button type="button" class="puce" data-fmt="${k}" aria-pressed="${k === S.format}">${l}</button>`).join("")}</div>
+        <label class="vs-case"><input type="checkbox" id="vs-deux" ${R2.deux_formats ? "checked" : ""}><span>Fabriquer aussi en ${autre} <span class="doux">· même voix, sans quota en plus, fabrication un peu plus longue</span></span></label></div>
+      <div class="vs-reg"><span class="vs-lib">Voix</span><select id="vs-voix" class="vs-select">${(reglages?.voix || [S.voix]).map((n) => `<option value="${n}" ${n === S.voix ? "selected" : ""}>${n}${VOIX_INFO[n] ? " · " + VOIX_INFO[n][1] : ""}</option>`).join("")}</select></div>`;
+  }
+  function brancherReglages() {
+    const z = $v("vs-reglages");
+    z.querySelectorAll("[data-amb]").forEach((b) => b.onclick = () => { S.reglages.ambiance = b.dataset.amb; z.innerHTML = reglagesHtml(); brancherReglages(); });
+    z.querySelectorAll("[data-st]").forEach((b) => b.onclick = () => { S.reglages.sous_titres = b.dataset.st; z.innerHTML = reglagesHtml(); brancherReglages(); planifierApercu(); });
+    z.querySelectorAll("[data-fmt]").forEach((b) => b.onclick = () => { S.format = b.dataset.fmt; z.innerHTML = reglagesHtml(); brancherReglages(); rendreScenes(); });
+    $v("vs-deux").onchange = (e) => { S.reglages.deux_formats = e.target.checked; };
+    $v("vs-voix").onchange = (e) => { S.voix = e.target.value; };
+  }
+
   function afficherScenario(v) {
-    const sc = v.storyboard || [], z = $v("vv-travail");
-    const verif = v.a_verifier || [];
+    const z = $v("vv-travail");
+    S = etatDepuis(v);
     z.innerHTML = `
       <div class="recap"><span><strong>Scénario :</strong> ${echapper(v.sujet || "")}</span><button type="button" class="lien-bouton" id="vv-fermer">Fermer</button></div>
       ${v.statut === "erreur" ? `<p class="message ko">La dernière fabrication a échoué : ${echapper(v.erreur || "")}</p>` : ""}
-      <h2>Relisez et ajustez le scénario</h2>
-      <p class="doux">Le texte de chaque scène est lu par la voix et s'affiche en sous-titres. Rien n'est fabriqué avant votre validation.</p>
-      ${verif.length ? `<div class="conformite"><strong>Chiffres à vérifier</strong> (ni calculés par le site, ni tirés de ses données officielles) :<ul>${verif.map((x) => `<li>Scène ${x.scene} : <strong>${echapper(String(x.chiffre).replace(".", ","))}</strong> dans « ${echapper(x.texte)} »</li>`).join("")}</ul>Corrigez-les ou retirez-les si vous n'avez pas de source officielle.</div>` : `<p class="vv-ok">✓ Tous les chiffres viennent du calcul du site ou de ses données officielles.</p>`}
-      <div class="vv-infos"><span>Durée estimée <strong id="vv-duree-est">${dureeEst(sc)} s</strong></span><span>Format <strong>${v.format}</strong></span><span>Voix <strong>${echapper(v.voix)}</strong></span></div>
-      <div id="vv-scenes">${scenesHtml(sc)}</div>
-      <label class="bloc-lib" for="vv-post" style="margin-top:14px">Texte de publication (à coller sous la vidéo)</label>
-      <textarea id="vv-post" rows="5" maxlength="1500">${echapper(v.texte_post || "")}</textarea>
-      <div class="actions">
-        <button type="button" class="bouton gros-bouton" id="vv-lancer">🎬 Générer la vidéo · ≈ ${Math.ceil(fabrication(sc) / 60)} min</button>
+      <div class="vs-titre"><h2>Votre scénario</h2><p class="doux">Relisez, ajustez, regardez l'aperçu. Rien n'est fabriqué avant votre validation.</p></div>
+      <div class="vs-duree" id="vs-duree"></div>
+      <div id="vs-verif"></div>
+      <div class="vs-grille">
+        <aside class="vs-cote">
+          <div class="vs-lecteur-bloc">
+            <div class="vs-lecteur ${S.format === "4:5" ? "f45" : ""}" id="vs-lecteur"><div class="vs-ecran" id="vs-ecran"></div></div>
+            <div class="vs-commandes"><button type="button" class="vs-lire" id="vs-lire" aria-label="Lire l'aperçu">▶</button><input type="range" id="vs-pos" min="0" max="1" step="0.05" value="0" aria-label="Position dans l'aperçu"><span id="vs-temps" class="petit doux">0 s</span></div>
+            <p class="doux petit vs-note">Aperçu sans voix ni musique, au rythme estimé. La vidéo finale suit la vraie voix.</p>
+          </div>
+        </aside>
+        <div class="vs-principal">
+          <ol class="vs-scenes" id="vs-scenes"></ol>
+          <details class="vs-bloc" id="vs-reglages-bloc"><summary><span><b>Réglages de fabrication</b><small id="vs-reg-resume"></small></span><span class="vv-modifier">Modifier</span></summary><div id="vs-reglages"></div></details>
+          <label class="bloc-lib" for="vv-post">Texte de publication (à coller sous la vidéo)</label>
+          <textarea id="vv-post" rows="5" maxlength="1500">${echapper(v.texte_post || "")}</textarea>
+        </div>
+      </div>
+      <div class="actions vs-barre-actions">
+        <button type="button" class="bouton gros-bouton" id="vv-lancer">🎬 Générer la vidéo · <span id="vs-lancer-duree"></span></button>
         <button type="button" class="bouton bouton-discret" id="vv-sauver">Enregistrer le brouillon</button>
         <button type="button" class="bouton bouton-discret" id="vv-graine" title="Change les décors, l'heure du jour, les objets et les tenues, sans toucher au texte">🎲 Autre mise en scène</button>
         <button type="button" class="bouton bouton-discret" id="vv-reproposer">↻ Un autre scénario</button>
       </div>
-      <p class="doux petit">La fabrication tourne sur un robot gratuit (GitHub) : vous pouvez fermer la page, la vidéo arrivera dans « Mes vidéos ». ${reglages ? `${reglages.lancees_aujourdhui}/${reglages.limite_personne} aujourd'hui${reglages.restant_equipe <= 4 ? ` · plus que ${reglages.restant_equipe} pour toute l'équipe` : ""}.` : ""}</p>
+      <p class="doux petit" id="vs-info-lancer"></p>
       <div id="vv-msg2"></div>`;
-    $v("vv-fermer").onclick = () => { $v("vv-travail").hidden = true; courante = null; };
-    const scenes = $v("vv-scenes");
-    scenes.oninput = () => { $v("vv-duree-est").textContent = dureeEst(lireScenes()) + " s"; };
-    scenes.onchange = (e) => { const sel = e.target.closest("select[data-champ]"); if (!sel) return; const img = sel.closest(".vv-choix-un")?.querySelector("img"); if (img) img.src = `/video-persos/${sel.value}.png`; };
-    scenes.onclick = (e) => {
+    $v("vv-fermer").onclick = () => { lect?.arreter(); $v("vv-travail").hidden = true; courante = null; S = null; };
+    majVerif();
+    const reg = $v("vs-reglages"); reg.innerHTML = reglagesHtml(); brancherReglages();
+    const resumeReg = () => { $v("vs-reg-resume").textContent = `Musique ${AMB[S.reglages.ambiance][0].toLowerCase()} · sous-titres ${SOUS[S.reglages.sous_titres][0].toLowerCase()} · ${S.format}${S.reglages.deux_formats ? " + " + (S.format === "4:5" ? "9:16" : "4:5") : ""} · voix ${S.voix}`; };
+    resumeReg(); reg.addEventListener("click", () => setTimeout(resumeReg)); reg.addEventListener("change", () => setTimeout(resumeReg));
+    // lecteur d'aperçu
+    lect = A()?.lecteur ? A().lecteur($v("vs-ecran"), surTemps) : null;
+    if (!lect) apercuIndispo();
+    $v("vs-lire").onclick = () => { if (!lect) return; if (lect.etat.lecture) lect.arreter(); else lect.lire(); };
+    $v("vs-pos").oninput = (e) => { lect?.arreter(); lect?.aller(+e.target.value); };
+    rendreScenes();
+    const liste = $v("vs-scenes");
+    liste.addEventListener("input", (e) => {
+      const t = e.target;
+      if (t.dataset.texte != null) { const i = +t.dataset.texte; S.scenes[i].texte = t.value; hauteur(t); const sec = document.querySelector(`[data-sec="${i}"]`); if (sec) sec.textContent = secondes(S.scenes[i]); majDuree(); planifierApercu(true); }
+      else if (t.dataset.champ && t.tagName === "INPUT") { S.scenes[+t.dataset.si].p[t.dataset.champ] = t.value; planifierApercu(true); }
+      else if (t.id === "vs-question") { S.fin.question = t.value; const sec = document.querySelector('[data-sec="fin"]'); if (sec) sec.textContent = secondes(finLocale()); document.querySelectorAll("[data-q]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.q === t.value)); majDuree(); planifierApercu(true); }
+    });
+    liste.addEventListener("change", (e) => {
+      const t = e.target;
+      if (t.dataset.champ && t.tagName === "SELECT") {
+        const sc = S.scenes[+t.dataset.si]; if (t.value === "") delete sc.p[t.dataset.champ]; else sc.p[t.dataset.champ] = t.value;
+        const img = t.closest(".vv-choix-un")?.querySelector("img"); if (img) img.src = `/video-persos/${t.value}.png`;
+        planifierApercu(true);
+      }
+    });
+    liste.addEventListener("toggle", (e) => { const d = e.target.closest?.("[data-plus]"); if (d) S.ouverte = d.open ? +d.dataset.plus : (S.ouverte === +d.dataset.plus ? null : S.ouverte); }, true);
+    liste.onclick = (e) => {
       const b = e.target.closest("button"); if (!b) return;
-      const l = lireScenes(), fin = l.pop();
-      if (b.dataset.monter) { const i = +b.dataset.monter; [l[i - 1], l[i]] = [l[i], l[i - 1]]; }
-      else if (b.dataset.descendre) { const i = +b.dataset.descendre; [l[i + 1], l[i]] = [l[i], l[i + 1]]; }
-      else if (b.dataset.retirer) { if (l.length <= 2) return notifier("Gardez au moins deux scènes.", true); l.splice(+b.dataset.retirer, 1); }
+      const d = b.dataset, l = S.scenes;
+      if (d.voir != null) { const i = +d.voir, cal = lect?.calage; if (lect && cal) { lect.lire(cal.scenes[i].debut, cal.scenes[i].fin); $v("vs-lecteur").scrollIntoView({ behavior: "smooth", block: "nearest" }); } return; }
+      if (d.refaire != null) { const p = document.querySelector(`[data-panneau="${d.refaire}"]`); p.hidden = !p.hidden; if (!p.hidden) p.querySelector("input").focus(); return; }
+      if (d.go != null) return refaire(+d.go);
+      if (d.q != null) { S.fin.question = d.q; $v("vs-question").value = d.q; document.querySelectorAll("[data-q]").forEach((x) => x.setAttribute("aria-pressed", x === b)); majDuree(); planifierApercu(true); return; }
+      if (d.style) { S.fin.style = d.style; document.querySelectorAll("[data-style]").forEach((x) => x.setAttribute("aria-pressed", x === b)); planifierApercu(true); setTimeout(() => { const cal = lect?.calage; if (cal) lect.lire(cal.scenes[cal.scenes.length - 1].debut); }, 450); return; }
+      if (d.monter != null) { const i = +d.monter; [l[i - 1], l[i]] = [l[i], l[i - 1]]; }
+      else if (d.descendre != null) { const i = +d.descendre; [l[i + 1], l[i]] = [l[i], l[i + 1]]; }
+      else if (d.retirer != null) { if (l.length <= 2) return notifier("Gardez au moins deux scènes.", true); l.splice(+d.retirer, 1); }
       else return;
-      scenes.innerHTML = scenesHtml([...l, fin]); scenes.oninput();
+      rendreScenes();
     };
-    const sauver = async () => {
-      const r = await appelApi(`/api/video/${v.id}/storyboard`, "POST", { scenes: lireScenes(), texte_post: $v("vv-post").value });
-      courante = r.video; return r.video;
-    };
-    $v("vv-sauver").onclick = async () => { try { const nv = await sauver(); afficherScenario(nv); notifier("Brouillon enregistré."); } catch (e) { notifier(e.message, true); } };
-    $v("vv-graine").onclick = async () => { try { const r = await appelApi(`/api/video/${v.id}/storyboard`, "POST", { scenes: lireScenes(), texte_post: $v("vv-post").value, nouvelle_graine: true }); courante = r.video; notifier("Nouvelle mise en scène tirée : décors, lumière, objets et tenues changeront."); } catch (e) { notifier(e.message, true); } };
-    $v("vv-reproposer").onclick = () => { $v("vv-travail").hidden = true; document.getElementById("vv-nouvelle").scrollIntoView({ behavior: "smooth" }); proposer(); };
+    liste.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.dataset.consigne != null) { e.preventDefault(); refaire(+e.target.dataset.consigne); } });
+    $v("vs-info-lancer").textContent = `Fabrication ≈ ${Math.ceil(fabrication([...S.scenes, finLocale()]) / 60)} min sur un robot gratuit (GitHub) : vous pouvez fermer la page, la vidéo arrivera dans « Mes vidéos ».${reglages ? ` ${reglages.lancees_aujourdhui}/${reglages.limite_personne} aujourd'hui${reglages.restant_equipe <= 4 ? ` · plus que ${reglages.restant_equipe} pour toute l'équipe` : ""}.` : ""}`;
+    $v("vv-sauver").onclick = async () => { try { recharger(await sauver()); notifier("Brouillon enregistré."); } catch (e) { notifier(e.message, true); } };
+    $v("vv-graine").onclick = async () => { try { await sauver(); const r = await appelApi(`/api/video/${v.id}/storyboard`, "POST", { nouvelle_graine: true }); recharger(r.video); notifier("Nouvelle mise en scène : décors, lumière, objets et tenues changent (voir l'aperçu)."); } catch (e) { notifier(e.message, true); } };
+    $v("vv-reproposer").onclick = () => { lect?.arreter(); $v("vv-travail").hidden = true; document.getElementById("vv-nouvelle").scrollIntoView({ behavior: "smooth" }); proposer(); };
     $v("vv-lancer").onclick = async () => {
       const b = $v("vv-lancer"); b.disabled = true;
       try {
         const nv = await sauver();
-        if ((nv.a_verifier || []).length && !b.dataset.confirme) {
-          b.dataset.confirme = "1"; b.disabled = false; b.textContent = "Des chiffres restent à vérifier : générer quand même ?";
-          return;
+        const est = dureeTotale();
+        if (!b.dataset.confirme && ((nv.a_verifier || []).length || Math.abs(est - S.duree) > S.duree * .1)) {
+          b.dataset.confirme = "1"; b.disabled = false;
+          b.textContent = (nv.a_verifier || []).length ? "Des chiffres restent à vérifier : générer quand même ?" : `Durée ≈ ${est} s au lieu de ${S.duree} s : générer quand même ?`;
+          majVerif(); return;
         }
+        lect?.arreter();
         await appelApi(`/api/video/${v.id}/lancer`, "POST", {});
         reglages = await appelApi("/api/video/reglages").catch(() => reglages);
-        const r = await appelApi(`/api/video/${v.id}`); ouvrir(r.video); chargerGalerie();
+        const r = await appelApi(`/api/video/${v.id}`); S = null; ouvrir(r.video); chargerGalerie();
       } catch (e) { $v("vv-msg2").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; b.disabled = false; }
     };
   }
@@ -469,7 +661,8 @@
         <div class="vv-lecteur ${v.format === "4:5" ? "f45" : ""}"><video controls playsinline preload="metadata" src="${src}" ${v.a_miniature ? `poster="/api/video/${v.id}/miniature"` : ""}></video></div>
         <div>
           <h2>Votre vidéo est prête</h2>
-          <p class="doux">${v.duree ? Math.round(v.duree) + " s" : ""} · ${v.format} · ${v.taille ? (v.taille / 1e6).toFixed(1).replace(".", ",") + " Mo" : ""}${v.duree_fabrication ? ` · fabriquée en ${mmss(v.duree_fabrication)}` : ""}</p>
+          ${v.donnees?.jumelle_de ? `<p class="petit doux">Second format fabriqué avec la même voix.</p>` : ""}
+          <p class="doux">${v.duree ? Math.round(v.duree) + " s" : ""}${v.duree_cible ? ` (objectif ${v.duree_cible} s)` : ""} · ${v.format} · ${v.taille ? (v.taille / 1e6).toFixed(1).replace(".", ",") + " Mo" : ""}${v.duree_fabrication ? ` · fabriquée en ${mmss(v.duree_fabrication)}` : ""}</p>
           ${(v.alertes || []).length ? `<div class="conformite"><strong>Le contrôle automatique demande une vérification :</strong><ul>${v.alertes.map((a) => `<li>${echapper(a)}</li>`).join("")}</ul>Regardez la vidéo avant de la publier.</div>` : `<p class="vv-ok">✓ Contrôle automatique réussi (son, textes, durée).</p>`}
           <div class="actions">
             <button type="button" class="bouton" id="vv-telecharger">⬇ Télécharger la vidéo (MP4)</button>
@@ -479,12 +672,16 @@
           </div>
           <label class="bloc-lib" for="vv-post2">Texte de publication</label>
           <textarea id="vv-post2" rows="5">${echapper(v.texte_post || "")}</textarea>
-          <div class="actions"><button type="button" class="bouton bouton-discret" id="vv-copier">Copier le texte</button><button type="button" class="bouton bouton-discret" id="vv-dupliquer">↻ Refaire une variante</button></div>
+          <div class="actions"><button type="button" class="bouton bouton-discret" id="vv-copier">Copier le texte</button><button type="button" class="bouton bouton-discret" id="vv-vers-post">✍️ Transformer en post LinkedIn</button><button type="button" class="bouton bouton-discret" id="vv-dupliquer">↻ Refaire une variante</button></div>
           <p class="doux petit">Rappel : relisez la vidéo avant publication. Les chiffres « exemple fictif » ne sont pas garantis.</p>
         </div>
       </div>`;
     $v("vv-fermer").onclick = () => { $v("vv-travail").hidden = true; courante = null; };
     $v("vv-copier").onclick = () => copier($v("vv-post2").value);
+    $v("vv-vers-post").onclick = () => {
+      if (typeof window.versPostLinkedIn === "function") window.versPostLinkedIn({ theme: String(v.sujet || "").slice(0, 300) });
+      else { copier($v("vv-post2").value); notifier("Texte copié : ouvrez l'onglet Post LinkedIn."); }
+    };
     $v("vv-telecharger").onclick = async (e) => {
       const b = e.currentTarget, lib = b.textContent; b.disabled = true;
       try { const blob = await parPlages(src, v.taille, (k) => { b.textContent = `Téléchargement… ${Math.round(k * 100)} %`; }); telechargerBlob(blob, `video-bsc-${v.id.slice(0, 8)}.mp4`); }

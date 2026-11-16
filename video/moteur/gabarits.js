@@ -320,36 +320,105 @@ GAB.sablier = {
   masqueSousTitres(S, t) { return !!S.p.gros && t >= ph(S, nbP(S) - 1); },
 };
 
-// 13) Carte de fin professionnelle (coordonnées du cabinet, mentions légales).
+// 13) Carte de fin professionnelle (coordonnées du cabinet, mentions légales), en 6 mises en scène choisies selon le sujet.
+// Toutes gardent le logo, la phrase d'appel, l'offre, les coordonnées et les mentions, aux mêmes places (lisibles en 9:16 et 4:5).
+const FIN_STYLES = {
+  cercles: {
+    c: { q: ROSE2, pill: BLANC, pillT: BX, boite: "#000", boiteOp: .22, txt: BLANC, ment: ROSE2, trait: ROSE },
+    fond(t) { let o = fond("#7A0F24", "#3E0611"); for (let i = 0; i < 5; i++) o += `<circle cx="540" cy="900" r="${220 + i * 120 + (t * 12) % 120}" fill="none" stroke="${BLANC}" stroke-opacity="${.05 - i * .008}" stroke-width="2"/>`; return o; },
+  },
+  clair: {
+    c: { q: NUIT, pill: BX, pillT: BLANC, boite: BLANC, boiteOp: .9, txt: NUIT, ment: "#6E5F64", trait: BX },
+    fond(t, S) {
+      const k = eo(lin(t, S.debut, S.debut + 1.2)), L = 2 * (900 + 1440);
+      let o = fond(CREME, "#EFE2DE");
+      o += `<rect x="90" y="330" width="900" height="1340" rx="40" fill="none" stroke="${BX}" stroke-opacity=".35" stroke-width="3" stroke-dasharray="${L}" stroke-dashoffset="${L * (1 - k)}"/>`;
+      for (let i = 0; i < 18; i++) o += `<circle cx="${120 + (i * 211) % 840}" cy="${360 + (i * 337) % 1280}" r="3" fill="${BX}" opacity="${.12 * k}"/>`;
+      return o;
+    },
+  },
+  horizon: {
+    c: { q: "#FFE7D6", pill: BLANC, pillT: BX, boite: "#000", boiteOp: .25, txt: BLANC, ment: "#FFE7D6", trait: OR },
+    fond(t, S) {
+      const k = eo(lin(t, S.debut, S.fin - .5)), cy = mix(1150, 820, k);
+      let o = `<defs><linearGradient id="fh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E0510"/><stop offset=".55" stop-color="#7A1A2E"/><stop offset="1" stop-color="#C2604A"/></linearGradient>
+        <radialGradient id="fs"><stop offset="0" stop-color="${OR}" stop-opacity=".75"/><stop offset=".45" stop-color="${OR}" stop-opacity=".22"/><stop offset="1" stop-color="${OR}" stop-opacity="0"/></radialGradient></defs>
+        <rect width="1080" height="1920" fill="url(#fh)"/><circle cx="540" cy="${cy}" r="620" fill="url(#fs)"/>`;
+      for (let i = 0; i < 12; i++) { const a = -Math.PI + (i + .5) * Math.PI / 12; o += `<line x1="${540 + Math.cos(a) * 330}" y1="${cy + Math.sin(a) * 330}" x2="${540 + Math.cos(a) * 520}" y2="${cy + Math.sin(a) * 520}" stroke="${OR}" stroke-opacity="${.10 + .05 * Math.sin(t * 2 + i)}" stroke-width="6" stroke-linecap="round"/>`; }
+      o += `<rect x="0" y="1660" width="1080" height="260" fill="#3A0715" opacity=".55"/>`;
+      for (let i = 0; i < 6; i++) o += `<line x1="${180 + i * 30}" y1="${1700 + i * 34}" x2="${900 - i * 30}" y2="${1700 + i * 34}" stroke="${OR}" stroke-opacity="${.18 - i * .025}" stroke-width="4"/>`;
+      return o;
+    },
+  },
+  courbe: {
+    c: { q: ROSE2, pill: BLANC, pillT: BX, boite: "#000", boiteOp: .28, txt: BLANC, ment: ROSE2, trait: VERT },
+    fond(t, S) {
+      let o = fond("#2A0A12", "#4A0614");
+      for (let i = 0; i < 9; i++) o += `<line x1="0" y1="${400 + i * 150}" x2="1080" y2="${400 + i * 150}" stroke="${BLANC}" stroke-opacity=".05" stroke-width="2"/>`;
+      const k = eo(lin(t, S.debut + .1, S.debut + 2.2)), n = 50, pts = [];
+      for (let i = 0; i <= n; i++) { const x = -20 + i * 22.4, y = 1640 - Math.pow(i / n, 1.8) * 1180 + Math.sin(i * 1.3) * 18; pts.push([x, y]); }
+      const m = Math.max(2, Math.round(k * (n + 1))), vis = pts.slice(0, m);
+      const d = vis.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
+      o += `<path d="${d} L${vis[vis.length - 1][0]} 1920 L-20 1920Z" fill="${VERT}" opacity=".10"/><path d="${d}" stroke="${VERT}" stroke-opacity=".55" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const e = vis[vis.length - 1]; o += `<circle cx="${e[0]}" cy="${e[1]}" r="16" fill="${VERT}" opacity=".8"/>`;
+      return o;
+    },
+  },
+  maison: {
+    c: { q: ROSE2, pill: BLANC, pillT: BX, boite: "#000", boiteOp: .25, txt: BLANC, ment: ROSE2, trait: OR },
+    fond(t, S) {
+      let o = fond("#4A0614", "#22050C");
+      for (let i = 0; i < 22; i++) o += `<circle cx="${(i * 197) % 1080}" cy="${320 + (i * 131) % 380}" r="${2 + i % 3}" fill="${BLANC}" opacity="${.15 + .15 * Math.sin(t * 2 + i)}"/>`;
+      const k = lin(t, S.debut + .1, S.debut + 2), L = 4200;
+      const maison = "M140 1640 L140 1060 L540 700 L940 1060 L940 1640 Z M760 860 L760 720 L840 720 L840 935 M440 1640 L440 1380 L640 1380 L640 1640";
+      o += `<path d="${maison}" fill="none" stroke="${ROSE}" stroke-opacity=".28" stroke-width="10" stroke-linejoin="round" stroke-dasharray="${L}" stroke-dashoffset="${L * (1 - eo(k))}"/>`;
+      const kf = lin(t, S.debut + 1.8, S.debut + 2.4);
+      o += `<rect x="455" y="1395" width="170" height="230" rx="6" fill="${OR}" opacity="${.18 * kf}"/>`;
+      return o;
+    },
+  },
+  bandes: {
+    c: { q: BLANC, pill: BLANC, pillT: BX, boite: "#000", boiteOp: .25, txt: BLANC, ment: ROSE2, trait: BLANC },
+    fond(t) {
+      let o = fond("#8A1029", "#4A0614");
+      const dec = (t * 60) % 240;
+      for (let i = -6; i < 14; i++) o += `<rect x="${i * 240 + dec}" y="-200" width="90" height="2600" fill="${BLANC}" opacity=".05" transform="rotate(20 540 960)"/>`;
+      return o;
+    },
+  },
+};
 GAB.fin = {
   dessin(S, t) {
-    const p = S.p, C = CONFIG;
-    let o = fond("#7A0F24", "#3E0611");
-    for (let i = 0; i < 5; i++) o += `<circle cx="540" cy="900" r="${220 + i * 120 + (t * 12) % 120}" fill="none" stroke="${BLANC}" stroke-opacity="${.05 - i * .008}" stroke-width="2"/>`;
-    const q = court(p.question || "Et si on prenait le temps d'en parler ?", 60), cut = q.length > 26 ? q.lastIndexOf(" ", 26) : -1;
-    const k1 = lin(t, S.debut + .15, S.debut + .6);
-    o += g(txt(540, 470, cut > 0 ? q.slice(0, cut) : q, { size: 62, w: 700, f: ROSE2 }) + (cut > 0 ? txt(540, 548, q.slice(cut + 1), { size: 62, w: 700, f: ROSE2 }) : ""), `translate(0 ${(1 - eo(k1)) * 40})`, k1);
-    const t2 = nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2, k2 = lin(t, t2, t2 + .5);
+    const p = S.p, C = CONFIG, st = FIN_STYLES[p.style] || FIN_STYLES.cercles, c = st.c;
+    let o = st.fond(t, S);
+    const q = court(p.question || "Et si on prenait le temps d'en parler ?", 60), cut = q.length > 26 ? q.lastIndexOf(" ", Math.min(q.length - 1, Math.max(26, Math.ceil(q.length / 2)))) : -1;
+    const k1 = lin(t, S.debut + .15, S.debut + .6), tq = q.length > 40 ? 54 : 62;
+    o += g(txt(540, 470, cut > 0 ? q.slice(0, cut) : q, { size: tq, w: 700, f: c.q }) + (cut > 0 ? txt(540, 548, q.slice(cut + 1), { size: tq, w: 700, f: c.q }) : ""), `translate(0 ${(1 - eo(k1)) * 40})`, k1);
+    // le logo arrive avec le nom du cabinet (avant-dernière phrase), l'offre avec la dernière phrase
+    const t2 = nbP(S) > 2 ? ph(S, nbP(S) - 2) : nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2, k2 = lin(t, t2, t2 + .5);
     const nomCab = court(C.cabinet || "BSC PATRIMOINE", 30).toUpperCase(), [m1, ...m2] = nomCab.split(" ");
     // Logo officiel du cabinet B-S-C Patrimoine (image fournie par le cabinet) ; un autre cabinet garde son nom en texte.
     const logo = /\bB-?S-?C\b/.test(nomCab)
-      ? `<line x1="400" y1="640" x2="680" y2="640" stroke="${ROSE}" stroke-width="4"/>` +
+      ? `<line x1="400" y1="640" x2="680" y2="640" stroke="${c.trait}" stroke-width="4"/>` +
         `<rect x="114" y="684" width="852" height="252" rx="10" fill="#000" opacity=".28"/>` +
         `<image href="logo-bsc.png" x="120" y="678" width="840" height="236" preserveAspectRatio="xMidYMid meet"/>` +
         `<rect x="120" y="678" width="840" height="236" fill="none" stroke="${BLANC}" stroke-opacity=".35" stroke-width="2"/>`
-      : `<line x1="400" y1="640" x2="680" y2="640" stroke="${ROSE}" stroke-width="4"/>` + txt(540, 800, m1, { size: m1.length > 6 ? 120 : 180, w: 900, f: BLANC, fam: "Inter Display", ls: 16 }) + (m2.length ? txt(540, 890, m2.join(" "), { size: 66, w: 600, f: BLANC, ls: 24 }) : "") + txt(540, 955, court(C.activite || "Conseil en gestion de patrimoine", 44), { size: 34, w: 500, f: ROSE2, ls: 1 });
+      : `<line x1="400" y1="640" x2="680" y2="640" stroke="${c.trait}" stroke-width="4"/>` + txt(540, 800, m1, { size: m1.length > 6 ? 120 : 180, w: 900, f: c.txt, fam: "Inter Display", ls: 16 }) + (m2.length ? txt(540, 890, m2.join(" "), { size: 66, w: 600, f: c.txt, ls: 24 }) : "") + txt(540, 955, court(C.activite || "Conseil en gestion de patrimoine", 44), { size: 34, w: 500, f: c.ment, ls: 1 });
     o += g(logo, `translate(540 780) scale(${.92 + .08 * eo(k2)}) translate(-540 -780)`, k2);
-    const t3 = nbP(S) > 2 ? ph(S, 2) : t2 + 1, k3 = lin(t, t3, t3 + .34);
-    o += g(pill(540, 1080, 840, 104, BLANC, txt(540, 1098, court(p.offre || "Premier échange offert · sans engagement", 44), { size: 36, w: 800, f: BX })), `translate(540 1080) scale(${back(k3)}) translate(-540 -1080)`, cl(k3 * 3));
+    const t3 = nbP(S) > 2 ? ph(S, nbP(S) - 1) : t2 + 1, k3 = lin(t, t3, t3 + .34);
+    o += g(pill(540, 1080, 840, 104, c.pill, txt(540, 1098, court(p.offre || "Premier échange offert · sans engagement", 44), { size: 36, w: 800, f: c.pillT })), `translate(540 1080) scale(${back(k3)}) translate(-540 -1080)`, cl(k3 * 3));
     const t4 = phf(S, nbP(S) - 1) - .4, k4 = lin(t, t4, t4 + .4), k5 = lin(t, t4 + .3, t4 + .7);
-    const lignes = [C.mail && ["mail", C.mail], C.telephone && ["tel", C.telephone]].filter(Boolean);
-    if (lignes.length) {
-      o += g(`<rect x="150" y="1180" width="780" height="${lignes.length * 120 + 40}" rx="36" fill="#000" opacity=".22"/>`, "", k4);
-      lignes.forEach(([ic, v], i) => { o += g(icone(ic, 240, 1260 + i * 120) + txt(305, 1276 + i * 120, court(v, 34), { anchor: "start", size: 46, w: 800, f: BLANC, ls: 1 }), `translate(${(1 - eo(i ? k5 : k4)) * -60} 0)`, i ? k5 : k4); });
+    const contacts = [C.mail && ["mail", C.mail], C.telephone && ["tel", C.telephone]].filter(Boolean);
+    if (contacts.length) {
+      o += g(`<rect x="150" y="1180" width="780" height="${contacts.length * 120 + 40}" rx="36" fill="${c.boite}" opacity="${c.boiteOp}"/>`, "", k4);
+      contacts.forEach(([ic, v], i) => { o += g(icone(ic, 240, 1260 + i * 120) + txt(305, 1276 + i * 120, court(v, 34), { anchor: "start", size: 46, w: 800, f: c.txt, ls: 1 }), `translate(${(1 - eo(i ? k5 : k4)) * -60} 0)`, i ? k5 : k4); });
     }
-    (C.mentions || []).slice(0, 4).forEach((m, i) => { o += txt(540, 1480 + i * 38, court(m, 90), { size: 25, w: 500, f: ROSE2, op: .9 }); });
+    // mentions sur 1 ou 2 lignes chacune (jamais coupées), avec un bandeau discret pour la lisibilité
+    const ment = (C.mentions || []).slice(0, 4).flatMap((m) => lignes(court(m, 130), 66, 2)).slice(0, 5);
+    if (ment.length && p.style && p.style !== "clair" && p.style !== "cercles") o += `<rect x="70" y="1468" width="940" height="${ment.length * 34 + 26}" rx="20" fill="#000" opacity=".28"/>`;
+    ment.forEach((m, i) => { o += txt(540, 1496 + i * 34, m, { size: 25, w: 500, f: c.ment, op: .9 }); });
     return o;
   },
-  sons(S) { const t2 = nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2, t3 = nbP(S) > 2 ? ph(S, 2) : t2 + 1; return [["pop", t3, .4]]; },   // rien après la dernière phrase
+  sons(S) { const t3 = nbP(S) > 2 ? ph(S, nbP(S) - 1) : (nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2) + 1; return [["pop", t3, .4]]; },   // rien après la dernière phrase
   masqueSousTitres() { return true; },
 };

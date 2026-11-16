@@ -15,13 +15,15 @@ const COUPE_4_5 = 285;   // le format 4:5 garde la bande y = 285 → 1635 de l'i
 
 window.init = (job, calage) => {
   CONFIG = job.config || {};
+  STYLE_ST = ["mot", "sobre", "clair"].includes(job.sous_titres) ? job.sous_titres : "mot";
   GRAINE = Number.isInteger(job.graine) ? job.graine : 1;   // variations (décors, tenues, motifs) propres à la vidéo
-  MOTS = calage.mots;
+  MOTS = calage.mots; BLOCS = []; ALERTES = new Set();   // (ré)initialisable : l'aperçu du site rappelle init à chaque modification
   SCENES = calage.scenes.map((c, i) => ({ i, type: job.scenes[i].type, p: job.scenes[i].p || {}, debut: c.debut, fin: c.fin, P: c.P, PF: c.PF }));
   SCENES.forEach((S) => { if (!GAB[S.type]) { ALERTES.add("gabarit inconnu : " + S.type); S.type = "grand_mot"; S.p = { texte: "" }; } });
   preparer();
   const svg = document.getElementById("s");
   if (job.format === "4:5") { svg.setAttribute("height", "1350"); svg.setAttribute("viewBox", `0 ${COUPE_4_5} 1080 1350`); }
+  else { svg.setAttribute("height", "1920"); svg.setAttribute("viewBox", "0 0 1080 1920"); }
   return { scenes: SCENES.length, duree: SCENES[SCENES.length - 1].fin };
 };
 

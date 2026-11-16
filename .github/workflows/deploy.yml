@@ -20,6 +20,12 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@v5
 
+      # Le moteur d'animation des vidéos sert aussi à l'aperçu sur le site (Création Post › Vidéo).
+      - name: Copier le moteur d'aperçu vidéo
+        run: |
+          mkdir -p public/video-moteur
+          cp video/moteur/moteur.html video/moteur/base.js video/moteur/personnages.js video/moteur/decors.js video/moteur/gabarits.js video/moteur/logo-bsc.png public/video-moteur/
+
       - name: Publier sur Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:

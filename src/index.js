@@ -35,15 +35,17 @@ const CSP = [
 ].join("; ");
 
 // En-têtes de sécurité ajoutés à toutes les pages.
-function securiser(reponse) {
+function securiser(reponse, chemin = "") {
   const r = new Response(reponse.body, reponse);
+  // Seul le moteur d'aperçu vidéo peut s'afficher dans un cadre, et uniquement sur le site lui-même.
+  const cadre = chemin.startsWith("/video-moteur/");
   r.headers.set("X-Content-Type-Options", "nosniff");
-  r.headers.set("X-Frame-Options", "DENY");
+  r.headers.set("X-Frame-Options", cadre ? "SAMEORIGIN" : "DENY");
   r.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   r.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   r.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()");
   // Politique de contenu : scripts et données uniquement depuis le site ; polices Google ; images des éditeurs en https.
-  if ((r.headers.get("Content-Type") || "").includes("text/html")) r.headers.set("Content-Security-Policy", CSP);
+  if ((r.headers.get("Content-Type") || "").includes("text/html")) r.headers.set("Content-Security-Policy", cadre ? CSP.replace("frame-ancestors 'none'", "frame-ancestors 'self'") : CSP);
   return r;
 }
 
@@ -411,7 +413,7 @@ export default {
     const url = new URL(request.url);
     try {
       const reponse = url.pathname.startsWith("/api/") ? await api(request, env, url) : await pages(request, env, url);
-      return securiser(reponse);
+      return securiser(reponse, url.pathname);
     } catch (e) {
       console.error(e);
       // Pour le robot (routes protégées par jeton), on renvoie le détail : il apparaît dans les journaux GitHub.

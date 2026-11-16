@@ -1,6 +1,7 @@
 """Musique originale et bruitages synthétisés (numpy) : aucun échantillon externe, donc libres de droits.
 
-Usage : python3 son.py calage.json evenements.json musique.wav bruitages.wav
+Usage : python3 son.py calage.json evenements.json musique.wav bruitages.wav [ambiance]
+Ambiances : dynamique (par défaut), calme, inspirante. Même mixage, mêmes règles de bruitages.
 
 Règles fixées avec Shehram : pas de « whoosh », pas d'impact grave, pas de cloche ; transitions = glissement feutré
 très discret ; aucun bruitage après la dernière phrase ; la musique s'éteint seule en fondu.
@@ -34,7 +35,18 @@ def ajoute(piste, son, debut, gain=1.0):
     if j > i: piste[i:j] += son[:j - i] * gain
 
 # ---------------------------------------------------------------- Musique
-BPM = 100; BEAT = 60 / BPM; MES = 4 * BEAT
+AMBIANCE = sys.argv[5] if len(sys.argv) > 5 else "dynamique"
+STYLES = {
+    # tempo, accords (basse, notes), mélodie, gains (pad, kick, caisse claire, charleston, basse, mélodie), 1 note de mélodie sur n
+    "dynamique": dict(bpm=100, accords=[(57, [57, 60, 64]), (53, [53, 57, 60]), (48, [55, 60, 64]), (55, [55, 59, 62])],   # La m, Fa, Do, Sol
+                      melodie=[76, 72, 74, 72, 69, 72, 71, 67], g=(0.42, 0.9, 0.35, 0.18, 0.45, 0.16), saute=3, kick_tous=True),
+    "calme": dict(bpm=76, accords=[(53, [57, 60, 65]), (48, [55, 60, 64]), (50, [57, 62, 65]), (46, [53, 58, 62])],          # Fa, Do, Ré m, Si b
+                  melodie=[72, 0, 69, 0, 67, 0, 69, 0], g=(0.62, 0.45, 0.0, 0.06, 0.32, 0.12), saute=99, kick_tous=False),
+    "inspirante": dict(bpm=92, accords=[(48, [60, 64, 67]), (55, [59, 62, 67]), (57, [60, 64, 69]), (53, [60, 65, 69])],     # Do, Sol, La m, Fa
+                       melodie=[72, 76, 79, 76, 74, 76, 79, 84], g=(0.5, 0.75, 0.22, 0.14, 0.4, 0.15), saute=4, kick_tous=True),
+}
+ST = STYLES.get(AMBIANCE, STYLES["dynamique"])
+BPM = ST["bpm"]; BEAT = 60 / BPM; MES = 4 * BEAT
 musique = np.zeros(int(DUREE * SR))
 def kick():
     t = t_(0.35); f = 120 * np.exp(-t * 22) + 45
@@ -64,24 +76,25 @@ def pluck(n, d=0.4):
     return s * env(len(t), 0.002, 0.12)
 
 
-ACCORDS = [(57, [57, 60, 64]), (53, [53, 57, 60]), (48, [55, 60, 64]), (55, [55, 59, 62])]   # La m, Fa, Do, Sol
-MELODIE = [76, 72, 74, 72, 69, 72, 71, 67]
+ACCORDS, MELODIE = ST["accords"], ST["melodie"]
+G_PAD, G_KICK, G_CAISSE, G_HAT, G_BASSE, G_MEL = ST["g"]
 for m in range(int(DUREE / MES) + 1):
     t0 = m * MES
     racine, acc = ACCORDS[m % 4]
     intro, fin = t0 + MES <= INTRO, t0 >= FIN
-    ajoute(musique, pad(acc, MES), t0, 0.5 if intro else 0.42)
+    ajoute(musique, pad(acc, MES), t0, (G_PAD + 0.08) if intro else G_PAD)
     for b in range(4):
         tb = t0 + b * BEAT
         if tb < INTRO and b not in (0, 2): continue
-        if not intro or b in (0, 2): ajoute(musique, kick(), tb, 0.9 if tb >= INTRO else 0.5)
-        if tb >= INTRO and not fin and b in (1, 3): ajoute(musique, snare(), tb, 0.35)
+        if ST["kick_tous"] or b == 0:
+            if not intro or b in (0, 2): ajoute(musique, kick(), tb, G_KICK if tb >= INTRO else G_KICK * 0.55)
+        if G_CAISSE and tb >= INTRO and not fin and b in (1, 3): ajoute(musique, snare(), tb, G_CAISSE)
         if tb >= INTRO:
-            ajoute(musique, hat(), tb, 0.18); ajoute(musique, hat(b == 3), tb + BEAT / 2, 0.14)
-            ajoute(musique, basse(racine - 12, BEAT * 0.9), tb, 0.45 if b % 2 == 0 else 0.3)
+            ajoute(musique, hat(), tb, G_HAT); ajoute(musique, hat(b == 3), tb + BEAT / 2, G_HAT * 0.78)
+            ajoute(musique, basse(racine - 12, BEAT * 0.9), tb, G_BASSE if b % 2 == 0 else G_BASSE * 0.67)
     if t0 >= INTRO and not fin:
         for k, n in enumerate(MELODIE):
-            if (m + k) % 3 != 2: ajoute(musique, pluck(n), t0 + k * BEAT / 2, 0.16)
+            if n and (m + k) % ST["saute"] != ST["saute"] - 1: ajoute(musique, pluck(n, 0.4 if AMBIANCE != "calme" else 0.9), t0 + k * BEAT / 2, G_MEL)
 mont = rng.standard_normal(int(2.0 * SR)); mont = mont - passe_bas(mont, 0.05)
 mont *= np.linspace(0, 1, len(mont)) ** 2
 ajoute(musique, mont, max(0, INTRO - 2.0), 0.12)

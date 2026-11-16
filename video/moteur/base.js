@@ -93,23 +93,29 @@ function preparer() {
   }
   BLOCS.forEach((b, i) => { b.debut = b[0].debut; b.fin = Math.min(b[b.length - 1].fin + .35, i + 1 < BLOCS.length ? BLOCS[i + 1][0].debut : 99); });
 }
+// Style des sous-titres choisi sur le site : « mot » (mot à mot en couleur), « sobre » (blanc cerné, sans fond), « clair » (encadré clair).
+let STYLE_ST = "mot";
 function soustitres(t, y = 1480) {
   const b = BLOCS.find((b) => t >= b.debut - .02 && t < b.fin);
   if (!b) return "";
   const k = (t - b.debut) / .14, sc = .88 + .12 * back(k);
-  let o = `<rect id="stb" rx="26" fill="${NUIT}" fill-opacity=".82"/><text id="st" x="540" y="${y}" text-anchor="middle" font-size="76" font-weight="800" font-family="Inter Display">`;
+  const st = STYLE_ST, sobre = st === "sobre", clair = st === "clair";
+  let o = sobre ? "" : `<rect id="stb" rx="26" fill="${clair ? BLANC : NUIT}" fill-opacity="${clair ? .94 : .82}"/>`;
+  o += `<text id="st" x="540" y="${y}" text-anchor="middle" font-size="76" font-weight="800" font-family="Inter Display"${sobre ? ` stroke="${NUIT}" stroke-width="12" stroke-linejoin="round" paint-order="stroke" word-spacing="14"` : ""}>`;
   b.forEach((m, j) => {
     const courant = t >= m.debut - .03 && t < m.fin + .05, passe = t >= m.debut - .03;
-    o += `<tspan fill="${courant ? "#FFB3C1" : passe ? BLANC : "#CDBFC3"}">${j ? " " : ""}${esc(m.mot.trim())}</tspan>`;
+    const c = sobre ? BLANC : clair ? (courant ? BX : passe ? NUIT : "#9A8B90") : (courant ? "#FFB3C1" : passe ? BLANC : "#CDBFC3");
+    o += `<tspan fill="${c}">${j ? " " : ""}${esc(m.mot.trim())}</tspan>`;
   });
   o += `</text>`;
   return `<g id="stg" transform="translate(540 ${y - 26}) scale(${sc}) translate(-540 ${-(y - 26)})" opacity="${cl(k * 2.5)}">${o}</g>`;
 }
 function caleBoite() {
   const t = document.getElementById("st"), r = document.getElementById("stb");
-  if (!t || !r) return;
+  if (!t) return;
   let bb = t.getBBox();
   if (bb.width > 940) { t.setAttribute("font-size", String(76 * 940 / bb.width)); bb = t.getBBox(); }
+  if (!r) return;
   r.setAttribute("x", bb.x - 30); r.setAttribute("y", bb.y - 12); r.setAttribute("width", bb.width + 60); r.setAttribute("height", bb.height + 24);
 }
 

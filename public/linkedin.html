@@ -19,6 +19,7 @@
   <script src="/fiches-suite.js"></script>
   <script src="/fiches-nouvelles.js"></script>
   <script src="/visuels-linkedin.js"></script>
+  <script src="/video-apercu.js"></script>
   <script src="/video-creation.js"></script>
   <style>
     .li-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 16px; }
@@ -280,6 +281,106 @@
     .vv-carte-actions .lien-bouton { font-size: .85rem; padding: 2px 0; }
     #vv-coord summary { font-weight: 600; }
     body.vue-video .barre-mobile { display: none !important; }
+    /* Vidéo : storyboard visuel avec aperçu animé */
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .vs-titre h2 { margin: 6px 0 2px; }
+    .vs-titre p { margin: 0 0 12px; }
+    .vs-duree { border: 1px solid var(--bord); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; background: var(--carte); margin-bottom: 12px; }
+    .vs-duree-l { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+    .vs-duree-chiffre { font-family: "Space Grotesk", sans-serif; font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .vs-duree-chiffre.ok { color: var(--ok); } .vs-duree-chiffre.ko { color: #a86400; }
+    .vs-duree-txt { display: grid; font-weight: 600; line-height: 1.25; }
+    .vs-duree-txt small { font-weight: 400; color: var(--doux); font-size: .8rem; }
+    .vs-objectif { margin-left: auto; }
+    .vs-jauge { position: relative; height: 10px; border-radius: 999px; background: var(--fond); overflow: hidden; }
+    .vs-zone { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--ok) 28%, transparent); }
+    .vs-rempli { position: absolute; left: 0; top: 2px; bottom: 2px; border-radius: 999px; background: #c98a2b; transition: width .3s; }
+    .vs-rempli.ok { background: var(--ok); }
+    .vs-ajuster { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .vs-grille { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; }
+    .vs-cote { grid-column: 2; grid-row: 1; position: sticky; top: 140px; }
+    .vs-principal { grid-column: 1; grid-row: 1; min-width: 0; }
+    @media (max-width: 900px) {
+      .vs-grille { grid-template-columns: minmax(0, 1fr); }
+      .vs-cote { grid-column: 1; position: static; }
+      .vs-principal { grid-row: 2; }
+      .vs-lecteur-bloc { max-width: 240px; margin: 0 auto; }
+    }
+    .vs-lecteur { background: #000; border-radius: 16px; overflow: hidden; position: relative; }
+    .vs-ecran { position: relative; width: 100%; overflow: hidden; }
+    .vs-ecran .va-cadre { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+    .vs-lecteur > p { color: #ddd; padding: 30px 16px; text-align: center; }
+    .vs-commandes { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .vs-commandes input[type=range] { flex: 1; accent-color: var(--accent); min-width: 0; }
+    .vs-lire { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-texte); font-size: .95rem; cursor: pointer; flex: 0 0 auto; }
+    .vs-note { margin: 6px 0 0; }
+    .vs-scenes { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 10px; }
+    .vs-scene { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; border: 1px solid var(--bord); border-radius: 14px; padding: 10px; background: var(--carte); transition: border-color .2s, box-shadow .2s; }
+    .vs-scene.vs-active { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+    .vs-scene-fin { background: var(--fond); }
+    .vs-vign { position: relative; width: 76px; aspect-ratio: 9 / 16; border-radius: 10px; overflow: hidden; border: 0; padding: 0; background: #2A0A12; cursor: pointer; align-self: start; }
+    .vs-vign.f45 { aspect-ratio: 4 / 5; }
+    .vs-vign > span, .vs-vign svg { display: block; width: 100%; height: 100%; }
+    .vs-vign em { position: absolute; inset: auto 6px 6px auto; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; font-style: normal; font-size: .62rem; display: grid; place-items: center; }
+    .vs-vign.vide > span { background: repeating-linear-gradient(135deg, #3a1019 0 8px, #2A0A12 8px 16px); }
+    .vs-corps { display: grid; gap: 8px; min-width: 0; }
+    .vs-tete-scene { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .vs-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent-doux); color: var(--accent-fonce); font-size: .75rem; font-weight: 700; display: grid; place-items: center; }
+    .vs-sec { font-size: .78rem; color: var(--doux); font-variant-numeric: tabular-nums; }
+    .vs-actions { margin-left: auto; display: flex; gap: 2px; align-items: center; }
+    .vs-ico, .vs-mini { font: inherit; border: 0; background: none; color: var(--doux); cursor: pointer; border-radius: 8px; padding: 4px 7px; }
+    .vs-ico { min-width: 30px; } .vs-ico:disabled { opacity: .3; cursor: default; }
+    .vs-mini { color: var(--accent-fonce); font-weight: 600; font-size: .84rem; }
+    .vs-ico:hover:not(:disabled), .vs-mini:hover { background: var(--fond); color: var(--texte); }
+    #vue-video .vs-corps textarea { padding: 8px 10px; border-radius: 10px; }
+    .vs-refaire { display: flex; gap: 8px; }
+    .vs-refaire[hidden] { display: none; }
+    .vs-refaire input, #vs-question, .vs-select { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); }
+    .vs-plus > summary { cursor: pointer; font-size: .84rem; color: var(--doux); }
+    .vs-plus[open] > summary { margin-bottom: 8px; }
+    .vs-lib { font-size: .8rem; font-weight: 700; color: var(--doux); text-transform: uppercase; letter-spacing: .04em; }
+    .vs-sugg { display: flex; flex-wrap: wrap; gap: 6px; }
+    .vs-sugg .puce { white-space: normal; text-align: left; line-height: 1.25; }
+    .vs-styles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 520px) { .vs-styles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .vs-style { font: inherit; text-align: left; border: 1.5px solid var(--bord); border-radius: 12px; background: var(--carte); color: var(--texte); padding: 8px; cursor: pointer; display: grid; gap: 2px; }
+    .vs-style i { display: block; height: 34px; border-radius: 8px; margin-bottom: 4px; }
+    .vs-style b { font-size: .86rem; } .vs-style small { font-size: .74rem; color: var(--doux); line-height: 1.2; }
+    .vs-style[aria-pressed="true"], .vs-carte[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+    .s-cercles i { background: radial-gradient(circle at 50% 60%, #7A0F24 30%, #3E0611 31%, #3E0611 45%, #5a0b1b 46%); }
+    .s-clair i { background: #F7F1EE; border: 2px solid #6E0B1F55; }
+    .s-horizon i { background: radial-gradient(circle at 50% 110%, #E2B45A 0 22%, transparent 23%), linear-gradient(#2E0510, #C2604A); }
+    .s-courbe i { background: linear-gradient(160deg, transparent 48%, #3E8E6B 49% 54%, transparent 55%), linear-gradient(#2A0A12, #4A0614); }
+    .s-maison i { background: conic-gradient(from 135deg at 50% 30%, #D8919C 0 90deg, transparent 0) 50% 100% / 46% 70% no-repeat, linear-gradient(#4A0614, #22050C); }
+    .s-bandes i { background: repeating-linear-gradient(110deg, #8A1029 0 12px, #9a2039 12px 18px); }
+    .vs-bloc { border: 1px solid var(--bord); border-radius: 14px; padding: 0; margin-bottom: 14px; }
+    .vs-bloc > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; }
+    .vs-bloc > summary::-webkit-details-marker { display: none; }
+    .vs-bloc > summary > span:first-child { display: grid; gap: 2px; }
+    .vs-bloc > summary small { color: var(--doux); font-size: .82rem; }
+    .vs-bloc[open] .vv-modifier { font-size: 0; } .vs-bloc[open] .vv-modifier::after { content: "Fermer"; font-size: .9rem; }
+    #vs-reglages { padding: 0 14px 14px; display: grid; gap: 14px; }
+    .vs-reg { display: grid; gap: 6px; }
+    .vs-cartes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 520px) { .vs-cartes { grid-template-columns: minmax(0, 1fr); } }
+    .vs-carte { font: inherit; text-align: left; border: 1.5px solid var(--bord); border-radius: 12px; background: var(--carte); color: var(--texte); padding: 8px 10px; cursor: pointer; display: grid; gap: 2px; }
+    .vs-carte b { font-size: .88rem; } .vs-carte small { font-size: .76rem; color: var(--doux); }
+    .vs-st-ex { display: block; width: fit-content; font-weight: 800; font-size: .8rem; padding: 2px 8px; border-radius: 6px; margin-bottom: 4px; }
+    .vs-st-mot .vs-st-ex { background: #2A0A12; color: #fff; } .vs-st-mot .vs-st-ex i { color: #FFB3C1; font-style: normal; }
+    .vs-st-sobre .vs-st-ex { background: #8E8288; color: #fff; text-shadow: 0 0 2px #2A0A12, 0 0 2px #2A0A12; } .vs-st-sobre .vs-st-ex i { font-style: normal; }
+    .vs-st-clair .vs-st-ex { background: #fff; color: #2A0A12; border: 1px solid var(--bord); } .vs-st-clair .vs-st-ex i { color: #6E0B1F; font-style: normal; }
+    #vue-video .vs-case { display: flex; justify-content: flex-start; gap: 10px; align-items: flex-start; font-size: .9rem; font-weight: 500; margin-top: 6px; text-align: left; }
+    #vue-video .vs-case input { width: 18px; height: 18px; flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--accent); }
+    .vs-barre-actions { position: sticky; bottom: 0; background: var(--carte); padding: 12px 0 6px; border-top: 1px solid var(--bord); z-index: 2; }
+    @media (max-width: 640px) {
+      .vs-barre-actions { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .vs-barre-actions .gros-bouton { grid-column: 1 / -1; justify-content: center; }
+      .vs-barre-actions .bouton-discret { font-size: .85rem; padding: 8px 6px; justify-content: center; text-align: center; }
+      .vs-objectif { margin-left: 0; }
+      .vs-scene { grid-template-columns: 60px minmax(0, 1fr); gap: 10px; padding: 8px; }
+      .vs-vign { width: 60px; }
+      .vs-mini { font-size: 0; padding: 4px 6px; } .vs-mini::before { content: "↻"; font-size: .95rem; }
+    }
     @media (max-width: 760px) { body.vue-video.avec-barre { padding-bottom: 90px; } }
   </style>
 </head>
@@ -797,6 +898,13 @@
       if (memoriser) { const u = new URL(location.href); if (video) u.searchParams.set("onglet", "video"); else u.searchParams.delete("onglet"); history.replaceState(null, "", u); }
     }
     $("tab-post").onclick = () => choisirVue("post");
+    // Depuis une vidéo terminée : « Transformer en post LinkedIn » (même sujet, l'IA rédige le post).
+    window.versPostLinkedIn = ({ theme }) => {
+      choisirVue("post");
+      etat.onglet = "libre"; afficherOnglet();
+      choisirSujet({ type: "libre", theme, libelle: theme }); allerA(2);
+      scrollTo({ top: 0, behavior: "smooth" });
+    };
     $("tab-video").onclick = () => choisirVue("video");
     if (new URLSearchParams(location.search).get("onglet") === "video") choisirVue("video", false);
 
