@@ -1,13 +1,45 @@
 // version 9.3
 // Outils partagés par toutes les pages.
 
-// Thème clair / sombre (mémorisé sur cet appareil uniquement).
-(function appliquerTheme() {
+// Thème de couleurs : automatique, clair, sombre, couleurs du cabinet et autres palettes.
+// Appliqué tout de suite (sans flash) depuis cet appareil, puis aligné sur le choix enregistré sur le compte.
+const THEMES_COULEURS = {
+  auto: { nom: "Automatique", mode: null, couleur: null, apercu: ["#f1f3f7", "#151a26", "#3a49d6"] },
+  clair: { nom: "Clair", mode: "light", couleur: null, apercu: ["#f1f3f7", "#ffffff", "#3a49d6"] },
+  sombre: { nom: "Sombre", mode: "dark", couleur: null, apercu: ["#0f131c", "#171c27", "#8f9bff"] },
+  bsc: { nom: "Bordeaux cabinet", mode: "light", couleur: "bsc", apercu: ["#F7F1EE", "#6E0B1F", "#D8919C"] },
+  "bsc-nuit": { nom: "Bordeaux nuit", mode: "dark", couleur: "bsc", apercu: ["#160A0D", "#4A0614", "#E8A0AE"] },
+  marine: { nom: "Bleu marine", mode: "dark", couleur: "marine", apercu: ["#0A1628", "#11223A", "#6CB4FF"] },
+  sauge: { nom: "Vert sauge", mode: "light", couleur: "sauge", apercu: ["#EDF2EE", "#FFFFFF", "#2F6B4F"] },
+  sable: { nom: "Sable", mode: "light", couleur: "sable", apercu: ["#F5EFE4", "#FFFCF6", "#8A5A1F"] },
+};
+function appliquerTheme(id) {
+  const t = THEMES_COULEURS[id] || THEMES_COULEURS.auto, r = document.documentElement;
+  if (t.mode) r.dataset.theme = t.mode; else delete r.dataset.theme;
+  if (t.couleur) r.dataset.couleur = t.couleur; else delete r.dataset.couleur;
+}
+function themeLocal() {
   try {
-    const t = localStorage.getItem("theme");
-    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
-  } catch {}
-})();
+    const t = localStorage.getItem("theme2");
+    if (THEMES_COULEURS[t]) return t;
+    const ancien = localStorage.getItem("theme");   // ancien réglage clair / sombre
+    return ancien === "light" ? "clair" : ancien === "dark" ? "sombre" : "auto";
+  } catch { return "auto"; }
+}
+appliquerTheme(themeLocal());
+// Choix d'un thème : appliqué, gardé sur l'appareil et enregistré sur le compte (retrouvé à la prochaine connexion).
+function choisirTheme(id, enregistrer = true) {
+  if (!THEMES_COULEURS[id]) return;
+  appliquerTheme(id);
+  try { localStorage.setItem("theme2", id); localStorage.removeItem("theme"); } catch {}
+  document.querySelectorAll("[data-choix-theme]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.choixTheme === id));
+  if (enregistrer) fetch("/api/theme", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: id }) }).catch(() => {});
+}
+function menuThemes() {
+  const actuel = themeLocal();
+  return Object.entries(THEMES_COULEURS).map(([k, t]) => `<button type="button" class="theme-choix" data-choix-theme="${k}" aria-pressed="${k === actuel}">
+    <span class="theme-pastille" aria-hidden="true">${t.apercu.map((c) => `<i style="background:${c}"></i>`).join("")}</span>${t.nom}</button>`).join("");
+}
 
 // Taille du texte (confort de lecture), mémorisée sur cet appareil.
 const TAILLES = [1, 1.12, 1.25];
@@ -39,13 +71,23 @@ const VISITE_PRECEDENTE = (() => {
 })();
 const estNouveau = (s) => !!VISITE_PRECEDENTE && s.derniere_pub > VISITE_PRECEDENTE;
 
-function basculerTheme() {
-  const actuel = document.documentElement.dataset.theme
-    || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  const suivant = actuel === "dark" ? "light" : "dark";
-  document.documentElement.dataset.theme = suivant;
-  try { localStorage.setItem("theme", suivant); } catch {}
+// Ouvre ou ferme le menu des thèmes (bouton de l'en-tête).
+function basculerTheme(e) {
+  const m = document.getElementById("menu-theme");
+  if (!m) return;
+  const ouvrir = m.hidden;
+  m.hidden = !ouvrir;
+  document.getElementById("btn-theme")?.setAttribute("aria-expanded", ouvrir);
+  if (ouvrir) { m.innerHTML = menuThemes(); m.querySelector('[aria-pressed="true"]')?.focus(); }
+  e?.stopPropagation();
 }
+document.addEventListener("click", (e) => {
+  const b = e.target.closest?.("[data-choix-theme]");
+  if (b) { choisirTheme(b.dataset.choixTheme); return; }
+  const m = document.getElementById("menu-theme");
+  if (m && !m.hidden && !e.target.closest("#menu-theme")) { m.hidden = true; document.getElementById("btn-theme")?.setAttribute("aria-expanded", "false"); }
+});
+document.addEventListener("keydown", (e) => { const m = document.getElementById("menu-theme"); if (e.key === "Escape" && m && !m.hidden) { m.hidden = true; document.getElementById("btn-theme")?.focus(); } });
 
 // Appel au serveur. Renvoie les données, ou lève une erreur avec un message lisible.
 async function appelApi(chemin, methode = "GET", donnees) {
@@ -470,6 +512,8 @@ const LOGO = `<svg width="30" height="30" viewBox="0 0 28 28" aria-hidden="true"
   <path d="M7 18l5-5 4 3 5-7" fill="none" stroke="var(--accent-texte)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 async function chargerEntete(pageActive) {
   const moi = await appelApi("/api/moi");
+  // le thème enregistré sur le compte l'emporte (autre appareil, nouvelle connexion)
+  if (moi.theme && THEMES_COULEURS[moi.theme] && moi.theme !== themeLocal()) choisirTheme(moi.theme, false);
   const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Outils"]];
   const nav = liens
     .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${nom}</a>`)
@@ -487,9 +531,12 @@ async function chargerEntete(pageActive) {
         <button class="icone-bouton" type="button" id="btn-taille" onclick="changerTaille()" title="Taille du texte" aria-label="Changer la taille du texte">
           <svg width="20" height="18" viewBox="0 0 26 20" aria-hidden="true"><text x="1" y="16" font-size="12" font-weight="700" fill="currentColor" font-family="system-ui">A</text><text x="10" y="16" font-size="17" font-weight="700" fill="currentColor" font-family="system-ui">A</text></svg>
         </button>
-        <button class="icone-bouton" type="button" onclick="basculerTheme()" title="Mode clair / sombre" aria-label="Basculer le mode clair ou sombre">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg>
-        </button>
+        <span class="theme-zone">
+          <button class="icone-bouton" type="button" id="btn-theme" onclick="basculerTheme(event)" title="Couleurs du site" aria-label="Choisir les couleurs du site" aria-haspopup="true" aria-expanded="false" aria-controls="menu-theme">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg>
+          </button>
+          <div class="menu-theme" id="menu-theme" role="group" aria-label="Couleurs du site" hidden></div>
+        </span>
         <a class="icone-bouton ${pageActive === "/compte" ? "actif" : ""}" href="/compte" title="Mon compte" aria-label="Mon compte">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
         </a>

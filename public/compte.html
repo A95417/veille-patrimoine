@@ -34,7 +34,7 @@
       <section class="carte">
         <h2 style="margin:0 0 6px;font-size:1.1rem">Affichage</h2>
         <div class="reglage"><span>Taille du texte</span><button type="button" class="bouton bouton-discret" onclick="changerTaille()">Changer la taille</button></div>
-        <div class="reglage"><span>Mode clair ou sombre</span><button type="button" class="bouton bouton-discret" onclick="basculerTheme()">Basculer</button></div>
+        <div class="reglage reglage-theme"><span>Couleurs du site <small class="doux">(gardées sur votre compte)</small></span><div class="menu-theme-page" id="themes-compte"></div></div>
       </section>
 
       <section class="carte" id="bloc-notif">
@@ -74,6 +74,7 @@
       const nom = moi.nom || moi.email;
       if (moi.role === "admin") document.getElementById("bloc-admin").hidden = false;
       document.getElementById("nom").textContent = nom;
+      document.getElementById("themes-compte").innerHTML = menuThemes();
       document.getElementById("email").innerHTML = `Identifiant de connexion : <strong>${echapper(moi.identifiant || "—")}</strong><br>${echapper(moi.email)}${moi.role === "admin" ? " · administrateur" : ""}`;
       document.getElementById("avatar").textContent = nom.split(/[\s@.]+/).filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
     });

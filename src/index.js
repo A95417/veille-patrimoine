@@ -133,7 +133,19 @@ async function api(request, env, url) {
   const moi = await utilisateurConnecte(request, db);
   if (!moi) return erreur("Vous n'êtes pas connecté.", 401);
 
-  if (chemin === "/api/moi" && methode === "GET") return json(moi);
+  // Thème de couleurs choisi par l'utilisateur : enregistré sur son compte (retrouvé sur tous ses appareils).
+  const THEMES = ["auto", "clair", "sombre", "bsc", "bsc-nuit", "marine", "sauge", "sable"];
+  if (chemin === "/api/moi" && methode === "GET") {
+    let theme = null;
+    try { theme = JSON.parse((await db.prepare("SELECT valeur FROM etat WHERE cle = ?").bind("theme:" + moi.id).first())?.valeur || "null"); } catch {}
+    return json({ ...moi, theme: THEMES.includes(theme) ? theme : null });
+  }
+  if (chemin === "/api/theme" && methode === "POST") {
+    const d = await lireJson(request);
+    if (!THEMES.includes(d.theme)) return erreur("Thème inconnu.");
+    await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)").bind("theme:" + moi.id, JSON.stringify(d.theme), new Date().toISOString()).run();
+    return json({ ok: true, theme: d.theme });
+  }
 
   // Version audio d'un brief (MP3). Gère les demandes partielles (Range), indispensables à Safari sur iPhone.
   if (chemin === "/api/brief/audio" && methode === "GET") {

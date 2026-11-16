@@ -505,3 +505,34 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 
 /* Petits liens : zone de toucher d'au moins 24 px de haut (accessibilité), sans changer la mise en page. */
 .lien-cible { display: inline-block; padding: 6px 2px; margin: -6px 0; }
+
+/* ---------------------------------------------------------------- Palettes de couleurs (choix « Couleurs du site », gardé sur le compte) */
+/* Couleurs du cabinet : bordeaux, rose poudré, crème (comme le logo B-S-C Patrimoine). */
+:root[data-couleur="bsc"] { --fond: #F7F1EE; --carte: #FFFDFC; --texte: #2A0A12; --doux: #6E5F64; --bord: #EADCDF; --bord-fort: #DCC8CC;
+  --accent: #6E0B1F; --accent-doux: #F5E4E7; --accent-fonce: #4A0614; --accent-texte: #ffffff;
+  --encre: #4A0614; --encre-2: #6E0B1F; --encre-texte: #F3D3D8; --encre-accent: #F3B6C1; }
+:root[data-couleur="bsc"][data-theme="dark"] { --fond: #160A0D; --carte: #221117; --texte: #F4E6E9; --doux: #C1A6AD; --bord: #3A1D25; --bord-fort: #4A2630;
+  --accent: #E8A0AE; --accent-doux: #3D1A23; --accent-fonce: #F7CDD5; --accent-texte: #160A0D;
+  --encre: #2E0F18; --encre-2: #4A1624; --encre-texte: #F3D3D8; --encre-accent: #F3B6C1; }
+:root[data-couleur="marine"] { --fond: #0A1628; --carte: #11223A; --texte: #E6EDF7; --doux: #9DB0C8; --bord: #1F3350; --bord-fort: #2A4366;
+  --accent: #6CB4FF; --accent-doux: #16304F; --accent-fonce: #B8DCFF; --accent-texte: #0A1628;
+  --encre: #102540; --encre-2: #183459; --encre-texte: #D6E6FA; --encre-accent: #9CCBFF; }
+:root[data-couleur="sauge"] { --fond: #EDF2EE; --carte: #FFFFFF; --texte: #15241B; --doux: #56675C; --bord: #DCE6DF; --bord-fort: #CBD9CF;
+  --accent: #2F6B4F; --accent-doux: #DDEDE3; --accent-fonce: #1E4A36; --accent-texte: #ffffff;
+  --encre: #1E3A2D; --encre-2: #2B5040; --encre-texte: #DCEDE3; --encre-accent: #A9D9BE; }
+:root[data-couleur="sable"] { --fond: #F5EFE4; --carte: #FFFCF6; --texte: #2A2118; --doux: #6B5E4E; --bord: #E8DECC; --bord-fort: #DCCFB8;
+  --accent: #8A5A1F; --accent-doux: #F3E6CF; --accent-fonce: #5E3C12; --accent-texte: #ffffff;
+  --encre: #3A2A17; --encre-2: #5A4224; --encre-texte: #F3E6CF; --encre-accent: #E9C98F; }
+/* Menu de choix des couleurs */
+.theme-zone { position: relative; display: inline-flex; }
+.menu-theme { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: 250px; background: var(--carte); border: 1px solid var(--bord-fort); border-radius: 16px; box-shadow: 0 14px 40px rgba(0,0,0,.18); padding: 8px; display: grid; gap: 2px; }
+.menu-theme[hidden] { display: none; }
+.theme-choix { font: inherit; font-size: .92rem; display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; border: 0; background: none; color: var(--texte); padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+.theme-choix:hover { background: var(--fond); }
+.theme-choix[aria-pressed="true"] { background: var(--accent-doux); font-weight: 600; }
+.theme-choix[aria-pressed="true"]::after { content: "✓"; margin-left: auto; color: var(--accent-fonce); }
+.theme-pastille { display: inline-flex; border-radius: 999px; overflow: hidden; border: 1px solid var(--bord-fort); flex: 0 0 auto; }
+.theme-pastille i { width: 10px; height: 22px; display: block; }
+.menu-theme-page { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px; margin-top: 8px; }
+.reglage.reglage-theme { display: block; }
+@media (max-width: 560px) { .menu-theme { position: fixed; left: 12px; right: 12px; top: 64px; width: auto; } }
