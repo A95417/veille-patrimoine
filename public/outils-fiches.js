@@ -1,8 +1,9 @@
-// version 1.0 — simulateurs et graphiques des fiches « Apprendre ».
+// version 1.1 — simulateurs et graphiques des fiches « Apprendre ».
 // Tous les montants viennent des fiches, vérifiées sur des sources officielles (voir chaque fiche).
 // Ce sont des estimations pédagogiques : hors cas particuliers, à confirmer avant tout conseil.
 
 const euros = (n) => Math.round(n).toLocaleString("fr-FR") + " €";
+const saisieFr = (x) => Number(x).toLocaleString("fr-FR", { maximumFractionDigits: 2 });   // 300 000 ; 3,5
 const pct = (n) => (Math.round(n * 1000) / 10).toLocaleString("fr-FR") + " %";
 
 // Barème des droits en ligne directe (donations et successions, article 777 du CGI).
@@ -15,8 +16,10 @@ function baremeProgressif(base, tranches) {
 
 // ---------------------------------------------------------------- Petites briques d'interface
 const ctl = {
+  // Curseur + case de saisie (pour taper un montant exact) ; les deux restent synchronisés.
   curseur: (nom, libelle, min, max, pas, val) => `<label>${libelle} : <strong data-v="${nom}"></strong></label>
-    <input type="range" data-c="${nom}" min="${min}" max="${max}" step="${pas}" value="${val}" aria-label="${libelle.replace(/"/g, "")}">`,
+    <div class="simu-saisie"><input type="range" data-c="${nom}" min="${min}" max="${max}" step="${pas}" value="${val}" aria-label="${libelle.replace(/"/g, "")}">
+    <input type="text" data-n="${nom}" data-min="${min}" data-max="${max}" value="${saisieFr(val)}" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="${libelle.replace(/"/g, "")} (saisie)"></div>`,
   choix: (nom, libelle, options, defaut) => `<div class="simu-choix"><span class="simu-lib">${libelle}</span><div class="puces" role="group" aria-label="${libelle.replace(/"/g, "")}">
     ${options.map(([v, l]) => `<button type="button" class="puce" data-g="${nom}" data-val="${v}" aria-pressed="${String(v) === String(defaut)}">${l}</button>`).join("")}</div></div>`,
   resultat: () => `<div class="simu-resultat" data-r aria-live="polite"></div>`,
@@ -25,13 +28,25 @@ const ctl = {
 function brancher(racine, formats, maj) {
   const lire = () => {
     const v = {};
-    racine.querySelectorAll("[data-c]").forEach((i) => { v[i.dataset.c] = Number(i.value); });
+    // valeur exacte de la case de saisie (le curseur arrondit à son pas)
+    racine.querySelectorAll("[data-c]").forEach((i) => { const n = racine.querySelector(`[data-n="${i.dataset.c}"]`); const x = n ? parseFloat(String(n.value).replace(/\s/g, "").replace(",", ".")) : NaN; v[i.dataset.c] = Number.isFinite(x) && x >= Number(i.min) && x <= Number(i.max) ? x : Number(i.value); });
     racine.querySelectorAll('[data-g][aria-pressed="true"]').forEach((b) => { v[b.dataset.g] = isNaN(Number(b.dataset.val)) ? b.dataset.val : Number(b.dataset.val); });
     for (const [k, f] of Object.entries(formats)) { const el = racine.querySelector(`[data-v="${k}"]`); if (el) el.textContent = f(v[k], v); }
     const r = racine.querySelector("[data-r]");
     maj(v, r);
   };
-  racine.querySelectorAll("[data-c]").forEach((i) => i.addEventListener("input", lire));
+  racine.querySelectorAll("[data-c]").forEach((i) => i.addEventListener("input", () => {
+    const n = racine.querySelector(`[data-n="${i.dataset.c}"]`); if (n) n.value = saisieFr(i.value); lire();
+  }));
+  // Saisie directe : bornée aux limites du curseur, virgule acceptée ; une case vide ne change rien.
+  racine.querySelectorAll("[data-n]").forEach((n) => n.addEventListener("keydown", (e) => { if (e.key === "Enter") n.dispatchEvent(new Event("change")); }));
+  racine.querySelectorAll("[data-n]").forEach((n) => n.addEventListener("change", () => {
+    const c = racine.querySelector(`[data-c="${n.dataset.n}"]`);
+    const x = parseFloat(String(n.value).replace(/\s/g, "").replace(",", "."));
+    if (!Number.isFinite(x)) { n.value = saisieFr(c.value); return; }
+    const borne = Math.min(Number(c.max), Math.max(Number(c.min), x));
+    c.value = borne; n.value = saisieFr(borne); lire();
+  }));
   racine.querySelectorAll("[data-g]").forEach((b) => b.addEventListener("click", () => {
     racine.querySelectorAll(`[data-g="${b.dataset.g}"]`).forEach((x) => x.setAttribute("aria-pressed", x === b));
     lire();
@@ -109,7 +124,7 @@ const OUTILS_FICHES = {
         r.innerHTML = (v.age === "plus" ? "<strong>Pas de déduction</strong> : depuis le 1er janvier 2026, les versements faits à partir de 70 ans ne sont plus déductibles.<br>" : "") +
           `Plafond estimé : <strong>${euros(plafond)}</strong> · montant déduit : <strong>${euros(deduit)}</strong><br>` +
           barres([{ libelle: "Versement", valeur: v.ver, couleur: "var(--i3, var(--accent))" }, { libelle: "Économie d'impôt", valeur: eco, couleur: "var(--ok)" }, { libelle: "Effort réel", valeur: v.ver - eco, couleur: "var(--accent)" }], Math.max(v.ver, 1)) +
-          note("Le plafond exact figure sur l'avis d'impôt (il tient compte des plafonds non utilisés et des versements de l'employeur). Les sommes déduites seront imposées à la sortie.");
+          note("Le plafond exact figure sur l'avis d'impôt : il tient compte des plafonds non utilisés (reportables sur 5 ans depuis 2026, et mutualisables entre conjoints) et des versements de l'employeur. Les sommes déduites seront imposées à la sortie.");
       }),
     },
   ],
@@ -423,12 +438,14 @@ const OUTILS_FICHES = {
 // droits de succession en ligne directe (CGI art. 777 et 779).
 const BAREME_IR_2026 = [[11600, 0], [29579, .11], [84577, .30], [181917, .41], [Infinity, .45]];
 const PLAFOND_DEMI_PART = 1807;
+// Décote 2026 (revenus 2025) : 897 € (personne seule) ou 1 483 € (couple) moins 45,25 % de l'impôt brut.
+const DECOTE_2026 = { seul: 897, couple: 1483, taux: .4525 };
 const BOITE_OUTILS = [
   {
     id: "ir", titre: "Impôt sur le revenu 2026", theme: "fisc",
     intro: "Barème appliqué aux revenus de 2025 (Service-public). Quotient familial plafonné à 1 807 € par demi-part au-delà de la situation de base.",
     source: ["Service-public · Barème de l'impôt", "https://www.service-public.gouv.fr/particuliers/vosdroits/F1419"],
-    html: () => ctl.curseur("rn", "Revenu net imposable du foyer", 0, 400000, 1000, 60000) +
+    html: () => ctl.curseur("rn", "Revenu net imposable du foyer", 0, 1000000, 1000, 60000) +
       ctl.choix("sit", "Situation", [["1", "Célibataire"], ["2", "Couple marié ou pacsé"]], "2") +
       ctl.choix("enf", "Enfants à charge", [["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]], "2") + ctl.resultat(),
     init: (z) => brancher(z, { rn: euros }, (v, r) => {
@@ -439,11 +456,15 @@ const BOITE_OUTILS = [
       const plafond = sansQF - demi * 2 * PLAFOND_DEMI_PART;
       const brut = Math.max(avecQF, plafond);
       const tmi = [...BAREME_IR_2026].find(([h]) => v.rn / (brut === avecQF ? parts : base) <= h)[1];
+      const forfait = v.sit === 2 ? DECOTE_2026.couple : DECOTE_2026.seul;
+      const decote = Math.min(brut, Math.max(0, forfait - DECOTE_2026.taux * brut));
+      const net = Math.round(brut - decote);
       r.className = "simu-resultat neutre";
-      r.innerHTML = `${parts.toLocaleString("fr-FR")} part${parts > 1 ? "s" : ""} · Impôt brut estimé : <strong>${euros(brut)}</strong><br>
-        Taux marginal : <strong>${Math.round(tmi * 100)} %</strong> · Taux moyen : <strong>${pct(v.rn ? brut / v.rn : 0)}</strong>` +
+      r.innerHTML = `${parts.toLocaleString("fr-FR")} part${parts > 1 ? "s" : ""} · Impôt brut : ${euros(brut)}${decote >= 1 ? ` · décote : −${euros(decote)}` : ""}<br>
+        <strong>Impôt estimé : ${euros(net)}</strong>${net > 0 && net < 61 ? " (non recouvré : moins de 61 €)" : ""}<br>
+        Taux marginal : <strong>${Math.round(tmi * 100)} %</strong> · Taux moyen : <strong>${pct(v.rn ? net / v.rn : 0)}</strong>` +
         (brut > avecQF + 1 ? `<br>Le plafonnement du quotient familial s'applique (+${euros(brut - avecQF)}).` : "") +
-        note("Avant décote, réductions et crédits d'impôt. Cas simples seulement (pas de parent isolé, d'invalidité ni de résidence alternée).");
+        note("Après décote, avant réductions et crédits d'impôt. Cas simples seulement (pas de parent isolé, d'invalidité ni de résidence alternée).");
     }),
   },
   {

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 1.0 -->
+<!-- version 2.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -19,40 +19,169 @@
   <script src="/fiches-nouvelles.js"></script>
   <script src="/outils-fiches.js"></script>
   <style>
-    .outils-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; }
-    .outils-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; align-items: start; }
-    .outils-grille .carte { margin: 0; }
-    .outil-source { display: block; margin-top: 10px; font-size: .85rem; }
-    .fiche-lien { font-size: .85rem; }
-    h2.groupe-titre { font-size: 1.15rem; margin: 26px 0 10px; }
+    .bo-intro { margin: 0 0 16px; max-width: 760px; }
+    .bo-barre { display: grid; gap: 10px; margin-bottom: 18px; }
+    .bo-cherche { width: 100%; max-width: 520px; box-sizing: border-box; font: inherit; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); }
+    .bo-themes { display: flex; gap: 6px; flex-wrap: wrap; }
+    .bo-titre { font-size: 1.05rem; margin: 22px 0 10px; display: flex; align-items: baseline; gap: 10px; }
+    .bo-titre span { font-size: .82rem; font-weight: 400; color: var(--doux); }
+    .bo-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+    .bo-carte { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; text-align: left; font: inherit; color: var(--texte);
+      background: var(--carte); border: 1.5px solid var(--bord); border-radius: 16px; padding: 14px 16px; cursor: pointer; text-decoration: none; transition: border-color .15s, transform .15s; }
+    .bo-carte:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .bo-carte:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .bo-ico { grid-row: span 3; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 1.3rem; background: var(--accent-doux); }
+    .bo-carte strong { font-size: .98rem; line-height: 1.3; }
+    .bo-carte .bo-desc { font-size: .84rem; color: var(--doux); line-height: 1.4; }
+    .bo-carte .bo-tag { font-size: .72rem; font-weight: 700; color: var(--accent-fonce); text-transform: uppercase; letter-spacing: .03em; }
+    .bo-vedettes .bo-carte { background: linear-gradient(135deg, var(--accent-doux), var(--carte) 70%); }
+    .bo-vide { color: var(--doux); }
+
+    .bo-vue { max-width: 820px; }
+    .bo-vue[hidden], .bo-catalogue[hidden] { display: none; }
+    .bo-retour:focus:not(:focus-visible) { outline: none; }
+    .bo-retour { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-weight: 600; color: var(--accent-fonce); background: none; border: 0; padding: 6px 0; cursor: pointer; margin-bottom: 8px; }
+    .bo-entete { display: flex; gap: 14px; align-items: center; margin-bottom: 6px; }
+    .bo-entete .bo-ico { grid-row: auto; width: 52px; height: 52px; font-size: 1.6rem; flex: 0 0 auto; }
+    .bo-entete h1 { margin: 0; font-size: clamp(1.35rem, 1.1rem + 1vw, 1.8rem); }
+    .bo-outil { margin-top: 12px; }
+    .bo-outil h2 { display: none; }
+    .bo-pied { display: grid; gap: 6px; margin-top: 14px; font-size: .88rem; }
+    .bo-pied .doux { font-size: .82rem; }
+    .bo-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .bo-voisins { margin-top: 26px; }
+    @media (max-width: 640px) {
+      .bo-carte { padding: 12px 14px; }
+      .bo-ico { width: 38px; height: 38px; font-size: 1.15rem; }
+    }
   </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
   <main class="page">
-    <h1>Boîte à outils</h1>
-    <p class="doux">Tous les calculateurs du site au même endroit. Ce sont des estimations pédagogiques, à partir des barèmes officiels cités sous chaque outil : à confirmer avant tout conseil.</p>
-    <nav class="outils-nav puces" id="nav" aria-label="Aller à un outil"></nav>
-    <h2 class="groupe-titre">Calculs du quotidien</h2>
-    <div class="outils-grille" id="boite"></div>
-    <h2 class="groupe-titre">Simulateurs des fiches Apprendre</h2>
-    <div class="outils-grille" id="fiches"></div>
+    <section class="bo-catalogue" id="catalogue">
+      <h1>Boîte à outils</h1>
+      <p class="doux bo-intro"><span id="nb-outils">22</span> calculateurs pour préparer un rendez-vous : impôt, immobilier, épargne, transmission et entreprise. Règles 2026 vérifiées sur les sources officielles ; ce sont des estimations pédagogiques, à confirmer avant tout conseil.</p>
+      <div class="bo-barre">
+        <input type="search" class="bo-cherche" id="cherche" placeholder="🔍 Rechercher : PER, donation, frais de notaire…" aria-label="Rechercher un outil" autocomplete="off">
+        <div class="bo-themes" role="group" aria-label="Thème" id="themes"></div>
+      </div>
+      <div id="liste"></div>
+    </section>
+
+    <section class="bo-vue" id="vue" hidden aria-live="polite"></section>
   </main>
   <script>
+    const VERIFIE_LE = "16 novembre 2026";
+    const CATEGORIES = { fisc: "Fiscalité", immo: "Immobilier", epargne: "Épargne et retraite", transmission: "Transmission", entreprise: "Entreprise" };
+    // Catalogue : id (adresse), nom court, phrase, catégorie, icône, et l'outil (boîte ou fiche + rang).
+    const CATALOGUE = [
+      { id: "ir", nom: "Impôt sur le revenu 2026", desc: "Impôt, taux marginal et taux moyen d'un foyer, décote comprise.", cat: "fisc", ico: "🧾", boite: "ir", vedette: true, mots: "tmi tranche quotient familial parts" },
+      { id: "frais-notaire", nom: "Frais de notaire", desc: "Taxes et émoluments d'un achat dans l'ancien ou le neuf.", cat: "immo", ico: "🏠", boite: "notaire", vedette: true, mots: "frais d'acquisition droits de mutation dmto primo-accédant" },
+      { id: "capacite-emprunt", nom: "Capacité d'emprunt", desc: "Mensualité et capital empruntable selon la règle des 35 %.", cat: "immo", ico: "🏦", boite: "emprunt", vedette: true, mots: "crédit immobilier hcsf endettement mensualité" },
+      { id: "succession", nom: "Droits de succession", desc: "Ce que paient les enfants, avec ou sans conjoint survivant.", cat: "transmission", ico: "🌳", boite: "succession", vedette: true, mots: "héritage abattement réserve héréditaire" },
+      { id: "assurance-vie-transmission", nom: "Assurance-vie ou succession ?", desc: "Ce que paie un enfant selon le mode de transmission.", cat: "transmission", ico: "🛡️", fiche: ["assurance-vie", 0], mots: "990 i bénéficiaire 152 500" },
+      { id: "donation", nom: "Donation à un enfant", desc: "Abattement, part taxable et droits d'une donation.", cat: "transmission", ico: "🎁", fiche: ["donations", 0], mots: "don familial 31 865 abattement 100 000" },
+      { id: "usufruit", nom: "Valeur de l'usufruit", desc: "Usufruit et nue-propriété selon l'âge (barème fiscal).", cat: "transmission", ico: "⚖️", fiche: ["demembrement", 0], mots: "démembrement nue-propriété 669" },
+      { id: "regimes-matrimoniaux", nom: "Qui possède quoi ?", desc: "À qui appartient chaque bien selon le régime du couple.", cat: "transmission", ico: "💍", fiche: ["regimes-matrimoniaux", 0], mots: "communauté séparation pacs mariage" },
+      { id: "ifi", nom: "Impôt sur la fortune immobilière", desc: "IFI estimé, avec l'abattement de la résidence principale.", cat: "fisc", ico: "🏛️", fiche: ["ifi", 0], mots: "ifi patrimoine immobilier décote" },
+      { id: "dividendes", nom: "Dividendes : PFU ou barème ?", desc: "Quel mode d'imposition coûte le moins cher.", cat: "fisc", ico: "💶", fiche: ["fiscalite-placements", 0], mots: "flat tax pfu 31,4 abattement 40" },
+      { id: "girardin", nom: "Girardin industriel", desc: "Dimensionner l'opération selon l'impôt et le plafond des niches.", cat: "fisc", ico: "🌴", fiche: ["girardin-industriel", 0], mots: "outre-mer réduction d'impôt niche 18 000" },
+      { id: "per", nom: "Économie d'impôt d'un PER", desc: "Plafond, montant déduit et effort réel d'un versement.", cat: "epargne", ico: "🧓", fiche: ["per", 0], mots: "plan d'épargne retraite déduction plafond" },
+      { id: "assurance-vie-retrait", nom: "Retrait d'assurance-vie", desc: "Impôt et prélèvements sur un retrait après 8 ans.", cat: "epargne", ico: "💼", fiche: ["assurance-vie", 1], mots: "rachat abattement 4 600 9 200" },
+      { id: "pea", nom: "PEA ou compte-titres ?", desc: "Ce que coûtent les gains au retrait, selon l'âge du PEA.", cat: "epargne", ico: "📈", fiche: ["pea", 0], mots: "plan d'épargne en actions cto bourse" },
+      { id: "pee", nom: "Abondement du PEE", desc: "Ce que verse l'employeur et le versement pour le maximum.", cat: "epargne", ico: "🤝", fiche: ["epargne-salariale", 0], mots: "épargne salariale plan d'épargne entreprise" },
+      { id: "autocall", nom: "Produit structuré (autocall)", desc: "Comprendre remboursement anticipé, coupon et barrière.", cat: "epargne", ico: "🎯", fiche: ["produits-structures", 0], mots: "autocall barrière coupon structuré" },
+      { id: "scpi-loyers", nom: "Loyers de SCPI", desc: "Ce qui reste des revenus au micro-foncier.", cat: "immo", ico: "🏢", fiche: ["scpi", 0], mots: "pierre papier micro-foncier revenus fonciers" },
+      { id: "scpi-frais", nom: "Frais de SCPI", desc: "La part réellement investie après les frais d'entrée.", cat: "immo", ico: "🧮", fiche: ["scpi", 1], mots: "frais de souscription pierre papier" },
+      { id: "plus-value-immobiliere", nom: "Plus-value immobilière", desc: "Impôt et prélèvements selon la durée de détention.", cat: "immo", ico: "📊", fiche: ["plus-values-immobilieres", 0], mots: "abattement durée de détention résidence secondaire" },
+      { id: "cession-parts-sci", nom: "Vente de parts de SCI", desc: "Droits d'enregistrement sur une cession de parts.", cat: "immo", ico: "📝", fiche: ["sci", 0], mots: "sci droits d'enregistrement cession parts sociales" },
+      { id: "apport-cession", nom: "Apport-cession : réinvestir ?", desc: "Le réinvestissement exigé pour garder le report d'impôt.", cat: "entreprise", ico: "🔁", fiche: ["apport-cession", 0], mots: "150-0 b ter holding report d'imposition" },
+      { id: "pacte-dutreil", nom: "Pacte Dutreil", desc: "Les droits d'une donation d'entreprise avec et sans pacte.", cat: "entreprise", ico: "🏭", fiche: ["pacte-dutreil", 0], mots: "transmission d'entreprise 787 b exonération 75" },
+    ];
+    const $ = (id) => document.getElementById(id);
+    const sansAccent = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    const etat = { cat: "tous", q: "" };
+    const ficheDe = (o) => o.fiche ? FICHES.find((f) => f.id === o.fiche[0]) : null;
+    const outilDe = (o) => o.boite ? BOITE_OUTILS.find((b) => b.id === o.boite) : (OUTILS_FICHES[o.fiche[0]] || [])[o.fiche[1]];
+    // Seuls les outils réellement présents sont proposés (une fiche retirée ne casse pas la page).
+    const DISPO = CATALOGUE.filter((o) => outilDe(o));
+
+    const carteOutil = (o) => `<a class="bo-carte" href="?outil=${o.id}" data-outil="${o.id}">
+      <span class="bo-ico" aria-hidden="true">${o.ico}</span><span class="bo-tag">${CATEGORIES[o.cat]}</span><strong>${echapper(o.nom)}</strong><span class="bo-desc">${echapper(o.desc)}</span></a>`;
+
+    function afficherCatalogue() {
+      $("themes").innerHTML = [["tous", "Tous"], ...Object.entries(CATEGORIES)].map(([k, l]) =>
+        `<button type="button" class="puce" data-cat="${k}" aria-pressed="${etat.cat === k}">${l}${k === "tous" ? "" : ` <small>${DISPO.filter((o) => o.cat === k).length}</small>`}</button>`).join("");
+      $("themes").querySelectorAll("[data-cat]").forEach((b) => b.onclick = () => { etat.cat = b.dataset.cat; afficherCatalogue(); });
+      const q = sansAccent(etat.q).trim().split(/\s+/).filter(Boolean);
+      const garde = DISPO.filter((o) => (etat.cat === "tous" || o.cat === etat.cat) &&
+        q.every((m) => sansAccent(`${o.nom} ${o.desc} ${CATEGORIES[o.cat]} ${o.mots || ""} ${ficheDe(o)?.titre || ""}`).includes(m)));
+      let h = "";
+      if (!q.length && etat.cat === "tous") {
+        h += `<h2 class="bo-titre">Les plus utilisés</h2><div class="bo-grille bo-vedettes">${DISPO.filter((o) => o.vedette).map(carteOutil).join("")}</div>`;
+        for (const [k, l] of Object.entries(CATEGORIES)) {
+          const l2 = DISPO.filter((o) => o.cat === k && !o.vedette);
+          if (l2.length) h += `<h2 class="bo-titre">${l} <span>${l2.length} outil${l2.length > 1 ? "s" : ""}</span></h2><div class="bo-grille">${l2.map(carteOutil).join("")}</div>`;
+        }
+      } else {
+        h = garde.length ? `<h2 class="bo-titre">${garde.length} outil${garde.length > 1 ? "s" : ""}</h2><div class="bo-grille">${garde.map(carteOutil).join("")}</div>`
+          : `<p class="bo-vide">Aucun outil ne correspond. Essayez un autre mot (par exemple « impôt », « donation », « crédit »).</p>`;
+      }
+      $("liste").innerHTML = h;
+      $("liste").querySelectorAll("[data-outil]").forEach((a) => a.onclick = (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey) return;   // ouverture dans un nouvel onglet : comportement normal
+        e.preventDefault(); ouvrir(a.dataset.outil, true);
+      });
+    }
+
+    function ouvrir(id, pousser) {
+      const o = DISPO.find((x) => x.id === id);
+      if (!o) { fermer(false); return; }
+      const outil = outilDe(o), fiche = ficheDe(o);
+      if (pousser) history.pushState({ outil: id }, "", `?outil=${id}`);
+      document.title = `${o.nom} · Boîte à outils`;
+      $("catalogue").hidden = true;
+      const z = $("vue"); z.hidden = false;
+      const voisins = DISPO.filter((x) => x.cat === o.cat && x.id !== o.id).slice(0, 3);
+      z.innerHTML = `<button type="button" class="bo-retour" id="retour">← Tous les outils</button>
+        <div class="bo-entete"><span class="bo-ico" aria-hidden="true">${o.ico}</span><div><span class="bo-tag" style="font-size:.75rem;font-weight:700;color:var(--accent-fonce);text-transform:uppercase">${CATEGORIES[o.cat]}</span><h1>${echapper(o.nom)}</h1></div></div>
+        <section class="carte simu bo-outil th-${fiche?.theme || outil.theme || ""}" id="outil-actif">
+          ${outil.intro ? `<p class="doux" style="margin-top:0">${outil.intro}</p>` : ""}${outil.html()}
+          <div class="bo-pied">
+            ${outil.source ? `<a href="${outil.source[1]}" target="_blank" rel="noopener noreferrer">Source : ${echapper(outil.source[0])} ↗</a>` : ""}
+            ${fiche ? `<a href="/fiche?id=${fiche.id}">Comprendre : fiche « ${echapper(fiche.titre)} » (sources officielles) →</a>` : ""}
+            <span class="doux">Règles vérifiées le ${VERIFIE_LE}. Estimation pédagogique, à confirmer avant tout conseil.</span>
+          </div>
+          <div class="bo-actions"><button type="button" class="bouton bouton-discret" id="copier">🔗 Copier le lien de l'outil</button></div>
+        </section>
+        ${voisins.length ? `<div class="bo-voisins"><h2 class="bo-titre">Autres outils · ${CATEGORIES[o.cat]}</h2><div class="bo-grille">${voisins.map(carteOutil).join("")}</div></div>` : ""}`;
+      outil.init($("outil-actif"));
+      $("retour").onclick = () => history.length > 1 && history.state?.outil ? history.back() : fermer(true);
+      $("copier").onclick = async () => {
+        try { await navigator.clipboard.writeText(location.href); notifier("Lien copié."); } catch { notifier("Copie impossible : utilisez la barre d'adresse.", true); }
+      };
+      z.querySelectorAll("[data-outil]").forEach((a) => a.onclick = (e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); ouvrir(a.dataset.outil, true); });
+      scrollTo({ top: 0 });
+      if (pousser) $("retour").focus({ preventScroll: true });   // au clavier : on reste dans la page
+    }
+    function fermer(pousser) {
+      if (pousser) history.pushState({}, "", "/outils");
+      document.title = "Boîte à outils · Veille Patrimoine";
+      $("vue").hidden = true; $("vue").innerHTML = ""; $("catalogue").hidden = false;
+      afficherCatalogue();
+    }
+    addEventListener("popstate", () => { const id = new URLSearchParams(location.search).get("outil"); id ? ouvrir(id, false) : fermer(false); });
+
     chargerEntete("/outils").then(() => {
-      const boite = document.getElementById("boite"), fiches = document.getElementById("fiches"), nav = document.getElementById("nav");
-      boite.innerHTML = BOITE_OUTILS.map((o) => `<section class="carte simu th-${o.theme}" id="b-${o.id}"><h2>${o.titre}</h2>
-        <p class="doux" style="margin-top:-4px">${o.intro}</p>${o.html()}
-        <a class="outil-source" href="${o.source[1]}" target="_blank" rel="noopener noreferrer">Source : ${echapper(o.source[0])} ↗</a></section>`).join("");
-      BOITE_OUTILS.forEach((o) => o.init(document.getElementById("b-" + o.id)));
-      const liste = [];
-      for (const f of FICHES) (OUTILS_FICHES[f.id] || []).forEach((o, k) => { if (/^Calculateur|^Simulateur|^Comparateur/i.test(o.titre)) liste.push({ f, o, id: `f-${f.id}-${k}` }); });
-      fiches.innerHTML = liste.map(({ f, o, id }) => `<section class="carte simu th-${f.theme}" id="${id}"><h2>${o.titre}</h2>
-        ${o.intro ? `<p class="doux" style="margin-top:-4px">${o.intro}</p>` : ""}${o.html()}
-        <a class="fiche-lien" href="/fiche?id=${f.id}">Fiche « ${echapper(f.titre)} » →</a></section>`).join("");
-      liste.forEach(({ o, id }) => o.init(document.getElementById(id)));
-      nav.innerHTML = [...BOITE_OUTILS.map((o) => [`b-${o.id}`, o.titre]), ...liste.map(({ f, id }) => [id, f.titre])]
-        .map(([id, t]) => `<a class="puce" href="#${id}">${echapper(t)}</a>`).join("");
+      $("nb-outils").textContent = DISPO.length;
+      $("cherche").oninput = () => { etat.q = $("cherche").value; afficherCatalogue(); };
+      // anciennes adresses (#b-ir, #f-…) : on ouvre l'outil correspondant
+      const ANCIENS = { "#b-ir": "ir", "#b-notaire": "frais-notaire", "#b-emprunt": "capacite-emprunt", "#b-succession": "succession" };
+      const ancien = ANCIENS[location.hash];
+      addEventListener("hashchange", () => { const a = ANCIENS[location.hash]; if (a) { history.replaceState({ outil: a }, "", `?outil=${a}`); ouvrir(a, false); } });
+      const id = new URLSearchParams(location.search).get("outil") || ancien;
+      if (id) { history.replaceState({ outil: id }, "", `?outil=${id}`); ouvrir(id, false); } else afficherCatalogue();
     });
   </script>
 </body>

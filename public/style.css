@@ -474,6 +474,11 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 /* Simulateurs (fiches et boîte à outils) */
 .simu label { margin: 10px 0 4px; }
 .simu input[type=range] { padding: 0; accent-color: var(--accent); background: none; border: 0; }
+.simu-saisie { display: flex; align-items: center; gap: 10px; }
+.simu-saisie input[type=range] { flex: 1; min-width: 0; }
+.simu-saisie input[type=text] { flex: 0 0 auto; width: 9.5em; padding: 6px 8px; font: inherit; font-size: .92rem; text-align: right; border-radius: 10px;
+  border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .simu-saisie input[type=text] { width: 7.5em; } }
 .simu-resultat { margin-top: 14px; padding: 14px 16px; border-radius: 14px; font-size: 1.02rem; line-height: 1.5; }
 .simu-resultat.gain { background: var(--ok-doux); } .simu-resultat.perte { background: var(--ko-doux); } .simu-resultat.neutre { background: var(--accent-doux); }
 
