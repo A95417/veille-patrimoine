@@ -438,7 +438,7 @@ GAB.titre_cours = {
     L.forEach((l, i) => { o += g(txt(540, 790 + i * 124, l, { size: 108, w: 900, f: BLANC, fam: "Inter Display" }), `translate(0 ${(1 - eo(k2)) * 50})`, k2); });
     const y = 790 + L.length * 124;
     o += `<rect x="440" y="${y - 40}" width="${200 * eo(k3)}" height="10" rx="5" fill="${ROSE}"/>`;
-    lignes(court(p.sous_titre, 90), 30, 2).forEach((l, i) => { o += txt(540, y + 50 + i * 56, l, { size: 44, w: 500, f: ROSE2, op: k3 }); });
+    lignes(court(p.sous_titre, 100), 34, 3).forEach((l, i) => { o += txt(540, y + 50 + i * 54, l, { size: 42, w: 500, f: ROSE2, op: k3 }); });
     o += txt(540, 1400, "APPRENDRE · L'ESSENTIEL EN VIDÉO", { size: 30, w: 700, f: ROSE2, ls: 4, op: k3 * .8 });
     return o;
   },

@@ -84,7 +84,7 @@ const GABARITS = `- chapitre : début d'un chapitre. Texte lu : le titre du chap
 - chiffre : un chiffre clé de la fiche. p : bandeau (26), valeur (14, exactement comme dans la fiche), libelle (34)
 - liste : 2 ou 3 points. p : titre (28), points (3 × 30 car.)
 - frise : 2 à 4 étapes. Texte lu : une phrase d'introduction, puis exactement une phrase par étape. p : titre (30), etapes [{titre (26), texte (60)}]
-- tableau : un tableau très simple. Texte lu : une phrase d'introduction, puis exactement une phrase par ligne. p : titre (30), colonnes (2 ou 3, 16 car.), lignes (2 à 4 lignes de cellules de 30 car. max)
+- tableau : un tableau très simple. Texte lu : une phrase d'introduction, puis exactement une phrase par ligne. p : titre (30), colonnes (2 ou 3, 24 car.), lignes (2 à 4 lignes de cellules de 30 car. max)
 - mythe : idée reçue puis réalité (2 phrases). p : mythe (60), realite (60)
 - quiz : une question du quiz de la fiche. p : quiz_index (numéro de la question dans la liste QUIZ). Le texte lu est écrit par le site : mets texte = "quiz".
 - recap : 3 à 5 points à retenir. Texte lu : « Ce qu'il faut retenir. » puis exactement une phrase par point. p : titre (22), points (5 × 60 car.)
@@ -124,6 +124,13 @@ function chiffresInconnus(scenes, permis) {
 // Nombre de phrases lues (même découpage que le calage de la voix).
 const nbPhrases = (t) => (String(t).replace(/\s+/g, " ").trim().match(/[^.?!…;]+[.?!…;]*/g) || []).filter((m) => /[A-Za-zÀ-ÿ0-9]/.test(m)).length;
 // Nettoyage : seuls les visuels connus, des textes courts ; le quiz vient de la fiche (question, réponses, bonne réponse).
+// Texte affiché raccourci sans jamais couper un mot ni un nombre (« 100 000 € » reste entier ou disparaît).
+function coupe(t, n) {
+  const x = String(t ?? "").replace(/\s+/g, " ").trim().replace(/(\d) (?=\d{3}\b)/g, "$1\u00a0").replace(/(\d) (?=[€%])/g, "$1\u00a0");
+  if (x.length <= n) return x;
+  const c = x.slice(0, n + 1), i = c.lastIndexOf(" ");
+  return (i > n * .5 ? c.slice(0, i) : x.slice(0, n).replace(/[\d\u00a0.,]+$/, "")).replace(/[\s,;:–—(-]+$/, "").trim();
+}
 function nettoyer(scenes, f) {
   const quizF = (f.quiz || []).filter((q) => Array.isArray(q.choix) && q.choix.length >= 2 && q.choix.length <= 4);
   const usages = new Set();
@@ -136,19 +143,19 @@ function nettoyer(scenes, f) {
       if (!q) continue;
       const i = quizF.indexOf(q); if (usages.has(i)) continue; usages.add(i);
       const bonne = Number(q.bonne) || 0;
-      const debutQ = `Petit quiz. ${court(q.question, 200)}`;
-      out.push({ type: "quiz", texte: `${debutQ} Trois, deux, un. La bonne réponse : ${court(q.choix[bonne], 80).replace(/[.?!…;]+$/, "")}.`,
-        p: { question: court(q.question, 110), choix: q.choix.map((c) => court(c, 34)), bonne, i_compte: nbPhrases(debutQ) } });
+      const debutQ = `Petit quiz. ${coupe(q.question, 200)}`;
+      out.push({ type: "quiz", texte: `${debutQ} Trois, deux, un. La bonne réponse : ${coupe(q.choix[bonne], 80).replace(/[.?!…;]+$/, "")}.`,
+        p: { question: coupe(q.question, 110), choix: q.choix.map((c) => coupe(c, 34)), bonne, i_compte: nbPhrases(debutQ) } });
       continue;
     }
-    const texte = court(s.texte, 500);
+    const texte = court(s.texte, 700);
     if (!texte) continue;
-    const c = (k, n) => (p[k] ? court(p[k], n) : undefined);
+    const c = (k, n) => (p[k] ? coupe(p[k], n) : undefined);
     const q = { titre: c("titre", 60), sous_titre: c("sous_titre", 50), personnage: PERSOS.includes(p.personnage) ? p.personnage : undefined, humeur: p.humeur,
-      decor: LIEUX.includes(p.decor) ? p.decor : undefined, nom: c("nom", 16), bulle: c("bulle", 18), puces: (p.puces || []).map((x) => court(x, 16)).slice(0, 2),
-      valeur: c("valeur", 14), libelle: c("libelle", 34), bandeau: c("bandeau", 26), points: (p.points || []).map((x) => court(x, s.type === "recap" ? 60 : 30)).filter(Boolean).slice(0, s.type === "recap" ? 5 : 3),
-      etapes: (p.etapes || []).map((e) => ({ titre: court(e?.titre, 26), texte: court(e?.texte, 60) })).filter((e) => e.titre).slice(0, 4),
-      colonnes: (p.colonnes || []).map((x) => court(x, 16)).slice(0, 3), lignes: (p.lignes || []).filter(Array.isArray).map((l) => l.map((x) => court(x, 30)).slice(0, 3)).slice(0, 4),
+      decor: LIEUX.includes(p.decor) ? p.decor : undefined, nom: c("nom", 16), bulle: c("bulle", 18), puces: (p.puces || []).map((x) => coupe(x, 16)).slice(0, 2),
+      valeur: c("valeur", 14), libelle: c("libelle", 34), bandeau: c("bandeau", 26), points: (p.points || []).map((x) => coupe(x, s.type === "recap" ? 60 : 30)).filter(Boolean).slice(0, s.type === "recap" ? 5 : 3),
+      etapes: (p.etapes || []).map((e) => ({ titre: coupe(e?.titre, 26), texte: coupe(e?.texte, 60) })).filter((e) => e.titre).slice(0, 4),
+      colonnes: (p.colonnes || []).map((x) => coupe(x, 24)).slice(0, 3), lignes: (p.lignes || []).filter(Array.isArray).map((l) => l.map((x) => coupe(x, 30)).slice(0, 3)).slice(0, 4),
       mythe: c("mythe", 60), realite: c("realite", 60), texte: c("texte", 12), legende: c("legende", 26), gauche: c("gauche", 14), droite: c("droite", 14),
       signe: p.signe === "≠" ? "≠" : "=", question: c("question", 26) };
     for (const k of Object.keys(q)) if (q[k] === undefined || (Array.isArray(q[k]) && !q[k].length)) delete q[k];
