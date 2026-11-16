@@ -2,12 +2,16 @@
 //  - pendant la séance de New York (15 h 30 - 22 h à Paris, en semaine) : relève les ETF qui suivent
 //    les grands indices et signale toute baisse de plus de 2 % (bandeau « À la une ») ;
 //  - chaque matin vers 6 h : enregistre les clôtures de la veille pour le brief de 7 h.
+//  - une fois par heure pendant la séance (et le matin) : relève les grandes actions (cours et valorisation).
 // Lancement : node scripts/marches.mjs  (variables : SITE_URL, ROBOT_TOKEN, TWELVEDATA_API_KEY)
+
+import { ACTIONS, SYMBOLES_ACTIONS, calculerActions, coursHistorique } from "./actions.mjs";
 
 const SITE = (process.env.SITE_URL || "").replace(/\/$/, "");
 const JETON = process.env.ROBOT_TOKEN || "";
 const CLE = process.env.TWELVEDATA_API_KEY || "";
 const SEUIL_ALERTE = -2;   // en %
+const MINUTE = Number(process.env.MARCHES_PAUSE_MS || 62000);   // attente entre deux lots (8 crédits par minute)
 
 // Les indices eux-mêmes sont réservés aux offres payantes : on utilise des ETF cotés à New York qui les répliquent.
 // "devise" : on retire l'effet du change pour obtenir la variation dans la devise de l'indice.
@@ -35,15 +39,30 @@ function heureParis(date = new Date()) {
   return { jour: p.weekday, minutes: Number(p.hour) * 60 + Number(p.minute) };
 }
 
+// Jours de fermeture de la Bourse de New York (calendrier NYSE) et demi-séances (fermeture à 13 h).
+export const FERIES_NY = new Set(["2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25", "2026-06-19", "2026-07-03", "2026-09-07", "2026-11-26", "2026-12-25",
+  "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"]);
+const DEMI_SEANCES_NY = new Set(["2026-11-27", "2026-12-24", "2027-11-26"]);
+// Heure de New York : la séance (9 h 30 - 16 h) ne tombe pas toujours à 15 h 30 - 22 h à Paris (changements d'heure décalés en mars et en novembre).
+function seanceNY(date) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
+    weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date).map((x) => [x.type, x.value]));
+  const jour = `${p.year}-${p.month}-${p.day}`, minutes = Number(p.hour) * 60 + Number(p.minute);
+  const ouvrable = !["Sat", "Sun"].includes(p.weekday) && !FERIES_NY.has(jour);
+  const fin = DEMI_SEANCES_NY.has(jour) ? 13 * 60 : 16 * 60;
+  return { ouvrable, minutes, fin };
+}
+
 export function moment(date = new Date()) {
   const forcer = process.env.MARCHES_FORCER;
-  if (["cloture", "indices", "autres", "historique"].includes(forcer)) return forcer;
-  const { jour, minutes } = heureParis(date);
-  const semaine = !["sam.", "dim."].includes(jour);
+  if (["cloture", "indices", "autres", "actions", "historique"].includes(forcer)) return forcer;
+  const { minutes } = heureParis(date);
   // Relevé du matin pour le brief : large fenêtre (4 h 30 - 7 h 15), car GitHub espace parfois les passages d'une heure.
   if (minutes >= 4 * 60 + 30 && minutes < 7 * 60 + 15) return "cloture";
-  if (semaine && minutes >= 15 * 60 + 30 && minutes <= 22 * 60 + 15)                       // séance de New York :
-    return Math.floor(minutes / 15) % 2 === 0 ? "indices" : "autres";                       // un quart d'heure sur deux chacun
+  const ny = seanceNY(date);
+  if (ny.ouvrable && ny.minutes >= 9 * 60 + 30 && ny.minutes <= ny.fin + 15)          // séance de New York (+ 15 min pour la clôture) :
+    // un quart d'heure sur deux chacun ; le dernier quart d'heure de chaque heure, les grandes actions en plus
+    return Math.floor(minutes / 15) % 2 === 0 ? "indices" : Math.floor(minutes / 15) % 4 === 3 ? "autres+actions" : "autres";
   return null;
 }
 
@@ -53,9 +72,11 @@ async function cotations(symboles, essai = 1) {
   // Limite de 8 requêtes par minute atteinte (par exemple deux passages rapprochés) : on attend la minute suivante.
   if (d.status === "error" && /current minute/i.test(d.message || "") && essai === 1) {
     console.log("Twelve Data : limite par minute atteinte, nouvel essai dans 62 s.");
-    await pause(62000);
+    await pause(MINUTE);
     return cotations(symboles, 2);
   }
+  // Crédits du jour épuisés : ce n'est pas une panne, on attend le lendemain (pas d'échec rouge du robot).
+  if (d.status === "error" && /run out of api credits for the day|daily limit/i.test(d.message || "")) { const e = new Error("crédits Twelve Data du jour épuisés"); e.quota = true; throw e; }
   if (d.status === "error") throw new Error(`Twelve Data : ${d.message}`);
   const parSymbole = symboles.length === 1 ? { [symboles[0]]: d } : d;
   const res = {};
@@ -63,7 +84,7 @@ async function cotations(symboles, essai = 1) {
     const q = parSymbole[s];
     if (!q || q.status === "error" || q.close == null) continue;
     res[s] = { cours: Number(q.close), veille: Number(q.previous_close), variation: Number(q.percent_change),
-               date: q.datetime, ouvert: q.is_market_open };
+               date: q.datetime, ouvert: q.is_market_open, bourse: q.exchange };
   }
   return res;
 }
@@ -121,6 +142,25 @@ async function releverAutres() {
   });
 }
 
+// Grandes actions : 20 cotations, par lots pour respecter 8 crédits par minute.
+// "deja" = crédits déjà utilisés dans la minute en cours (le premier lot est réduit d'autant).
+async function cotationsParLots(symboles, deja = 0) {
+  const res = {};
+  let reste = [...symboles], place = 8 - deja;
+  while (reste.length) {
+    if (place <= 0) { await pause(MINUTE); place = 8; }
+    const lot = reste.slice(0, place); reste = reste.slice(place);
+    Object.assign(res, await cotations(lot));
+    place -= lot.length;
+  }
+  return res;
+}
+async function releverActions(eurusd, deja = 0) {
+  const brut = await cotationsParLots(SYMBOLES_ACTIONS, deja);
+  const valeurs = calculerActions(brut, eurusd);
+  return { valeurs, eurusd: eurusd?.cours ?? null, ouvert: Object.values(brut).some((q) => q.ouvert === true) };
+}
+
 // Rattrapage unique de l'historique (40 dernières séances) : 12 symboles, en deux lots pour respecter 8 requêtes/minute.
 async function series(symboles) {
   const r = await fetch(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symboles.join(","))}&interval=1day&outputsize=40&apikey=${CLE}`);
@@ -146,12 +186,27 @@ export function pointsHistorique(brut) {
   }
   return points;
 }
+export function pointsActions(brut) {
+  const points = [], fx = brut["EUR/USD"];
+  for (const a of ACTIONS) {
+    const serie = brut[a.affiche || a.parts[0].symbole];
+    if (!serie) continue;
+    for (const [jour, cours] of serie) {
+      const c = coursHistorique(a, cours, fx?.get(jour));
+      if (typeof c === "number" && isFinite(c)) points.push({ symbole: a.id, jour, cours: Math.round(c * 10000) / 10000 });
+    }
+  }
+  return points;
+}
 async function rattraperHistorique() {
-  const tous = [...new Set([...SUIVIS.map((s) => s.symbole), ...CHANGES, ...AUTRES.map((a) => a.symbole)])];
-  const brut = await series(tous.slice(0, 8));
-  await pause(62000);
-  Object.assign(brut, await series(tous.slice(8)));
-  const points = pointsHistorique(brut);
+  const tous = [...new Set([...SUIVIS.map((s) => s.symbole), ...CHANGES, ...AUTRES.map((a) => a.symbole),
+    ...ACTIONS.map((a) => a.affiche || a.parts[0].symbole)])];
+  const brut = {};
+  for (let i = 0; i < tous.length; i += 8) {
+    if (i) await pause(MINUTE);
+    Object.assign(brut, await series(tous.slice(i, i + 8)));
+  }
+  const points = [...pointsHistorique(brut), ...pointsActions(brut)];
   const r = await appelSite("/api/robot/marches/historique", { points });
   console.log(`Historique des marchés : ${r.points} points enregistrés (${Object.keys(brut).length} symboles).`);
   return r;
@@ -173,18 +228,37 @@ export async function releverMarches(quand = moment()) {
       }
     } catch {}
   }
-  const corps = { type: quand };
-  if (quand === "indices" || quand === "cloture") Object.assign(corps, await releverIndices());
-  if (quand === "cloture") await pause(62000);                    // minute suivante : quota de 8 requêtes/minute
-  if (quand === "autres" || quand === "cloture") corps.autres = await releverAutres();
-  if (quand === "cloture") corps.alertes = [];                     // les alertes ne concernent que la séance en cours
-  await appelSite("/api/robot/marches", corps);
-  const ligne = [...(corps.valeurs || []), ...(corps.autres || [])].map((v) => `${v.nom} ${v.variation ?? "?"} %`).join(" · ");
-  console.log(`Marchés (${quand}) : ${ligne}`);
-  if (corps.alertes?.length) console.log("ALERTE :", corps.alertes.map((a) => `${a.nom} ${a.variation} %`).join(", "));
+  const avecActions = quand === "autres+actions" || quand === "actions" || quand === "cloture";
+  const type = quand === "autres+actions" ? "autres" : quand;
+  const corps = { type };
+  let credits = 0;
+  if (type === "indices" || type === "cloture") { Object.assign(corps, await releverIndices()); credits = 8; }
+  if (type === "cloture") { await pause(MINUTE); credits = 0; }   // minute suivante : quota de 8 requêtes/minute
+  if (type === "autres" || type === "cloture") { corps.autres = await releverAutres(); credits += AUTRES.length; }
+  if (type === "cloture") corps.alertes = [];                     // les alertes ne concernent que la séance en cours
+  if (type !== "actions") {
+    await appelSite("/api/robot/marches", corps);
+    const ligne = [...(corps.valeurs || []), ...(corps.autres || [])].map((v) => `${v.nom} ${v.variation ?? "?"} %`).join(" · ");
+    console.log(`Marchés (${type}) : ${ligne}`);
+    if (corps.alertes?.length) console.log("ALERTE :", corps.alertes.map((a) => `${a.nom} ${a.variation} %`).join(", "));
+  }
+  if (avecActions) {
+    // Le change euro/dollar du même relevé sert à exprimer les sociétés européennes en euros.
+    let fx = corps.autres?.find((a) => a.symbole === "EUR/USD");
+    if (!fx) { const b = await cotations(["EUR/USD"]); fx = b["EUR/USD"]; credits += 1; }
+    try {
+      const r = await releverActions(fx && { cours: fx.cours, variation: fx.variation }, credits);
+      await appelSite("/api/robot/marches", { type: "actions", cloture: type === "cloture", ...r });
+      console.log(`Grandes actions : ${r.valeurs.filter((v) => !v.erreur).length}/${r.valeurs.length} relevées · ` +
+        r.valeurs.slice(0, 5).map((v) => `${v.nom} ${v.valo_usd ? Math.round(v.valo_usd / 1e9) + " Md$" : "?"}`).join(" · "));
+    } catch (e) { console.error("Grandes actions : échec du relevé :", e.message); }
+  }
   return corps;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  releverMarches(moment()).catch((e) => { console.error("Échec du relevé des marchés :", e.message); process.exit(1); });
+  releverMarches(moment()).catch((e) => {
+    if (e.quota) { console.log("Marchés : " + e.message + ", prochain relevé demain."); return; }
+    console.error("Échec du relevé des marchés :", e.message); process.exit(1);
+  });
 }

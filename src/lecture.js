@@ -132,7 +132,8 @@ export async function routeLecture(chemin, url, db) {
       .all();
     const historique = {};
     for (const pt of points) (historique[pt.symbole] ||= []).push([pt.jour, pt.cours]);
-    return json({ direct: await lire("marches_direct"), autres: await lire("marches_autres"), cloture: await lire("marches_cloture"), taux: await lire("taux"), historique });
+    return json({ direct: await lire("marches_direct"), autres: await lire("marches_autres"), cloture: await lire("marches_cloture"),
+      actions: await lire("marches_actions"), taux: await lire("taux"), historique });
   }
 
   // Détail d'un sujet : résumé complet et toutes ses sources.
