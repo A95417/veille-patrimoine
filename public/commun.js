@@ -27,6 +27,35 @@ function themeLocal() {
   } catch { return "auto"; }
 }
 appliquerTheme(themeLocal());
+// Couleur des fiches « Apprendre » : selon le thème de la fiche, couleurs du site, ou une couleur au choix (gardée sur le compte).
+const COULEURS_FICHES = {
+  "theme": { nom: "Selon le thème", fond: "conic-gradient(#3E8E6B 0 25%, #B8913A 0 50%, #C8734F 0 75%, #D2668C 0)" },
+  "site": { nom: "Couleurs du site", fond: "linear-gradient(135deg, var(--accent) 50%, var(--accent-doux) 50%)" },
+  "bsc": { nom: "Bordeaux cabinet", fond: "linear-gradient(135deg, #9E2A3F 50%, #EBC9D0 50%)" },
+  "bleu": { nom: "Bleu nuit", fond: "linear-gradient(135deg, #2F5E9E 50%, #C7D8EE 50%)" },
+  "emeraude": { nom: "Vert émeraude", fond: "linear-gradient(135deg, #1F8A63 50%, #BFE3D4 50%)" },
+  "violet": { nom: "Violet", fond: "linear-gradient(135deg, #6B4BB8 50%, #D9CCF0 50%)" },
+  "ardoise": { nom: "Ardoise", fond: "linear-gradient(135deg, #56687C 50%, #D3DBE3 50%)" },
+  "terracotta": { nom: "Terracotta", fond: "linear-gradient(135deg, #B5583A 50%, #EECDBF 50%)" },
+  "dore": { nom: "Doré", fond: "linear-gradient(135deg, #A9802A 50%, #ECDDB4 50%)" },
+};
+function couleurFichesLocale() { try { const c = localStorage.getItem("fiches_couleur"); return COULEURS_FICHES[c] ? c : "theme"; } catch { return "theme"; } }
+function appliquerCouleurFiches(id) { const r = document.documentElement; if (id && id !== "theme" && COULEURS_FICHES[id]) r.dataset.fiches = id; else delete r.dataset.fiches; }
+appliquerCouleurFiches(couleurFichesLocale());
+function choisirCouleurFiches(id, enregistrer = true) {
+  if (!COULEURS_FICHES[id]) return;
+  appliquerCouleurFiches(id);
+  try { localStorage.setItem("fiches_couleur", id); } catch {}
+  document.querySelectorAll("[data-couleur-fiches]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.couleurFiches === id));
+  document.querySelectorAll(".couleurs-fiches-nom").forEach((n) => { n.textContent = COULEURS_FICHES[id].nom; });
+  if (enregistrer) fetch("/api/theme", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fiches: id }) }).catch(() => {});
+}
+function menuCouleursFiches() {
+  const actuel = couleurFichesLocale();
+  return `<div class="couleurs-fiches" role="group" aria-label="Couleur des fiches">${Object.entries(COULEURS_FICHES).map(([k, c]) => `<button type="button" class="couleur-fiche" data-couleur-fiches="${k}" aria-pressed="${k === actuel}" title="${c.nom}" aria-label="${c.nom}" style="background:${c.fond}"></button>`).join("")}</div>
+    <span class="couleurs-fiches-nom">${COULEURS_FICHES[actuel].nom}</span>`;
+}
+document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-couleur-fiches]"); if (b) choisirCouleurFiches(b.dataset.couleurFiches); });
 // Choix d'un thème : appliqué, gardé sur l'appareil et enregistré sur le compte (retrouvé à la prochaine connexion).
 function choisirTheme(id, enregistrer = true) {
   if (!THEMES_COULEURS[id]) return;
@@ -514,6 +543,7 @@ async function chargerEntete(pageActive) {
   const moi = await appelApi("/api/moi");
   // le thème enregistré sur le compte l'emporte (autre appareil, nouvelle connexion)
   if (moi.theme && THEMES_COULEURS[moi.theme] && moi.theme !== themeLocal()) choisirTheme(moi.theme, false);
+  if (moi.fiches && COULEURS_FICHES[moi.fiches] && moi.fiches !== couleurFichesLocale()) choisirCouleurFiches(moi.fiches, false);
   const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Outils"]];
   const nav = liens
     .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${nom}</a>`)

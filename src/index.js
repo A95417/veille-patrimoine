@@ -135,16 +135,17 @@ async function api(request, env, url) {
 
   // Thème de couleurs choisi par l'utilisateur : enregistré sur son compte (retrouvé sur tous ses appareils).
   const THEMES = ["auto", "clair", "sombre", "bsc", "bsc-nuit", "marine", "sauge", "sable"];
+  const COULEURS_FICHES = ["theme", "site", "bsc", "bleu", "emeraude", "violet", "ardoise", "terracotta", "dore"];
   if (chemin === "/api/moi" && methode === "GET") {
-    let theme = null;
-    try { theme = JSON.parse((await db.prepare("SELECT valeur FROM etat WHERE cle = ?").bind("theme:" + moi.id).first())?.valeur || "null"); } catch {}
-    return json({ ...moi, theme: THEMES.includes(theme) ? theme : null });
+    const lire = async (cle) => { try { return JSON.parse((await db.prepare("SELECT valeur FROM etat WHERE cle = ?").bind(cle + moi.id).first())?.valeur || "null"); } catch { return null; } };
+    const theme = await lire("theme:"), fiches = await lire("fiches:");
+    return json({ ...moi, theme: THEMES.includes(theme) ? theme : null, fiches: COULEURS_FICHES.includes(fiches) ? fiches : null });
   }
   if (chemin === "/api/theme" && methode === "POST") {
-    const d = await lireJson(request);
-    if (!THEMES.includes(d.theme)) return erreur("Thème inconnu.");
-    await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)").bind("theme:" + moi.id, JSON.stringify(d.theme), new Date().toISOString()).run();
-    return json({ ok: true, theme: d.theme });
+    const d = await lireJson(request), ecrire = (cle, v) => db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)").bind(cle + moi.id, JSON.stringify(v), new Date().toISOString()).run();
+    if (d.theme !== undefined) { if (!THEMES.includes(d.theme)) return erreur("Thème inconnu."); await ecrire("theme:", d.theme); }
+    if (d.fiches !== undefined) { if (!COULEURS_FICHES.includes(d.fiches)) return erreur("Couleur inconnue."); await ecrire("fiches:", d.fiches); }
+    return json({ ok: true });
   }
 
   // Version audio d'un brief (MP3). Gère les demandes partielles (Range), indispensables à Safari sur iPhone.

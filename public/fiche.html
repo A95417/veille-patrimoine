@@ -52,6 +52,13 @@
     .cote-retenir li b { font-family: var(--titre); color: var(--i3); font-size: 1.15rem; }
     .cote-retenir li span { font-size: .8rem; color: var(--doux); line-height: 1.35; }
     .cote-aide { margin: 0; }
+    .cote-couleur { gap: 6px; }
+    /* En sombre, les pastilles numérotées sont claires : chiffre foncé pour rester lisible */
+    :root[data-theme="dark"] .ess-carte .num, :root[data-theme="dark"] .frise-n, :root[data-theme="dark"] .cas-etapes li::before { color: #12151c; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme]) .ess-carte .num, :root:not([data-theme]) .frise-n, :root:not([data-theme]) .cas-etapes li::before { color: #12151c; } }
+    .couleur-mobile > summary { list-style: none; } .couleur-mobile > summary::-webkit-details-marker { display: none; }
+    .couleur-mobile[open] { flex-basis: 100%; }
+    .couleur-mobile-corps { padding: 10px 2px 0; display: grid; gap: 4px; }
     .cote-actions { gap: 6px; }
     .cote-actions .bouton { justify-content: flex-start; width: 100%; font-size: .9rem; padding: 9px 12px; }
     /* Titres de section avec pastille colorée du thème */
@@ -191,7 +198,7 @@
     .alerte-fiche ul { margin: 6px 0; padding-left: 20px; }
   </style>
 </head>
-<body>
+<body class="page-apprendre">
   <header class="entete" id="entete"></header>
   <main class="page contenu" id="fiche"><p class="doux">Chargement…</p></main>
   <script>
@@ -232,7 +239,8 @@
         <p class="doux" style="margin:0 0 14px;font-size:1.05rem">${echapper(f.sousTitre)}</p>
         <div id="alerte-fiche" class="alerte-fiche no-print" hidden></div>
         <div class="barre-actions no-print fiche-actions-haut">${actions}
-          <button type="button" class="bouton bouton-discret" data-revision aria-pressed="false">🙈 Mode révision</button></div>
+          <button type="button" class="bouton bouton-discret" data-revision aria-pressed="false">🙈 Mode révision</button>
+          <details class="couleur-mobile"><summary class="bouton bouton-discret">🎨 Couleur</summary><div class="couleur-mobile-corps">${menuCouleursFiches()}</div></details></div>
         <section class="carte bloc phrase-bloc"><div class="surtitre">En une phrase</div><p class="phrase">${echapper(f.enUnePhrase)}</p></section>
         <div class="chiffres" id="chiffres" data-sommaire="Les chiffres clés">${f.chiffres.map((c) => `<button type="button" class="chiffre-tuile" data-revele><strong>${echapper(c.valeur)}</strong><span>${echapper(c.libelle)}</span></button>`).join("")}</div>
         ${sec("essentiel", "💡", "L'essentiel en 5 points", `<ol class="essentiel-cartes">${f.essentiel.map((e, i) => `<li class="ess-carte" data-revele><span class="num">${i + 1}</span><div><strong>${echapper(e.titre)}</strong><p>${echapper(e.texte)}</p></div></li>`).join("")}</ol>`)}
@@ -289,6 +297,7 @@
         <p class="avertissement">Fiche pédagogique vérifiée le ${f.verifie} à partir de sources publiques. Les règles fiscales changent avec chaque loi de finances : vérifiez les montants sur les sources officielles avant de conseiller un client. Ce contenu ne constitue pas un conseil en investissement.</p>
         </div>
         <aside class="fiche-cote no-print" aria-label="Repères de la fiche">
+          <div class="cote-bloc cote-couleur"><div class="cote-titre">🎨 Couleur des fiches</div>${menuCouleursFiches()}</div>
           <div class="cote-bloc">
             <div class="cote-progres"><span>Lecture</span><b id="progres-txt">0 %</b></div>
             <div class="barre-progres" aria-hidden="true"><span id="progres"></span></div>
