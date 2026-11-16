@@ -171,6 +171,16 @@ function nettoyer(scenes, f) {
 const finCours = (f) => ({ type: "fin_cours", texte: "Bravo, vous avez terminé ce cours. Pour ancrer ce que vous avez appris, testez-vous sur la fiche.",
   p: { titre_fiche: f.titre, verifie: f.verifie } });
 
+// Gemini parfois saturé (erreur 503) : on réessaie 3 fois, à une minute d'intervalle, avant de passer au modèle suivant.
+async function patient(appel, modele) {
+  for (let essai = 1; ; essai++) {
+    try { return await appel(); }
+    catch (e) {
+      if (!/HTTP 5\d\d/.test(e.message) || essai >= 3) { console.log(`  ${modele} indisponible : ${e.message.slice(0, 80)}`); return { quota: true }; }
+      console.log(`  ${modele} saturé, nouvel essai dans 60 s`); await new Promise((ok) => setTimeout(ok, 60000));
+    }
+  }
+}
 export async function ecrireScript(f, modeles) {
   const duree = dureeCible(f), fin = finCours(f);
   const finS = (globalThis.VideoApercu.syllabes(fin.texte) + globalThis.VideoApercu.syllabes(`Cours vidéo. ${f.titre}.`)) / 4.45;
@@ -181,11 +191,12 @@ export async function ecrireScript(f, modeles) {
   let meilleur = null;
   for (let essai = 1; essai <= 3; essai++) {
     // modèle « fort » d'abord ; s'il est saturé (quota ou erreur 503), le modèle principal prend le relais
-    let r;
-    try { r = await generer(modeles.fort || modeles.principal, consignes(f, duree, mots), demande, SCHEMA); }
-    catch (e) { if (!modeles.fort) throw e; console.log(`  modèle fort indisponible (${e.message.slice(0, 60)}), relais`); r = { quota: true }; }
-    if (r.quota && modeles.fort) r = await generer(modeles.principal, consignes(f, duree, mots), demande, SCHEMA);
-    if (!r.donnees) throw new Error("quota de l'IA atteint pour aujourd'hui");
+    let r = { quota: true };
+    for (const modele of [modeles.fort, modeles.principal, modeles.relais].filter(Boolean)) {
+      r = await patient(() => generer(modele, consignes(f, duree, mots), demande, SCHEMA), modele);
+      if (r.donnees) break;
+    }
+    if (!r.donnees) throw new Error("IA indisponible (quota atteint ou service saturé)");
     const scenes = nettoyer(r.donnees.scenes, f), inconnus = chiffresInconnus(scenes, permis);
     const total = [...scenes, fin, { texte: `Cours vidéo. ${f.titre}.` }].reduce((n, s) => n + globalThis.VideoApercu.syllabes(s.texte), 0) / 4.45 + 3.6;
     const ecart = Math.abs(total - duree) / duree;
