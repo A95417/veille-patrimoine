@@ -435,6 +435,7 @@ async function voixUtilisees(db) {
   const q = (await lireEtat(db, "ia_quota"))?.valeur;
   return q?.jour === jourGoogle() ? Object.entries(q.compteurs || {}).filter(([m]) => /tts/i.test(m)).reduce((n, [, k]) => n + (Number(k) || 0), 0) : 0;
 }
+export const voixRestantes = (db) => restantEquipe(db);
 async function restantEquipe(db) { const c = await voixEquipe(db); return c.epuise ? 0 : Math.max(0, VOIX_JOUR - Math.max(c.n, await voixUtilisees(db))); }
 async function compterLancement(db, uid, k = 1, epuise = false) {
   const n = Math.max(0, (await lanceesPar(db, uid)) + k), c = await voixEquipe(db);

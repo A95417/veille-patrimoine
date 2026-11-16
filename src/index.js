@@ -11,6 +11,7 @@ import { routeRobot } from "./robot.js";
 import { routeLecture, avecArticles, COLONNES } from "./lecture.js";
 import { routeLinkedin } from "./linkedin.js";
 import { routeVideo, entretenirVideos } from "./video.js";
+import { routeCours } from "./cours.js";
 import { routeNotifications } from "./notifications.js";
 import { normaliser, identifiantValide, decouperNom, proposerIdentifiant, identifiantLibre, assurerIdentifiants } from "./identifiants.js";
 
@@ -175,6 +176,12 @@ async function api(request, env, url) {
 
   if (chemin.startsWith("/api/linkedin/")) {
     const r = await routeLinkedin(request, env, chemin, moi);
+    if (r) return r;
+  }
+
+  // Apprendre › Vidéos de cours (voir cours.js).
+  if (chemin.startsWith("/api/cours")) {
+    const r = await routeCours(request, env, chemin, moi);
     if (r) return r;
   }
 

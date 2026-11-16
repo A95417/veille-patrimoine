@@ -1,0 +1,42 @@
+# Vidéos de cours (Apprendre › Vidéos) : chaque soir, 2 à 3 vidéos fabriquées à partir des fiches vérifiées,
+# avec la part de voix restante de la journée. Rangées dans les fichiers joints du dépôt (publication « cours-videos »), gratuits.
+name: Vidéos de cours (Apprendre)
+on:
+  schedule:
+    - cron: "47 21 * * *"   # 22 h 47 (heure d'hiver de Paris) : la voix restante de la journée, sans gêner l'équipe
+  workflow_dispatch:
+    inputs:
+      fiches:
+        description: "Fiches à (re)faire tout de suite, séparées par des virgules (facultatif)"
+        required: false
+        default: ""
+permissions:
+  contents: write   # publier les vidéos dans les fichiers joints du dépôt
+concurrency:
+  group: cours-videos
+  cancel-in-progress: false
+jobs:
+  cours:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Outils (ffmpeg, police Inter, navigateur sans écran)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-inter > /dev/null
+          python3 -c "import numpy" 2>/dev/null || pip install --quiet numpy
+          npm install --no-save --silent playwright@1.55.0
+          npx playwright install --with-deps chromium > /dev/null
+      - name: Fabriquer et publier les vidéos de cours
+        run: node scripts/cours-video.mjs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FICHES: ${{ inputs.fiches }}
+          MAX: "3"

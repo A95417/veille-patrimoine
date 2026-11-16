@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 10.0 -->
+<!-- version 11.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -21,6 +21,7 @@
   <script src="/fiches-nouvelles.js"></script>
   <script src="/couvertures.js"></script>
   <script src="/outils-fiches.js"></script>
+  <script src="/cours-videos.js"></script>
   <style>
     .grille-fiches { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 18px; }
     .fiche-carte { position: relative; display: flex; flex-direction: column; background: var(--carte); border: 1px solid var(--bord); border-radius: var(--rayon); overflow: hidden;
@@ -48,6 +49,9 @@
     .deux-jeux .carte { margin: 0; }
     .deux-jeux h2 { display: flex; align-items: center; gap: 8px; }
     .parcours { margin-bottom: 30px; }
+    .bascule-vue { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--fond); border: 1px solid var(--bord); margin: 4px 0 18px; }
+    .bascule-vue button { border: 0; background: none; color: var(--doux); font: inherit; font-weight: 600; padding: 9px 18px; border-radius: 999px; cursor: pointer; }
+    .bascule-vue button[aria-selected="true"] { background: var(--carte); color: var(--texte); box-shadow: 0 2px 8px rgba(20, 24, 60, .12); }
     .jours-quiz { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
   </style>
 </head>
@@ -82,8 +86,15 @@
       </section>
     </div>
 
-    <p class="doux petit" style="margin:0 0 6px">Fiches vérifiées le 10 novembre 2026 sur des sources officielles ; l'actualité liée se met à jour automatiquement.</p>
-    <div id="fiches"></div>
+    <div class="bascule-vue" role="tablist" aria-label="Fiches ou vidéos">
+      <button type="button" role="tab" id="onglet-fiches" aria-controls="vue-fiches" aria-selected="true">📄 Les fiches</button>
+      <button type="button" role="tab" id="onglet-videos" aria-controls="vue-videos" aria-selected="false">🎬 Les vidéos de cours</button>
+    </div>
+    <div id="vue-fiches" role="tabpanel" aria-labelledby="onglet-fiches">
+      <p class="doux petit" style="margin:0 0 6px">Fiches vérifiées sur des sources officielles ; l'actualité liée se met à jour automatiquement.</p>
+      <div id="fiches"></div>
+    </div>
+    <div id="vue-videos" role="tabpanel" aria-labelledby="onglet-videos" hidden></div>
   </main>
   <script>
     const dateCourte = (j) => new Date(j + "T12:00:00Z").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
@@ -168,6 +179,21 @@
       const scores = await lireProgression();
       scoreGlobal(scores);
       afficherFiches(scores);
+      // Fiches ou vidéos de cours (gardé dans l'adresse : /apprendre?vue=videos, /apprendre?video=pea)
+      const params = new URLSearchParams(location.search);
+      let videosChargees = false;
+      const montrer = (videos, garder = true) => {
+        document.getElementById("onglet-fiches").setAttribute("aria-selected", !videos);
+        document.getElementById("onglet-videos").setAttribute("aria-selected", videos);
+        document.getElementById("vue-fiches").hidden = videos;
+        document.getElementById("vue-videos").hidden = !videos;
+        if (videos && !videosChargees) { videosChargees = true; CoursVideos.vue(document.getElementById("vue-videos"), PARCOURS); }
+        if (garder) { const u = new URL(location.href); videos ? u.searchParams.set("vue", "videos") : u.searchParams.delete("vue"); history.replaceState(null, "", u); }
+      };
+      document.getElementById("onglet-fiches").onclick = () => montrer(false);
+      document.getElementById("onglet-videos").onclick = () => montrer(true);
+      if (params.get("vue") === "videos" || params.get("video")) montrer(true, false);
+      if (params.get("video")) CoursVideos.ouvrir(params.get("video")).catch(() => {});
       defi();
       quizActu().catch((e) => { document.getElementById("quiz-actu").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; });
     });

@@ -1,6 +1,7 @@
 import { routeLinkedin } from "./linkedin.js";
 import { envoyerATous } from "./notifications.js";
 import { routeVideoRobot } from "./video.js";
+import { routeCoursRobot } from "./cours.js";
 // Adresses réservées au robot de collecte (GitHub Actions).
 // Protégées par un jeton secret (ROBOT_TOKEN) : personne d'autre ne peut écrire dans la base.
 
@@ -32,6 +33,7 @@ export async function routeRobot(request, env, chemin) {
   if (chemin.startsWith("/api/robot/video/")) return routeVideoRobot(request, env, chemin);   // avant la lecture du corps (morceaux de vidéo)
   const db = env.DB;
   const corps = request.method === "POST" ? await request.json().catch(() => ({})) : {};
+  if (chemin === "/api/robot/cours" || chemin.startsWith("/api/robot/cours/")) return routeCoursRobot(request, env, chemin, corps);
 
   // 1) Parmi ces empreintes, lesquelles sont déjà en base ?
   if (chemin === "/api/robot/connus" && request.method === "POST") {

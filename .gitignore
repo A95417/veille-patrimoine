@@ -1,2 +1,8 @@
 public/video-moteur/
 node_modules/
+# vidéos de cours (robot, fichiers de travail)
+cours/
+cours-*.mp4
+cours-*.jpg
+cours-*.json
+script-*.json

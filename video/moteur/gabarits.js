@@ -256,7 +256,7 @@ GAB.chiffre = {
     let o = fondMarque("sombre", S.i, t);
     if (p.bandeau) o += pill(540, 380, Math.max(420, court(p.bandeau, 26).length * 26 + 120), 84, ROSE, txt(540, 396, court(p.bandeau, 26).toUpperCase(), { size: 40, w: 900, f: BX, ls: 3 }));
     const v = compteurTexte(court(p.valeur, 14), lin(t, S.debut + .1, S.debut + 1.1));
-    o += g(`<rect x="90" y="-200" width="900" height="400" rx="48" fill="${BLANC}"/>` + txt(540, 40, v, { size: v.length > 9 ? 150 : 200, w: 900, f: BX, fam: "Inter Display" }) + txt(540, 130, court(p.libelle, 34), { size: 42, w: 700, f: NUIT }),
+    o += g(`<rect x="90" y="-200" width="900" height="400" rx="48" fill="${BLANC}"/>` + txt(540, 40, v, { size: court(p.valeur, 14).length > 9 ? 120 : court(p.valeur, 14).length > 6 ? 150 : 200, w: 900, f: BX, fam: "Inter Display" }) + txt(540, 130, court(p.libelle, 34), { size: 42, w: 700, f: NUIT }),
       `translate(0 820) translate(540 0) ${slam(k)} translate(-540 0)`, cl(k * 3));
     if (p.source) o += txt(540, 1110, "Source : " + court(p.source, 50), { size: 30, w: 500, f: ROSE2, op: cl(lin(t, S.debut + .8, S.debut + 1.1)) });
     if (p.comparaison) { const kc = lin(t, ph(S, 1), ph(S, 1) + .3); o += g(pill(540, 1240, Math.max(460, court(p.comparaison, 34).length * 22 + 100), 84, "#5A1322", txt(540, 1255, court(p.comparaison, 34), { size: 38, w: 700, f: ROSE2 })), "", cl(kc * 3)); }
@@ -420,5 +420,160 @@ GAB.fin = {
     return o;
   },
   sons(S) { const t3 = nbP(S) > 2 ? ph(S, nbP(S) - 1) : (nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2) + 1; return [["pop", t3, .4]]; },   // rien après la dernière phrase
+  masqueSousTitres() { return true; },
+};
+
+// ---------------------------------------------------------------- Vidéos de cours (rubrique « Apprendre ») : visuels pédagogiques
+// Textes très courts à l'écran, la voix explique ; rien n'est affiché qui ne vienne de la fiche vérifiée.
+
+// Carte de chapitre : numéro, titre, progression dans le cours.
+// Ouverture d'un cours : le titre de la fiche (sert aussi de miniature).
+GAB.titre_cours = {
+  dessin(S, t) {
+    const p = S.p;
+    let o = fondMarque("sombre", S.i, t);
+    const k = lin(t, S.debut + .05, S.debut + .45), k2 = lin(t, S.debut + .25, S.debut + .75), k3 = lin(t, S.debut + .6, S.debut + 1.1);
+    o += g(pill(540, 560, 420, 90, ROSE, txt(540, 577, "COURS VIDÉO", { size: 42, w: 900, f: BX, ls: 7 })), `translate(540 560) scale(${back(k)}) translate(-540 -560)`, cl(k * 3));
+    const L = lignes(court(p.titre, 70), 16, 3);
+    L.forEach((l, i) => { o += g(txt(540, 790 + i * 124, l, { size: 108, w: 900, f: BLANC, fam: "Inter Display" }), `translate(0 ${(1 - eo(k2)) * 50})`, k2); });
+    const y = 790 + L.length * 124;
+    o += `<rect x="440" y="${y - 40}" width="${200 * eo(k3)}" height="10" rx="5" fill="${ROSE}"/>`;
+    lignes(court(p.sous_titre, 90), 30, 2).forEach((l, i) => { o += txt(540, y + 50 + i * 56, l, { size: 44, w: 500, f: ROSE2, op: k3 }); });
+    o += txt(540, 1400, "APPRENDRE · L'ESSENTIEL EN VIDÉO", { size: 30, w: 700, f: ROSE2, ls: 4, op: k3 * .8 });
+    return o;
+  },
+  sons(S) { return [["pop", S.debut + .1, .45]]; },
+  masqueSousTitres() { return true; },
+};
+
+GAB.chapitre = {
+  dessin(S, t) {
+    const p = S.p, n = Number(p.numero) || 1, tot = Math.max(n, Number(p.total) || n);
+    let o = fondMarque("sombre", S.i, t);
+    const k = lin(t, S.debut + .05, S.debut + .45), k2 = lin(t, S.debut + .3, S.debut + .8);
+    o += g(pill(540, 640, 360, 86, ROSE, txt(540, 656, `CHAPITRE ${n}`, { size: 40, w: 900, f: BX, ls: 6 })), `translate(540 640) scale(${back(k)}) translate(-540 -640)`, cl(k * 3));
+    const L = lignes(court(p.titre, 60), 18, 3);
+    L.forEach((l, i) => { o += g(txt(540, 860 + i * 112, l, { size: 96, w: 900, f: BLANC, fam: "Inter Display" }), `translate(0 ${(1 - eo(k2)) * 40})`, k2); });
+    if (p.sous_titre) o += txt(540, 860 + L.length * 112 + 30, court(p.sous_titre, 50), { size: 40, w: 500, f: ROSE2, op: cl(lin(t, S.debut + .6, S.debut + 1)) });
+    for (let i = 0; i < tot; i++) { const x = 540 + (i - (tot - 1) / 2) * 56; o += `<circle cx="${x}" cy="1360" r="${i + 1 === n ? 16 : 11}" fill="${i + 1 <= n ? ROSE : BLANC}" opacity="${i + 1 <= n ? 1 : .25}"/>`; }
+    return o;
+  },
+  sons(S) { return [["pop", S.debut + .1, .45]]; },
+};
+
+// Frise : 2 à 4 étapes qui apparaissent l'une après l'autre (une phrase par étape).
+GAB.frise = {
+  dessin(S, t) {
+    const p = S.p, et = (p.etapes || []).slice(0, 4), n = Math.max(1, et.length);
+    let o = fondMarque("clair", S.i, t);
+    if (p.titre) o += txt(540, 400, court(p.titre, 30), { size: 62, w: 900, f: BX, fam: "Inter Display", op: cl(lin(t, S.debut, S.debut + .3) * 3) });
+    const y0 = 520, pas = Math.min(250, 1000 / n);
+    o += `<line x1="170" y1="${y0 + 40}" x2="170" y2="${y0 + 40 + (n - 1) * pas * eo(lin(t, S.debut + .2, S.fin - .5))}" stroke="${ROSE}" stroke-width="8" stroke-linecap="round"/>`;
+    et.forEach((e, i) => {
+      const d = nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .4 + i * (S.fin - S.debut - .6) / n, k = lin(t, d, d + .35), y = y0 + i * pas;
+      o += g(`<circle cx="170" cy="${y + 40}" r="44" fill="${BX}"/>` + txt(170, y + 58, String(i + 1), { size: 50, w: 900, f: BLANC })
+        + `<rect x="250" y="${y - 30}" width="720" height="${Math.min(200, pas - 30)}" rx="28" fill="${BLANC}"/>`
+        + txt(285, y + 30, court(e.titre, 26), { anchor: "start", size: 48, w: 900, f: NUIT })
+        + (e.texte ? lignes(court(e.texte, 60), 34, 2).map((l, m) => txt(285, y + 88 + m * 44, l, { anchor: "start", size: 37, w: 500, f: GRIS })).join("") : ""),
+        `translate(${(1 - eo(k)) * 260} 0)`, cl(k * 3));
+    });
+    return o;
+  },
+  sons(S) { return (S.p.etapes || []).slice(0, 4).map((_, i) => ["pop", nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .4 + i * (S.fin - S.debut - .6) / Math.max(1, (S.p.etapes || []).length), .35]); },
+};
+
+// Tableau simple : 2 ou 3 colonnes, 2 à 4 lignes qui apparaissent une à une.
+GAB.tableau = {
+  dessin(S, t) {
+    const p = S.p, cols = (p.colonnes || []).slice(0, 3), lignesT = (p.lignes || []).slice(0, 4), nc = Math.max(2, cols.length);
+    let o = fondMarque("clair", S.i, t);
+    if (p.titre) o += txt(540, 400, court(p.titre, 30), { size: 60, w: 900, f: BX, fam: "Inter Display", op: cl(lin(t, S.debut, S.debut + .3) * 3) });
+    const x0 = 80, L = 920, w = L / nc, y0 = 500, hl = 170;
+    o += `<rect x="${x0}" y="${y0}" width="${L}" height="${110 + lignesT.length * hl}" rx="30" fill="${BLANC}"/>`;
+    o += `<path d="M${x0} ${y0 + 30} q0 -30 30 -30 h${L - 60} q30 0 30 30 v80 h-${L} z" fill="${BX}"/>`;
+    cols.forEach((c, j) => { const T = lignes(court(c, 24).toUpperCase(), nc === 3 ? 13 : 20, 2); T.forEach((l, m) => { o += txt(x0 + w * j + w / 2, y0 + (T.length === 1 ? 68 : 50 + m * 36), l, { size: T.length === 1 ? 32 : 28, w: 800, f: BLANC, ls: 1 }); }); });
+    lignesT.forEach((l, i) => {
+      const d = nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .5 + i * .8, k = lin(t, d, d + .3), y = y0 + 110 + i * hl;
+      let r = i ? `<line x1="${x0 + 30}" y1="${y}" x2="${x0 + L - 30}" y2="${y}" stroke="${CREME}" stroke-width="4"/>` : "";
+      (Array.isArray(l) ? l : []).slice(0, nc).forEach((c, j) => {
+        const T = lignes(court(c, 36), 15, 2);
+        T.forEach((ligne, m) => { r += txt(x0 + w * j + w / 2, y + (T.length === 1 ? 100 : 72 + m * 52), ligne, { size: j ? 42 : 44, w: j ? 600 : 900, f: j ? NUIT : BX }); });
+      });
+      o += g(r, "", cl(k * 3));
+    });
+    return o;
+  },
+  sons(S) { return (S.p.lignes || []).slice(0, 4).map((_, i) => ["pop", nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .5 + i * .8, .3]); },
+};
+
+// Quiz : la question, un compte à rebours (2e phrase), puis la bonne réponse s'allume (3e phrase).
+GAB.quiz = {
+  dessin(S, t) {
+    const p = S.p, ch = (p.choix || []).slice(0, 4), bonne = Number(p.bonne) || 0;
+    const ic = Number(S.p.i_compte) || 1, tCompte = nbP(S) > ic ? ph(S, ic) : S.debut + (S.fin - S.debut) * .4, tRep = nbP(S) > ic + 1 ? ph(S, ic + 1) : S.debut + (S.fin - S.debut) * .7;
+    let o = fondMarque("sombre", S.i, t);
+    const k0 = lin(t, S.debut, S.debut + .3);
+    o += g(pill(540, 360, 260, 80, OR, txt(540, 376, "QUIZ", { size: 44, w: 900, f: NUIT, ls: 8 })), `translate(540 360) scale(${back(k0)}) translate(-540 -360)`);
+    const Q = lignes(court(p.question, 110), 26, 4);
+    Q.forEach((l, i) => { o += txt(540, 500 + i * 70, l, { size: 56, w: 800, f: BLANC, op: cl(k0 * 3) }); });
+    const yc = 520 + Q.length * 70 + 40, revele = t >= tRep;
+    ch.forEach((c, i) => {
+      const k = lin(t, S.debut + .4 + i * .15, S.debut + .7 + i * .15), y = yc + i * 150, ok = i === bonne;
+      const fond = revele ? (ok ? VERT : BLANC) : BLANC, coul = revele ? (ok ? BLANC : NUIT) : NUIT, op = revele && !ok ? .45 : 1;
+      o += g(`<rect x="110" y="${y}" width="860" height="120" rx="60" fill="${fond}"/>` + `<circle cx="180" cy="${y + 60}" r="38" fill="${revele && ok ? BLANC : BX}"/>`
+        + txt(180, y + 76, revele && ok ? "✓" : "ABCD"[i], { size: 44, w: 900, f: revele && ok ? VERT : BLANC })
+        + txt(245, y + 76, court(c, 34), { anchor: "start", size: 42, w: 700, f: coul }), `translate(${(1 - eo(k)) * -200} 0)`, cl(k * 3) * op);
+    });
+    if (t >= tCompte && t < tRep) {   // compte à rebours
+      const r = Math.max(1, 3 - Math.floor((t - tCompte) / Math.max(.4, (tRep - tCompte) / 3)));
+      o += `<circle cx="540" cy="${yc + ch.length * 150 + 110}" r="70" fill="${ROSE}"/>` + txt(540, yc + ch.length * 150 + 140, String(r), { size: 90, w: 900, f: BX });
+    }
+    return o;
+  },
+  sons(S) {
+    const ic = Number(S.p.i_compte) || 1, tCompte = nbP(S) > ic ? ph(S, ic) : S.debut + (S.fin - S.debut) * .4, tRep = nbP(S) > ic + 1 ? ph(S, ic + 1) : S.debut + (S.fin - S.debut) * .7;
+    return [["pop", S.debut + .05, .4], ...[0, 1, 2].map((i) => ["tic", tCompte + i * (tRep - tCompte) / 3, .35]), ["ping", tRep, .45]];
+  },
+  masqueSousTitres() { return true; },   // question et réponses déjà à l'écran
+};
+
+// Récapitulatif : 3 à 5 points cochés l'un après l'autre.
+GAB.recap = {
+  dessin(S, t) {
+    const p = S.p, pts = (p.points || []).slice(0, 5), n = Math.max(1, pts.length);
+    let o = fondMarque("clair", S.i, t);
+    o += g(pill(540, 380, 420, 90, BX, txt(540, 397, court(p.titre || "À retenir", 22).toUpperCase(), { size: 42, w: 900, f: BLANC, ls: 4 })), "", cl(lin(t, S.debut, S.debut + .3) * 3));
+    const pas = Math.min(190, 1050 / n);
+    pts.forEach((s, i) => {
+      const d = nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .4 + i * (S.fin - S.debut - .6) / n, k = lin(t, d, d + .3), y = 500 + i * pas;
+      const T = lignes(court(s, 60), 30, 2);
+      o += g(`<rect x="90" y="${y}" width="900" height="${pas - 30}" rx="30" fill="${BLANC}"/>` + `<circle cx="160" cy="${y + (pas - 30) / 2}" r="38" fill="${k >= 1 ? VERT : CREME}"/>`
+        + (k > .5 ? `<path d="M${142} ${y + (pas - 30) / 2} l12 12 l24 -26" stroke="${BLANC}" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` : "")
+        + T.map((l, m) => txt(225, y + (pas - 30) / 2 + 14 + (m - (T.length - 1) / 2) * 50, l, { anchor: "start", size: 42, w: 700, f: NUIT })).join(""), "", cl(k * 3));
+    });
+    return o;
+  },
+  sons(S) { return (S.p.points || []).slice(0, 5).map((_, i) => ["pop", nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .4 + i * (S.fin - S.debut - .6) / Math.max(1, (S.p.points || []).length), .3]); },
+  masqueSousTitres() { return true; },   // les points sont déjà écrits
+};
+
+// Fin d'un cours : pas de publicité, une invitation à se tester et la date de vérification de la fiche.
+GAB.fin_cours = {
+  dessin(S, t) {
+    const p = S.p;
+    let o = fond("#4A0614", "#22050C");
+    for (let i = 0; i < 26; i++) { const k = lin(t, S.debut + i * .04, S.debut + 1.2 + i * .04); o += `<circle cx="${80 + (i * 167) % 920}" cy="${360 + (i * 97) % 300 - k * 60}" r="${4 + i % 4}" fill="${[ROSE, OR, BLANC][i % 3]}" opacity="${.5 * (1 - k)}"/>`; }
+    const k1 = lin(t, S.debut + .1, S.debut + .5), k2 = lin(t, S.debut + .6, S.debut + 1);
+    o += g(txt(540, 560, "Cours terminé", { size: 92, w: 900, f: BLANC, fam: "Inter Display" }), `translate(0 ${(1 - eo(k1)) * 40})`, k1);
+    const L = lignes(court(p.titre_fiche, 60), 24, 2);
+    L.forEach((l, i) => { o += txt(540, 660 + i * 66, l, { size: 54, w: 600, f: ROSE2, op: k1 }); });
+    o += g(pill(540, 900, 720, 120, BLANC, txt(540, 920, "Testez-vous sur la fiche", { size: 50, w: 900, f: BX })), `translate(540 900) scale(${back(k2)}) translate(-540 -900)`, cl(k2 * 3));
+    o += txt(540, 1060, "Quiz · Vrai ou faux · Cartes mémo", { size: 36, w: 500, f: ROSE2, op: k2 });
+    if (p.verifie) o += txt(540, 1300, `Fiche vérifiée le ${court(p.verifie, 30)} sur des sources officielles`, { size: 30, w: 500, f: ROSE2, op: .9 });
+    o += txt(540, 1350, "Contenu pédagogique, ne constitue pas un conseil.", { size: 30, w: 500, f: ROSE2, op: .9 });
+    o += txt(540, 1420, "VEILLE PATRIMOINE · APPRENDRE", { size: 28, w: 700, f: BLANC, ls: 6, op: .6 });
+    return o;
+  },
+  sons(S) { return [["pop", S.debut + .6, .4]]; },
   masqueSousTitres() { return true; },
 };

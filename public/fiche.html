@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 12.0 — mise en page d'apprentissage : sommaire, à retenir, mode révision, visuels colorés -->
+<!-- version 12.1 — mise en page d'apprentissage : sommaire, à retenir, mode révision, visuels colorés -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -23,6 +23,7 @@
   <script src="/couvertures.js"></script>
   <script src="/outils-fiches.js"></script>
   <script src="/fiches-approfondies.js"></script>
+  <script src="/cours-videos.js"></script>
   <style>
     .contenu { max-width: 920px; }
     /* Mise en page d'apprentissage : la fiche à gauche, repères toujours visibles à droite (grand écran) */
@@ -242,6 +243,7 @@
           <button type="button" class="bouton bouton-discret" data-revision aria-pressed="false">🙈 Mode révision</button>
           <details class="couleur-mobile"><summary class="bouton bouton-discret">🎨 Couleur</summary><div class="couleur-mobile-corps">${menuCouleursFiches()}</div></details></div>
         <section class="carte bloc phrase-bloc"><div class="surtitre">En une phrase</div><p class="phrase">${echapper(f.enUnePhrase)}</p></section>
+        <div id="cours-video-fiche" class="no-print"></div>
         <div class="chiffres" id="chiffres" data-sommaire="Les chiffres clés">${f.chiffres.map((c) => `<button type="button" class="chiffre-tuile" data-revele><strong>${echapper(c.valeur)}</strong><span>${echapper(c.libelle)}</span></button>`).join("")}</div>
         ${sec("essentiel", "💡", "L'essentiel en 5 points", `<ol class="essentiel-cartes">${f.essentiel.map((e, i) => `<li class="ess-carte" data-revele><span class="num">${i + 1}</span><div><strong>${echapper(e.titre)}</strong><p>${echapper(e.texte)}</p></div></li>`).join("")}</ol>`)}
         ${sec("schema", "⚙️", "Comment ça marche", `<ol class="frise">${f.schema.map((e, i) => `<li class="frise-etape"><span class="frise-n">${i + 1}</span><strong>${echapper(e.titre)}</strong><span>${echapper(e.texte)}</span></li>`).join("")}</ol>`)}
@@ -392,6 +394,7 @@
     chargerEntete("/apprendre").then(async () => {
       if (!f) { document.getElementById("fiche").innerHTML = '<div class="carte"><p>Fiche introuvable.</p><p><a href="/apprendre">← Toutes les fiches</a></p></div>'; return; }
       afficher(await lireProgression());
+      CoursVideos.blocFiche(document.getElementById("cours-video-fiche"), f).catch(() => {});
     });
   </script>
 </body>
