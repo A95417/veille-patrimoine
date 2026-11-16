@@ -3,6 +3,7 @@
 <style>html,body{margin:0;padding:0;background:#000;overflow:hidden}svg{display:block;font-family:Inter,"Inter Display",sans-serif}</style>
 </head><body>
 <svg id="s" xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
+<img src="logo-bsc.png" alt="" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
 <script src="base.js"></script>
 <script src="personnages.js"></script>
 <script src="decors.js"></script>
@@ -46,6 +47,8 @@ window.draw = (t) => {
 };
 
 window.alertes = () => [...ALERTES];
+// Images (logo du cabinet) décodées avant la première image filmée.
+window.imagesPretes = () => Promise.all([...document.images].map((i) => i.decode().catch(() => ALERTES.add("image non chargée : " + i.getAttribute("src")))));
 
 // Bruitages : transitions douces + ceux de chaque gabarit. Jamais rien après la dernière phrase.
 window.evenements = () => {

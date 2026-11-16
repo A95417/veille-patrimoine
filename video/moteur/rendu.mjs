@@ -20,6 +20,7 @@ async function page() {
   await p.goto("file://" + path.join(ICI, "moteur.html"));
   await p.evaluate(([j, c]) => window.init(j, c), [job, cal]);
   await p.evaluate(() => document.fonts.ready);
+  await p.evaluate(() => window.imagesPretes && window.imagesPretes());
   return p;
 }
 

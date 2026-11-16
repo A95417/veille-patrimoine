@@ -331,8 +331,14 @@ GAB.fin = {
     o += g(txt(540, 470, cut > 0 ? q.slice(0, cut) : q, { size: 62, w: 700, f: ROSE2 }) + (cut > 0 ? txt(540, 548, q.slice(cut + 1), { size: 62, w: 700, f: ROSE2 }) : ""), `translate(0 ${(1 - eo(k1)) * 40})`, k1);
     const t2 = nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2, k2 = lin(t, t2, t2 + .5);
     const nomCab = court(C.cabinet || "BSC PATRIMOINE", 30).toUpperCase(), [m1, ...m2] = nomCab.split(" ");
-    o += g(`<line x1="400" y1="640" x2="680" y2="640" stroke="${ROSE}" stroke-width="4"/>` + txt(540, 800, m1, { size: m1.length > 6 ? 120 : 180, w: 900, f: BLANC, fam: "Inter Display", ls: 16 }) + (m2.length ? txt(540, 890, m2.join(" "), { size: 66, w: 600, f: BLANC, ls: 24 }) : "") + txt(540, 955, court(C.activite || "Conseil en gestion de patrimoine", 44), { size: 34, w: 500, f: ROSE2, ls: 1 }),
-      `translate(540 780) scale(${.92 + .08 * eo(k2)}) translate(-540 -780)`, k2);
+    // Logo officiel du cabinet B-S-C Patrimoine (image fournie par le cabinet) ; un autre cabinet garde son nom en texte.
+    const logo = /\bB-?S-?C\b/.test(nomCab)
+      ? `<line x1="400" y1="640" x2="680" y2="640" stroke="${ROSE}" stroke-width="4"/>` +
+        `<rect x="114" y="684" width="852" height="252" rx="10" fill="#000" opacity=".28"/>` +
+        `<image href="logo-bsc.png" x="120" y="678" width="840" height="236" preserveAspectRatio="xMidYMid meet"/>` +
+        `<rect x="120" y="678" width="840" height="236" fill="none" stroke="${BLANC}" stroke-opacity=".35" stroke-width="2"/>`
+      : `<line x1="400" y1="640" x2="680" y2="640" stroke="${ROSE}" stroke-width="4"/>` + txt(540, 800, m1, { size: m1.length > 6 ? 120 : 180, w: 900, f: BLANC, fam: "Inter Display", ls: 16 }) + (m2.length ? txt(540, 890, m2.join(" "), { size: 66, w: 600, f: BLANC, ls: 24 }) : "") + txt(540, 955, court(C.activite || "Conseil en gestion de patrimoine", 44), { size: 34, w: 500, f: ROSE2, ls: 1 });
+    o += g(logo, `translate(540 780) scale(${.92 + .08 * eo(k2)}) translate(-540 -780)`, k2);
     const t3 = nbP(S) > 2 ? ph(S, 2) : t2 + 1, k3 = lin(t, t3, t3 + .34);
     o += g(pill(540, 1080, 840, 104, BLANC, txt(540, 1098, court(p.offre || "Premier échange offert · sans engagement", 44), { size: 36, w: 800, f: BX })), `translate(540 1080) scale(${back(k3)}) translate(-540 -1080)`, cl(k3 * 3));
     const t4 = phf(S, nbP(S) - 1) - .4, k4 = lin(t, t4, t4 + .4), k5 = lin(t, t4 + .3, t4 + .7);
