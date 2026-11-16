@@ -151,7 +151,7 @@ function nettoyer(scenes, f) {
     const texte = court(s.texte, 700);
     if (!texte) continue;
     const c = (k, n) => (p[k] ? coupe(p[k], n) : undefined);
-    const q = { titre: c("titre", 60), sous_titre: c("sous_titre", 50), personnage: PERSOS.includes(p.personnage) ? p.personnage : undefined, humeur: p.humeur,
+    const q = { titre: c("titre", { liste: 28, frise: 30, tableau: 30, recap: 22 }[s.type] || 60), sous_titre: c("sous_titre", 50), personnage: PERSOS.includes(p.personnage) ? p.personnage : undefined, humeur: p.humeur,
       decor: LIEUX.includes(p.decor) ? p.decor : undefined, nom: c("nom", 16), bulle: c("bulle", 18), puces: (p.puces || []).map((x) => coupe(x, 16)).slice(0, 2),
       valeur: c("valeur", 14), libelle: c("libelle", 34), bandeau: c("bandeau", 26), points: (p.points || []).map((x) => coupe(x, s.type === "recap" ? 60 : 30)).filter(Boolean).slice(0, s.type === "recap" ? 5 : 3),
       etapes: (p.etapes || []).map((e) => ({ titre: coupe(e?.titre, 26), texte: coupe(e?.texte, 60) })).filter((e) => e.titre).slice(0, 4),
