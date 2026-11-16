@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- version 9.0 -->
+<!-- version 10.0 -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -16,118 +16,363 @@
   <meta name="apple-mobile-web-app-title" content="Veille">
   <script src="/commun.js"></script>
   <style>
-    .grille-cotations { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin: 12px 0 24px; }
+    .mk-tete { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+    .mk-tete h1 { margin-bottom: 4px; }
+    .mk-seance { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: var(--fond); border: 1px solid var(--bord); }
+    .mk-seance .point { width: 9px; height: 9px; border-radius: 50%; background: var(--doux); }
+    .mk-seance.ouvert .point { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-doux); }
+    .mk-resume { margin: 14px 0 6px; padding: 16px 18px; border-radius: 16px; background: var(--carte); border: 1px solid var(--bord); }
+    .mk-resume p { margin: 0; line-height: 1.6; }
+    .mk-resume .doux { font-size: .85rem; margin-top: 6px; }
+    .mk-cles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .mk-cle { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--fond); }
+    .mk-cle > span:not(.var-pos):not(.var-neg) { font-size: .8rem; color: var(--doux); }
+    .mk-cle strong, .mk-cle strong .var-pos, .mk-cle strong .var-neg { font-family: var(--titre); font-size: 1.15rem; }
+    .mk-cle .var-pos, .mk-cle .var-neg { font-size: .8rem; }
+    @media (max-width: 640px) { .mk-cles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+    .mk-onglets { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--bord); margin: 18px 0 4px; }
+    .mk-onglets::-webkit-scrollbar { display: none; }
+    .mk-onglets button { flex: 0 0 auto; font: inherit; font-size: .92rem; font-weight: 600; color: var(--doux); background: none; border: 0; border-bottom: 2.5px solid transparent; padding: 10px 12px; cursor: pointer; white-space: nowrap; margin-bottom: -1px; }
+    .mk-onglets button:hover { color: var(--texte); }
+    .mk-onglets button[aria-selected="true"] { color: var(--accent-fonce); border-bottom-color: var(--accent); }
+
+    .mk-section { margin-top: 22px; }
+    .mk-section[hidden] { display: none; }
+    .mk-section-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .mk-section-tete h2 { font-size: 1.15rem; margin: 0; }
+    .mk-section-tete .doux { font-size: .82rem; }
+
+    .grille-cotations { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 12px 0 0; }
+    @media (min-width: 900px) { #indices { grid-template-columns: repeat(3, minmax(0, 1fr)); } #autres { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     .cotation { background: var(--carte); border: 1px solid var(--bord); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
     .cotation.baisse-forte { background: var(--ko-doux); border-color: var(--ko); }
     .cotation-nom { font-weight: 600; }
     .cotation-via { font-size: .78rem; color: var(--doux); }
     .cotation-chiffres { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 6px; }
     .cotation-chiffres .var-pos, .cotation-chiffres .var-neg { font-family: var(--titre); font-size: 1.45rem; }
-    .cotation-cours { font-size: .9rem; color: var(--doux); }
-    .pilule { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--fond); color: var(--doux); white-space: nowrap; }
+    .cotation-cours { font-size: .95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .cotation-pied { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .8rem; color: var(--doux); }
+    .pilule { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--fond); color: var(--doux); white-space: nowrap; font-variant-numeric: tabular-nums; }
     .pilule.pos { background: var(--ok-doux); color: var(--ok); } .pilule.neg { background: var(--ko-doux); color: var(--ko); }
-    h2.groupe-titre { font-size: 1.15rem; margin: 22px 0 0; }
+
+    /* Grandes actions */
+    .mk-filtres { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0 10px; }
+    .mk-filtres .puces { display: flex; gap: 6px; flex-wrap: wrap; }
+    .mk-filtres select { width: auto; font: inherit; font-size: .88rem; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); margin-left: auto; }
+    .mk-table-boite { background: var(--carte); border: 1px solid var(--bord); border-radius: 16px; overflow: hidden; }
+    .mk-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .mk-table th { text-align: right; font-size: .76rem; font-weight: 600; color: var(--doux); text-transform: uppercase; letter-spacing: .03em; padding: 10px 12px; border-bottom: 1px solid var(--bord); white-space: nowrap; }
+    .mk-table th:nth-child(-n+2) { text-align: left; }
+    .mk-table td { padding: 10px 12px; border-bottom: 1px solid var(--bord); text-align: right; white-space: nowrap; }
+    .mk-table tr:last-child td { border-bottom: 0; }
+    .mk-table td.rang { color: var(--doux); width: 28px; text-align: left; }
+    .mk-table td.societe { text-align: left; white-space: normal; }
+    .mk-table td.societe strong { display: block; }
+    .mk-table td.societe span { font-size: .78rem; color: var(--doux); }
+    .mk-table td.valo strong { display: block; font-family: var(--titre); }
+    .mk-table td.valo span { font-size: .78rem; color: var(--doux); }
+    .mk-table td.courbe { width: 110px; }
+    .mk-table .var-pos, .mk-table .var-neg { font-weight: 600; }
+    .mk-barre { height: 4px; border-radius: 999px; background: var(--accent-doux); margin-top: 4px; overflow: hidden; }
+    .mk-barre span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+    .mk-ancien { font-size: .72rem; color: var(--doux); }
+    .mk-note { font-size: .8rem; color: var(--doux); margin: 8px 2px 0; }
+    @media (max-width: 760px) {
+      .mk-table thead { display: none; }
+      .mk-table, .mk-table tbody, .mk-table tr { display: block; }
+      .mk-table tr { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-areas: "r s v" "r c j"; gap: 2px 10px; padding: 10px 12px; border-bottom: 1px solid var(--bord); }
+      .mk-table tr:last-child { border-bottom: 0; }
+      .mk-table td { display: block; padding: 0; border: 0; }
+      .mk-table td.rang { grid-area: r; }
+      .mk-table td.societe { grid-area: s; }
+      .mk-table td.valo { grid-area: v; }
+      .mk-table td.cours { grid-area: c; text-align: left; font-size: .85rem; color: var(--doux); }
+      .mk-table td.jour { grid-area: j; font-size: .9rem; }
+      .mk-table td.mois, .mk-table td.courbe { display: none; }
+      .mk-filtres select { margin-left: 0; }
+    }
+
+    @media (max-width: 640px) {
+      .grille-cotations { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .cotation { padding: 11px 12px; border-radius: 14px; }
+      .cotation-chiffres { flex-direction: column; align-items: flex-start; gap: 0; }
+      .cotation-chiffres .var-pos, .cotation-chiffres .var-neg { font-size: 1.2rem; }
+      .cotation-pied { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .cotation-via { font-size: .72rem; }
+      .mk-resume { padding: 14px; }
+    }
+    .mk-sources { margin-top: 26px; }
+    .mk-sources summary { cursor: pointer; font-weight: 700; font-size: 1.02rem; }
+    .mk-sources p, .mk-sources li { font-size: .9rem; color: var(--doux); }
+    .visuellement-cache { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .mk-avert { font-size: .85rem; color: var(--doux); margin: 18px 2px 0; }
   </style>
 </head>
 <body>
   <header class="entete" id="entete"></header>
   <main class="page">
-    <h1>Marchés</h1>
-    <p class="doux" id="info">Chargement…</p>
+    <div class="mk-tete">
+      <div>
+        <h1>Marchés</h1>
+        <p class="doux" id="info" style="margin:0">Chargement…</p>
+      </div>
+      <span class="mk-seance" id="seance" hidden><span class="point" aria-hidden="true"></span><span id="seance-texte"></span></span>
+    </div>
 
-    <h2 class="groupe-titre">Grands marchés actions</h2>
-    <div class="grille-cotations" id="indices"></div>
+    <section class="mk-resume" id="resume" hidden aria-live="polite"></section>
 
-    <h2 class="groupe-titre">Change, matières premières et crypto</h2>
-    <div class="grille-cotations" id="autres"></div>
+    <nav class="mk-onglets" role="tablist" aria-label="Rubriques des marchés" id="onglets">
+      <button type="button" role="tab" data-vue="tout" aria-selected="true">Tout</button>
+      <button type="button" role="tab" data-vue="indices" aria-selected="false">Indices</button>
+      <button type="button" role="tab" data-vue="actions" aria-selected="false">Grandes actions</button>
+      <button type="button" role="tab" data-vue="autres" aria-selected="false">Change et matières</button>
+      <button type="button" role="tab" data-vue="taux" aria-selected="false">Taux</button>
+    </nav>
 
-    <h2 class="groupe-titre">Taux et inflation</h2>
-    <p class="doux petit" id="taux-info" style="margin:4px 0 0"></p>
-    <div class="grille-cotations" id="taux"></div>
-
-    <section class="carte">
-      <h2>D'où viennent ces chiffres ?</h2>
-      <p class="doux" style="font-size:.92rem;margin:0">
-        Les indices eux-mêmes (CAC 40, S&amp;P 500…) ne sont pas disponibles gratuitement. Le robot relève donc des fonds indiciels (ETF)
-        cotés à New York qui les répliquent fidèlement, via l'offre gratuite de Twelve Data. Pour l'Europe et le Japon, l'effet du taux de change
-        est retiré pour obtenir la variation en euros ou en yens.<br><br>
-        <strong>Quand ?</strong> Pendant la séance de New York (15 h 30 - 22 h, heure de Paris, en semaine), toutes les 30 minutes,
-        et chaque matin vers 6 h pour les clôtures de la veille. En dehors de ces heures, les chiffres affichés sont ceux du dernier relevé.<br><br>
-        <strong>Alerte :</strong> si l'un de ces marchés recule de plus de 2 % dans la séance, une alerte rouge apparaît dans « À la une ».<br><br>
-        Ce sont des estimations pour suivre la tendance du jour, pas des cotations officielles.<br><br>
-        <strong>Taux et inflation :</strong> séries officielles de la Banque centrale européenne (API publique et gratuite), relevées chaque matin vers 9 h.
-        L'€STR et le taux de dépôt sont quotidiens ; l'Euribor 3 mois, l'OAT et le Bund 10 ans sont des moyennes mensuelles (pour l'OAT et le Bund, taux « de convergence » de la BCE) ;
-        l'inflation est l'indice des prix harmonisé sur un an. Ce ne sont pas des cotations en temps réel.
-      </p>
+    <section class="mk-section" data-bloc="indices">
+      <div class="mk-section-tete"><h2>Grands indices boursiers</h2><span class="doux" id="indices-info"></span></div>
+      <div class="grille-cotations" id="indices"></div>
     </section>
+
+    <section class="mk-section" data-bloc="actions">
+      <div class="mk-section-tete"><h2>Grandes actions</h2><span class="doux" id="actions-info"></span></div>
+      <div class="mk-filtres">
+        <div class="puces" role="group" aria-label="Zone">
+          <button type="button" class="puce" data-zone="toutes" aria-pressed="true">Toutes</button>
+          <button type="button" class="puce" data-zone="us" aria-pressed="false">🇺🇸 États-Unis</button>
+          <button type="button" class="puce" data-zone="europe" aria-pressed="false">🇪🇺 Europe</button>
+        </div>
+        <select id="tri" aria-label="Trier les actions">
+          <option value="valo">Trier par valorisation</option>
+          <option value="hausse">Plus fortes hausses du jour</option>
+          <option value="baisse">Plus fortes baisses du jour</option>
+          <option value="mois">Variation sur 1 mois</option>
+        </select>
+      </div>
+      <div class="mk-table-boite" id="actions"><div class="attente" style="padding:16px"><span class="rond"></span>Chargement…</div></div>
+      <p class="mk-note" id="actions-note"></p>
+    </section>
+
+    <section class="mk-section" data-bloc="autres">
+      <div class="mk-section-tete"><h2>Change, matières premières et crypto</h2><span class="doux" id="autres-info"></span></div>
+      <div class="grille-cotations" id="autres"></div>
+    </section>
+
+    <section class="mk-section" data-bloc="taux">
+      <div class="mk-section-tete"><h2>Taux et inflation</h2><span class="doux" id="taux-info"></span></div>
+      <div class="grille-cotations" id="taux"></div>
+    </section>
+
+    <details class="carte mk-sources">
+      <summary>D'où viennent ces chiffres ?</summary>
+      <p><strong>Indices :</strong> les indices eux-mêmes (CAC 40, S&amp;P 500…) ne sont pas disponibles gratuitement. Le robot relève donc des fonds indiciels (ETF)
+        cotés à New York qui les répliquent, via l'offre gratuite de Twelve Data. Pour l'Europe et le Japon, l'effet du change est retiré pour obtenir la variation en euros ou en yens.
+        Ce sont des estimations pour suivre la tendance du jour, pas des cotations officielles.</p>
+      <p><strong>Grandes actions :</strong> cours relevés à New York (Twelve Data). Les sociétés européennes sont suivies par leur certificat coté à New York (ADR), converti en euros
+        au taux euro/dollar du moment. <strong>Valorisation</strong> = cours × nombre d'actions publié par la société (formulaires déposés à la SEC pour les sociétés américaines,
+        communiqués officiels pour les européennes) ; la date et la source de ce nombre sont indiquées pour chaque société. C'est une estimation : les fournisseurs de données
+        peuvent afficher des chiffres un peu différents selon le nombre d'actions retenu.</p>
+      <p><strong>Quand ?</strong> Pendant la séance de New York (en semaine, hors jours fériés américains) : indices toutes les 30 minutes, change et matières premières toutes les 30 minutes,
+        grandes actions toutes les heures ; chaque matin vers 6 h, les clôtures de la veille (pour le brief et les courbes). En dehors de ces heures, les chiffres sont ceux du dernier relevé.</p>
+      <p><strong>Alerte :</strong> si l'un des grands indices recule de plus de 2 % dans la séance, une alerte rouge apparaît dans « À la une ».</p>
+      <p><strong>Taux et inflation :</strong> séries officielles de la Banque centrale européenne (API publique et gratuite), relevées chaque matin vers 9 h.
+        L'€STR et le taux de dépôt sont quotidiens ; l'Euribor 3 mois, l'OAT et le Bund 10 ans sont des moyennes mensuelles (taux « de convergence » de la BCE pour l'OAT et le Bund) ;
+        l'inflation est l'indice des prix harmonisé sur un an.</p>
+    </details>
+    <p class="mk-avert">Informations données à titre indicatif, sans valeur de cotation officielle. Ce n'est pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures.</p>
   </main>
   <script>
     const INDICES = new Set(["SPY", "QQQ", "DIA", "FEZ", "EWQ", "EWJ"]);
+    const DRAPEAUX = { US: "🇺🇸", FR: "🇫🇷", DE: "🇩🇪", NL: "🇳🇱", DK: "🇩🇰" };
+    const PAYS = { US: "États-Unis", FR: "France", DE: "Allemagne", NL: "Pays-Bas", DK: "Danemark" };
+    const etat = { vue: "tout", zone: "toutes", tri: "valo", donnees: null };
+    const $ = (id) => document.getElementById(id);
+    const nb = (x, d = 2) => x.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+    const signe = (x, d = 1) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${nb(Math.abs(x), d)} %`;
+    const jourCourt = (j) => j ? new Date(j.slice(0, 10) + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) : "";
+
+    // Variation sur un mois calendaire : dernier cours comparé au dernier cours connu il y a 30 jours ou avant.
+    function variationMois(h) {
+      if (!h || h.length < 10) return null;
+      const [jFin, vFin] = h[h.length - 1];
+      const limite = new Date(new Date(jFin + "T12:00:00").getTime() - 30 * 86400000).toISOString().slice(0, 10);
+      const ref = [...h].reverse().find(([j]) => j <= limite);
+      return ref ? (vFin / ref[1] - 1) * 100 : null;
+    }
+    const piluleMois = (v) => v == null ? '<span class="pilule">historique en cours</span>' : `<span class="pilule ${v < 0 ? "neg" : "pos"}" title="Variation sur 1 mois">${signe(v)} sur 1 mois</span>`;
+    const courbe = (h, l = 200, hauteur = 38) => sparkline((h || []).filter(([j]) => j >= new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10)), l, hauteur)
+      .replace('class="sparkline"', 'class="sparkline" style="width:100%"').replace(`width="${l}"`, 'width="100%" preserveAspectRatio="none"');
+
+    // ---------------------------------------------------------------- séance de New York (heure de New York, jours fériés compris)
+    const FERIES_NY = new Set(["2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25", "2026-06-19", "2026-07-03", "2026-09-07", "2026-11-26", "2026-12-25",
+      "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"]);
+    const DEMI_SEANCES_NY = new Set(["2026-11-27", "2026-12-24", "2027-11-26"]);   // fermeture à 13 h (New York)
+    function seanceNY(d = new Date()) {
+      const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+        .formatToParts(d).map((x) => [x.type, x.value]));
+      const jour = `${p.year}-${p.month}-${p.day}`, min = +p.hour * 60 + +p.minute;
+      const fin = DEMI_SEANCES_NY.has(jour) ? 13 * 60 : 16 * 60;
+      const ouvrable = !["Sat", "Sun"].includes(p.weekday) && !FERIES_NY.has(jour);
+      // heures de Paris de l'ouverture et de la fermeture du jour (elles changent pendant les semaines où les heures d'été diffèrent)
+      const heureParis = (minNY) => { const t = new Date(d.getTime() + (minNY - min) * 60000); return t.toLocaleTimeString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" }).replace(":", " h "); };
+      return { ouvert: ouvrable && min >= 570 && min < fin, ouvrable, avant: ouvrable && min < 570, ferie: FERIES_NY.has(jour), ouverture: heureParis(570), fermeture: heureParis(fin) };
+    }
+    function afficherSeance() {
+      const s = seanceNY(), z = $("seance");
+      z.hidden = false; z.classList.toggle("ouvert", s.ouvert);
+      $("seance-texte").textContent = s.ouvert ? `New York ouvert · ferme à ${s.fermeture}` : s.avant ? `New York ouvre à ${s.ouverture}` : s.ferie ? "New York fermé (jour férié)" : "New York fermé";
+    }
+
+    // ---------------------------------------------------------------- tuiles
+    // « Actions françaises (≈ CAC 40) » → « CAC 40 » (le « ≈ » est rappelé sous le titre)
+    const titreCourt = (nom) => nom.match(/\(≈ (.+)\)/)?.[1] || nom;
     function tuile(v) {
+      const v30 = variationMois(v.historique);
       const cours = formatCours(v);
-      const v30 = variation30j(v.historique);
       return `<div class="cotation ${typeof v.variation === "number" && v.variation <= -2 ? "baisse-forte" : ""}">
-        <div class="cotation-nom">${echapper(v.nom)}</div>
-        <div class="cotation-via">${echapper(v.via || "")}</div>
-        <div class="cotation-chiffres">${formatVariation(v.variation)}<span class="cotation-cours">${cours}</span></div>
-        ${sparkline(v.historique, 200, 38).replace('class="sparkline"', 'class="sparkline" style="width:100%"').replace(/width="200"/, 'width="100%" preserveAspectRatio="none"')}
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <span class="doux petit">30 derniers jours</span>
-          ${v30 == null ? '<span class="pilule">historique en cours</span>' : `<span class="pilule ${v30 < 0 ? "neg" : "pos"}">${v30 > 0 ? "+" : v30 < 0 ? "−" : ""}${Math.abs(v30).toFixed(1).replace(".", ",")} %</span>`}
-        </div>
+        <div class="cotation-nom">${echapper(titreCourt(v.nom))}</div>
+        <div class="cotation-via">${/≈/.test(v.nom) ? "estimation via " : ""}${echapper(v.via || "")}</div>
+        <div class="cotation-chiffres">${formatVariation(v.variation)}${cours ? `<span class="cotation-cours">${cours}</span>` : ""}</div>
+        ${courbe(v.historique)}
+        <div class="cotation-pied"><span>${v.date ? "Séance du " + jourCourt(v.date) : ""}</span>${piluleMois(v30)}</div>
       </div>`;
     }
-    // Taux : valeur, écart sur un an (ou un mois pour les séries quotidiennes) et courbe.
     const moisFr = (t) => t.length === 7 ? new Date(t + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) : new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-    const pct = (x) => x.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " %";
+    const pct = (x) => nb(x) + " %";
     function tuileTaux(s) {
       const pts = s.points, [t, v] = pts.at(-1);
-      const ref = s.freq === "jour" ? pts.at(-6) : pts.at(-13);   // ≈ 1 mois (relevé hebdo) ou 1 an
+      // écart sur 1 mois (séries quotidiennes) ou 1 an (séries mensuelles), d'après les dates
+      const recul = s.freq === "jour" ? 30 : 365;
+      const limite = new Date(new Date((t.length === 7 ? t + "-15" : t) + "T12:00:00").getTime() - recul * 86400000).toISOString().slice(0, t.length === 7 ? 7 : 10);
+      const ref = [...pts].reverse().find(([j]) => j <= limite);
       const ecart = ref ? Math.round((v - ref[1]) * 100) : null;
-      const courbe = sparkline(pts.slice(s.freq === "jour" ? -31 : -25), 200, 38).replace(/stroke="var\(--(ok|ko)\)"/, 'stroke="var(--accent)"')
+      const c = sparkline(pts.slice(s.freq === "jour" ? -31 : -25), 200, 38).replace(/stroke="var\(--(ok|ko)\)"/, 'stroke="var(--accent)"')
         .replace('class="sparkline"', 'class="sparkline" style="width:100%"').replace(/width="200"/, 'width="100%" preserveAspectRatio="none"');
       return `<div class="cotation">
         <div class="cotation-nom">${echapper(s.nom)}</div>
         <div class="cotation-via">${echapper(s.detail)}</div>
-        <div class="cotation-chiffres"><span class="var-pos" style="color:var(--texte)">${s.id === "ecart" ? Math.round(v * 100) + " pb" : pct(v)}</span><span class="cotation-cours">${moisFr(t)}</span></div>
-        ${courbe}
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <a class="doux petit" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">Source : BCE ↗</a>
+        <div class="cotation-chiffres"><span class="var-pos" style="color:var(--texte)">${s.id === "ecart" ? Math.round(v * 100) + " pb" : pct(v)}</span><span class="cotation-cours" style="font-weight:400;color:var(--doux)">${moisFr(t)}</span></div>
+        ${c}
+        <div class="cotation-pied">
+          <a class="doux" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">Source : BCE ↗</a>
           ${ecart == null ? "" : `<span class="pilule">${ecart > 0 ? "+" : ecart < 0 ? "−" : ""}${Math.abs(ecart)} pb sur ${s.freq === "jour" ? "1 mois" : "1 an"}</span>`}
         </div>
       </div>`;
     }
-    async function afficherTaux() {
-      try {
-        const { taux } = await appelApi("/api/marches");
-        if (!taux || !taux.series?.length) { document.getElementById("taux-info").textContent = "Premier relevé demain vers 9 h."; return; }
-        const series = [...taux.series];
-        const oat = series.find((s) => s.id === "oat10"), bund = series.find((s) => s.id === "bund10");
-        if (oat && bund) {   // écart de taux France - Allemagne, mois par mois
-          const b = new Map(bund.points);
-          const pts = oat.points.filter(([t]) => b.has(t)).map(([t, v]) => [t, Math.round((v - b.get(t)) * 1000) / 1000]);
-          if (pts.length) series.splice(series.indexOf(bund) + 1, 0, { id: "ecart", nom: "Écart OAT - Bund", detail: "prime de risque de la France sur l'Allemagne", freq: "mois", lien: oat.lien, points: pts });
-        }
-        document.getElementById("taux-info").innerHTML = `Dernier relevé : ${quand(taux.maj_le)}. « pb » = points de base (1 pb = 0,01 point de pourcentage).`;
-        document.getElementById("taux").innerHTML = series.map(tuileTaux).join("");
-      } catch (e) { document.getElementById("taux-info").textContent = "Taux indisponibles pour le moment."; }
+    function afficherTaux(taux) {
+      if (!taux || !taux.series?.length) { $("taux-info").textContent = "Premier relevé demain vers 9 h."; return; }
+      const series = [...taux.series];
+      const oat = series.find((s) => s.id === "oat10"), bund = series.find((s) => s.id === "bund10");
+      if (oat && bund) {   // écart de taux France - Allemagne, mois par mois
+        const b = new Map(bund.points);
+        const pts = oat.points.filter(([t]) => b.has(t)).map(([t, v]) => [t, Math.round((v - b.get(t)) * 1000) / 1000]);
+        if (pts.length) series.splice(series.indexOf(bund) + 1, 0, { id: "ecart", nom: "Écart OAT - Bund", detail: "prime de risque de la France sur l'Allemagne", freq: "mois", lien: oat.lien, points: pts });
+      }
+      $("taux-info").textContent = `Relevé ${quand(taux.maj_le)} · 1 pb = 0,01 point`;
+      $("taux").innerHTML = series.map(tuileTaux).join("");
     }
-    afficherTaux();
+
+    // ---------------------------------------------------------------- grandes actions
+    // en milliards (Md), sans « billion » ni « trillion », qui prêtent à confusion en français
+    const milliards = (x) => `${nb(x / 1e9, 0)} Md$`;
+    const milliardsEur = (x) => `${nb(x / 1e9, 0)} Md€`;
+    function afficherActions() {
+      const a = etat.donnees?.actions, z = $("actions");
+      if (!a?.valeurs?.length) {
+        z.innerHTML = `<p class="doux" style="padding:16px;margin:0">Premier relevé pendant la prochaine séance de New York, ou demain vers 6 h.</p>`;
+        $("actions-info").textContent = ""; $("actions-note").textContent = ""; return;
+      }
+      const hist = etat.donnees.historique || {};
+      let l = a.valeurs.filter((v) => v.valo_usd > 0).map((v) => ({ ...v, mois: variationMois(hist[v.id]) }));
+      if (etat.zone === "us") l = l.filter((v) => v.pays === "US"); else if (etat.zone === "europe") l = l.filter((v) => v.pays !== "US");
+      const tri = { valo: (x, y) => y.valo_usd - x.valo_usd, hausse: (x, y) => y.variation - x.variation, baisse: (x, y) => x.variation - y.variation,
+        mois: (x, y) => (y.mois ?? -1e9) - (x.mois ?? -1e9) }[etat.tri];
+      l.sort(tri);
+      const max = Math.max(...a.valeurs.map((v) => v.valo_usd || 0));
+      const rang = Object.fromEntries([...a.valeurs].filter((v) => v.valo_usd > 0).sort((x, y) => y.valo_usd - x.valo_usd).map((v, i) => [v.id, i + 1]));
+      z.innerHTML = `<table class="mk-table">
+        <caption class="visuellement-cache">Grandes actions : cours, variation du jour et valorisation boursière</caption>
+        <thead><tr><th scope="col">#</th><th scope="col">Société</th><th scope="col">Cours</th><th scope="col">Jour</th><th scope="col">1 mois</th><th scope="col">Valorisation</th><th scope="col"><span class="visuellement-cache">Courbe sur 1 mois</span></th></tr></thead>
+        <tbody>${l.map((v) => `<tr>
+          <td class="rang">${rang[v.id]}</td>
+          <td class="societe"><strong>${DRAPEAUX[v.pays] || ""} ${echapper(v.nom)}</strong><span>${echapper(v.secteur || "")}${v.ancien ? ' · <span class="mk-ancien">chiffre du relevé précédent</span>' : ""}</span></td>
+          <td class="cours">${nb(v.cours, v.cours >= 1000 ? 0 : 2)} ${v.devise === "EUR" ? "€" : "$"}</td>
+          <td class="jour">${formatVariation(v.variation)}</td>
+          <td class="mois">${v.mois == null ? '<span class="doux">–</span>' : `<span class="${v.mois < 0 ? "var-neg" : "var-pos"}" style="font-weight:400">${signe(v.mois)}</span>`}</td>
+          <td class="valo"><strong>${milliards(v.valo_usd)}</strong><span>${v.valo_eur ? "≈ " + milliardsEur(v.valo_eur) : ""}</span>
+            <div class="mk-barre" aria-hidden="true"><span style="width:${Math.max(2, Math.round(v.valo_usd / max * 100))}%"></span></div></td>
+          <td class="courbe">${courbe(hist[v.id], 100, 28)}</td>
+        </tr>`).join("")}</tbody></table>`;
+      const date = a.valeurs.find((v) => v.date)?.date;
+      $("actions-info").textContent = `${date ? "Séance du " + jourCourt(date) + " · " : ""}relevé ${quand(a.maj_le)}`;
+      $("actions-note").innerHTML = `Valorisation boursière en dollars (≈ en euros au taux du moment${a.eurusd ? ` : 1 € = ${nb(a.eurusd, 4)} $` : ""}). Cours en dollars pour les sociétés américaines, en euros pour les européennes.
+        <a href="#" id="detail-actions">Voir la source du nombre d'actions de chaque société</a>.`;
+      $("detail-actions").onclick = (e) => {
+        e.preventDefault();
+        $("actions-note").innerHTML = `Nombre d'actions retenu : ${a.valeurs.filter((v) => v.actions).map((v) =>
+          `<a href="${echapper(v.actions.lien)}" target="_blank" rel="noopener noreferrer">${echapper(v.nom)}</a> ${nb(v.actions.nombre / 1e6, 0)} M (${echapper(v.actions.source)}, au ${new Date(v.actions.au + "T12:00:00").toLocaleDateString("fr-FR")})`).join(" · ")}.`;
+      };
+    }
+
+    // ---------------------------------------------------------------- résumé du jour
+    function afficherResume(valeurs) {
+      const par = Object.fromEntries(valeurs.map((v) => [v.symbole, v]));
+      const ind = ["SPY", "FEZ", "EWQ"].map((s) => par[s]).filter((v) => typeof v?.variation === "number");
+      if (!ind.length) return;
+      const moyenne = ind.reduce((s, v) => s + v.variation, 0) / ind.length;
+      const tendance = moyenne > 0.4 ? "en hausse" : moyenne < -0.4 ? "en baisse" : "stables";
+      const nomC = (v) => titreCourt(v.nom);
+      const morceaux = ind.map((v) => `${nomC(v)} <strong>${signe(v.variation, 2)}</strong>`);
+      const eur = par["EUR/USD"], or = par["XAU/USD"];
+      const cles = [par.SPY, par.EWQ, eur, or].filter(Boolean);
+      const date = ind[0].date;
+      $("resume").hidden = false;
+      $("resume").innerHTML = `<p><strong>${date ? "Séance du " + jourCourt(date) : "Aujourd'hui"} : marchés ${tendance}.</strong> ${morceaux.join(", ")}${eur?.cours ? `, l'euro à <strong>${nb(eur.cours, 4)} $</strong>` : ""}${or?.cours ? `, l'or à <strong>${nb(or.cours, 0)} $</strong> l'once` : ""}.</p>
+        <div class="mk-cles">${cles.map((v) => `<div class="mk-cle"><span>${echapper(nomC(v))}</span><strong>${v.symbole === "EUR/USD" ? nb(v.cours, 4) : v.symbole === "XAU/USD" ? nb(v.cours, 0) + " $" : formatVariation(v.variation)}</strong>${["EUR/USD", "XAU/USD"].includes(v.symbole) ? `<span>${formatVariation(v.variation)}</span>` : ""}</div>`).join("")}</div>`;
+    }
+
+    // ---------------------------------------------------------------- filtres
+    function appliquerVue() {
+      document.querySelectorAll("[data-vue]").forEach((b) => { const on = b.dataset.vue === etat.vue; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; });
+      document.querySelectorAll("[data-bloc]").forEach((s) => { s.hidden = etat.vue !== "tout" && s.dataset.bloc !== etat.vue; });
+      try { sessionStorage.setItem("marches_vue", etat.vue); } catch {}
+    }
+    document.querySelectorAll("[data-vue]").forEach((b) => b.onclick = () => { etat.vue = b.dataset.vue; appliquerVue(); });
+    $("onglets").onkeydown = (e) => {
+      if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+      const l = [...document.querySelectorAll("[data-vue]")], i = l.findIndex((b) => b.dataset.vue === etat.vue);
+      const n = l[(i + (e.key === "ArrowRight" ? 1 : l.length - 1)) % l.length]; etat.vue = n.dataset.vue; appliquerVue(); n.focus();
+    };
+    document.querySelectorAll("[data-zone]").forEach((b) => b.onclick = () => {
+      etat.zone = b.dataset.zone; document.querySelectorAll("[data-zone]").forEach((x) => x.setAttribute("aria-pressed", x === b)); afficherActions();
+    });
+    $("tri").onchange = () => { etat.tri = $("tri").value; afficherActions(); };
+    try { const v = sessionStorage.getItem("marches_vue"); if (v) etat.vue = v; } catch {}
+    appliquerVue();
 
     chargerEntete("/marches").then(async () => {
+      afficherSeance(); setInterval(afficherSeance, 60000);
       try {
-        const valeurs = await donneesMarches();
-        const info = document.getElementById("info");
+        const d = await appelApi("/api/marches");
+        etat.donnees = d;
+        const valeurs = await donneesMarches(d);
+        afficherTaux(d.taux);
+        afficherActions();
         if (!valeurs.length) {
-          info.textContent = "Pas encore de relevé : le premier aura lieu pendant la prochaine séance de New York (15 h 30 - 22 h) ou demain vers 6 h.";
+          $("info").textContent = "Pas encore de relevé : le premier aura lieu pendant la prochaine séance de New York ou demain vers 6 h.";
           return;
         }
-        const maj = valeurs.reduce((m, v) => (v.maj_le > m ? v.maj_le : m), "");
-        info.innerHTML = `Variation du jour, et courbe des 30 derniers jours. Dernier relevé : <strong>${quand(maj)}</strong>.`;
-        document.getElementById("indices").innerHTML = valeurs.filter((v) => INDICES.has(v.symbole)).map(tuile).join("");
-        document.getElementById("autres").innerHTML = valeurs.filter((v) => !INDICES.has(v.symbole)).map(tuile).join("");
+        const maj = [...valeurs.map((v) => v.maj_le), d.actions?.maj_le].filter(Boolean).reduce((m, x) => (x > m ? x : m), "");
+        $("info").innerHTML = `Dernier relevé : <strong>${quand(maj)}</strong>`;
+        afficherResume(valeurs);
+        const ind = valeurs.filter((v) => INDICES.has(v.symbole)), aut = valeurs.filter((v) => !INDICES.has(v.symbole));
+        $("indices").innerHTML = ind.map(tuile).join("");
+        $("autres").innerHTML = aut.map(tuile).join("");
+        if (ind[0]) $("indices-info").textContent = `Variation du jour · relevé ${quand(ind[0].maj_le)}`;
+        if (aut[0]) $("autres-info").textContent = `Variation du jour · relevé ${quand(aut[0].maj_le)}`;
       } catch (e) {
-        document.getElementById("info").innerHTML = `<span class="message ko">${echapper(e.message)}</span>`;
+        $("info").innerHTML = `<span class="message ko">${echapper(e.message)}</span>`;
       }
     });
   </script>

@@ -419,8 +419,9 @@ async function copier(texte) {
 
 // ---------------------------------------------------------------- Marchés (relevés du robot)
 // Rassemble, pour chaque marché, le relevé le plus récent (séance en cours ou clôture du matin), avec son historique.
-async function donneesMarches() {
-  const { direct, autres, cloture, historique = {} } = await appelApi("/api/marches");
+// "deja" : données de /api/marches déjà chargées par la page (évite un deuxième appel).
+async function donneesMarches(deja) {
+  const { direct, autres, cloture, historique = {} } = deja || await appelApi("/api/marches");
   const plusRecent = (a, b) => (!a ? b : !b ? a : new Date(a.maj_le) >= new Date(b.maj_le) ? a : b);
   const sIndices = plusRecent(direct, cloture);
   const sAutres = plusRecent(autres, cloture && cloture.autres ? { valeurs: cloture.autres, maj_le: cloture.maj_le } : null);

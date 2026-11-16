@@ -148,8 +148,23 @@ export async function routeRobot(request, env, chemin) {
 
   // 5 bis) Relevé des marchés (séance de New York) ou clôtures du matin (pour le brief).
   if (chemin === "/api/robot/marches" && request.method === "POST") {
-    const cle = { cloture: "marches_cloture", indices: "marches_direct", autres: "marches_autres" }[corps.type];
+    const cle = { cloture: "marches_cloture", indices: "marches_direct", autres: "marches_autres", actions: "marches_actions" }[corps.type];
     if (!cle) return json({ erreur: "Type de relevé inconnu." }, 400);
+    if (corps.type === "actions") {
+      // Grandes actions : on garde les derniers chiffres valides d'une société si elle manque à ce relevé.
+      const valeurs = (Array.isArray(corps.valeurs) ? corps.valeurs : []).slice(0, 40);
+      if (!valeurs.some((v) => v.valo_usd > 0)) return json({ erreur: "Aucune action relevée." }, 400);
+      const avant = await db.prepare("SELECT valeur FROM etat WHERE cle = 'marches_actions'").first();
+      let anciennes = {};
+      try { anciennes = Object.fromEntries((JSON.parse(avant?.valeur || "{}").valeurs || []).filter((v) => v.valo_usd > 0).map((v) => [v.id, v])); } catch {}
+      const fusion = valeurs.map((v) => (v.valo_usd > 0 ? v : anciennes[v.id] ? { ...anciennes[v.id], ancien: true } : v))
+        .sort((x, y) => (y.valo_usd || 0) - (x.valo_usd || 0));
+      await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES ('marches_actions', ?, ?)")
+        .bind(JSON.stringify({ valeurs: fusion, eurusd: corps.eurusd ?? null, ouvert: !!corps.ouvert }).slice(0, 40000), new Date().toISOString()).run();
+      if (corps.cloture) await ajouterHistorique(db, valeurs.filter((v) => v.valo_usd > 0)
+        .map((v) => ({ symbole: v.id, jour: String(v.date || "").slice(0, 10), cours: v.cours })));
+      return json({ ok: true, actions: valeurs.length });
+    }
     await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)")
       .bind(cle, JSON.stringify(corps).slice(0, 20000), new Date().toISOString()).run();
     // Les clôtures du matin alimentent aussi l'historique (mini-courbes sur 30 jours).
