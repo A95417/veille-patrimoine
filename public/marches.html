@@ -52,6 +52,8 @@
     .cotation-chiffres { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 6px; }
     .cotation-chiffres .var-pos, .cotation-chiffres .var-neg { font-family: var(--titre); font-size: 1.45rem; }
     .cotation-cours { font-size: .95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .cotation-niveau { font-size: .74rem; color: var(--doux); text-align: right; margin-top: -2px; }
+    .cotation-niveau a { color: inherit; }
     .cotation-pied { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .8rem; color: var(--doux); }
     .pilule { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--fond); color: var(--doux); white-space: nowrap; font-variant-numeric: tabular-nums; }
     .pilule.pos { background: var(--ok-doux); color: var(--ok); } .pilule.neg { background: var(--ko-doux); color: var(--ko); }
@@ -100,6 +102,8 @@
       .cotation-chiffres .var-pos, .cotation-chiffres .var-neg { font-size: 1.2rem; }
       .cotation-pied { flex-direction: column; align-items: flex-start; gap: 4px; }
       .cotation-via { font-size: .72rem; }
+      .cotation-niveau { text-align: left; font-size: .7rem; margin-top: 0; }
+      .cotation-cours { font-size: .9rem; }
       .mk-resume { padding: 14px; }
     }
     .mk-sources { margin-top: 26px; }
@@ -168,7 +172,10 @@
       <summary>D'où viennent ces chiffres ?</summary>
       <p><strong>Indices :</strong> les indices eux-mêmes (CAC 40, S&amp;P 500…) ne sont pas disponibles gratuitement. Le robot relève donc des fonds indiciels (ETF)
         cotés à New York qui les répliquent, via l'offre gratuite de Twelve Data. Pour l'Europe et le Japon, l'effet du change est retiré pour obtenir la variation en euros ou en yens.
-        Ce sont des estimations pour suivre la tendance du jour, pas des cotations officielles.</p>
+        Ce sont des estimations pour suivre la tendance du jour, pas des cotations officielles.
+        <strong>Niveaux en points :</strong> clôtures officielles publiées gratuitement par la Réserve fédérale de Saint-Louis (FRED : S&amp;P 500, Nasdaq 100, Dow Jones, Nikkei 225)
+        et par STOXX (Euro Stoxx 50), en général le lendemain. Pendant la séance de New York, le niveau des indices américains est estimé (« ≈ ») à partir de la clôture officielle
+        et de la variation du jour. Aucune source gratuite autorisée ne publie le niveau du CAC 40 : seule sa variation (estimée) est affichée.</p>
       <p><strong>Grandes actions :</strong> cours relevés à New York (Twelve Data). Les sociétés européennes sont suivies par leur certificat coté à New York (ADR), converti en euros
         au taux euro/dollar du moment. <strong>Valorisation</strong> = cours × nombre d'actions publié par la société (formulaires déposés à la SEC pour les sociétés américaines,
         communiqués officiels pour les européennes) ; la date et la source de ce nombre sont indiquées pour chaque société. C'est une estimation : les fournisseurs de données
@@ -227,13 +234,39 @@
     // ---------------------------------------------------------------- tuiles
     // « Actions françaises (≈ CAC 40) » → « CAC 40 » (le « ≈ » est rappelé sous le titre)
     const titreCourt = (nom) => nom.match(/\(≈ (.+)\)/)?.[1] || nom;
+    // Niveau en points : clôture officielle publiée ; pour les indices américains pendant la séance,
+    // estimation = clôture officielle de la veille × (1 + variation du jour), signalée par « ≈ ».
+    const US = new Set(["SPY", "QQQ", "DIA"]);
+    function jourOuvrePrecedent(iso) {
+      let d = new Date(iso + "T12:00:00Z");
+      do { d = new Date(d - 86400000); } while ([0, 6].includes(d.getUTCDay()) || FERIES_NY.has(d.toISOString().slice(0, 10)));
+      return d.toISOString().slice(0, 10);
+    }
+    function niveauDe(v) {
+      const n = v.niveau;
+      if (!n || !(n.valeur > 0)) return null;
+      const seance = String(v.date || "").slice(0, 10);
+      const officiel = { valeur: n.valeur, estime: false, date: n.date, source: n.source, lien: n.lien };
+      if (US.has(v.symbole) && seance > n.date && typeof v.variation === "number" && jourOuvrePrecedent(seance) === n.date)
+        return { ...officiel, estime: true, valeur: n.valeur * (1 + v.variation / 100), cloture: n.valeur };
+      return officiel;
+    }
+    const pts = (x) => `${nb(x, 2)} pts`;
+    function ligneNiveau(n) {
+      if (!n) return "";
+      const src = `<a href="${echapper(n.lien)}" target="_blank" rel="noopener noreferrer">${echapper(n.source.split(" (")[0])} ↗</a>`;
+      const j = new Date(n.date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+      return `<div class="cotation-niveau">${n.estime ? `estimé en séance · clôture du ${j} : ${nb(n.cloture, 2)}` : `clôture officielle du ${j}`} · ${src}</div>`;
+    }
     function tuile(v) {
       const v30 = variationMois(v.historique);
-      const cours = formatCours(v);
+      const n = niveauDe(v);
+      const cours = n ? `${n.estime ? "≈ " : ""}${pts(n.valeur)}` : formatCours(v);
       return `<div class="cotation ${typeof v.variation === "number" && v.variation <= -2 ? "baisse-forte" : ""}">
         <div class="cotation-nom">${echapper(titreCourt(v.nom))}</div>
-        <div class="cotation-via">${/≈/.test(v.nom) ? "estimation via " : ""}${echapper(v.via || "")}</div>
+        <div class="cotation-via">${/≈/.test(v.nom) ? "estimation via " : n ? "variation via " : ""}${echapper(v.via || "")}</div>
         <div class="cotation-chiffres">${formatVariation(v.variation)}${cours ? `<span class="cotation-cours">${cours}</span>` : ""}</div>
+        ${ligneNiveau(n)}
         ${courbe(v.historique)}
         <div class="cotation-pied"><span>${v.date ? "Séance du " + jourCourt(v.date) : ""}</span>${piluleMois(v30)}</div>
       </div>`;
@@ -323,13 +356,15 @@
       const moyenne = ind.reduce((s, v) => s + v.variation, 0) / ind.length;
       const tendance = moyenne > 0.4 ? "en hausse" : moyenne < -0.4 ? "en baisse" : "stables";
       const nomC = (v) => titreCourt(v.nom);
-      const morceaux = ind.map((v) => `${nomC(v)} <strong>${signe(v.variation, 2)}</strong>`);
+      // dans le résumé, un niveau n'est cité que s'il correspond à la séance affichée (ou s'il en est l'estimation)
+      const niveauSeance = (v) => { const n = niveauDe(v); return n && (n.estime || n.date === String(v.date || "").slice(0, 10)) ? n : null; };
+      const morceaux = ind.map((v) => { const n = niveauSeance(v); return `${nomC(v)} ${n ? `<strong>${n.estime ? "≈ " : ""}${pts(n.valeur)}</strong> (${signe(v.variation, 2)})` : `<strong>${signe(v.variation, 2)}</strong>`}`; });
       const eur = par["EUR/USD"], or = par["XAU/USD"];
       const cles = [par.SPY, par.EWQ, eur, or].filter(Boolean);
       const date = ind[0].date;
       $("resume").hidden = false;
       $("resume").innerHTML = `<p><strong>${date ? "Séance du " + jourCourt(date) : "Aujourd'hui"} : marchés ${tendance}.</strong> ${morceaux.join(", ")}${eur?.cours ? `, l'euro à <strong>${nb(eur.cours, 4)} $</strong>` : ""}${or?.cours ? `, l'or à <strong>${nb(or.cours, 0)} $</strong> l'once` : ""}.</p>
-        <div class="mk-cles">${cles.map((v) => `<div class="mk-cle"><span>${echapper(nomC(v))}</span><strong>${v.symbole === "EUR/USD" ? nb(v.cours, 4) : v.symbole === "XAU/USD" ? nb(v.cours, 0) + " $" : formatVariation(v.variation)}</strong>${["EUR/USD", "XAU/USD"].includes(v.symbole) ? `<span>${formatVariation(v.variation)}</span>` : ""}</div>`).join("")}</div>`;
+        <div class="mk-cles">${cles.map((v) => `<div class="mk-cle"><span>${echapper(nomC(v))}</span><strong>${v.symbole === "EUR/USD" ? nb(v.cours, 4) : v.symbole === "XAU/USD" ? nb(v.cours, 0) + " $" : niveauSeance(v) ? (niveauSeance(v).estime ? "≈ " : "") + pts(niveauSeance(v).valeur) : formatVariation(v.variation)}</strong>${["EUR/USD", "XAU/USD"].includes(v.symbole) || niveauSeance(v) ? `<span>${formatVariation(v.variation)}</span>` : ""}</div>`).join("")}</div>`;
     }
 
     // ---------------------------------------------------------------- filtres

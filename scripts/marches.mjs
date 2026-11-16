@@ -130,9 +130,54 @@ export function calculer(brut) {
 const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const arrondi = (x) => (typeof x === "number" && !isNaN(x) ? Math.round(x * 100) / 100 : null);
 
+// Niveaux officiels des indices en points (clôtures publiées, gratuites) : FRED (Réserve fédérale de Saint-Louis)
+// pour le S&P 500, le Nasdaq 100, le Dow Jones et le Nikkei ; fichier officiel de STOXX pour l'Euro Stoxx 50.
+// Aucune source gratuite autorisée pour le CAC 40 : sa carte garde la variation sans niveau.
+const NIVEAUX = [
+  { etf: "SPY", fred: "SP500" }, { etf: "QQQ", fred: "NASDAQ100" }, { etf: "DIA", fred: "DJIA" }, { etf: "EWJ", fred: "NIKKEI225" },
+  { etf: "FEZ", stoxx: "sx5e" },
+];
+const UA = { "User-Agent": "veille-patrimoine (github.com/A95417/veille-patrimoine)" };
+// Lit les deux dernières valeurs d'une série [[date ISO, valeur]] (les jours sans cotation sont ignorés).
+function deuxDernieres(points) {
+  const ok = points.filter(([d, v]) => /^\d{4}-\d{2}-\d{2}$/.test(d) && Number.isFinite(v) && v > 0).sort((a, b) => a[0].localeCompare(b[0]));
+  if (!ok.length) return null;
+  const [date, valeur] = ok.at(-1), prec = ok.at(-2);
+  return { valeur, date, precedent: prec ? prec[1] : null, date_precedente: prec ? prec[0] : null };
+}
+export function lireFred(csv) {
+  return deuxDernieres(csv.trim().split("\n").slice(1).map((l) => { const [d, v] = l.split(","); return [d, v === "" || v === "." ? NaN : Number(v)]; }));
+}
+export function lireStoxx(txt) {
+  return deuxDernieres(txt.trim().split("\n").map((l) => l.split(";")).filter((c) => /^\d{2}\.\d{2}\.\d{4}$/.test(c[0]))
+    .map(([d, , v]) => [`${d.slice(6, 10)}-${d.slice(3, 5)}-${d.slice(0, 2)}`, Number(v)]));
+}
+export async function niveauxIndices() {
+  const res = {}, depuis = new Date(Date.now() - 20 * 86400000).toISOString().slice(0, 10);
+  for (const n of NIVEAUX) {
+    try {
+      if (n.fred) {
+        const r = await fetch(`https://fred.stlouisfed.org/graph/fredgraph.csv?id=${n.fred}&cosd=${depuis}`, { headers: UA, signal: AbortSignal.timeout(20000) });
+        const v = r.ok ? lireFred(await r.text()) : null;
+        if (v) res[n.etf] = { ...v, source: "FRED (Réserve fédérale de Saint-Louis)", lien: `https://fred.stlouisfed.org/series/${n.fred}` };
+        await pause(1100);   // FRED demande une seconde entre deux requêtes
+      } else {
+        const lien = `https://www.stoxx.com/document/Indices/Current/HistoricalData/h_3m${n.stoxx}.txt`;
+        const r = await fetch(lien, { headers: UA, signal: AbortSignal.timeout(20000) });
+        const v = r.ok ? lireStoxx(await r.text()) : null;
+        if (v) res[n.etf] = { ...v, source: "STOXX (fichier officiel)", lien };
+      }
+    } catch (e) { console.log(`Niveau ${n.fred || n.stoxx} indisponible : ${e.message}`); }
+  }
+  return res;
+}
+
 async function releverIndices() {
   const brut = await cotations([...SUIVIS.map((s) => s.symbole), ...CHANGES]);   // 8 symboles = 8 requêtes
-  return calculer(brut);
+  const r = calculer(brut);
+  const niveaux = await niveauxIndices().catch(() => ({}));
+  for (const v of r.valeurs) if (niveaux[v.symbole]) v.niveau = niveaux[v.symbole];
+  return r;
 }
 async function releverAutres() {
   const brut = await cotations(AUTRES.map((a) => a.symbole));                      // 4 requêtes

@@ -147,7 +147,7 @@ export function verifierChiffre(c, actualites, precedents = []) {
 
 const texteMarches = (m) => !m ? "(aucun relevé disponible)" :
   [...(m.valeurs || []), ...(m.autres || [])].filter((v) => typeof v.variation === "number")
-    .map((v) => `${v.nom} : ${v.variation > 0 ? "+" : ""}${v.variation} % (${v.via})`).join("\n");
+    .map((v) => `${v.nom} : ${v.variation > 0 ? "+" : ""}${v.variation} % (${v.via})${v.niveau ? ` ; clôture officielle du ${v.niveau.date} : ${v.niveau.valeur} points (${v.niveau.source})` : ""}`).join("\n");
 
 export async function produireBrief(date = new Date()) {
   if (!SITE || !JETON) throw new Error("SITE_URL et ROBOT_TOKEN doivent être définis.");

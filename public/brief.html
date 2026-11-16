@@ -242,7 +242,10 @@
       html += `<section class="carte bloc" id="b-marches"><h2>${b.edition === "soir" ? "Marchés : la séance du jour" : "Marchés : clôtures de la veille"}</h2>
         ${b.commentaire_marches ? `<p style="margin:0">${echapper(b.commentaire_marches)}</p>` : ""}
         ${valeurs.length ? `${graphiqueMarches(valeurs)}
-          <p class="doux petit" style="margin:8px 0 0">Estimations via des fonds indiciels cotés à New York (voir la page Marchés)${b.edition === "soir" ? ", relevées pendant la séance : Europe clôturée, New York en cours" : ""}.</p>`
+          ${valeurs.some((v) => v.niveau) ? `<p class="petit" style="margin:10px 0 0"><strong>Clôtures officielles :</strong> ${valeurs.filter((v) => v.niveau).map((v) =>
+            `${echapper(nomCourt(v))} ${v.niveau.valeur.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} pts (${new Date(v.niveau.date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })})`).join(" · ")}
+            <span class="doux">· sources : FRED, STOXX</span></p>` : ""}
+          <p class="doux petit" style="margin:8px 0 0">Variations : estimations via des fonds indiciels cotés à New York (voir la page Marchés)${b.edition === "soir" ? ", relevées pendant la séance : Europe clôturée, New York en cours" : ""}.</p>`
           : `<p class="doux" style="margin:0">Aucun relevé de clôture disponible pour ce jour.</p>`}
       </section>`;
 
