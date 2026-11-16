@@ -180,7 +180,10 @@ export async function ecrireScript(f, modeles) {
   let demande = `FICHE (seule source autorisée) :\n"""\n${source}\n"""\n\nQUIZ (numéro entre crochets) :\n${quiz}\n\nDURÉE VISÉE : ${duree} secondes (≈ ${mots} mots lus).`;
   let meilleur = null;
   for (let essai = 1; essai <= 3; essai++) {
-    let r = await generer(modeles.fort || modeles.principal, consignes(f, duree, mots), demande, SCHEMA);
+    // modèle « fort » d'abord ; s'il est saturé (quota ou erreur 503), le modèle principal prend le relais
+    let r;
+    try { r = await generer(modeles.fort || modeles.principal, consignes(f, duree, mots), demande, SCHEMA); }
+    catch (e) { if (!modeles.fort) throw e; console.log(`  modèle fort indisponible (${e.message.slice(0, 60)}), relais`); r = { quota: true }; }
     if (r.quota && modeles.fort) r = await generer(modeles.principal, consignes(f, duree, mots), demande, SCHEMA);
     if (!r.donnees) throw new Error("quota de l'IA atteint pour aujourd'hui");
     const scenes = nettoyer(r.donnees.scenes, f), inconnus = chiffresInconnus(scenes, permis);
