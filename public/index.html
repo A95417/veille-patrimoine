@@ -147,7 +147,7 @@
           <div class="chiffre-valeur">&nbsp;</div>
         </div>
         <section class="carte" id="marches" hidden>
-          <div class="titre-section" style="margin-bottom:6px"><h2 style="margin:0">Marchés en bref</h2><a href="/marches" class="petit">Détails →</a></div>
+          <div class="titre-section" style="margin-bottom:6px"><h2 style="margin:0">Marchés en bref</h2><a href="/marches" class="petit lien-cible">Détails →</a></div>
           <div id="marches-liste"></div>
           <p class="doux petit" style="margin:8px 0 0" id="marches-info"></p>
         </section>
@@ -323,7 +323,7 @@
       if (m) zone.innerHTML = `<div class="surtitre" style="margin:0">Le mouvement du jour</div>
            <div class="chiffre-valeur" style="color:${m.variation < 0 ? "var(--ko)" : "var(--ok)"}">${m.variation > 0 ? "+" : ""}${String(m.variation).replace(".", ",")} %</div>
            <p class="chiffre-libelle">${echapper(nomCourt(m))} : la plus forte variation parmi les marchés suivis.</p>
-           <p class="doux petit" style="margin:0">Relevé ${quand(m.maj_le)} · <a href="/marches">voir les marchés</a></p>`;
+           <p class="doux petit" style="margin:0">Relevé ${quand(m.maj_le)} · <a href="/marches" class="lien-cible">voir les marchés</a></p>`;
     }
 
     // ------------------------------------------------------------ Nombre de sujets des dernières 24 h par thème (affiché dans les filtres)

@@ -116,6 +116,13 @@ export async function routeRobot(request, env, chemin) {
   }
 
   // 5) Le robot note l'état de sa dernière collecte (affiché dans l'administration).
+  // Dernière collecte (heure de fin, flux qui ont refusé le robot) : sert à éviter les collectes en double
+  // et à mettre en pause, 24 h, un flux qui refuse l'accès (jamais de contournement).
+  if (chemin === "/api/robot/collecte" && request.method === "GET") {
+    const r = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = 'collecte'").first();
+    let v = {}; try { v = JSON.parse(r?.valeur || "{}"); } catch {}
+    return json({ fin: v.fin || null, refus: v.refus || {}, maj_le: r?.maj_le || null });
+  }
   if (chemin === "/api/robot/etat" && request.method === "POST") {
     await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES ('collecte', ?, ?)")
       .bind(JSON.stringify(corps).slice(0, 20000), new Date().toISOString()).run();

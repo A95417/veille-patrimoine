@@ -2,7 +2,7 @@
 // L'IA (Gemini, offre gratuite) n'utilise que les informations fournies : actualité du site, fiche « Apprendre » ou sujet saisi.
 // Aucune donnée client ne doit être saisie (rappelé à l'écran).
 
-import { nettoyerTout } from "./texte.js";
+import { nettoyerTout, donneesPerso } from "./texte.js";
 
 const API = "https://generativelanguage.googleapis.com/v1beta";
 const LIMITE_JOUR = 40;            // rédactions par jour, tous utilisateurs confondus (préserve le quota gratuit)
@@ -360,6 +360,9 @@ export async function routeLinkedin(request, env, chemin, moi) {
     const longueur = LONGUEURS[d.longueur] ? d.longueur : "court";
     const emojis = EMOJIS[d.emojis] ? d.emojis : "aucun";
     const consigne = String(d.consigne || "").slice(0, 200);
+    // Aucune donnée personnelle n'est envoyée à l'IA : le texte est refusé avant l'envoi.
+    const perso = donneesPerso([d.theme, consigne].filter(Boolean).join("\n")) || donneesPerso(d.texte_source, false);
+    if (perso) return erreur(`Ce texte semble contenir ${perso}. Retirez-le avant de l'envoyer à l'IA (aucune donnée client ne doit être transmise).`);
 
     // Limite quotidienne (tous utilisateurs) pour préserver l'offre gratuite.
     const cleJour = "linkedin_compteur";

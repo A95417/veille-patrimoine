@@ -43,7 +43,7 @@
     .bo-retour { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-weight: 600; color: var(--accent-fonce); background: none; border: 0; padding: 6px 0; cursor: pointer; margin-bottom: 8px; }
     .bo-entete { display: flex; gap: 14px; align-items: center; margin-bottom: 6px; }
     .bo-entete .bo-ico { grid-row: auto; width: 52px; height: 52px; font-size: 1.6rem; flex: 0 0 auto; }
-    .bo-entete h1 { margin: 0; font-size: clamp(1.35rem, 1.1rem + 1vw, 1.8rem); }
+    .bo-entete h1, .bo-entete h2 { margin: 0; font-size: clamp(1.35rem, 1.1rem + 1vw, 1.8rem); }
     .bo-outil { margin-top: 12px; }
     .bo-outil h2 { display: none; }
     .bo-pied { display: grid; gap: 6px; margin-top: 14px; font-size: .88rem; }
@@ -145,7 +145,7 @@
       const z = $("vue"); z.hidden = false;
       const voisins = DISPO.filter((x) => x.cat === o.cat && x.id !== o.id).slice(0, 3);
       z.innerHTML = `<button type="button" class="bo-retour" id="retour">← Tous les outils</button>
-        <div class="bo-entete"><span class="bo-ico" aria-hidden="true">${o.ico}</span><div><span class="bo-tag" style="font-size:.75rem;font-weight:700;color:var(--accent-fonce);text-transform:uppercase">${CATEGORIES[o.cat]}</span><h1>${echapper(o.nom)}</h1></div></div>
+        <div class="bo-entete"><span class="bo-ico" aria-hidden="true">${o.ico}</span><div><span class="bo-tag" style="font-size:.75rem;font-weight:700;color:var(--accent-fonce);text-transform:uppercase">${CATEGORIES[o.cat]}</span><h2 class="bo-titre-outil">${echapper(o.nom)}</h2></div></div>
         <section class="carte simu bo-outil th-${fiche?.theme || outil.theme || ""}" id="outil-actif">
           ${outil.intro ? `<p class="doux" style="margin-top:0">${outil.intro}</p>` : ""}${outil.html()}
           <div class="bo-pied">

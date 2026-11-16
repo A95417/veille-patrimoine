@@ -502,3 +502,6 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .semaine-liste li { padding: 6px 0; }
 .semaine-liste a { text-decoration: none; color: var(--texte); }
 .semaine-liste p { margin: 2px 0 0; line-height: 1.45; }
+
+/* Petits liens : zone de toucher d'au moins 24 px de haut (accessibilité), sans changer la mise en page. */
+.lien-cible { display: inline-block; padding: 6px 2px; margin: -6px 0; }

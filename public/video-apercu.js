@@ -2,7 +2,9 @@
 // en ligne) dessine chaque scène, sans voix, sur un rythme estimé à partir des syllabes (même méthode que le serveur).
 // Sert aux vignettes du scénario et au lecteur « Aperçu ». Aucun appel à l'IA, aucun quota.
 (function (racine) {
-  const SYL_PAR_S = 4.45, TENUE = 3.6, PAUSE = .2;
+  let SYL_PAR_S = 4.45;   // remplacé par le débit réellement mesuré sur les dernières vidéos (réglage du site)
+  const TENUE = 3.6, PAUSE = .2;
+  const regler = (d) => { if (d >= 3.5 && d <= 5.8) SYL_PAR_S = d; };
   const UN = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize"];
   const DIZ = { 2: "vingt", 3: "trente", 4: "quarante", 5: "cinquante", 6: "soixante", 8: "quatre-vingt" };
   function lettres(n) {
@@ -155,6 +157,6 @@
     return { charger, lire, arreter, aller: dessiner, etat, get calage() { return cal; }, get temps() { return t; } };
   }
 
-  racine.VideoApercu = { syllabes, dureeScene, dureeEstimee, calageEstime, avecChiffres, vignettes, lecteur, moteur };
+  racine.VideoApercu = { regler, syllabes, dureeScene, dureeEstimee, calageEstime, avecChiffres, vignettes, lecteur, moteur };
 })(typeof window !== "undefined" ? window : globalThis);
 if (typeof module !== "undefined") module.exports = globalThis.VideoApercu;

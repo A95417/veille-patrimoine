@@ -4,6 +4,7 @@
 import { writeFileSync, readFileSync, existsSync, statSync } from "node:fs";
 import { execFileSync, spawn } from "node:child_process";
 import { choisirModeleVoix, genererVoix } from "./gemini.mjs";
+import "../public/video-apercu.js";   // même comptage des syllabes que le site
 
 const SITE = (process.env.SITE_URL || "").replace(/\/$/, ""), JETON = process.env.ROBOT_TOKEN || "", ID = process.env.VIDEO_ID || "";
 const M = "video/moteur";
@@ -75,6 +76,9 @@ try {
   console.log(py(`${M}/calage.py`, "job.json", "voix.flac", "calage.json"));
   const cal = JSON.parse(readFileSync("calage.json", "utf8"));
   const total = Math.round(cal.duree_totale * 30);
+  // Débit réel de la voix (syllabes par seconde, pauses comprises) : renvoyé au site pour affiner ses estimations.
+  const debit = globalThis.VideoApercu.syllabes(texte) / Math.max(1, cal.duree_voix);
+  console.log(`Débit mesuré : ${debit.toFixed(2)} syllabes/s (estimation du site ${job.duree_estimee} s, voix ${cal.duree_voix.toFixed(1)} s).`);
 
   // 3) Rendu des images, avec suivi (deux passes si les deux formats sont demandés).
   const totalImages = total * (second ? 2 : 1);
@@ -134,7 +138,7 @@ print(json.dumps({"pics": sat[:20], "debut": round(float(np.abs(v[:240]).max()),
       if (r.annule) throw new Annule("annulée depuis le site");
     }
     const miniature = existsSync(`${dossier}/miniature.jpg`) ? readFileSync(`${dossier}/miniature.jpg`).toString("base64") : null;
-    await site("/fin", { morceaux: n, taille: octets.length, duree: son.duree, srt, miniature, alertes, duree_fabrication: Math.round((Date.now() - t0) / 1000) }, "POST", "application/json", id);
+    await site("/fin", { morceaux: n, taille: octets.length, duree: son.duree, srt, miniature, alertes, debit, duree_fabrication: Math.round((Date.now() - t0) / 1000) }, "POST", "application/json", id);
     console.log(`Vidéo envoyée (${id.slice(0, 8)}) : ${(octets.length / 1e6).toFixed(1)} Mo, ${son.duree} s, ${alertes.length} alerte(s).`);
   };
   if (second) {

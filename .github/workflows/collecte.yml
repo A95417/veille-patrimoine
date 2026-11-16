@@ -52,14 +52,23 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Éviter les collectes en double
+        id: garde
+        run: node scripts/garde.mjs
+        env:
+          SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          EVENEMENT: ${{ github.event_name }}
+
       - name: Collecter les actualités
+        if: ${{ steps.garde.outputs.passer != 'true' }}
         run: node scripts/collecte.mjs | tee collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
 
       - name: Classer et résumer avec l'IA
-        if: ${{ always() }}   # même si la collecte a eu un souci, on traite ce qui attend
+        if: ${{ always() && steps.garde.outputs.passer != 'true' }}   # même si la collecte a eu un souci, on traite ce qui attend
         run: node scripts/ia.mjs | tee -a collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
@@ -67,7 +76,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Relever les marchés
-        if: ${{ always() }}
+        if: ${{ always() && steps.garde.outputs.passer != 'true' }}
         run: node scripts/marches.mjs | tee -a collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
@@ -76,7 +85,7 @@ jobs:
           MARCHES_FORCER: ${{ inputs.marches }}
 
       - name: Relever les taux (BCE, une fois par jour vers 9 h)
-        if: ${{ always() }}
+        if: ${{ always() && steps.garde.outputs.passer != 'true' }}
         run: node scripts/taux.mjs | tee -a collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
@@ -84,7 +93,7 @@ jobs:
           TAUX_FORCER: ${{ inputs.taux }}
 
       - name: Calendrier fiscal officiel (une fois par jour vers 9 h)
-        if: ${{ always() }}
+        if: ${{ always() && steps.garde.outputs.passer != 'true' }}
         run: node scripts/calendrier.mjs | tee -a collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
@@ -93,7 +102,7 @@ jobs:
 
       # Vers 7 h et vers 18 h (heure de Paris), le premier passage dans la fenêtre rédige le brief (matin, puis soir).
       - name: Brief matinal
-        if: ${{ always() }}
+        if: ${{ always() && steps.garde.outputs.passer != 'true' }}
         run: node scripts/brief.mjs | tee -a collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
@@ -104,7 +113,7 @@ jobs:
       # Version audio (voix naturelle) du dernier brief, si elle manque (rattrapage automatique) ou à la demande (audio = oui).
       # Schémas du dernier brief (un par actualité), s'ils manquent ou à la demande (schemas = oui).
       - name: Schémas du dernier brief
-        if: ${{ always() }}
+        if: ${{ always() && steps.garde.outputs.passer != 'true' }}
         run: node scripts/schemas.mjs | tee -a collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
@@ -113,7 +122,7 @@ jobs:
           SCHEMAS_FORCER: ${{ inputs.schemas }}
 
       - name: Audio du dernier brief
-        if: ${{ always() }}
+        if: ${{ always() && steps.garde.outputs.passer != 'true' }}
         run: node scripts/audio.mjs | tee -a collecte.log
         env:
           SITE_URL: https://veille-patrimoine.veille-a95417.workers.dev
@@ -124,7 +133,7 @@ jobs:
       # GitHub met en pause les robots d'un dépôt sans activité pendant 60 jours.
       # Une fois par jour (vers 6 h, heure de Paris), le robot note son état dans le dépôt pour rester actif.
       - name: Note quotidienne (garde le robot actif)
-        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        if: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.garde.outputs.passer != 'true' }}
         run: |
           if [ "$(date -u +%H)" = "05" ] && [ "$(date -u +%M)" -lt 20 ]; then
             mkdir -p rapports

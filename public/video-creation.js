@@ -680,7 +680,7 @@
     $v("vv-copier").onclick = () => copier($v("vv-post2").value);
     $v("vv-vers-post").onclick = () => {
       const src = v.donnees?.source;
-      if (typeof window.versPostLinkedIn === "function") window.versPostLinkedIn({ theme: String(v.sujet || "").slice(0, 300), fiche_id: src?.type === "fiche" ? src.id : null });
+      if (typeof window.versPostLinkedIn === "function") window.versPostLinkedIn({ theme: String(src?.titre || v.sujet || "").slice(0, 300), fiche_id: src?.type === "fiche" ? src.id : null, sujet_id: src?.type === "actu" ? src.id : null });
       else { copier($v("vv-post2").value); notifier("Texte copié : ouvrez l'onglet Post LinkedIn."); }
     };
     $v("vv-telecharger").onclick = async (e) => {
@@ -777,7 +777,7 @@
     majEtat();
     appelApi("/api/video/idees").then((s) => { sources = s; }).catch(() => { sources = { idees: [], actus: [], echeances: [], chiffres: [] }; })
       .then(() => { if (R.sel) afficherChoisi(); else afficherPanneau(); });
-    try { reglages = await appelApi("/api/video/reglages"); majReglages(); afficherCoordonnees(); } catch (e) { $v("vv-msg").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; }
+    try { reglages = await appelApi("/api/video/reglages"); window.VideoApercu?.regler?.(reglages.debit); majReglages(); afficherCoordonnees(); } catch (e) { $v("vv-msg").innerHTML = `<p class="message ko">${echapper(e.message)}</p>`; }
     chargerGalerie();
   };
 })();

@@ -254,7 +254,7 @@
     const pts = (x) => `${nb(x, 2)} pts`;
     function ligneNiveau(n) {
       if (!n) return "";
-      const src = `<a href="${echapper(n.lien)}" target="_blank" rel="noopener noreferrer">${echapper(n.source.split(" (")[0])} ↗</a>`;
+      const src = `<a class="lien-cible" href="${echapper(n.lien)}" target="_blank" rel="noopener noreferrer">${echapper(n.source.split(" (")[0])} ↗</a>`;
       const j = new Date(n.date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
       return `<div class="cotation-niveau">${n.estime ? `estimé en séance · clôture du ${j} : ${nb(n.cloture, 2)}` : `clôture officielle du ${j}`} · ${src}</div>`;
     }
@@ -288,7 +288,7 @@
         <div class="cotation-chiffres"><span class="var-pos" style="color:var(--texte)">${s.id === "ecart" ? Math.round(v * 100) + " pb" : pct(v)}</span><span class="cotation-cours" style="font-weight:400;color:var(--doux)">${moisFr(t)}</span></div>
         ${c}
         <div class="cotation-pied">
-          <a class="doux" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">Source : BCE ↗</a>
+          <a class="doux lien-cible" href="${echapper(s.lien)}" target="_blank" rel="noopener noreferrer">Source : BCE ↗</a>
           ${ecart == null ? "" : `<span class="pilule">${ecart > 0 ? "+" : ecart < 0 ? "−" : ""}${Math.abs(ecart)} pb sur ${s.freq === "jour" ? "1 mois" : "1 an"}</span>`}
         </div>
       </div>`;

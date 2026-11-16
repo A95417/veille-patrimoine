@@ -88,16 +88,22 @@ export function dateDansTexte(texte) {
 }
 
 // ---------------------------------------------------------------- collecte
-export async function lireSources(sources) {
-  const taches = [];
-  for (const s of sources) for (const url of s.flux || []) taches.push({ source: s, url });
+// Un flux qui refuse le robot (401, 403, 451) est mis en pause 24 h : on respecte le refus, sans le contourner.
+const PAUSE_REFUS_MS = 24 * 3600e3;
+export async function lireSources(sources, refus = {}) {
+  const taches = [], enPause = [];
+  for (const s of sources) for (const url of s.flux || []) {
+    if (refus[url] && Date.now() - new Date(refus[url]).getTime() < PAUSE_REFUS_MS) enPause.push(url);
+    else taches.push({ source: s, url });
+  }
+  if (enPause.length) console.log(`Flux en pause (accès refusé il y a moins de 24 h) : ${enPause.join(", ")}`);
   const limiteAge = Date.now() - AGE_MAX_JOURS * 86400000;
   const bilan = [];
   const lus = await enParallele(taches, SIMULTANES, async ({ source, url }) => {
     const r = await telecharger(url);
     const flux = r.ok ? analyserFlux(r.texte) : null;
     if (!flux) {
-      bilan.push({ source: source.id, url, ok: false, raison: r.erreur || `HTTP ${r.statut}` });
+      bilan.push({ source: source.id, url, ok: false, statut: r.statut, raison: r.erreur || `HTTP ${r.statut}` });
       return [];
     }
     for (const a of flux.articles) if (!a.date) a.date = dateDansTexte(a.resume) || dateDansTexte(a.titre);
@@ -154,7 +160,10 @@ export async function collecter() {
   const config = JSON.parse(await readFile(new URL("../config/sources.json", import.meta.url), "utf8"));
   const sources = config.sources.filter((s) => s.actif !== false);
 
-  const { articles, bilan } = await lireSources(sources);
+  const precedente = await appelSite("/api/robot/collecte").catch(() => ({ refus: {} }));
+  const refus = Object.fromEntries(Object.entries(precedente.refus || {}).filter(([, d]) => Date.now() - new Date(d).getTime() < PAUSE_REFUS_MS));
+  const { articles, bilan } = await lireSources(sources, refus);
+  for (const b of bilan) if (!b.ok && [401, 403, 451].includes(b.statut)) refus[b.url] = new Date().toISOString();
   console.log(`${articles.length} articles lus dans ${bilan.length} flux.`);
 
   const connus = new Set(), sansImage = new Set();
@@ -192,7 +201,8 @@ export async function collecter() {
     fin: new Date().toISOString(),
     duree_s: Math.round((Date.now() - debut) / 1000),
     flux_ok: bilan.filter((b) => b.ok).length,
-    flux_en_erreur: bilan.filter((b) => !b.ok).map((b) => `${b.source} (${b.raison})`),
+    flux_en_erreur: bilan.filter((b) => !b.ok).map((b) => `${b.source} (${b.raison}) ${b.url}`),
+    refus,
     articles_lus: articles.length,
     nouveaux: nouveaux.length,
     sujets_crees: sujetsCrees,

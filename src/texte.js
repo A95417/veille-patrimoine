@@ -26,3 +26,20 @@ export function nettoyerTout(x) {
   if (x && typeof x === "object") { for (const k of Object.keys(x)) x[k] = nettoyerTout(x[k]); return x; }
   return x;
 }
+
+// Repère des informations personnelles dans un texte avant de l'envoyer à l'IA (aucune donnée client ne doit partir).
+// Renvoie la nature de ce qui a été trouvé, ou null.
+// noms = false pour un extrait de presse (les noms de personnalités publiques y sont normaux).
+export function donneesPerso(t, noms = true) {
+  const s = String(t || "");
+  const motifs = [
+    [/[\w.+-]+@[\w-]+\.[\w.-]+/, "une adresse e-mail"],
+    [/(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}\b/, "un numéro de téléphone"],
+    [/\bFR\d{2}[\s]?(?:\d{4}[\s]?){5}\d{3}\b/i, "un IBAN"],
+    [/\b[12][\s]?\d{2}[\s]?(?:0[1-9]|1[0-2])[\s]?\d{2}[\s]?\d{3}[\s]?\d{3}(?:[\s]?\d{2})?\b/, "un numéro de sécurité sociale"],
+    [/\b(?:M\.|Mme|Mlle|Monsieur|Madame)\s+[A-ZÉÈ][a-zéèêëïîôûç-]+/, "le nom d'une personne"],
+    [/\b(?:mon|ma|mes|notre|nos) client(?:e|s|es)?\s+[A-ZÉÈ][a-zéèêëïîôûç-]+/, "le nom d'un client"],
+  ];
+  for (const [re, nom] of motifs.slice(0, noms ? motifs.length : 4)) if (re.test(s)) return nom;
+  return null;
+}

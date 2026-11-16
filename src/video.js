@@ -1,4 +1,4 @@
-import { nettoyerTout } from "./texte.js";
+import { nettoyerTout, donneesPerso } from "./texte.js";
 // Création Post › Vidéo : scénario proposé par l'IA (validé et modifiable), fabrication par le robot GitHub (gratuit),
 // suivi en direct (étape, temps restant), galerie, téléchargement (MP4, miniature, sous-titres .srt).
 // Précautions : chiffres jamais inventés (calculés par le code ou tirés des données du site, sinon signalés « à vérifier »),
@@ -184,7 +184,16 @@ const finDe = (scenes) => { const f = (scenes || []).find((s) => s.type === "fin
 // ---------------------------------------------------------------- Durée : estimée sur les syllabes (comme le calage de la voix)
 // Mesuré sur la voix Sadachbia nettoyée et accélérée (×1,08) : 4,45 syllabes par seconde, pauses comprises, soit 2,68 mots par seconde.
 // La dernière scène (carte de fin) est tenue 3,6 s après la voix.
-const SYL_PAR_S = 4.45, MOTS_PAR_S = 2.68, TENUE = 3.6, TOLERANCE = .1;
+// Le débit réel est ensuite mesuré par le robot à chaque vidéo : la médiane des dernières mesures remplace la valeur de départ.
+const DEBIT_DEPART = 4.45, TENUE = 3.6, TOLERANCE = .1;
+let SYL_PAR_S = DEBIT_DEPART, MOTS_PAR_S = 2.68;
+async function chargerDebit(db) {
+  const l = ((await lireEtat(db, "video_debit"))?.valeur?.mesures || []).filter((x) => x >= 3.5 && x <= 5.8);
+  SYL_PAR_S = DEBIT_DEPART;
+  if (l.length >= 3) { const t = [...l].sort((a, b) => a - b); SYL_PAR_S = t[Math.floor(t.length / 2)]; }
+  MOTS_PAR_S = SYL_PAR_S * (2.68 / 4.45);
+  return SYL_PAR_S;
+}
 const UN = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize"];
 const DIZ = { 2: "vingt", 3: "trente", 4: "quarante", 5: "cinquante", 6: "soixante", 8: "quatre-vingt" };
 function lettres(n) {
@@ -254,7 +263,7 @@ async function sourceDe(db, d, source) {
   if (source === "actu") {
     const a = await actuDuSite(db, d.ref);
     if (!a) throw new Error("Cette actualité n'est plus disponible : choisissez-en une autre.");
-    return { data: [], texte: a.contenu, ref: { type: "actu", titre: court(a.titre, 120), sources: a.sources } };
+    return { data: [], texte: a.contenu, ref: { type: "actu", id: court(d.ref, 80), titre: court(a.titre, 120), sources: a.sources } };
   }
   if (source === "fiche" && d.fiche?.titre) {
     return { data: [], texte: court(d.fiche.contenu, 5000), ref: { type: "fiche", titre: court(d.fiche.titre, 120), id: court(d.fiche.id, 60), verifie: court(d.fiche.verifie, 20) } };
@@ -314,6 +323,8 @@ async function proposerScenario(env, db, d, coord) {
   const src = await sourceDe(db, d, source), data = src.data;
   const titreSujet = src.ref?.titre || (sim ? "Commencer tôt ou attendre : le temps est le meilleur allié" : "");
   if (source === "libre" && !precision) throw new Error("Décrivez le sujet de la vidéo dans le champ « Précision ».");
+  const perso = donneesPerso(precision);
+  if (perso) throw new Error(`La précision semble contenir ${perso}. Retirez-le avant de l'envoyer à l'IA (aucune donnée client ne doit être transmise).`);
   // budget de mots calculé avec une fin type (question personnalisée)
   const finType = fin(coord.cabinet, { question: "Votre épargne travaille-t-elle vraiment pour vous ?" });
   const mots = cibleMots(duree, finType), [nA, nB] = SCENES_CONSEIL[duree];
@@ -403,7 +414,13 @@ function avecChiffres(scenes, donnees) {
 // (le quota gratuit, environ 12 voix, est partagé). Un échec dû au quota ne compte pas.
 async function lanceesPar(db, uid) { const c = (await lireEtat(db, "video_jour:" + uid))?.valeur; return c?.jour === jourParis() ? c.n : 0; }
 async function voixEquipe(db) { const c = (await lireEtat(db, "video_voix"))?.valeur; return c?.jour === jourGoogle() ? c : { jour: jourGoogle(), n: 0, epuise: false }; }
-async function restantEquipe(db) { const c = await voixEquipe(db); return c.epuise ? 0 : Math.max(0, VOIX_JOUR - c.n); }
+// Voix déjà utilisées aujourd'hui par toute l'équipe : vidéos lancées, et toutes les voix comptées par le site
+// (le brief audio utilise le même quota gratuit que les vidéos).
+async function voixUtilisees(db) {
+  const q = (await lireEtat(db, "ia_quota"))?.valeur;
+  return q?.jour === jourGoogle() ? Object.entries(q.compteurs || {}).filter(([m]) => /tts/i.test(m)).reduce((n, [, k]) => n + (Number(k) || 0), 0) : 0;
+}
+async function restantEquipe(db) { const c = await voixEquipe(db); return c.epuise ? 0 : Math.max(0, VOIX_JOUR - Math.max(c.n, await voixUtilisees(db))); }
 async function compterLancement(db, uid, k = 1, epuise = false) {
   const n = Math.max(0, (await lanceesPar(db, uid)) + k), c = await voixEquipe(db);
   await ecrireEtat(db, "video_jour:" + uid, { jour: jourParis(), n });
@@ -496,11 +513,12 @@ async function enregistrerScenes(db, v, scenes, choixFin, iso) {
 // ---------------------------------------------------------------- Routes du site (utilisateur connecté)
 export async function routeVideo(request, env, chemin, moi, url) {
   const db = env.DB, methode = request.method, iso = new Date().toISOString();
+  await chargerDebit(db);
   const lire = async () => { try { return await request.json(); } catch { return {}; } };
   const proprio = (v) => v && (v.utilisateur_id === moi.id || moi.role === "admin");
 
   if (chemin === "/api/video/reglages" && methode === "GET") {
-    return json({ coordonnees: await coordonnees(db), voix: VOIX, formats: FORMATS, ...(await compteurs(db, moi.id)), fins: FINS, question_classique: QUESTION_CLASSIQUE, ambiances: AMBIANCES, sous_titres: SOUS_TITRES, angles: Object.fromEntries(Object.entries(ANGLES).map(([k, v]) => [k, v[0]])), admin: moi.role === "admin" });
+    return json({ coordonnees: await coordonnees(db), voix: VOIX, formats: FORMATS, ...(await compteurs(db, moi.id)), fins: FINS, question_classique: QUESTION_CLASSIQUE, debit: SYL_PAR_S, ambiances: AMBIANCES, sous_titres: SOUS_TITRES, angles: Object.fromEntries(Object.entries(ANGLES).map(([k, v]) => [k, v[0]])), admin: moi.role === "admin" });
   }
   if (chemin === "/api/video/reglages" && methode === "POST") {
     if (moi.role !== "admin") return erreur("Seul l'administrateur peut modifier les coordonnées du cabinet.", 403);
@@ -613,6 +631,8 @@ Angles possibles (valeur exacte) : ${Object.keys(ANGLES).filter((k) => k !== "de
     if (!["brouillon", "erreur", "annule"].includes(v.statut)) return erreur("Cette vidéo est déjà lancée.", 409);
     if (!env.GEMINI_API_KEY) return erreur("L'IA n'est pas configurée sur le site.", 503);
     const d = await lire(), scenes = JSON.parse(v.storyboard || "[]"), i = Number(d.i);
+    const perso = donneesPerso(d.consigne);
+    if (perso) return erreur(`La demande semble contenir ${perso}. Retirez-le avant de l'envoyer à l'IA.`);
     const s = scenes[i];
     if (!s || s.type === "fin") return erreur("Scène introuvable.");
     const don = JSON.parse(v.donnees || "{}"), consigne = court(d.consigne, 200);
@@ -746,6 +766,7 @@ RÈGLES STRICTES :
 // ---------------------------------------------------------------- Routes du robot (jeton ROBOT_TOKEN vérifié avant)
 export async function routeVideoRobot(request, env, chemin) {
   const db = env.DB, iso = new Date().toISOString();
+  await chargerDebit(db);
   const m = chemin.match(/^\/api\/robot\/video\/([0-9a-f-]{36})(?:\/(etat|fin|morceau|jumelle)(?:\/(\d+))?)?$/);
   if (!m) return json({ erreur: "Adresse inconnue." }, 404);
   const [, id, action, n] = m;
@@ -798,6 +819,12 @@ export async function routeVideoRobot(request, env, chemin) {
     if (nb.n !== Number(d.morceaux) || Math.ceil(Number(d.taille) / MORCEAU) !== nb.n) return json({ erreur: `Fichier incomplet (${nb.n}/${d.morceaux} morceaux).` }, 400);
     const mini = typeof d.miniature === "string" && d.miniature.length < 1_200_000 && /^[A-Za-z0-9+/=]+$/.test(d.miniature) ? d.miniature : null;
     const alertes = (Array.isArray(d.alertes) ? d.alertes : []).map((a) => court(a, 160)).slice(0, 10);
+    // Débit réel de la voix (syllabes par seconde) : affine les prochaines estimations de durée.
+    const debit = Number(d.debit);
+    if (debit >= 3 && debit <= 6 && !JSON.parse(v.donnees || "{}").jumelle_de) {
+      const m = (await lireEtat(db, "video_debit"))?.valeur?.mesures || [];
+      await ecrireEtat(db, "video_debit", { mesures: [...m, Math.round(debit * 100) / 100].slice(-12) });
+    }
     await db.prepare(`UPDATE videos SET statut = ?, etape = NULL, progression = 1, eta_s = 0, termine_le = ?, maj_le = ?, duree = ?, taille = ?, morceaux = ?, srt = ?, miniature = ?, alertes = ?, duree_fabrication = ? WHERE id = ?`)
       .bind(alertes.length ? "a_verifier" : "pret", iso, iso, Number(d.duree) || null, Number(d.taille), Number(d.morceaux), court(d.srt, 20000), mini, JSON.stringify(alertes), Number(d.duree_fabrication) || null, id).run();
     await nettoyerAnciennes(db);
