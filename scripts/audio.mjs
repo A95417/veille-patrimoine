@@ -9,7 +9,8 @@ import { choisirModeleVoix, genererVoix } from "./gemini.mjs";
 
 const SITE = (process.env.SITE_URL || "").replace(/\/$/, "");
 const JETON = process.env.ROBOT_TOKEN || "";
-const MAX_PAR_JOUR = 4;
+const MAX_PAR_JOUR = 4;      // lectures de brief par jour (compteur propre « audio-brief »)
+const PLAFOND_VOIX = 12;    // toutes voix confondues (vidéos, cours, brief) : même plafond que l'équipe (src/video.js)
 
 async function appelSite(chemin, methode = "GET", corps) {
   const r = await fetch(SITE + chemin, {
@@ -51,11 +52,14 @@ export async function produireAudio(brief) {
   const quota = await appelSite("/api/robot/ia/quota");
   const modele = await choisirModeleVoix();
   if (!modele) { console.log("Audio : aucun modèle de voix disponible avec cette clé."); return false; }
-  if ((quota.compteurs?.[modele] || 0) >= MAX_PAR_JOUR) { console.log("Audio : quota du jour déjà utilisé."); return false; }
+  // Le brief compte ses propres lectures : les vidéos (dont celles des cours, qui lui gardent 2 voix) ne doivent pas le bloquer.
+  const c = quota.compteurs || {};
+  const voixDuJour = Object.entries(c).filter(([m]) => /tts/i.test(m)).reduce((n, [, k]) => n + (Number(k) || 0), 0);
+  if ((c["audio-brief"] || 0) >= MAX_PAR_JOUR || voixDuJour >= PLAFOND_VOIX) { console.log("Audio : quota du jour déjà utilisé."); return false; }
   if (!ffmpegDisponible()) { console.log("Audio : ffmpeg indisponible, version audio non produite."); return false; }
 
   // On n'envoie que le texte du brief : toute consigne ajoutée risquerait d'être lue à voix haute.
-  await appelSite("/api/robot/ia/quota", "POST", { ajouts: { [modele]: 1 } });
+  await appelSite("/api/robot/ia/quota", "POST", { ajouts: { [modele]: 1, "audio-brief": 1 } });
   const r = await genererVoix(modele, texteOral(brief));
   if (r.quota) { console.log("Audio : quota de la voix atteint.", r.detail || ""); return false; }
 
