@@ -6,9 +6,9 @@
   "refus": {
     "https://www.franceinfo.fr/economie.rss": "2026-11-19T00:33:34.555Z"
   },
-  "articles_lus": 473,
+  "articles_lus": 476,
   "nouveaux": 9,
-  "sujets_crees": 9,
+  "sujets_crees": 8,
   "supprimes_3_mois": 0
 }
 Modèles retenus : {
@@ -16,7 +16,7 @@ Modèles retenus : {
   relais: 'gemini-3.1-flash-lite',
   fort: 'gemini-3.8-flash'
 }
-Bilan IA : {"classes":9,"details":4,"echecs":0,"appels":6,"utilisation_du_jour":{"gemini-3.5-flash-lite":1,"gemini-3.1-flash-lite":5}}
+Bilan IA : {"classes":8,"details":1,"echecs":0,"appels":3,"utilisation_du_jour":{"gemini-3.5-flash-lite":3}}
 Marchés : clôtures déjà relevées ce matin, rien à faire.
 Taux : pas l'heure (relevé vers 9 h), rien à faire.
 Calendrier : pas l'heure, rien à faire.
