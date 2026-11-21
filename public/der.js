@@ -197,7 +197,7 @@
         <p class="doux petit">Le récit passe avant le DER : le cabinet, la direction, puis vous. Devant le client, les écrans vides ou masqués sont sautés ; l'aperçu montre ce qui reste à compléter.</p>
         <div class="der-ligne-boutons"><button type="button" class="puce" id="der-fictif" title="Remplit « Vos informations d'identité » avec un client fictif, pour les essais">🧪 Client fictif</button></div>
         <div class="der-recit-etat" id="der-recit-etat"></div>
-        <div class="der-ligne-boutons"><button type="button" class="puce" id="der-mon-profil">👤 Mon profil</button><button type="button" class="puce" id="der-recit-apercu" ${C ? "" : "disabled"}>👁 Aperçu du récit</button>${admin ? '<button type="button" class="puce" id="der-le-cabinet">🏛️ Le cabinet</button>' : ""}</div></details>
+        <div class="der-ligne-boutons"><button type="button" class="puce" id="der-mon-profil">👤 Mon profil</button>${admin ? '<button type="button" class="puce" id="der-le-cabinet">🏛️ Le cabinet</button>' : ""}<button type="button" class="puce" id="der-recit-apercu" ${C ? "" : "disabled"}>👁 Aperçu du récit</button></div></details>
       ${admin ? `<details class="der-admin"><summary>⚙️ Administration du DER</summary>${alerteAge()}
         <p class="doux petit">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · déposée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte déposé pour l'instant."}</p>
         <div class="der-ligne-boutons"><label class="puce" style="cursor:pointer">📥 Déposer une nouvelle version<input type="file" accept="application/json,.json" id="der-import" hidden></label><button type="button" class="puce" id="der-versions">🕘 Versions précédentes (${(historique || []).length})</button></div></details>` : ""}
@@ -213,7 +213,7 @@
   }
 
   // ---------------------------------------------------------------- étape 2 : le document, navigation libre par catégorie
-  let courant = -1, zoomUtilisateur = 1, verrou = 0;
+  let courant = -1, zoomUtilisateur = window.DerZoomDefaut ? DerZoomDefaut() : 1, verrou = 0;
   function etape2() {
     const titres = C.sections.map((s, i) => ({ i, titre: s.titre }));
     return `<div class="der-lecteur" id="der-lecteur" role="region" aria-label="Document d'entrée en relation">
@@ -222,7 +222,7 @@
         <span class="titre" id="der-titre-courant" aria-live="polite"></span>
         <button type="button" id="der-prec" aria-label="Catégorie précédente">‹ <span class="txt">Précédente</span></button>
         <button type="button" id="der-suiv" aria-label="Catégorie suivante"><span class="txt">Suivante</span> ›</button>
-        <span class="der-zoom"><button type="button" id="der-zoom-moins" aria-label="Réduire">−</button><button type="button" id="der-zoom-val" title="Ajuster à la largeur">100 %</button><button type="button" id="der-zoom-plus" aria-label="Agrandir">+</button></span>
+        <span class="der-zoom"><button type="button" id="der-zoom-moins" aria-label="Réduire">−</button><button type="button" id="der-zoom-val" title="Taille par défaut">75 %</button><button type="button" id="der-zoom-plus" aria-label="Agrandir">+</button></span>
         <button type="button" class="principal" id="der-plein">⛶ <span class="txt" id="der-plein-txt">Plein écran</span></button>
         <button type="button" id="der-nouveau">↺ <span class="txt">Nouveau client</span></button>
         <select id="der-choix" aria-label="Aller à une catégorie"><option value="-1">Couverture</option>${titres.map((t) => `<option value="${t.i}">${esc(t.titre)}</option>`).join("")}</select>
@@ -304,7 +304,7 @@
       document.querySelector(".page > .titre-section")?.setAttribute("hidden", "");   // toute la hauteur pour le document
       const pile = document.getElementById("dp-pile");
       composer().forEach((f) => pile.appendChild(f));
-      zoomUtilisateur = 1; ajusterZoom();
+      zoomUtilisateur = DerZoomDefaut(); ajusterZoom();
       new ResizeObserver(() => ajusterZoom()).observe(document.getElementById("der-vue"));
       document.querySelectorAll(".der-nav button").forEach((b) => b.onclick = () => aller(Number(b.dataset.i)));
       document.getElementById("der-choix").onchange = (e) => aller(Number(e.target.value));
@@ -312,7 +312,7 @@
       document.getElementById("der-suiv").onclick = () => aller(courant + 1);
       document.getElementById("der-zoom-moins").onclick = () => { zoomUtilisateur = Math.max(.5, zoomUtilisateur - .25); ajusterZoom(); };
       document.getElementById("der-zoom-plus").onclick = () => { zoomUtilisateur = Math.min(3, zoomUtilisateur + .25); ajusterZoom(); };
-      document.getElementById("der-zoom-val").onclick = () => { zoomUtilisateur = 1; ajusterZoom(); };
+      document.getElementById("der-zoom-val").onclick = () => { zoomUtilisateur = DerZoomDefaut(); ajusterZoom(); };
       document.getElementById("der-plein").onclick = () => basculerPlein();
       document.getElementById("der-retour").onclick = () => montrerEtape(1);
       document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.", true);

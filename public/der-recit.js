@@ -6,6 +6,9 @@
   let X = null;   // contexte fourni par der.js
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const photo = (id, defaut = "") => (id ? `/api/der/photo/${id}` : defaut);
+  // Le DER s'ouvre un peu dézoomé (75 %) ; sur téléphone, à la largeur de l'écran.
+  const ZOOM_DEFAUT = () => (innerWidth > 700 ? .75 : 1);
+  window.DerZoomDefaut = ZOOM_DEFAUT;
   const vide = (t) => `<div class="rc-vide">À compléter : ${esc(t)}</div>`;
 
   // ---------------------------------------------------------------- écrans
@@ -52,11 +55,11 @@
         <button type="button" class="rc-quitter">✕ Quitter</button></div>
       <div class="rc-scene" aria-live="polite"></div>
       <div class="rc-bas"><button type="button" class="rc-fl" data-d="-1" aria-label="Écran précédent">‹</button><span class="rc-pos"></span><button type="button" class="rc-fl" data-d="1" aria-label="Écran suivant">›</button>
-        <span class="rc-zoom" hidden><button type="button" data-z="-1" aria-label="Réduire">−</button><button type="button" class="rc-zoom-val" data-z="0" title="Ajuster à la largeur">100 %</button><button type="button" data-z="1" aria-label="Agrandir">+</button></span></div>`;
+        <span class="rc-zoom" hidden><button type="button" data-z="-1" aria-label="Réduire">−</button><button type="button" class="rc-zoom-val" data-z="0" title="Taille par défaut">75 %</button><button type="button" data-z="1" aria-label="Agrandir">+</button></span></div>`;
     document.body.appendChild(r);
     X.setPresentation(true);
     const scene = r.querySelector(".rc-scene");
-    let i = 0, derPret = null, facteur = 1, zoomDer = () => {};
+    let i = 0, derPret = null, facteur = ZOOM_DEFAUT(), zoomDer = () => {};
     const montrer = (n) => {
       i = Math.max(0, Math.min(L.length - 1, n));
       const e = L[i];
@@ -96,7 +99,7 @@
     r.querySelectorAll(".rc-chapitres button").forEach((b) => { const k = L.findIndex((e) => e.ch === Number(b.dataset.ch)); if (k < 0) { b.hidden = true; return; } b.querySelector("span").textContent = ++num; b.onclick = () => montrer(k); });
     if (apercu) r.querySelector(".rc-haut").insertAdjacentHTML("beforeend", '<span class="rc-badge-apercu">Aperçu conseiller</span>');
     r.querySelector(".rc-quitter").onclick = fermer;
-    r.querySelectorAll("[data-z]").forEach((b) => b.onclick = () => { const z = Number(b.dataset.z); facteur = z === 0 ? 1 : Math.max(.5, Math.min(3, facteur + z * .25)); zoomDer(); });
+    r.querySelectorAll("[data-z]").forEach((b) => b.onclick = () => { const z = Number(b.dataset.z); facteur = z === 0 ? ZOOM_DEFAUT() : Math.max(.5, Math.min(3, facteur + z * .25)); zoomDer(); });
     document.addEventListener("fullscreenchange", function f() { if (!document.fullscreenElement && document.body.contains(r)) fermer(); if (!document.body.contains(r)) document.removeEventListener("fullscreenchange", f); });
     r.requestFullscreen?.().catch(() => {});
     montrer(0);
@@ -135,8 +138,9 @@
     d.querySelectorAll("[data-retirer]").forEach((b) => b.onclick = () => { d.querySelector(`input[name="${b.dataset.retirer}"]`).value = ""; d.querySelector(`[data-apercu="${b.dataset.retirer}"]`).hidden = true; b.hidden = true; });
   }
   function dialogue(titre, corps, enregistrer, apres) {
-    const d = DerAdmin.boite(`<h2>${esc(titre)}</h2><form class="rc-form" onsubmit="return false">${corps}</form><p class="doux petit rc-msg" role="status"></p>
-      <div class="der-ligne-boutons"><button type="button" class="bouton bouton-discret" data-f>Fermer</button><button type="button" class="bouton" data-ok>Enregistrer</button></div>`, true);
+    const d = DerAdmin.boite(`<h2>${esc(titre)}</h2><nav class="rc-sommaire" aria-label="Parties"></nav><form class="rc-form" onsubmit="return false">${corps}</form>
+      <div class="rc-pied"><p class="doux petit rc-msg" role="status"></p><div class="der-ligne-boutons"><button type="button" class="bouton bouton-discret" data-f>Fermer</button><button type="button" class="bouton" data-ok>Enregistrer</button></div></div>`, true);
+    sommaire(d);
     d.querySelector("[data-f]").onclick = () => d.close();
     brancherPhotos(d); brancherLibres(d); apres?.(d);
     d.querySelector("[data-ok]").onclick = async () => {
@@ -144,6 +148,28 @@
       try { await enregistrer(v, d); d.close(); X.toast("✓ Récit mis à jour."); X.majRecit(); } catch (e) { m.textContent = e.message; }
     };
   }
+  // Menu des parties en haut de la fenêtre : accès direct, défilement doux, partie en cours surlignée.
+  function sommaire(d) {
+    const parties = [...d.querySelectorAll("[data-partie]")], nav = d.querySelector(".rc-sommaire");
+    if (parties.length < 2) { nav.remove(); return; }
+    nav.innerHTML = parties.map((p, k) => `<button type="button" data-aller="${k}">${esc(p.dataset.partie)}</button>`).join("");
+    let verrou = 0;
+    const marquer = (k) => nav.querySelectorAll("button").forEach((b, j) => { const oui = j === k; b.setAttribute("aria-current", oui); if (oui) b.scrollIntoView({ block: "nearest", inline: "nearest" }); });
+    nav.querySelectorAll("button").forEach((b) => b.onclick = () => {
+      const k = Number(b.dataset.aller), cible = parties[k];
+      verrou = Date.now(); marquer(k);
+      d.scrollTo({ top: cible.getBoundingClientRect().top - d.getBoundingClientRect().top + d.scrollTop - nav.offsetHeight - 12, behavior: "smooth" });
+    });
+    const suivre = () => {
+      if (Date.now() - verrou < 700) return;
+      const haut = nav.getBoundingClientRect().bottom + 30; let k = 0;
+      parties.forEach((p, j) => { if (p.getBoundingClientRect().top <= haut) k = j; });
+      if (d.scrollTop + d.clientHeight >= d.scrollHeight - 4) k = parties.length - 1;
+      marquer(k);
+    };
+    d.addEventListener("scroll", suivre, { passive: true }); marquer(0);
+  }
+  const partie = (nom, html) => `<section class="rc-partie" data-partie="${esc(nom)}">${html}</section>`;
   const lignes = (t) => String(t || "").split("\n").map((x) => x.trim()).filter(Boolean);
   // Écrans affichés (cases à cocher) et écrans libres (titre, texte, image, ordre).
   const champMasques = (liste, masques) => `<fieldset class="rc-groupe"><legend>Écrans affichés</legend><div class="rc-coches">${liste.map(([k, t]) => `<label><input type="checkbox" data-montrer="${k}" ${(masques || []).includes(k) ? "" : "checked"}> ${esc(t)}</label>`).join("")}</div></fieldset>`;
@@ -177,18 +203,14 @@
     const c = X.cabinet() || {}, d = c.directrice || {};
     dialogue("Le cabinet (récit de présentation)", `
       <div class="rc-prerempli"><button type="button" class="puce" data-prerempli>🌐 Préremplir avec le site du cabinet</button><span class="doux petit">Les cases vides sont remplies avec les phrases du site bsc-patrimoine.fr ; relisez avant d'enregistrer.</span></div>
-      ${champMasques(ECRANS_CABINET, c.masques)}
-      ${champPhoto("Logo du cabinet", "logo", c.logo)}
-      ${ligne("Phrase d'accroche", "accroche", c.accroche, "(affichée sous le logo)")}
-      ${ligne("Année de création", "annee", c.annee)}
-      ${zone("Histoire du cabinet", "histoire", c.histoire, 4)}
-      ${zone("Grandes étapes", "etapes", (c.etapes || []).map((e) => `${e.annee} | ${e.texte}`).join("\n"), 4, "une par ligne : année | texte")}
-      ${zone("Chiffres clés", "chiffres", (c.chiffres || []).map((e) => `${e.valeur} | ${e.libelle}`).join("\n"), 3, "un par ligne : valeur | libellé")}
-      ${zone("Métiers", "metiers", (c.metiers || []).join("\n"), 4, "un par ligne")}
-      ${zone("Valeurs", "valeurs", (c.valeurs || []).join("\n"), 3, "une par ligne")}
-      ${zone("Engagements et certifications", "engagements", (c.engagements || []).join("\n"), 3, "un par ligne")}
-      <fieldset class="rc-groupe"><legend>La direction</legend>${champPhoto("Photo (avec son accord)", "directrice", d.photo)}${ligne("Nom", "d_nom", d.nom)}${ligne("Rôle", "d_role", d.role)}${zone("Présentation (facultative)", "d_texte", d.texte, 3)}</fieldset>
-      ${champLibres(c.libres)}`,
+      ${partie("Écrans affichés", champMasques(ECRANS_CABINET, c.masques))}
+      ${partie("Logo et accroche", champPhoto("Logo du cabinet", "logo", c.logo) + ligne("Phrase d'accroche", "accroche", c.accroche, "(affichée sous le logo)"))}
+      ${partie("Histoire", ligne("Année de création", "annee", c.annee) + zone("Histoire du cabinet", "histoire", c.histoire, 4) + zone("Grandes étapes", "etapes", (c.etapes || []).map((e) => `${e.annee} | ${e.texte}`).join("\n"), 4, "une par ligne : année | texte"))}
+      ${partie("Chiffres", zone("Chiffres clés", "chiffres", (c.chiffres || []).map((e) => `${e.valeur} | ${e.libelle}`).join("\n"), 3, "un par ligne : valeur | libellé"))}
+      ${partie("Direction", `<fieldset class="rc-groupe"><legend>La direction</legend>${champPhoto("Photo (avec son accord)", "directrice", d.photo)}${ligne("Nom", "d_nom", d.nom)}${ligne("Rôle", "d_role", d.role)}${zone("Présentation (facultative)", "d_texte", d.texte, 3)}</fieldset>`)}
+      ${partie("Métiers et valeurs", zone("Métiers", "metiers", (c.metiers || []).join("\n"), 4, "un par ligne") + zone("Valeurs", "valeurs", (c.valeurs || []).join("\n"), 3, "une par ligne"))}
+      ${partie("Engagements", zone("Engagements et certifications", "engagements", (c.engagements || []).join("\n"), 3, "un par ligne"))}
+      ${partie("Écrans libres", champLibres(c.libres))}`,
     async (v, dlg) => {
       const paire = (t) => lignes(t).map((l) => l.split("|").map((x) => x.trim()));
       const cabinet = { logo: v.logo, accroche: v.accroche, annee: v.annee, histoire: v.histoire,
@@ -207,17 +229,14 @@
   function editerProfil() {
     const p = X.profil() || {};
     dialogue("Mon profil (récit de présentation)", `
-      <fieldset class="rc-groupe"><legend>Mon rôle</legend><div class="rc-coches rc-une-colonne">
+      <section class="rc-partie" data-partie="Mon rôle"><fieldset class="rc-groupe"><legend>Mon rôle</legend><div class="rc-coches rc-une-colonne">
         <label><input type="checkbox" name="directrice" ${p.directrice ? "checked" : ""}> Je suis la directrice du cabinet <span class="doux">(pas de chapitre « Votre conseiller » : je suis déjà présentée dans « La direction »)</span></label>
         <label><input type="radio" name="genre" value="m" ${p.feminin ? "" : "checked"}> Titre du chapitre : « Votre conseiller »</label>
         <label><input type="radio" name="genre" value="f" ${p.feminin ? "checked" : ""}> Titre du chapitre : « Votre conseillère »</label></div></fieldset>
-      ${champMasques([["conseiller", "Ma présentation (photo, parcours, spécialités)"]], p.masques)}
-      ${champPhoto("Ma photo", "photo", p.photo)}
-      ${ligne("Nom affiché", "nom", p.nom || X.contact().nom)}
-      ${ligne("Titre", "titre", p.titre, "(ex. Conseiller en gestion de patrimoine)")}
-      ${zone("Mon parcours", "parcours", p.parcours, 4)}
-      ${zone("Mes spécialités", "specialites", (p.specialites || []).join("\n"), 3, "une par ligne")}
-      ${champLibres(p.libres)}`,
+      ${champMasques([["conseiller", "Ma présentation (photo, parcours, spécialités)"]], p.masques)}</section>
+      ${partie("Photo et titre", champPhoto("Ma photo", "photo", p.photo) + ligne("Nom affiché", "nom", p.nom || X.contact().nom) + ligne("Titre", "titre", p.titre, "(ex. Conseiller en gestion de patrimoine)"))}
+      ${partie("Parcours et spécialités", zone("Mon parcours", "parcours", p.parcours, 4) + zone("Mes spécialités", "specialites", (p.specialites || []).join("\n"), 3, "une par ligne"))}
+      ${partie("Écrans libres", champLibres(p.libres))}`,
     async (v, dlg) => { const j = await appelApi("/api/der/profil", "POST", { profil: { nom: v.nom, titre: v.titre, parcours: v.parcours, photo: v.photo, specialites: lignes(v.specialites), libres: lireLibres(dlg), masques: lireMasques(dlg), directrice: v.directrice === "on", feminin: v.genre === "f" } }); X.setProfil(j.profil); });
   }
   // État du récit (écrans remplis) pour le formulaire de préparation.

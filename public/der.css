@@ -270,3 +270,15 @@ details.der-admin > summary { cursor: pointer; font-weight: 600; font-size: .9re
 .der-lien-discret { font: inherit; font-size: .8rem; background: none; border: 0; color: var(--doux); cursor: pointer; padding: 4px 8px; text-decoration: underline; text-underline-offset: 3px; }
 .der-lien-discret:hover { color: var(--texte); }
 details.der-preparer > *:not(summary) { margin-top: 10px; }
+/* Fenêtres « Le cabinet » / « Mon profil » : menu des parties collé en haut, boutons collés en bas */
+.der-dialogue.large { padding-bottom: 0; }
+.rc-sommaire { position: sticky; top: -24px; z-index: 2; margin: 0 -24px 14px; padding: 10px 24px; background: var(--carte); border-bottom: 1px solid var(--bord); display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.rc-sommaire::-webkit-scrollbar { display: none; }
+.rc-sommaire button { flex: none; font: inherit; font-size: .8rem; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bord); background: transparent; color: var(--doux); cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+.rc-sommaire button:hover { color: var(--texte); border-color: var(--bord-fort); }
+.rc-sommaire button[aria-current="true"] { background: #5e0000; border-color: #5e0000; color: #fff; }
+.rc-partie { display: grid; gap: 14px; scroll-margin-top: 70px; }
+.rc-pied { position: sticky; bottom: 0; z-index: 2; margin: 14px -24px 0; padding: 10px 24px 16px; background: var(--carte); border-top: 1px solid var(--bord); }
+.rc-pied .rc-msg { margin: 0 0 6px; }
+.rc-pied .rc-msg:empty { display: none; }
+.rc-pied .der-ligne-boutons { margin: 0; }
