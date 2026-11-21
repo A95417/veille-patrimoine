@@ -67,6 +67,9 @@ function nettoyer(c) {
 
 const texte = (x, n) => String(x ?? "").replace(/[<>]/g, "").trim().slice(0, n);
 const liste = (a, n, f) => (Array.isArray(a) ? a.slice(0, n).map(f) : []);
+// Écrans libres (titre, texte, image facultative) et écrans masqués du récit.
+const libres = (a) => liste(a, 8, (e) => ({ titre: texte(e?.titre, 120), texte: texte(e?.texte, 1500), photo: photoId(e?.photo) })).filter((e) => e.titre || e.texte);
+const masques = (a) => liste(a, 12, (e) => String(e || "")).filter((e) => /^[a-z]{2,20}$/.test(e));
 const photoId = (x) => (/^[a-f0-9]{32}$/.test(String(x || "")) ? String(x) : "");
 
 export async function routeDer(request, env, chemin, moi) {
@@ -91,8 +94,10 @@ export async function routeDer(request, env, chemin, moi) {
       accroche: texte(c.accroche, 200), annee: texte(c.annee, 10), histoire: texte(c.histoire, 1500),
       etapes: liste(c.etapes, 8, (e) => ({ annee: texte(e?.annee, 10), texte: texte(e?.texte, 200) })).filter((e) => e.texte),
       chiffres: liste(c.chiffres, 6, (e) => ({ valeur: texte(e?.valeur, 30), libelle: texte(e?.libelle, 80) })).filter((e) => e.valeur),
-      valeurs: liste(c.valeurs, 6, (e) => texte(e, 120)).filter(Boolean),
-      metiers: liste(c.metiers, 8, (e) => texte(e, 120)).filter(Boolean),
+      valeurs: liste(c.valeurs, 8, (e) => texte(e, 160)).filter(Boolean),
+      metiers: liste(c.metiers, 10, (e) => texte(e, 120)).filter(Boolean),
+      engagements: liste(c.engagements, 8, (e) => texte(e, 160)).filter(Boolean),
+      libres: libres(c.libres), masques: masques(c.masques),
       directrice: { nom: texte(c.directrice?.nom, 80), role: texte(c.directrice?.role, 80), texte: texte(c.directrice?.texte, 800), photo: photoId(c.directrice?.photo) },
       logo: photoId(c.logo),
     };
@@ -102,7 +107,7 @@ export async function routeDer(request, env, chemin, moi) {
   if (chemin === "/api/der/profil" && methode === "POST") {
     const c = (await lire()).profil || {};
     const propre = { nom: texte(c.nom, 80), titre: texte(c.titre, 120), parcours: texte(c.parcours, 1200),
-      specialites: liste(c.specialites, 8, (e) => texte(e, 80)).filter(Boolean), photo: photoId(c.photo) };
+      specialites: liste(c.specialites, 8, (e) => texte(e, 80)).filter(Boolean), photo: photoId(c.photo), libres: libres(c.libres), masques: masques(c.masques) };
     await ecrireEtat(db, "der_profil:" + moi.id, propre);
     return json({ ok: true, profil: propre });
   }

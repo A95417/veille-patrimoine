@@ -249,3 +249,15 @@ details.der-admin > summary { cursor: pointer; font-weight: 600; font-size: .9re
   .rc-illus { border-left: 0; border-top: 1px solid #e6e0e0; grid-auto-flow: column; overflow-x: auto; padding: 8px; } .rc-illus h4 { display: none; } .rc-illus button { white-space: nowrap; padding: 8px 12px; font-size: 13px; }
   .rc-etapes { grid-template-columns: 1fr; }
 }
+.rc-libre { display: grid; grid-template-columns: auto 1fr; gap: 36px; align-items: center; }
+.rc-libre img { max-width: 420px; max-height: 50vh; border-radius: 20px; box-shadow: 0 14px 40px rgba(60, 10, 10, .15); }
+.rc-engagements { max-width: 900px; }
+.rc-badge-apercu { font-size: 12px; background: #fff4e0; color: #7a4b00; padding: 4px 10px; border-radius: 999px; }
+.rc-coches { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 14px; font-weight: 400; color: var(--texte); font-size: .88rem; }
+.rc-coches input { accent-color: #5e0000; margin-right: 4px; }
+.rc-libres { display: grid; gap: 10px; }
+.rc-libre-ed { border: 1px dashed var(--bord-fort); border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px; }
+.rc-libre-ed input, .rc-libre-ed textarea { font: inherit; font-size: .9rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--fond); color: var(--texte); }
+.rc-libre-barre { display: flex; justify-content: space-between; align-items: center; } .rc-libre-barre span { display: flex; gap: 4px; }
+.rc-prerempli { display: grid; gap: 4px; justify-items: start; padding: 10px 12px; border-radius: 12px; background: var(--accent-doux, #eef); }
+@media (max-width: 900px) { .rc-libre { grid-template-columns: 1fr; } .rc-libre img { max-width: 100%; } }
