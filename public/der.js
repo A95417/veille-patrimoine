@@ -5,7 +5,7 @@
 (function () {
   const zone = document.getElementById("der-zone");
   const INACTIVITE = 15 * 60 * 1000;
-  let C = null, moi = null, admin = false;
+  let C = null, moi = null, admin = false, historique = [];
   const client = { civilite: "M.", nom: "", prenom: "", naissance: "", telephone: "", email: "" };
   let contact = {};
 
@@ -120,7 +120,12 @@
       default: return "";
     }
   }
-  const section = (s) => `<section class="der-section der-anim" id="s-${s.id}" data-page="${s.page === "nouvelle" ? "nouvelle" : ""}"><h2>${ico(s.icone)}${esc(s.titre)}</h2>${s.blocs.map(bloc).join("")}</section>`;
+  // Une section abîmée n'empêche jamais l'affichage du reste (ni l'accès aux outils de l'administrateur).
+  const section = (s) => {
+    let corps;
+    try { corps = s.blocs.map(bloc).join(""); } catch { corps = `<p class="der-casse">Cette section n'a pas pu s'afficher. L'administrateur doit réimporter le texte du DER ou revenir à la version précédente.</p>`; }
+    return `<section class="der-section der-anim" id="s-${esc(s.id)}" data-page="${s.page === "nouvelle" ? "nouvelle" : ""}"><h2>${ico(s.icone)}${esc(s.titre)}</h2>${corps}</section>`;
+  };
 
   function documentHtml() {
     nTab = 0;
@@ -164,10 +169,12 @@
         <button type="button" class="bouton" id="der-presenter">▶ Présenter au client</button>
         <button type="button" class="bouton bouton-discret" id="der-pdf">⬇ Générer le PDF</button>
         <p class="der-astuce">Dans la fenêtre qui s'ouvre, choisissez <b>Enregistrer au format PDF</b>.</p>
+        <button type="button" class="bouton bouton-discret" id="der-apercu">👁 Aperçu des pages</button>
         <button type="button" class="bouton bouton-discret" id="der-nouveau">↺ Nouveau client</button>
+        <button type="button" class="der-lien-registre" id="der-registre">📋 Registre des DER remis</button>
         <div class="der-minuteur" id="der-minuteur" aria-live="polite"></div></div>
       ${admin ? `<div class="der-bloc"><h2>⚙️ Texte du DER (administrateur)</h2>${alerteAge()}<p class="aide">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · importée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte importé."}</p>
-        <div class="der-ligne-boutons" style="margin:0"><label class="puce" style="cursor:pointer">📥 Importer un fichier<input type="file" accept="application/json,.json" id="der-import" hidden></label>${C ? '<button type="button" class="puce" id="der-export">📤 Télécharger le texte actuel</button>' : ""}</div>
+        <div class="der-ligne-boutons" style="margin:0">${C ? '<button type="button" class="puce" id="der-editer">✏️ Mettre à jour (partenaires, garanties…)</button>' : ""}<label class="puce" style="cursor:pointer">📥 Importer un fichier<input type="file" accept="application/json,.json" id="der-import" hidden></label>${C ? '<button type="button" class="puce" id="der-export">📤 Télécharger le texte actuel</button>' : ""}<button type="button" class="puce" id="der-versions">🕘 Versions précédentes (${(historique || []).length})</button></div>
         <p class="doux petit" id="der-msg-admin" style="margin:6px 0 0" role="status"></p></div>` : ""}
     </aside>`;
   }
@@ -326,11 +333,23 @@
   // La page découpe elle-même le document en feuilles A4 (numéros de page compris) ; le navigateur n'a plus qu'à les
   // enregistrer en PDF. Marges nulles côté navigateur : pas d'adresse du site ni de date ajoutées, même rendu partout.
   const TITRES = ".der-h, .der-h3, .der-tableau-titre";
-  async function composerFeuilles() {
+  async function composerFeuilles(ref) {
     try { await document.fonts?.ready; } catch {}
-    return composer();
+    return composer(ref);
   }
-  function composer() {
+  // Référence anonyme du DER remis (imprimée sur chaque page, notée au registre avec la date et le conseiller).
+  function nouvelleReference() {
+    const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(4)), d = new Date();
+    return `DER-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${[...r].map((x) => A[x % 32]).join("")}`;
+  }
+  async function noterReference(ref) {
+    try {
+      const c = new AbortController(); setTimeout(() => c.abort(), 4000);
+      const r = await fetch("/api/der/reference", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: ref, version: C?.version || "" }), credentials: "same-origin", signal: c.signal });
+      return r.ok;
+    } catch { return false; }
+  }
+  function composer(ref = "") {
     document.getElementById("der-feuilles")?.remove();
     const racine = document.createElement("div"); racine.className = "der-feuilles"; racine.id = "der-feuilles"; racine.setAttribute("aria-hidden", "true");
     document.body.appendChild(racine);
@@ -339,7 +358,7 @@
     let cur;
     const nouvelle = () => {
       const f = document.createElement("div"); f.className = "der-feuille";
-      f.innerHTML = `<div class="contenu"><div class="der"></div></div><div class="pied"><span>BSC Patrimoine · DER établi le ${aujourdhui()}</span><span class="num"></span></div>`;
+      f.innerHTML = `<div class="contenu"><div class="der"></div></div><div class="pied"><span>BSC Patrimoine · DER établi le ${aujourdhui()}${ref ? " · Réf. " + ref : ""}</span><span class="num"></span></div>`;
       racine.appendChild(f); feuilles.push(f); cur = f.querySelector(".der"); return cur;
     };
     const deborde = () => cur.offsetHeight > cur.parentElement.clientHeight + 1;
@@ -391,26 +410,50 @@
     return feuilles.length;
   }
   // Impression lancée par le menu du navigateur (Ctrl+P) : les feuilles sont composées à la volée, puis retirées.
-  addEventListener("beforeprint", () => { if (C && !document.getElementById("der-feuilles")) { reinitFiltres(); composer(); } });
+  addEventListener("beforeprint", () => { if (C && !document.getElementById("der-feuilles")) { reinitFiltres(); const ref = nouvelleReference(); composer(ref); noterReference(ref); } });
   addEventListener("afterprint", () => setTimeout(() => document.getElementById("der-feuilles")?.remove(), 0));
   async function genererPdf() {
     reinitFiltres();
     const b = document.getElementById("der-pdf"); b.disabled = true; b.textContent = "Préparation des pages…";
-    try { await composerFeuilles(); } finally { b.disabled = false; b.textContent = "⬇ Générer le PDF"; }
+    const ref = nouvelleReference();
+    const note = noterReference(ref);
+    try { await composerFeuilles(ref); } finally { b.disabled = false; b.textContent = "⬇ Générer le PDF"; }
+    if (!(await note)) toast(`Référence ${ref} imprimée, mais pas notée au registre (pas de connexion). Notez-la dans le dossier du client.`, null, null, 7000);
     const titre = document.title, nom = [client.prenom, (client.nom || "").toUpperCase()].filter(Boolean).join(" ");
     document.title = `DER ${nom ? "- " + nom + " " : ""}- ${aujourdhui().replace(/\//g, "-")}`;
     const apres = () => {
       removeEventListener("afterprint", apres); document.title = titre;
       document.getElementById("der-feuilles")?.remove();   // la copie imprimée (avec le nom du client) ne reste pas dans la page
-      if (clientRempli()) setTimeout(proposerEffacement, 300);
+      setTimeout(() => proposerEffacement(ref), 300);
     };
     addEventListener("afterprint", apres);
     window.print();
   }
-  function proposerEffacement() {
+  // Aperçu : les vraies pages A4 en vignettes, à l'écran (rien n'est envoyé ; tout disparaît à la fermeture).
+  async function apercu() {
+    reinitFiltres();
+    const n = await composerFeuilles("");
+    const racine = document.getElementById("der-feuilles");
+    const d = document.createElement("dialog"); d.className = "der-dialogue der-apercu";
+    d.innerHTML = `<div class="der-apercu-haut"><h2>Aperçu des pages · ${n} pages A4</h2><button type="button" class="bouton" data-pdf>⬇ Générer le PDF</button><button type="button" class="der-pres-fermer" data-f aria-label="Fermer l'aperçu">✕</button></div>
+      <div class="der-apercu-grille der-feuilles"></div><p class="petit doux" style="margin:10px 0 0">La référence du document est attribuée au moment de la génération du PDF.</p>`;
+    const g = d.querySelector(".der-apercu-grille");
+    [...racine.children].forEach((f, k) => { const c = document.createElement("div"); c.className = "der-vignette"; const x = f.cloneNode(true); c.appendChild(x); c.insertAdjacentHTML("beforeend", `<span>${k + 1}</span>`); g.appendChild(c); });
+    racine.remove();
+    document.body.appendChild(d);
+    const ajuster = () => g.querySelectorAll(".der-vignette").forEach((v) => { const f = v.querySelector(".der-feuille"); f.style.transform = `scale(${v.clientWidth / f.offsetWidth})`; });
+    new ResizeObserver(ajuster).observe(g);
+    const fermer = () => { d.close(); d.remove(); };
+    d.addEventListener("cancel", (e) => { e.preventDefault(); fermer(); });
+    d.querySelector("[data-f]").onclick = fermer;
+    d.querySelector("[data-pdf]").onclick = () => { fermer(); genererPdf(); };
+    d.showModal();
+  }
+  function proposerEffacement(ref) {
     const d = document.createElement("dialog"); d.className = "der-dialogue";
-    d.innerHTML = `<h2>Effacer les informations du client ?</h2><p>Le PDF est généré. Pensez à le ranger dans le dossier du client : la page, elle, ne garde rien.</p>
-      <div class="der-ligne-boutons"><button type="button" class="bouton bouton-discret" data-r="non">Garder pour l'instant</button><button type="button" class="bouton" data-r="oui">Effacer</button></div>`;
+    const avecClient = clientRempli();
+    d.innerHTML = `<h2>${avecClient ? "Effacer les informations du client ?" : "PDF prêt"}</h2><p>Référence du document : <b class="der-ref">${esc(ref)}</b>. Reportez-la dans le dossier du client.${avecClient ? " La page, elle, ne garde rien : pensez à ranger le PDF." : ""}</p>
+      <div class="der-ligne-boutons">${avecClient ? '<button type="button" class="bouton bouton-discret" data-r="non">Garder pour l\'instant</button><button type="button" class="bouton" data-r="oui">Effacer</button>' : '<button type="button" class="bouton" data-r="non">Fermer</button>'}</div>`;
     document.body.appendChild(d);
     d.querySelectorAll("button").forEach((b) => b.onclick = () => { d.close(); d.remove(); if (b.dataset.r === "oui") effacerClient("Informations du client effacées."); });
     d.showModal();
@@ -443,7 +486,7 @@
     moi = await chargerEntete("/der");
     let d;
     try { d = await appelApi("/api/der"); } catch (e) { zone.innerHTML = `<p class="message ko">${esc(e.message)}</p>`; return; }
-    C = d.contenu; admin = d.admin;
+    C = d.contenu; admin = d.admin; historique = d.historique || [];
     const defaut = C?.contact_defaut || {};
     // « Votre contact » : les coordonnées gardées par le conseiller, sinon son nom (et l'adresse du cabinet)
     contact = d.contact ? { ...d.contact } : { ...defaut, civilite: d.conseiller ? "" : defaut.civilite, nom: d.conseiller || defaut.nom || "", telephone: defaut.telephone || "" };
@@ -452,7 +495,12 @@
         <p class="doux">${admin ? "Importez le fichier du DER (JSON) fourni : il est rangé dans la base du site, jamais dans le code." : "L'administrateur doit d'abord importer le texte du DER."}</p></div>${admin ? panneau() : ""}</div>`;
       brancherAdmin(); return;
     }
-    zone.innerHTML = `<div class="der-page">${panneau()}<div><nav class="der-sommaire" aria-label="Sommaire du DER">${C.sections.map((s) => `<a href="#s-${s.id}">${esc(s.titre)}</a>`).join("")}</nav>${documentHtml()}</div></div>`;
+    let docHtml;
+    try { docHtml = `<nav class="der-sommaire" aria-label="Sommaire du DER">${C.sections.map((s) => `<a href="#s-${esc(s.id)}">${esc(s.titre)}</a>`).join("")}</nav>${documentHtml()}`; }
+    catch { docHtml = `<div class="carte bloc"><h2 style="margin-top:0">Le texte du DER est abîmé</h2><p class="doux">${admin ? "Revenez à la version précédente ou réimportez le fichier du DER (outils administrateur)." : "Prévenez l'administrateur du site."}</p></div>`; }
+    zone.innerHTML = `<div class="der-page">${panneau()}<div>${docHtml}</div></div>`;
+    brancherAdmin();
+    if (!document.getElementById("der-doc")) return;
     remplirChamps();
     document.getElementById("der-oublier").hidden = !d.contact;
     document.querySelectorAll(".der-panneau [data-zone]").forEach((el) => {
@@ -478,23 +526,19 @@
     document.getElementById("der-presenter").onclick = presenter;
     document.getElementById("der-pdf").onclick = genererPdf;
     document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.", true);
-    filtres(document); animer(); brancherAdmin();
+    document.getElementById("der-apercu").onclick = apercu;
+    filtres(document); animer();
   }
   function brancherAdmin() {
+    const recharger = () => { toast("✓ DER mis à jour. Rechargement…"); setTimeout(() => location.reload(), 900); };
+    const reg = document.getElementById("der-registre"); if (reg) reg.onclick = () => DerAdmin.registre();
     const imp = document.getElementById("der-import");
-    if (imp) imp.onchange = async () => {
-      const m = document.getElementById("der-msg-admin"), f = imp.files[0]; if (!f) return;
-      try {
-        const texte = await f.text();
-        const r = await fetch("/api/der/contenu", { method: "POST", headers: { "Content-Type": "application/json" }, body: texte, credentials: "same-origin" });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.erreur || "Import impossible.");
-        m.textContent = `✓ Texte importé (${j.sections} sections). Rechargement…`; setTimeout(() => location.reload(), 900);
-      } catch (e) { m.textContent = e.message; }
-    };
+    if (imp) imp.onchange = async () => { const f = imp.files[0]; imp.value = ""; if (f) await DerAdmin.importer(f, C, recharger); };
+    const ed = document.getElementById("der-editer"); if (ed) ed.onclick = () => DerAdmin.editeur(C, recharger);
+    const ve = document.getElementById("der-versions"); if (ve) ve.onclick = () => DerAdmin.historique(historique, recharger);
     const exp = document.getElementById("der-export");
     if (exp) exp.onclick = () => {
-      const { importe_le, ...sans } = C;
+      const { importe_le, par, ...sans } = C;
       const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(sans, null, 2)], { type: "application/json" }));
       a.download = "der-contenu.json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     };

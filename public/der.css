@@ -158,8 +158,8 @@
 /* ---------------------------------------------------------------- boîte de dialogue */
 .der-dialogue { border: 0; border-radius: 20px; padding: 24px; max-width: 420px; background: var(--carte); color: var(--texte); box-shadow: 0 30px 80px rgba(0, 0, 0, .35); }
 .der-dialogue::backdrop { background: rgba(10, 10, 20, .55); }
-.der-dialogue h2 { margin: 0 0 8px; font-size: 1.15rem; }
-.der-dialogue p { margin: 0 0 16px; color: var(--doux); }
+.der-dialogue > h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.der-dialogue > p { margin: 0 0 16px; color: var(--doux); }
 .der-dialogue .der-ligne-boutons { justify-content: flex-end; }
 .der-toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: #1d1d1d; color: #fff; padding: 12px 18px; border-radius: 14px; font-size: .9rem; z-index: 1100; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); animation: der-apparait .3s ease; }
 
@@ -219,3 +219,47 @@ details.der-bloc[open] .der-resume { display: none; }
 .der-toast button { font: inherit; font-weight: 700; color: #ffd27a; background: none; border: 0; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
 .der-toast button:focus-visible { outline: 2px solid #ffd27a; }
 .der-toast-alerte { background: #7a1010; }
+/* DER vierge : pas de « Nom du client » à l'impression */
+.der-feuilles .der-bandeau .client.vide { color: transparent; }
+.der-casse { padding: 12px 14px; border-radius: 12px; background: #fff4e0; color: #7a4b00; }
+.der-lien-registre { font: inherit; font-size: .82rem; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 4px; text-decoration: underline; text-underline-offset: 3px; }
+.der-ref { font-family: ui-monospace, Menlo, monospace; letter-spacing: .03em; }
+/* présentation sur téléphone : barre du haut compacte */
+@media (max-width: 700px) {
+  .der-pres-haut { padding: 10px 14px; }
+  .der-pres-haut .titre { display: none; }
+  .der-pres-haut img { height: 26px; }
+  .der-pres-fermer { padding: 6px 12px; font-size: 14px; }
+  .der-pres-scene { padding: 4px 10px 10px; }
+  .der-pres-bas { padding: 8px 12px 14px; }
+  .der-pres-bas .fl { width: 42px; height: 42px; }
+}
+/* boîtes larges : résumé des changements, éditeur, historique, registre, aperçu */
+.der-dialogue.large { max-width: min(980px, calc(100vw - 24px)); width: 100%; max-height: calc(100vh - 40px); overflow: auto; }
+.der-diff { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 6px; font-size: .88rem; }
+.der-diff li { padding: 8px 12px; border-radius: 10px; background: var(--fond); display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.der-ed { display: grid; gap: 14px; margin: 0 0 14px; }
+.der-ed-section { border: 1px solid var(--bord); border-radius: 14px; padding: 12px 14px; margin: 0; }
+.der-ed-section legend { font-weight: 700; padding: 0 6px; }
+.der-ed input[type=text] { font: inherit; font-size: .85rem; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--bord-fort); background: var(--fond); color: var(--texte); min-width: 0; width: 100%; box-sizing: border-box; }
+.der-ed-ligne { display: grid; grid-template-columns: 90px 1fr; gap: 8px; align-items: center; font-size: .82rem; font-weight: 600; color: var(--doux); margin: 6px 0; }
+.der-ed-titre { font-weight: 700; font-size: .9rem; margin: 10px 0 6px; }
+.der-ed-garantie { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+.der-ed-garantie label { display: grid; gap: 3px; font-size: .75rem; color: var(--doux); font-weight: 600; }
+.der-ed-tab { display: grid; gap: 4px; margin-bottom: 8px; }
+.der-ed-entete, .der-ed-ligneP { display: grid; grid-template-columns: 1.1fr 1.3fr 1.2fr 1.3fr 44px 32px; gap: 6px; align-items: center; }
+.der-ed-entete { font-size: .72rem; font-weight: 700; color: var(--doux); text-transform: uppercase; letter-spacing: .03em; }
+.der-ed-ligneP input[type=checkbox] { width: 18px; height: 18px; justify-self: center; accent-color: #660000; }
+.der-ed-suppr { border: 0; background: none; color: #a33; cursor: pointer; font-size: 1rem; border-radius: 8px; }
+.der-ed-suppr:hover { background: #fde8e8; }
+@media (max-width: 760px) { .der-ed-entete { display: none; } .der-ed-ligneP { grid-template-columns: 1fr 1fr; } .der-ed-garantie { grid-template-columns: 1fr; } }
+.der-reg-cherche { font: inherit; width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--fond); color: var(--texte); margin: 0 0 10px; }
+.der-reg { max-height: 50vh; overflow: auto; margin-bottom: 12px; color: #222; }
+.der-dialogue.der-apercu { max-width: min(1200px, calc(100vw - 24px)); width: 100%; max-height: calc(100vh - 30px); overflow: auto; background: #3a3a3a; color: #fff; }
+.der-apercu-haut { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; position: sticky; top: -24px; background: #3a3a3a; padding: 6px 0; z-index: 1; }
+.der-apercu-haut h2 { margin: 0 auto 0 0; color: #fff; }
+.der-apercu-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+.der-vignette { position: relative; aspect-ratio: 210 / 297; overflow: hidden; border-radius: 4px; box-shadow: 0 6px 20px rgba(0, 0, 0, .4); background: #fff; }
+.der-vignette .der-feuille { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+.der-vignette > span { position: absolute; bottom: 6px; right: 8px; background: rgba(0, 0, 0, .6); color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 999px; }
+.der-apercu-grille.der-feuilles { position: static; left: auto; width: auto; }
