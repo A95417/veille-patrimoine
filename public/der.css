@@ -43,15 +43,19 @@ details.der-admin > summary { cursor: pointer; font-weight: 600; font-size: .9re
 .der-nav button { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; font-size: .86rem; padding: 8px 10px; border-radius: 10px; border: 0; background: none; color: var(--texte); cursor: pointer; }
 .der-nav button:hover { background: var(--fond); }
 .der-nav button[aria-current="true"] { background: var(--der-rose); color: var(--der-rouge); font-weight: 600; }
-.der-nav .der-ico { width: 26px; height: 26px; } .der-nav .der-ico svg { width: 15px; height: 15px; }
-.der-vue { overflow: auto; padding: 24px; scroll-behavior: smooth; }
-.der-vue .der { max-width: 900px; margin: 0 auto; }
+.der-zoom { display: inline-flex; gap: 2px; }
+.der-zoom button { padding: 8px 10px; min-width: 38px; }
+.der-vue { overflow: auto; padding: 14px; scroll-behavior: smooth; background: #e9e9ec; }
 @media (max-width: 900px) {
   .der-corps-lecteur { grid-template-columns: minmax(0, 1fr); }
   .der-nav { display: none; }
   .der-barre select { display: block; flex: 1 1 100%; order: 10; }
   .der-barre .titre { display: none; }
   .der-barre .txt { display: none; }
+  .der-barre { gap: 5px; padding: 8px; }
+  .der-barre button { padding: 7px 10px; }
+  #der-zoom-val { display: none; }
+  .der-zoom button { min-width: 0; }
   .der-vue { padding: 10px; }
   .der-lecteur { height: calc(100dvh - 210px); border-radius: 14px; }
 }
@@ -59,93 +63,76 @@ details.der-admin > summary { cursor: pointer; font-weight: 600; font-size: .9re
 .der-lecteur.plein { position: fixed; inset: 0; z-index: 1000; height: 100vh; height: 100dvh; border-radius: 0; border: 0; }
 .der-lecteur:fullscreen { height: 100vh; border-radius: 0; }
 
-/* ---------------------------------------------------------------- le document */
-.der { font-family: Poppins, Inter, system-ui, sans-serif; color: var(--der-texte); background: #fff; border-radius: 22px; box-shadow: 0 20px 60px rgba(40, 10, 10, .12); overflow: hidden; font-size: 14px; line-height: 1.6; color-scheme: light; }
-.der a { color: var(--der-rouge); }
-.der-couverture { position: relative; padding: 34px 40px 0; min-height: 640px; display: grid; grid-template-rows: auto 1fr auto; }
-.der-couv-haut { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
-.der-interlocuteur { font-size: 13px; line-height: 1.55; }
-.der-interlocuteur .petit { color: var(--der-doux); font-size: 12px; }
-.der-interlocuteur b { font-size: 14px; }
-.der-logo { width: 168px; height: auto; display: block; border-radius: 2px; }
-.der-illus { margin: 34px -40px 0; position: relative; height: 330px; overflow: hidden; background: linear-gradient(135deg, #efeded, #dcd8d8); }
-.der-illus svg { width: 100%; height: 100%; display: block; }
-.der-titre-couv { position: relative; margin: -120px 0 0 auto; width: min(640px, 82%); background: #fff; padding: 30px 40px 26px; z-index: 1; }
-.der-titre-couv .sigle { font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 54px; letter-spacing: .04em; color: var(--der-rouge); line-height: 1; }
-.der-titre-couv .long { font-size: 30px; color: var(--der-rouge); line-height: 1.2; margin-top: 8px; }
-.der-bandeau { display: grid; grid-template-columns: minmax(90px, 18%) 1fr; margin: 0 -40px; }
-.der-bandeau .annee { font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 28px; color: var(--der-rouge); display: grid; place-items: center; padding: 22px 10px; }
-.der-bandeau .client { background: var(--der-rouge); color: #fff; font-size: 21px; padding: 24px 40px; display: flex; align-items: center; min-height: 34px; }
-.der-bandeau .client.vide { color: rgba(255, 255, 255, .6); font-style: italic; font-size: 16px; }
-.der-corps { padding: 26px 40px 44px; }
-.der-doc-titre { text-transform: uppercase; font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 26px; line-height: 1.15; color: var(--der-gris); margin: 10px 0 18px; letter-spacing: -.01em; }
-.der-doc-titre span { display: block; color: var(--der-rouge); }
-.der-section { padding-top: 6px; margin-top: 18px; scroll-margin-top: 12px; }
-.der-section > h2 { font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -.01em; text-transform: uppercase; color: var(--der-gris); margin: 0 -40px 14px; padding: 0 40px 9px; border-bottom: 2px solid var(--der-rouge); display: flex; align-items: center; gap: 12px; }
-.der-ico { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--der-rose); color: var(--der-rouge); display: grid; place-items: center; }
-.der-ico svg { width: 19px; height: 19px; }
-.der-section p { margin: 0 0 10px; text-align: justify; }
-.der-h { font-family: Poppins, sans-serif; font-weight: 600; font-size: 15px; color: var(--der-rouge); margin: 18px 0 8px; }
-.der-h.gris { color: var(--der-gris); font-size: 17px; }
-.der-h3 { font-weight: 700; font-size: 13px; margin: 12px 0 6px; }
-.der-cle { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; color: var(--der-rouge); margin: 16px 0 6px; padding: 8px 14px 8px 10px; border-radius: 12px; background: var(--der-rose); }
-.der-cle svg { width: 18px; height: 18px; }
-.der-centre { text-align: center; display: grid; gap: 8px; }
-.der-centre p { text-align: center; }
-.der-liste { list-style: none; margin: 4px 0 12px; padding: 0; display: grid; gap: 10px; }
-.der-liste li { position: relative; padding-left: 16px; text-align: justify; }
-.der-liste li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; background: var(--der-texte); }
-.der-coord { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; font-size: 13px; }
-.der-coord .gras { font-weight: 700; }
-.der-coord .vide, .der-identite .vide { color: #b04a4a; font-style: italic; background: #fff4f4; border-radius: 6px; padding: 0 6px; }
-.der-identite { font-size: 13px; color: var(--der-gris); display: grid; gap: 2px; }
-.der-identite b { color: var(--der-texte); }
-
-/* garanties : cartes à l'écran, tableau à l'impression */
-.der-tableau-titre { font-weight: 600; font-size: 15px; color: var(--der-rouge); margin: 20px 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.der-garanties { display: grid; gap: 10px; }
-.der-garantie { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 14px; align-items: center; background: var(--der-fond); border-radius: 14px; padding: 14px 16px; border-left: 4px solid var(--der-rouge); }
-.der-garantie .act { font-size: 13px; }
-.der-montant { text-align: center; min-width: 150px; }
-.der-montant .v { font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 22px; color: var(--der-rouge); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.der-montant .l { font-size: 11px; color: var(--der-doux); line-height: 1.3; }
-@media (max-width: 700px) { .der-garantie { grid-template-columns: 1fr 1fr; } .der-garantie .act { grid-column: 1 / -1; } .der-montant { min-width: 0; } }
-.der-tab { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
-.der-tab th { background: var(--der-rouge); color: #fff; text-align: left; font-weight: 600; padding: 10px 14px; }
-.der-tab th:first-child { border-top-left-radius: 10px; } .der-tab th:last-child { border-top-right-radius: 10px; }
-.der-tab th:nth-child(1) { width: 21%; } .der-tab th:nth-child(2) { width: 24%; } .der-tab th:nth-child(3) { width: 25%; }
-.der-tab-garanties th:nth-child(1) { width: 50%; }
-.der-tab td { padding: 7px 14px; background: var(--der-fond); color: #444; vertical-align: middle; }
-.der-tab tr:nth-child(even) td { background: #fff; }
-.der-tab td.n { font-weight: 500; color: var(--der-texte); }
-.der-tab td b { color: var(--der-texte); }
-.der-tab-garanties { display: none; }
-.der-tab-garanties td:not(:first-child), .der-tab-garanties th:not(:first-child) { text-align: center; }
-.der-filtres { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-weight: 400; }
-.der-filtres input { font: inherit; font-size: 12.5px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--der-filet); width: 190px; color: var(--der-texte); background: #fff; }
-.der-filtres button { font: inherit; font-size: 11.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--der-filet); background: #fff; color: var(--der-gris); cursor: pointer; }
-.der-filtres button[aria-pressed="true"] { background: var(--der-rouge); border-color: var(--der-rouge); color: #fff; }
-.der-tab-defile { overflow-x: auto; border-radius: 10px; }
-.der-tab-vide { padding: 14px; text-align: center; color: var(--der-doux); font-size: 13px; }
-.der-note { font-size: 11.5px; color: #555; margin-top: 8px; }
-.der-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 16px; }
-.der-signatures .col { font-size: 12.5px; color: #444; line-height: 1.6; }
-.der-signatures .col b { display: block; font-family: Montserrat, Poppins, sans-serif; color: var(--der-rouge); font-size: 15px; margin-bottom: 2px; }
-.der-signatures .cadre { margin-top: 10px; height: 90px; border: 1.5px dashed var(--der-filet); border-radius: 12px; }
-.der-docs b { display: block; font-family: Poppins, sans-serif; font-weight: 700; color: var(--der-rouge); font-size: 15px; margin: 14px 0 6px; }
-@media (max-width: 700px) {
-  .der-couverture { padding: 22px 18px 0; min-height: 0; }
-  .der-couv-haut { flex-direction: column-reverse; }
-  .der-illus { margin: 22px -18px 0; height: 200px; }
-  .der-titre-couv { margin-top: -60px; width: 92%; padding: 18px 20px; }
-  .der-titre-couv .sigle { font-size: 40px; } .der-titre-couv .long { font-size: 21px; }
-  .der-bandeau { margin: 0 -18px; } .der-bandeau .client { padding: 18px 20px; font-size: 18px; }
-  .der-corps { padding: 18px 18px 30px; }
-  .der-section > h2 { margin: 0 -18px 14px; padding: 0 18px 9px; }
-  .der-coord, .der-signatures { grid-template-columns: 1fr; }
-  .der-tab { min-width: 560px; }
-  .der-section p, .der-liste li { text-align: left; }
-}
+/* ---------------------------------------------------------------- le document : feuilles A4 identiques au DER d'origine
+   (unités : points de la page de 827 × 1170, mises à l'échelle de l'écran par « zoom ») */
+.dp-pile { width: 827px; margin: 0 auto; }
+.dp-atelier { position: absolute; left: -10000px; top: 0; width: 827px; }
+.dp { width: 827px; height: 1170px; position: relative; box-sizing: border-box; padding-top: 56px; background: #fff; color: #000; font-family: Poppins, sans-serif; font-size: 12.5px; line-height: 1.38;
+  overflow: hidden; color-scheme: light; box-shadow: 0 4px 22px rgba(0, 0, 0, .16); margin: 0 auto 26px; -webkit-font-smoothing: antialiased; }
+.dp .contenu { height: 1050px; overflow: hidden; }
+.dp .pied { position: absolute; left: 17px; right: 32px; top: 1126px; display: flex; justify-content: space-between; align-items: flex-start; }
+.dp .pied .g { font-size: 11.1px; color: #b3b3b3; padding-top: 9px; }
+.dp .pied .n { font-size: 12.5px; color: #354e66; }
+.dp a { color: inherit; text-decoration: none; }
+.dp b { font-weight: 700; }
+/* couverture */
+.dp.couverture { padding: 0; }
+.dp-couv { position: relative; height: 1170px; }
+.dp-inter { position: absolute; left: 31px; top: 40px; display: grid; color: #444; font-size: 14.6px; line-height: 1.42; }
+.dp-inter .g { color: #aaa; font-size: 12.5px; }
+.dp-inter b { font-weight: 700; }
+.dp-inter .m { margin-top: 19px; font-size: 12.5px; }
+.dp-logo { position: absolute; left: 634px; top: 31px; width: 167px; height: auto; }
+.dp-photo { position: absolute; left: 0; top: 238px; width: 827px; height: 627px; object-fit: cover; }
+.dp-titre { position: absolute; left: 146px; top: 667px; width: 681px; height: 198px; background: #fff; color: #5e0000; }
+.dp-titre .s { position: absolute; left: 41px; top: 40px; font-weight: 700; font-size: 62.5px; letter-spacing: .02em; line-height: 1.2; }
+.dp-titre .l { position: absolute; left: 41px; top: 112px; font-size: 40px; line-height: 1.25; white-space: nowrap; }
+.dp-annee { position: absolute; left: 0; top: 865px; width: 146px; height: 83px; display: flex; align-items: center; padding-left: 35px; box-sizing: border-box; font-weight: 700; font-size: 31.3px; color: #5e0000; }
+.dp-client { position: absolute; left: 146px; top: 865px; width: 681px; height: 83px; background: #5e0000; color: #fff; font-size: 25px; display: flex; align-items: center; padding-left: 41px; box-sizing: border-box; }
+/* titres */
+.dp-doc-titre { margin: 0 31px 34px; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 29.2px; line-height: 1.07; color: #444; }
+.dp-doc-titre span { display: block; color: #5e0000; }
+.dp-sec { margin-top: 30px; }
+.dp .contenu > .dp-sec:first-child, .dp .contenu > .dp-doc-titre + .dp-sec { margin-top: 0; }
+.dp-sec.suite { margin-top: 0; }
+.dp-sec > h2 { margin: 0 0 22px; padding: 0 31px 8px; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 18.8px; line-height: 1.3; color: #444; text-transform: uppercase; border-bottom: 2px solid #5e0000; letter-spacing: -.01em; }
+.dp-h { margin: 22px 31px 10px; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 15px; line-height: 1.3; color: #5e0000; }
+.dp-sec > h2 + .dp-h { margin-top: 0; }
+.dp-h.gris { font-family: Poppins, sans-serif; font-size: 18.8px; color: #444; margin: 20px 31px 2px; }
+.dp-h3 { margin: 0 32px 8px 33px; font-weight: 700; }
+.dp-cle { margin: 30px 31px 18px; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 15px; color: #5e0000; }
+.dp p { margin: 0 32px 12px 33px; text-align: justify; }
+.dp-liste { list-style: none; margin: 8px 32px 14px 36px; padding: 0; }
+.dp-liste li { position: relative; padding-left: 10px; margin-bottom: 8px; line-height: 1.65; text-align: justify; }
+.dp-sec[data-id="mediateurs"] .dp-liste li, .dp-sec[data-id="reclamations"] .dp-liste li { margin-bottom: 26px; }
+.dp-liste li::before { content: ""; position: absolute; left: 0; top: .72em; width: 4px; height: 4px; background: #000; }
+.dp-centre { margin: 0 32px; text-align: center; }
+.dp-centre p { margin: 0 0 14px; text-align: center; }
+.dp-contact { display: grid; grid-template-columns: 306px 1fr; margin: 0 0 0 32px; line-height: 1.38; }
+.dp-contact-d { align-self: center; }
+.dp-identite { margin: 0 0 0 32px; color: #444; line-height: 1.66; }
+/* tableaux */
+.dp-tt { margin: 28px 31px 6px; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 15px; color: #5e0000; }
+.dp-tab-bloc { margin: 0 32px 0 31px; }
+.dp-tab { width: 764px; border-collapse: separate; border-spacing: 0; background: #f9f9f9; border-radius: 0 0 8px 8px; font-size: 12.5px; table-layout: fixed; }
+.dp-tab th { background: #5e0000; color: #fff; font-weight: 700; text-align: left; padding: 9px 16px; line-height: 1.3; height: 20px; }
+.dp-tab th:first-child { border-top-left-radius: 10px; } .dp-tab th:last-child { border-top-right-radius: 10px; }
+.dp-tab td { color: #444; padding: 1px 0 1px 5px; line-height: 25px; vertical-align: middle; }
+.dp-tab td b { color: #000; }
+.dp-tab tbody tr:first-child td { padding-top: 10px; } .dp-tab tbody tr:last-child td { padding-bottom: 8px; }
+.dp-part th:nth-child(1), .dp-part th:nth-child(2) { width: 153px; } .dp-part th:nth-child(3), .dp-part th:nth-child(4) { width: 229px; }
+.dp-part th, .dp-gar th { box-sizing: border-box; }
+.dp-gar th:nth-child(1) { width: 306px; } .dp-gar th:nth-child(2), .dp-gar th:nth-child(3) { width: 229px; text-align: center; }
+.dp-gar td:nth-child(2), .dp-gar td:nth-child(3) { text-align: center; }
+.dp-note { margin: 4px 32px 0 31px; font-size: 11px; line-height: 2; color: #444; }
+/* signature et dossier */
+.dp-sign { display: grid; grid-template-columns: 467px 1fr; margin: 30px 0 0 35px; color: #444; line-height: 1.54; }
+.dp-sign.seule { grid-template-columns: 1fr; margin: 30px 0 0 54px; }
+.dp-sign .t { font-family: Montserrat, sans-serif; font-weight: 700; font-size: 15px; color: #5e0000; margin-bottom: 2px; }
+.dp-docs-t { margin: 8px 31px 8px; font-weight: 700; font-size: 16.7px; color: #5e0000; }
+.dp-docs { color: #444; margin-top: 0; }
+.dp-docs li { margin-bottom: 6px; }
+#s-dossier > p, #s-signature > p { color: #444; }
 
 /* ---------------------------------------------------------------- boîtes de dialogue et messages */
 /* ---------------------------------------------------------------- boîte de dialogue */

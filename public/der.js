@@ -40,105 +40,122 @@
   };
   const ico = (k, cls = "der-ico") => `<span class="${cls}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${P[k] || P.intro}</svg></span>`;
 
-  // Illustration de couverture (maison) : un dossier, un stylo qui signe, des courbes de patrimoine, un bouclier.
-  const ILLUS = `<svg viewBox="0 0 1000 330" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs><linearGradient id="dg" x1="0" x2="1"><stop offset="0" stop-color="#f3f1f1"/><stop offset="1" stop-color="#d9d3d3"/></linearGradient>
-      <linearGradient id="dr" x1="0" x2="1"><stop offset="0" stop-color="#660000"/><stop offset="1" stop-color="#9b2222"/></linearGradient></defs>
-    <rect width="1000" height="330" fill="url(#dg)"/>
-    <g opacity=".5" stroke="#bdb4b4" stroke-width="1">${Array.from({ length: 12 }, (_, i) => `<line x1="${i * 90}" y1="0" x2="${i * 90 - 120}" y2="330"/>`).join("")}</g>
-    <g class="apparait" style="animation-delay:.2s"><path d="M40 270 C150 250 210 190 300 200 S450 120 560 140 S760 60 960 40" fill="none" stroke="#c9bfbf" stroke-width="3"/>
-      <path d="M40 300 C170 290 260 250 360 250 S520 210 640 215 S820 170 960 150" fill="none" stroke="#e0d8d8" stroke-width="3"/></g>
-    <g class="flotte"><rect x="330" y="60" width="300" height="230" rx="10" fill="#fff" stroke="#d6cdcd" transform="rotate(-6 480 175)"/>
-      <rect x="350" y="48" width="300" height="230" rx="10" fill="#fff" stroke="#cfc5c5" transform="rotate(3 500 163)"/>
-      <g transform="rotate(3 500 163)"><rect x="378" y="78" width="92" height="12" rx="6" fill="#660000"/>
-        ${[110, 132, 154, 176].map((y, i) => `<rect x="378" y="${y}" width="${[230, 200, 220, 150][i]}" height="7" rx="3.5" fill="#e4dcdc"/>`).join("")}
-        <path class="trait" d="M392 236 c18 -26 30 -26 30 -6 s14 18 26 -6 s16 -12 22 6 s20 4 36 -10 s28 0 40 -4" fill="none" stroke="#660000" stroke-width="3.4" stroke-linecap="round"/>
-        <line x1="380" y1="252" x2="600" y2="252" stroke="#d8cfcf" stroke-width="2"/></g></g>
-    <g transform="translate(640 210) rotate(-38)"><rect x="0" y="-9" width="190" height="18" rx="9" fill="#2b2b2b"/><rect x="128" y="-9" width="18" height="18" fill="#bfbfbf"/>
-      <path d="M0 -9 L-34 0 L0 9 Z" fill="#9a9a9a"/><path d="M-34 0 L-24 -3 L-24 3 Z" fill="#2b2b2b"/></g>
-    <g transform="translate(-60 0)"><g class="flotte" style="animation-delay:-2s"><circle cx="820" cy="120" r="54" fill="url(#dr)"/>
-      <path d="M820 92l22 8v16c0 13-9.5 23-22 26-12.5-3-22-13-22-26v-16z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
-      <path d="M809 118l8 8 15-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g></g>
-    <g transform="translate(70 0)"><g class="flotte" style="animation-delay:-4s"><rect x="110" y="70" width="150" height="104" rx="14" fill="#fff" stroke="#d6cdcd"/>
-      ${[0, 1, 2, 3].map((i) => `<rect x="${132 + i * 30}" y="${150 - [30, 48, 40, 66][i]}" width="18" height="${[30, 48, 40, 66][i]}" rx="4" fill="${i === 3 ? "#660000" : "#d9c4c4"}"/>`).join("")}</g></g>
-  </svg>`;
-
-  // ---------------------------------------------------------------- rendu du document
+  // ---------------------------------------------------------------- rendu du document : identique au DER d'origine
+  // Les feuilles A4 reprennent la mise en page du PDF du cabinet (mesures en points de la page de 827 × 1170).
   function blocContact() {
-    const c = contact, v = (x, lib) => (x ? esc(x) : `<span class="vide">${lib}</span>`);
-    return `<div class="der-coord" data-zone="contact">
-      <div><div class="gras">${v([c.civilite, (c.nom || "").toUpperCase()].filter(Boolean).join(" "), "Nom du conseiller")}</div><div class="gras">${esc(c.cabinet)}</div><div>${esc(c.adresse)}</div><div>${esc(c.ville)}</div></div>
-      <div style="align-self:center">Téléphone : ${esc(c.telephone)}<br>Email : <b>${esc(c.email)}</b></div></div>`;
+    const c = contact;
+    return `<div class="dp-contact"><div><b>${esc([c.civilite, (c.nom || "").toUpperCase()].filter(Boolean).join(" "))}</b><br><b>${esc(c.cabinet)}</b><br>${esc(c.adresse)}<br>${esc((c.ville || "").toUpperCase())}</div>
+      <div class="dp-contact-d">Téléphone : ${esc(c.telephone)}<br>Email : <b>${esc(c.email)}</b></div></div>`;
   }
   function blocIdentite() {
-    const k = client, nomComplet = [k.civilite, (k.nom || "").toUpperCase(), k.prenom].filter(Boolean).join(" ");
-    return `<div class="der-identite" data-zone="identite">
-      <b>${k.nom || k.prenom ? esc(nomComplet) : '<span class="vide">Nom et prénom du client</span>'}</b>
-      <span>${k.naissance ? "né(e) le " + esc(dateFr(k.naissance)) : '<span class="vide">Date de naissance</span>'}</span>
-      <span>${k.telephone ? esc(k.telephone) : '<span class="vide">Téléphone</span>'}</span>
-      <span>${k.email ? esc(k.email) : '<span class="vide">E-mail</span>'}</span></div>`;
+    const k = client;
+    return `<div class="dp-identite"><b>${esc([k.civilite, (k.nom || "").toUpperCase(), k.prenom].filter(Boolean).join(" "))}</b><br>${k.naissance ? "né(e) le " + esc(dateFr(k.naissance)) : ""}<br>${esc(k.telephone)}<br>${esc(k.email)}</div>`;
   }
   const nomClientCouv = () => [client.civilite, client.prenom, (client.nom || "").toUpperCase()].filter(Boolean).join(" ");
   const interlocuteurCouv = () => [contact.civilite, contact.nom].filter(Boolean).join(" ");
-
   function garanties(b) {
-    const cartes = b.lignes.map((l) => `<div class="der-garantie"><div class="act">${fmt(l[0])}</div>
-      <div class="der-montant"><div class="v" data-montant="${esc(l[1])}">${esc(l[1])}</div><div class="l">Montant garanti<br>par sinistre</div></div>
-      <div class="der-montant"><div class="v" data-montant="${esc(l[2])}">${esc(l[2])}</div><div class="l">Montant garanti<br>par année d'assurance</div></div></div>`).join("");
-    const tab = `<table class="der-tab der-tab-garanties"><thead><tr><th>Activités assurées</th><th>Montants garantis<br>par sinistre</th><th>Montants garantis<br>par année d'assurance</th></tr></thead>
-      <tbody>${b.lignes.map((l) => `<tr><td>${fmt(l[0])}</td><td>${esc(l[1])}</td><td>${esc(l[2])}</td></tr>`).join("")}</tbody></table>`;
-    return `<div class="der-tableau-titre">${esc(b.titre)}</div><div class="der-garanties">${cartes}</div>${tab}`;
+    return `<div class="dp-tt">${esc(b.titre)}</div><div class="dp-tab-bloc"><table class="dp-tab dp-gar"><thead><tr><th>Activités assurées</th><th>Montants garantis<br>par sinistre</th><th>Montants garantis<br>par année d'assurance</th></tr></thead>
+      <tbody>${b.lignes.map((l) => `<tr><td>${fmt(l[0])}</td><td>${esc(l[1])}</td><td>${esc(l[2])}</td></tr>`).join("")}</tbody></table></div>`;
   }
-  let nTab = 0;
   function partenaires(b) {
-    const id = "pt" + (++nTab);
-    // familles pour le filtre (regroupement d'affichage seulement : le texte du tableau ne change pas)
-    const FAM = [["Immobilier", /immobili/i], ["Girardin", /girardin/i], ["Gestion", /gestion/i], ["Investissement", /investissement/i], ["Banque", /banque/i], ["Assureur", /assur/i], ["Autres", /./]];
-    const famille = (l) => FAM.find(([, r]) => r.test(brut(l[1])))[0];
-    const natures = FAM.map(([n]) => n).filter((n) => b.lignes.some((l) => famille(l) === n));
-    const filtres = b.lignes.length > 8 ? `<span class="der-filtres" data-tab="${id}"><input type="search" placeholder="Rechercher…" aria-label="Rechercher un partenaire">
-      ${natures.length > 1 && natures.length < 8 ? `<button type="button" data-n="" aria-pressed="true">Tous (${b.lignes.length})</button>` + natures.map((n) => `<button type="button" data-n="${esc(n)}" aria-pressed="false">${esc(n)}</button>`).join("") : ""}</span>` : "";
-    return `<div class="der-tableau-titre"><span>${esc(b.titre)}</span>${filtres}</div>
-      <div class="der-tab-defile"><table class="der-tab" id="${id}"><thead><tr><th>Nom</th><th>Nature</th><th>Type d'accord</th><th>Mode de rémunération</th></tr></thead>
-      <tbody>${b.lignes.map((l) => `<tr data-nature="${esc(famille(l))}"><td class="n">${fmt(l[0])}</td><td>${fmt(l[1])}</td><td>${fmt(l[2])}</td><td>${fmt(l[3])}</td></tr>`).join("")}</tbody></table>
-      <div class="der-tab-vide" hidden>Aucun partenaire ne correspond.</div></div>${b.note ? `<div class="der-note">${fmt(b.note)}</div>` : ""}`;
+    return `<div class="dp-tt">${esc(b.titre)}</div><div class="dp-tab-bloc"><table class="dp-tab dp-part"><thead><tr><th>Nom</th><th>Nature</th><th>Type d'accord</th><th>Mode de rémunération</th></tr></thead>
+      <tbody>${b.lignes.map((l) => `<tr><td>${fmt(l[0])}</td><td>${fmt(l[1])}</td><td>${fmt(l[2])}</td><td>${fmt(l[3])}</td></tr>`).join("")}</tbody></table></div>${b.note ? `<div class="dp-note">${fmt(b.note)}</div>` : ""}`;
   }
   function bloc(b) {
     switch (b.t) {
       case "p": return `<p>${fmt(b.x)}</p>`;
-      case "h": return `<div class="der-h ${b.style === "gris" ? "gris" : ""}">${fmt(b.x)}</div>`;
-      case "h3": return `<div class="der-h3">${fmt(b.x)}</div>`;
-      case "cle": return `<div class="der-cle">${ico("badge", "")}<span>${fmt(b.x)}</span></div>`;
-      case "liste": return `<ul class="der-liste">${b.items.map((x) => `<li>${fmt(x)}</li>`).join("")}</ul>`;
-      case "centre": return `<div class="der-centre">${b.lignes.map((x) => `<p>${fmt(x)}</p>`).join("")}</div>`;
+      case "h": return `<div class="dp-h ${b.style === "gris" ? "gris" : ""}">${fmt(b.x)}</div>`;
+      case "h3": return `<div class="dp-h3">${fmt(b.x)}</div>`;
+      case "cle": return `<div class="dp-cle">${fmt(b.x)}</div>`;
+      case "liste": return `<ul class="dp-liste">${b.items.map((x) => `<li>${fmt(x)}</li>`).join("")}</ul>`;
+      case "centre": return `<div class="dp-centre">${b.lignes.map((x) => `<p>${fmt(x)}</p>`).join("")}</div>`;
       case "garanties": return garanties(b);
       case "partenaires": return partenaires(b);
       case "contact": return blocContact();
       case "identite": return blocIdentite();
-      case "documents": return `<div class="der-docs"><b>${esc(b.titre)}</b><ul class="der-liste">${b.items.map((x) => `<li>${fmt(x)}</li>`).join("")}</ul></div>`;
-      case "signature": return `<div class="der-signatures">${b.colonnes.map((c) => `<div class="col"><b>${esc(c)}</b>Fait à :<br>Date :<br>Signature :<div class="cadre"></div></div>`).join("")}</div>`;
+      case "documents": return `<div class="dp-docs-t">${esc(b.titre)}</div><ul class="dp-liste dp-docs">${b.items.map((x) => `<li>${fmt(x)}</li>`).join("")}</ul>`;
+      case "signature": return `<div class="dp-sign ${b.colonnes.length === 1 ? "seule" : ""}">${b.colonnes.map((c) => `<div><div class="t">${esc(c)}</div>Fait à :<br>Date :<br>Signature :</div>`).join("")}</div>`;
       default: return "";
     }
   }
-  // Une section abîmée n'empêche jamais l'affichage du reste (ni l'accès aux outils de l'administrateur).
-  const section = (s) => {
-    let corps;
-    try { corps = s.blocs.map(bloc).join(""); } catch { corps = `<p class="der-casse">Cette section n'a pas pu s'afficher. L'administrateur doit réimporter le texte du DER ou revenir à la version précédente.</p>`; }
-    return `<section class="der-section" id="s-${esc(s.id)}" data-page="${s.page === "nouvelle" ? "nouvelle" : ""}"><h2>${ico(s.icone)}${esc(s.titre)}</h2>${corps}</section>`;
-  };
+  // Texte source (avant découpage en pages) : une section abîmée n'empêche jamais l'affichage du reste.
+  function sourceHtml() {
+    return `<div class="dp-doc-titre">DOCUMENT<span>D'ENTRÉE EN RELATION</span></div>` + C.sections.map((s) => {
+      let corps;
+      try { corps = s.blocs.map(bloc).join(""); } catch { corps = `<p class="der-casse">Cette section n'a pas pu s'afficher. L'administrateur doit déposer de nouveau le texte du DER ou revenir à la version précédente.</p>`; }
+      return `<section class="dp-sec" data-id="${esc(s.id)}" data-page="${s.page === "nouvelle" ? "nouvelle" : ""}"><h2>${esc(s.titre)}</h2>${corps}</section>`;
+    }).join("");
+  }
+  function couverture() {
+    return `<div class="dp-couv">
+      <div class="dp-inter"><span class="g">Votre interlocuteur</span><b>${esc(interlocuteurCouv())}</b><span>${esc(contact.cabinet)}</span><span class="m">${esc(contact.email)}</span></div>
+      <img class="dp-logo" src="/der-logo.png" alt="BSC Patrimoine">
+      <img class="dp-photo" src="/der-couverture.jpg" alt="">
+      <div class="dp-titre"><div class="s">DER</div><div class="l">Document d'Entrée en Relation</div></div>
+      <div class="dp-annee">${new Date().getFullYear()}</div><div class="dp-client">${esc(nomClientCouv())}</div></div>`;
+  }
 
-  function documentHtml() {
-    nTab = 0;
-    return `<article class="der" id="der-doc">
-      <section class="der-couverture">
-        <div class="der-couv-haut"><div class="der-interlocuteur"><div class="petit">Votre interlocuteur</div><b id="couv-inter">${esc(interlocuteurCouv())}</b><br><span id="couv-cab">${esc(contact.cabinet)}</span><br><br><span id="couv-mail">${esc(contact.email)}</span></div>
-          <img class="der-logo" src="/logo-bsc.png" alt="BSC Patrimoine"></div>
-        <div class="der-illus">${ILLUS}</div>
-        <div><div class="der-titre-couv"><div class="sigle">DER</div><div class="long">Document d'Entrée en Relation</div></div>
-          <div class="der-bandeau"><div class="annee">${new Date().getFullYear()}</div><div class="client ${nomClientCouv().length > 3 ? "" : "vide"}" id="couv-client">${nomClientCouv().length > 3 ? esc(nomClientCouv()) : "Nom du client"}</div></div></div>
-      </section>
-      <div class="der-corps"><div class="der-doc-titre">Document<span>d'entrée en relation</span></div>${C.sections.map(section).join("")}</div>
-    </article>`;
+  // Découpage en feuilles A4 (mêmes pages que l'original : sauts de page aux mêmes sections, tableaux coupés
+  // ligne par ligne avec l'en-tête répété, titres jamais seuls en bas de page).
+  const TITRES = ".dp-h, .dp-h3, .dp-tt, .dp-docs-t";
+  function composer() {
+    const atelier = document.createElement("div"); atelier.className = "dp-atelier"; atelier.setAttribute("aria-hidden", "true");
+    document.body.appendChild(atelier);
+    const src = document.createElement("div"); src.innerHTML = sourceHtml();
+    const feuilles = [];
+    let cur;
+    const nouvelle = (cls = "") => {
+      const f = document.createElement("div"); f.className = "dp " + cls;
+      f.innerHTML = `<div class="contenu"></div><div class="pied"><span class="g">BSC Patrimoine · DER établi le ${aujourdhui()}</span><span class="n"></span></div>`;
+      atelier.appendChild(f); feuilles.push(f); cur = f.querySelector(".contenu"); return cur;
+    };
+    const deborde = () => cur.scrollHeight > cur.clientHeight + 1;
+    const coquille = (sec, avecTitre) => { const c = sec.cloneNode(false); if (avecTitre) c.appendChild(sec.querySelector(":scope > h2").cloneNode(true)); else c.classList.add("suite"); return c; };
+    nouvelle("couverture").innerHTML = couverture(); feuilles[0].id = "s-couv";
+    nouvelle();
+    cur.appendChild(src.querySelector(".dp-doc-titre").cloneNode(true));
+    for (const sec of src.querySelectorAll(":scope > .dp-sec")) {
+      if (sec.dataset.page === "nouvelle" && cur.childElementCount) nouvelle(sec.dataset.id === "dossier" ? "seule" : "");
+      let boite = coquille(sec, true); boite.id = "s-" + sec.dataset.id; cur.appendChild(boite);
+      if (deborde()) { boite.remove(); nouvelle(); cur.appendChild(boite); }
+      const placer = (el) => {
+        boite.appendChild(el);
+        if (!deborde()) return;
+        el.remove();
+        const suiveurs = [];
+        while (boite.lastElementChild && boite.lastElementChild.matches(TITRES)) { const t = boite.lastElementChild; t.remove(); suiveurs.unshift(t); }
+        if (boite.children.length === 1 && boite.firstElementChild.tagName === "H2") { boite.remove(); nouvelle(); cur.appendChild(boite); }
+        else { if (!boite.children.length) boite.remove(); nouvelle(); boite = coquille(sec, false); cur.appendChild(boite); }
+        suiveurs.forEach((x) => boite.appendChild(x));
+        boite.appendChild(el);
+      };
+      for (const enfant of sec.children) {
+        if (enfant.tagName === "H2") continue;
+        const tab = enfant.matches(".dp-tab-bloc") ? enfant.querySelector("table") : null;
+        if (!tab || tab.querySelectorAll("tbody tr").length < 3) { placer(enfant.cloneNode(true)); continue; }
+        const nouveauTableau = () => { const w = enfant.cloneNode(true); w.querySelector("tbody").innerHTML = ""; return w; };
+        let w = nouveauTableau(); placer(w);
+        const lignes = [...tab.querySelectorAll("tbody tr")];
+        lignes.forEach((tr, k) => {
+          const ligne = tr.cloneNode(true);
+          w.querySelector("tbody").appendChild(ligne);
+          if (!deborde()) return;
+          ligne.remove();
+          if (!w.querySelector("tbody").children.length) { w.remove(); placer(w); w.querySelector("tbody").appendChild(ligne); return; }
+          const emportees = [];
+          if (lignes.length - k === 1 && w.querySelector("tbody").children.length >= 3) emportees.push(w.querySelector("tbody").lastElementChild);
+          emportees.forEach((x) => x.remove());
+          nouvelle(); boite = coquille(sec, false); cur.appendChild(boite);
+          w = nouveauTableau(); w.classList.add("suite"); boite.appendChild(w); [...emportees, ligne].forEach((x) => w.querySelector("tbody").appendChild(x));
+        });
+      }
+    }
+    // numéros de page : comme l'original, la page « Signature du dossier » a sa propre numérotation (1/1)
+    const principales = feuilles.filter((f) => !f.classList.contains("seule"));
+    principales.forEach((f, k) => { f.querySelector(".n").textContent = `${k + 1}/${principales.length}`; });
+    feuilles.filter((f) => f.classList.contains("seule")).forEach((f) => { f.querySelector(".n").textContent = "1/1"; });
+    atelier.remove();
+    return feuilles;
   }
 
   // ---------------------------------------------------------------- étape 1 : préparer le DER
@@ -186,32 +203,43 @@
   }
 
   // ---------------------------------------------------------------- étape 2 : le document, navigation libre par catégorie
-  let lecteur = null, sections = [], courant = 0, observateur = null;
+  let courant = -1, zoomUtilisateur = 1, verrou = 0;
   function etape2() {
-    const titres = C.sections.map((s, i) => ({ i, id: s.id, titre: s.titre, icone: s.icone }));
+    const titres = C.sections.map((s, i) => ({ i, titre: s.titre }));
     return `<div class="der-lecteur" id="der-lecteur" role="region" aria-label="Document d'entrée en relation">
       <div class="der-barre">
         <button type="button" id="der-retour">← <span class="txt">Modifier les informations</span></button>
         <span class="titre" id="der-titre-courant" aria-live="polite"></span>
         <button type="button" id="der-prec" aria-label="Catégorie précédente">‹ <span class="txt">Précédente</span></button>
         <button type="button" id="der-suiv" aria-label="Catégorie suivante"><span class="txt">Suivante</span> ›</button>
+        <span class="der-zoom"><button type="button" id="der-zoom-moins" aria-label="Réduire">−</button><button type="button" id="der-zoom-val" title="Ajuster à la largeur">100 %</button><button type="button" id="der-zoom-plus" aria-label="Agrandir">+</button></span>
         <button type="button" class="principal" id="der-plein">⛶ <span class="txt" id="der-plein-txt">Plein écran</span></button>
         <button type="button" id="der-nouveau">↺ <span class="txt">Nouveau client</span></button>
         <select id="der-choix" aria-label="Aller à une catégorie"><option value="-1">Couverture</option>${titres.map((t) => `<option value="${t.i}">${esc(t.titre)}</option>`).join("")}</select>
       </div>
       <div class="der-corps-lecteur">
         <nav class="der-nav" aria-label="Catégories du DER"><ol>
-          <li><button type="button" data-i="-1">${ico("intro")}Couverture</button></li>
-          ${titres.map((t) => `<li><button type="button" data-i="${t.i}">${ico(t.icone)}${esc(t.titre)}</button></li>`).join("")}</ol></nav>
-        <div class="der-vue" id="der-vue" tabindex="0">${documentHtml()}</div>
+          <li><button type="button" data-i="-1">Couverture</button></li>
+          ${titres.map((t) => `<li><button type="button" data-i="${t.i}">${esc(t.titre)}</button></li>`).join("")}</ol></nav>
+        <div class="der-vue" id="der-vue" tabindex="0"><div class="dp-pile" id="dp-pile"></div></div>
       </div></div>`;
   }
-  const cible = (i) => (i < 0 ? document.querySelector("#der-doc .der-couverture") : document.getElementById("s-" + C.sections[i].id));
+  // Les feuilles gardent leurs vraies proportions ; elles sont mises à la largeur disponible (zoom réglable).
+  function ajusterZoom() {
+    const vue = document.getElementById("der-vue"), pile = document.getElementById("dp-pile"); if (!vue || !pile) return;
+    const base = Math.min(1.3, (vue.clientWidth - 28) / 827);
+    const z = Math.max(.25, base * zoomUtilisateur);
+    pile.style.zoom = z;
+    document.getElementById("der-zoom-val").textContent = Math.round(zoomUtilisateur * 100) + " %";
+  }
+  const cible = (i) => document.getElementById(i < 0 ? "s-couv" : "s-" + C.sections[i].id);
   function aller(i) {
     i = Math.max(-1, Math.min(C.sections.length - 1, i));
     const vue = document.getElementById("der-vue"), el = cible(i);
     if (!vue || !el) return;
-    vue.scrollTo({ top: i < 0 ? 0 : el.getBoundingClientRect().top - vue.getBoundingClientRect().top + vue.scrollTop - 8, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    const top = el.getBoundingClientRect().top - vue.getBoundingClientRect().top + vue.scrollTop - (i < 0 ? 14 : 30);
+    verrou = Date.now() + 1000;   // pendant le défilement automatique, la catégorie choisie reste affichée
+    vue.scrollTo({ top: Math.max(0, top), behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     marquer(i);
   }
   function marquer(i) {
@@ -229,8 +257,9 @@
     let attente = 0;
     vue.addEventListener("scroll", () => {
       cancelAnimationFrame(attente);
+      if (Date.now() < verrou) return;
       attente = requestAnimationFrame(() => {
-        const haut = vue.getBoundingClientRect().top + 40;
+        const haut = vue.getBoundingClientRect().top + vue.clientHeight * .3;
         let k = -1;
         C.sections.forEach((s, i) => { const el = document.getElementById("s-" + s.id); if (el && el.getBoundingClientRect().top <= haut) k = i; });
         if (vue.scrollTop + vue.clientHeight >= vue.scrollHeight - 4) k = C.sections.length - 1;
@@ -247,7 +276,7 @@
     else { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); l.classList.remove("plein"); }
     plein = ouvrir; enPresentation = ouvrir; derniere = Date.now();
     document.getElementById("der-plein-txt").textContent = ouvrir ? "Quitter le plein écran" : "Plein écran";
-    setTimeout(() => aller(courant), 60);
+    setTimeout(() => { ajusterZoom(); aller(courant); }, 120);
   }
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && plein) basculerPlein(false); });
   addEventListener("keydown", (ev) => {
@@ -257,26 +286,33 @@
     else if (ev.key === "Escape" && plein) basculerPlein(false);
   });
 
-  function montrerEtape(n) {
+  async function montrerEtape(n) {
     const e1 = document.getElementById("der-etape1"), z2 = document.getElementById("der-etape2");
     if (n === 2) {
-      reinitFiltres();
+      try { await document.fonts?.ready; } catch {}
       z2.innerHTML = etape2(); e1.hidden = true; z2.hidden = false;
       document.querySelector(".page > .titre-section")?.setAttribute("hidden", "");   // toute la hauteur pour le document
+      const pile = document.getElementById("dp-pile");
+      composer().forEach((f) => pile.appendChild(f));
+      zoomUtilisateur = 1; ajusterZoom();
+      new ResizeObserver(() => ajusterZoom()).observe(document.getElementById("der-vue"));
       document.querySelectorAll(".der-nav button").forEach((b) => b.onclick = () => aller(Number(b.dataset.i)));
       document.getElementById("der-choix").onchange = (e) => aller(Number(e.target.value));
       document.getElementById("der-prec").onclick = () => aller(courant - 1);
       document.getElementById("der-suiv").onclick = () => aller(courant + 1);
+      document.getElementById("der-zoom-moins").onclick = () => { zoomUtilisateur = Math.max(.5, zoomUtilisateur - .25); ajusterZoom(); };
+      document.getElementById("der-zoom-plus").onclick = () => { zoomUtilisateur = Math.min(3, zoomUtilisateur + .25); ajusterZoom(); };
+      document.getElementById("der-zoom-val").onclick = () => { zoomUtilisateur = 1; ajusterZoom(); };
       document.getElementById("der-plein").onclick = () => basculerPlein();
       document.getElementById("der-retour").onclick = () => montrerEtape(1);
       document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.", true);
-      filtres(z2); suivreDefilement(); marquer(-1);
+      suivreDefilement(); marquer(-1);
       document.getElementById("der-vue").focus({ preventScroll: true });
       scrollTo({ top: 0 });
     } else {
       if (plein) basculerPlein(false);
-      z2.innerHTML = ""; z2.hidden = true; e1.hidden = false;
-      document.querySelector(".page > .titre-section")?.removeAttribute("hidden");   // le document (avec le nom du client) est retiré de la page
+      z2.innerHTML = ""; z2.hidden = true; e1.hidden = false;   // le document (avec le nom du client) est retiré de la page
+      document.querySelector(".page > .titre-section")?.removeAttribute("hidden");
     }
   }
 
@@ -322,22 +358,6 @@
   addEventListener("pagehide", () => { Object.keys(client).forEach((k) => (client[k] = "")); document.querySelectorAll('[data-zone="client"]').forEach((el) => (el.value = "")); const z = document.getElementById("der-etape2"); if (z) z.innerHTML = ""; });
   addEventListener("pageshow", (e) => { if (e.persisted) effacerClient(); });
 
-  // ---------------------------------------------------------------- tableaux des partenaires : recherche et filtre
-  function filtres(racine) {
-    racine.querySelectorAll(".der-filtres").forEach((f) => {
-      const tab = document.getElementById(f.dataset.tab);
-      let nature = "";
-      const appliquer = () => {
-        const q = (f.querySelector("input").value || "").toLowerCase(); let n = 0;
-        tab.querySelectorAll("tbody tr").forEach((tr) => { const ok = (!q || tr.textContent.toLowerCase().includes(q)) && (!nature || tr.dataset.nature === nature); tr.hidden = !ok; if (ok) n++; });
-        tab.parentElement.querySelector(".der-tab-vide").hidden = n > 0;
-      };
-      f.querySelector("input").addEventListener("input", appliquer);
-      f.querySelectorAll("button").forEach((b) => b.onclick = () => { nature = b.dataset.n; f.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); appliquer(); });
-    });
-  }
-  const reinitFiltres = () => {};
-
   // ---------------------------------------------------------------- saisie
   function mettreEnForme(k, v) {
     v = String(v || "").replace(/\s+/g, " ").trim();
@@ -365,7 +385,7 @@
     let d;
     try { d = await appelApi("/api/der"); } catch (e) { zone.innerHTML = `<p class="message ko">${esc(e.message)}</p>`; return; }
     C = d.contenu; admin = d.admin; historique = d.historique || [];
-    if (C) { try { documentHtml(); } catch { C = null; } }   // texte abîmé : on reste sur le formulaire, l'administrateur peut redéposer
+    if (C) { try { sourceHtml(); } catch { C = null; } }   // texte abîmé : on reste sur le formulaire, l'administrateur peut redéposer
     const defaut = C?.contact_defaut || {};
     contact = { ...(d.contact ? d.contact : { email: defaut.email || "", civilite: "", nom: d.conseiller || defaut.nom || "", telephone: "" }), ...CABINET };
     zone.innerHTML = etape1() + '<div id="der-etape2" hidden></div>';
