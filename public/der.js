@@ -195,6 +195,7 @@
       <details class="der-admin der-preparer"><summary>⚙️ Préparer ma présentation</summary>
         ${C ? "" : '<p class="doux petit">Le texte du DER n\'est pas encore déposé : « Présenter » et « Générer le DER » seront disponibles ensuite.</p>'}
         <p class="doux petit">Le récit passe avant le DER : le cabinet, la direction, puis vous. Devant le client, les écrans vides ou masqués sont sautés ; l'aperçu montre ce qui reste à compléter.</p>
+        <div class="der-ligne-boutons"><button type="button" class="puce" id="der-fictif" title="Remplit « Vos informations d'identité » avec un client fictif, pour les essais">🧪 Client fictif</button></div>
         <div class="der-recit-etat" id="der-recit-etat"></div>
         <div class="der-ligne-boutons"><button type="button" class="puce" id="der-mon-profil">👤 Mon profil</button><button type="button" class="puce" id="der-recit-apercu" ${C ? "" : "disabled"}>👁 Aperçu du récit</button>${admin ? '<button type="button" class="puce" id="der-le-cabinet">🏛️ Le cabinet</button>' : ""}</div></details>
       ${admin ? `<details class="der-admin"><summary>⚙️ Administration du DER</summary>${alerteAge()}
@@ -438,6 +439,11 @@
     document.getElementById("der-recit-apercu").onclick = async () => { try { await document.fonts?.ready; } catch {} DerRecit.presenter(true); };
     document.getElementById("der-le-cabinet")?.addEventListener("click", () => DerRecit.editerCabinet());
     majRecit();
+    // Client fictif pour les essais et démonstrations : rempli seulement dans la page, comme un vrai client.
+    document.getElementById("der-fictif").onclick = () => {
+      Object.assign(client, { civilite: "M.", nom: "DUPONT", prenom: "Jean", naissance: "1980-01-01", telephone: "06 00 00 00 00", email: "jean.dupont@exemple.fr" });
+      remplirChamps(); document.getElementById("der-msg-generer").textContent = ""; toast("🧪 Client fictif rempli.");
+    };
     document.getElementById("der-vider").onclick = () => effacerClient("Informations du client effacées.", true);
   }
   function brancherAdmin() {
