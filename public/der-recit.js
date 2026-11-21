@@ -1,7 +1,7 @@
 // DER : présentation « récit » au client, en plein écran et en trois chapitres :
-// 1. le cabinet (histoire, chiffres, directrice, métiers) ; 2. le conseiller ; 3. le DER, avec des cartes d'illustration.
+// 1. le cabinet (histoire, chiffres, direction, métiers) ; 2. le conseiller ; 3. le DER (zoom réglable).
 // Les textes et photos sont fournis par le cabinet (éditeurs ci-dessous) et rangés dans la base du site.
-// Les cartes d'illustration ne reprennent QUE des phrases du DER. Aucune donnée du client n'est envoyée.
+// Aucune donnée du client n'est envoyée.
 (function () {
   let X = null;   // contexte fourni par der.js
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -39,41 +39,6 @@
     return L;
   }
 
-  // ---------------------------------------------------------------- cartes d'illustration (phrases du DER uniquement)
-  const sec = (id) => X.C().sections.find((s) => s.id === id);
-  const ps = (id) => (sec(id)?.blocs || []).filter((b) => b.t === "p").map((b) => b.x);
-  const items = (id) => (sec(id)?.blocs || []).filter((b) => b.t === "liste").flatMap((b) => b.items);
-  const CARTES = {
-    controle: { titre: "Qui contrôle le cabinet ?", corps() {
-      const cles = [...new Set(X.C().sections.flatMap((s) => s.blocs.filter((b) => b.t === "cle").map((b) => b.x)))];
-      const tut = ps("mediateurs");
-      return `<div class="rc-cartes">${cles.map((c) => `<div class="rc-carte"><b>${X.fmt(c)}</b></div>`).join("")}${tut.map((t) => `<div class="rc-carte">${X.fmt(t)}</div>`).join("")}</div>`;
-    } },
-    remuneration: { titre: "Comment je suis rémunéré", corps() { return `<div class="rc-cartes">${ps("remuneration").map((t) => `<div class="rc-carte">${X.fmt(t)}</div>`).join("")}</div>`; } },
-    garanties: { titre: "Mes garanties", corps() {
-      const lignes = X.C().sections.flatMap((s) => s.blocs.filter((b) => b.t === "garanties").flatMap((b) => b.lignes));
-      return `<div class="rc-garanties">${lignes.map((l) => `<div class="rc-carte"><span>${X.fmt(l[0])}</span><b>${esc(l[1])}</b><small>par sinistre</small><b>${esc(l[2])}</b><small>par année d'assurance</small></div>`).join("")}</div>`;
-    } },
-    desaccord: { titre: "En cas de désaccord", corps() {
-      const p = ps("reclamations"), it = items("reclamations");
-      const etapes = [["1", "Votre conseiller", p[0] ? [p[0]] : []], ["2", "Un médiateur", [p[1], ...it].filter(Boolean)], ["3", "Le tribunal", p[2] ? [p[2]] : []]];
-      return `<ol class="rc-etapes">${etapes.map(([n, t, xs]) => `<li><span class="n">${n}</span><b>${t}</b>${xs.map((x) => `<p>${X.fmt(x)}</p>`).join("")}</li>`).join("")}</ol>`;
-    } },
-    donnees: { titre: "Vos données personnelles", corps() { return `<div class="rc-cartes">${ps("rgpd").map((t) => `<div class="rc-carte">${X.fmt(t)}</div>`).join("")}</div>`; } },
-  };
-  function ouvrirCarte(racine, cle) {
-    const c = CARTES[cle]; if (!c) return;
-    racine.querySelector(".rc-carte-ouverte")?.remove();
-    const d = document.createElement("div"); d.className = "rc-carte-ouverte"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", c.titre);
-    d.innerHTML = `<div class="rc-carte-boite"><div class="rc-carte-haut"><h3>${esc(c.titre)}</h3><button type="button" class="rc-fermer" aria-label="Fermer">✕</button></div>
-      <div class="rc-carte-corps">${c.corps()}</div><p class="rc-source">Extrait du Document d'Entrée en Relation.</p></div>`;
-    racine.appendChild(d);
-    const fermer = () => d.remove();
-    d.querySelector(".rc-fermer").onclick = fermer;
-    d.addEventListener("click", (e) => { if (e.target === d) fermer(); });
-    d.querySelector(".rc-fermer").focus();
-  }
-
   // ---------------------------------------------------------------- la présentation
   function presenter(apercu = false) {
     const L = ecrans(apercu);
@@ -83,11 +48,12 @@
         <nav class="rc-chapitres">${chapitres.map((c, i) => `<button type="button" data-ch="${i}"><span>${i + 1}</span>${c}</button>`).join("")}</nav>
         <button type="button" class="rc-quitter">✕ Quitter</button></div>
       <div class="rc-scene" aria-live="polite"></div>
-      <div class="rc-bas"><button type="button" class="rc-fl" data-d="-1" aria-label="Écran précédent">‹</button><span class="rc-pos"></span><button type="button" class="rc-fl" data-d="1" aria-label="Écran suivant">›</button></div>`;
+      <div class="rc-bas"><button type="button" class="rc-fl" data-d="-1" aria-label="Écran précédent">‹</button><span class="rc-pos"></span><button type="button" class="rc-fl" data-d="1" aria-label="Écran suivant">›</button>
+        <span class="rc-zoom" hidden><button type="button" data-z="-1" aria-label="Réduire">−</button><button type="button" class="rc-zoom-val" data-z="0" title="Ajuster à la largeur">100 %</button><button type="button" data-z="1" aria-label="Agrandir">+</button></span></div>`;
     document.body.appendChild(r);
     X.setPresentation(true);
     const scene = r.querySelector(".rc-scene");
-    let i = 0, derPret = null;
+    let i = 0, derPret = null, facteur = 1, zoomDer = () => {};
     const montrer = (n) => {
       i = Math.max(0, Math.min(L.length - 1, n));
       const e = L[i];
@@ -95,30 +61,29 @@
       r.querySelector(".rc-pos").textContent = `${e.titre} · ${i + 1} / ${L.length}`;
       r.querySelector('[data-d="-1"]').disabled = i === 0; r.querySelector('[data-d="1"]').disabled = i === L.length - 1;
       r.classList.toggle("rc-mode-der", !!e.der);
+      r.querySelector(".rc-zoom").hidden = !e.der;
       if (e.der) {
         scene.innerHTML = `<div class="rc-der"><nav class="der-nav rc-der-nav" aria-label="Catégories du DER"><ol><li><button type="button" data-i="-1">Couverture</button></li>
             ${X.C().sections.map((s, k) => `<li><button type="button" data-i="${k}">${esc(s.titre)}</button></li>`).join("")}</ol></nav>
-          <div class="der-vue rc-der-vue"><div class="dp-pile"></div></div>
-          <aside class="rc-illus"><h4>Illustrer</h4>${Object.entries(CARTES).map(([k, c]) => `<button type="button" data-carte="${k}">${esc(c.titre)}</button>`).join("")}</aside></div>`;
+          <div class="der-vue rc-der-vue"><div class="dp-pile"></div></div></div>`;
         const pile = scene.querySelector(".dp-pile"), vue = scene.querySelector(".rc-der-vue");
         X.composer().forEach((f) => { f.removeAttribute("id"); f.querySelectorAll("[id]").forEach((x) => { x.dataset.cible = x.id; x.removeAttribute("id"); }); pile.appendChild(f); });
         pile.querySelector(".dp")?.setAttribute("data-cible", "s-couv");
-        const zoom = () => { pile.style.zoom = Math.max(.3, Math.min(1.4, (vue.clientWidth - 28) / 827)); };
-        zoom(); new ResizeObserver(zoom).observe(vue);
+        zoomDer = () => { pile.style.zoom = Math.max(.25, Math.min(1.4, (vue.clientWidth - 28) / 827) * facteur); r.querySelector(".rc-zoom-val").textContent = Math.round(facteur * 100) + " %"; };
+        zoomDer(); new ResizeObserver(() => zoomDer()).observe(vue);
         const aller = (k) => {
           const id = k < 0 ? "s-couv" : "s-" + X.C().sections[k].id, el = pile.querySelector(`[data-cible="${id}"]`); if (!el) return;
           vue.scrollTo({ top: el.getBoundingClientRect().top - vue.getBoundingClientRect().top + vue.scrollTop - 20, behavior: "smooth" });
           scene.querySelectorAll(".rc-der-nav button").forEach((b) => b.setAttribute("aria-current", Number(b.dataset.i) === k));
         };
         scene.querySelectorAll(".rc-der-nav button").forEach((b) => b.onclick = () => aller(Number(b.dataset.i)));
-        scene.querySelectorAll("[data-carte]").forEach((b) => b.onclick = () => ouvrirCarte(r, b.dataset.carte));
         derPret = aller; aller(-1);
       } else { derPret = null; scene.innerHTML = `<div class="rc-ecran"><h2>${esc(e.titre)}</h2>${e.html}</div>`; }
     };
     const fermer = () => { removeEventListener("keydown", touches); r.remove(); X.setPresentation(false); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
     const touches = (ev) => {
-      if (ev.key === "Escape") { if (r.querySelector(".rc-carte-ouverte")) r.querySelector(".rc-carte-ouverte").remove(); else fermer(); return; }
-      if (r.querySelector(".rc-carte-ouverte") || L[i].der) return;   // dans le DER, les flèches font défiler le document
+      if (ev.key === "Escape") { fermer(); return; }
+      if (L[i].der) return;   // dans le DER, les flèches font défiler le document
       if (ev.key === "ArrowRight" || ev.key === "PageDown") { ev.preventDefault(); montrer(i + 1); }
       if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); montrer(i - 1); }
     };
@@ -127,6 +92,7 @@
     r.querySelectorAll(".rc-chapitres button").forEach((b) => { const k = L.findIndex((e) => e.ch === Number(b.dataset.ch)); if (k < 0) b.hidden = true; else b.onclick = () => montrer(k); });
     if (apercu) r.querySelector(".rc-haut").insertAdjacentHTML("beforeend", '<span class="rc-badge-apercu">Aperçu conseiller</span>');
     r.querySelector(".rc-quitter").onclick = fermer;
+    r.querySelectorAll("[data-z]").forEach((b) => b.onclick = () => { const z = Number(b.dataset.z); facteur = z === 0 ? 1 : Math.max(.5, Math.min(3, facteur + z * .25)); zoomDer(); });
     document.addEventListener("fullscreenchange", function f() { if (!document.fullscreenElement && document.body.contains(r)) fermer(); if (!document.body.contains(r)) document.removeEventListener("fullscreenchange", f); });
     r.requestFullscreen?.().catch(() => {});
     montrer(0);

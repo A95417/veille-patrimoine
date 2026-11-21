@@ -218,7 +218,7 @@ details.der-admin > summary { cursor: pointer; font-weight: 600; font-size: .9re
 .rc-pos { font-size: 14px; color: #666; min-width: 220px; text-align: center; }
 /* chapitre 3 : le DER avec les cartes d'illustration */
 .rc-mode-der .rc-scene { padding: 0; place-items: stretch; }
-.rc-der { display: grid; grid-template-columns: 240px minmax(0, 1fr) 230px; height: 100%; min-height: 0; width: 100%; }
+.rc-der { display: grid; grid-template-columns: 240px minmax(0, 1fr); height: 100%; min-height: 0; width: 100%; }
 .rc-der .der-nav { border-right: 1px solid #e6e0e0; background: #fff; overflow: auto; padding: 12px 8px; }
 .rc-der-vue { height: 100%; }
 .rc-illus { background: #fff; border-left: 1px solid #e6e0e0; padding: 16px 12px; display: grid; align-content: start; gap: 8px; overflow: auto; }
@@ -261,3 +261,6 @@ details.der-admin > summary { cursor: pointer; font-weight: 600; font-size: .9re
 .rc-libre-barre { display: flex; justify-content: space-between; align-items: center; } .rc-libre-barre span { display: flex; gap: 4px; }
 .rc-prerempli { display: grid; gap: 4px; justify-items: start; padding: 10px 12px; border-radius: 12px; background: var(--accent-doux, #eef); }
 @media (max-width: 900px) { .rc-libre { grid-template-columns: 1fr; } .rc-libre img { max-width: 100%; } }
+.rc-zoom { display: inline-flex; gap: 4px; margin-left: 18px; }
+.rc-zoom button { font: inherit; font-size: 14px; min-width: 40px; height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid #ddd; background: #fff; color: #333; cursor: pointer; }
+.rc-zoom button:hover { border-color: #5e0000; }
