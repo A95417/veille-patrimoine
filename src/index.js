@@ -12,6 +12,7 @@ import { routeLecture, avecArticles, COLONNES } from "./lecture.js";
 import { routeLinkedin } from "./linkedin.js";
 import { routeVideo, entretenirVideos } from "./video.js";
 import { routeCours } from "./cours.js";
+import { routeDer } from "./der.js";
 import { routeNotifications } from "./notifications.js";
 import { normaliser, identifiantValide, decouperNom, proposerIdentifiant, identifiantLibre, assurerIdentifiants } from "./identifiants.js";
 
@@ -182,6 +183,12 @@ async function api(request, env, url) {
   // Apprendre › Vidéos de cours (voir cours.js).
   if (chemin.startsWith("/api/cours")) {
     const r = await routeCours(request, env, chemin, moi);
+    if (r) return r;
+  }
+
+  // DER : document d'entrée en relation (voir der.js ; aucune donnée client ne passe par le serveur).
+  if (chemin.startsWith("/api/der")) {
+    const r = await routeDer(request, env, chemin, moi);
     if (r) return r;
   }
 

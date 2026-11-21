@@ -1,0 +1,200 @@
+/* Rubrique DER : le document garde sa propre charte (celle du DER du cabinet), quel que soit le thème du site. */
+:root { --der-rouge: #660000; --der-rouge-2: #8a1414; --der-rose: #f6e9e9; --der-gris: #4a4a4a; --der-texte: #1f1f1f; --der-doux: #6b6b6b; --der-filet: #e7e2e2; --der-fond: #f7f6f6; }
+.der-page { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 1100px) { .der-page { grid-template-columns: minmax(0, 1fr); } }
+.der-page > * { min-width: 0; }
+
+/* ---------------------------------------------------------------- panneau de préparation */
+.der-panneau { position: sticky; top: 84px; display: grid; gap: 14px; max-height: calc(100vh - 100px); overflow: auto; padding-right: 4px; }
+@media (max-width: 1100px) { .der-panneau { position: static; max-height: none; overflow: visible; } }
+.der-bloc { background: var(--carte); border: 1px solid var(--bord); border-radius: 18px; padding: 16px; }
+.der-bloc h2 { font-size: 1rem; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+.der-bloc .aide { margin: 0 0 12px; font-size: .84rem; color: var(--doux); }
+.der-champs { display: grid; grid-template-columns: 92px 1fr; gap: 8px; }
+.der-champs label { display: grid; gap: 3px; font-size: .78rem; font-weight: 600; color: var(--doux); }
+.der-champs .large { grid-column: 1 / -1; }
+.der-champs input, .der-champs select { font: inherit; font-size: .9rem; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--fond); color: var(--texte); min-width: 0; }
+.der-champs input:focus, .der-champs select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.der-confidentiel { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--ok-doux, #e7f6ec); color: var(--texte); font-size: .8rem; line-height: 1.4; margin-top: 10px; }
+.der-confidentiel svg { flex: none; color: var(--ok, #1f8a4c); margin-top: 1px; }
+.der-actions { display: grid; gap: 8px; }
+.der-actions .bouton { justify-content: center; }
+.der-ligne-boutons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.der-ligne-boutons .puce { font-size: .8rem; }
+.der-minuteur { font-size: .78rem; color: var(--doux); text-align: center; }
+
+/* ---------------------------------------------------------------- le document (écran) */
+.der-sommaire { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; }
+.der-sommaire a { font-size: .78rem; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--bord); background: var(--carte); color: var(--texte); text-decoration: none; transition: background .2s, border-color .2s; }
+.der-sommaire a:hover, .der-sommaire a.actif { border-color: var(--der-rouge); background: var(--der-rose); color: var(--der-rouge); }
+.der { font-family: Poppins, Inter, system-ui, sans-serif; color: var(--der-texte); background: #fff; border-radius: 22px; box-shadow: 0 20px 60px rgba(40, 10, 10, .12); overflow: hidden; font-size: 14px; line-height: 1.6; color-scheme: light; }
+.der a { color: var(--der-rouge); }
+.der-couverture { position: relative; padding: 34px 40px 0; min-height: 640px; display: grid; grid-template-rows: auto 1fr auto; }
+.der-couv-haut { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.der-interlocuteur { font-size: 13px; line-height: 1.55; }
+.der-interlocuteur .petit { color: var(--der-doux); font-size: 12px; }
+.der-interlocuteur b { font-size: 14px; }
+.der-logo { width: 168px; height: auto; display: block; border-radius: 2px; }
+.der-illus { margin: 34px -40px 0; position: relative; height: 330px; overflow: hidden; background: linear-gradient(135deg, #efeded, #dcd8d8); }
+.der-illus svg { width: 100%; height: 100%; display: block; }
+.der-titre-couv { position: relative; margin: -120px 0 0 auto; width: min(640px, 82%); background: #fff; padding: 30px 40px 26px; z-index: 1; }
+.der-titre-couv .sigle { font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 54px; letter-spacing: .04em; color: var(--der-rouge); line-height: 1; }
+.der-titre-couv .long { font-size: 30px; color: var(--der-rouge); line-height: 1.2; margin-top: 8px; }
+.der-bandeau { display: grid; grid-template-columns: minmax(90px, 18%) 1fr; margin: 0 -40px; }
+.der-bandeau .annee { font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 28px; color: var(--der-rouge); display: grid; place-items: center; padding: 22px 10px; }
+.der-bandeau .client { background: var(--der-rouge); color: #fff; font-size: 21px; padding: 24px 40px; display: flex; align-items: center; min-height: 34px; }
+.der-bandeau .client.vide { color: rgba(255, 255, 255, .6); font-style: italic; font-size: 16px; }
+.der-corps { padding: 26px 40px 44px; }
+.der-doc-titre { text-transform: uppercase; font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 26px; line-height: 1.15; color: var(--der-gris); margin: 10px 0 18px; letter-spacing: -.01em; }
+.der-doc-titre span { display: block; color: var(--der-rouge); }
+.der-section { padding-top: 6px; margin-top: 18px; scroll-margin-top: 90px; }
+.der-section > h2 { font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -.01em; text-transform: uppercase; color: var(--der-gris); margin: 0 -40px 14px; padding: 0 40px 9px; border-bottom: 2px solid var(--der-rouge); display: flex; align-items: center; gap: 12px; }
+.der-ico { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--der-rose); color: var(--der-rouge); display: grid; place-items: center; }
+.der-ico svg { width: 19px; height: 19px; }
+.der-section p { margin: 0 0 10px; text-align: justify; }
+.der-h { font-family: Poppins, sans-serif; font-weight: 600; font-size: 15px; color: var(--der-rouge); margin: 18px 0 8px; }
+.der-h.gris { color: var(--der-gris); font-size: 17px; }
+.der-h3 { font-weight: 700; font-size: 13px; margin: 12px 0 6px; }
+.der-cle { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; color: var(--der-rouge); margin: 16px 0 6px; padding: 8px 14px 8px 10px; border-radius: 12px; background: var(--der-rose); }
+.der-cle svg { width: 18px; height: 18px; }
+.der-centre { text-align: center; display: grid; gap: 8px; }
+.der-centre p { text-align: center; }
+.der-liste { list-style: none; margin: 4px 0 12px; padding: 0; display: grid; gap: 10px; }
+.der-liste li { position: relative; padding-left: 16px; text-align: justify; }
+.der-liste li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; background: var(--der-texte); }
+.der-coord { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; font-size: 13px; }
+.der-coord .gras { font-weight: 700; }
+.der-coord .vide, .der-identite .vide { color: #b04a4a; font-style: italic; background: #fff4f4; border-radius: 6px; padding: 0 6px; }
+.der-identite { font-size: 13px; color: var(--der-gris); display: grid; gap: 2px; }
+.der-identite b { color: var(--der-texte); }
+.der-maj { animation: der-maj .9s ease; border-radius: 6px; }
+@keyframes der-maj { 0% { background: #ffe9a8; } 100% { background: transparent; } }
+
+/* garanties : cartes à l'écran, tableau à l'impression */
+.der-tableau-titre { font-weight: 600; font-size: 15px; color: var(--der-rouge); margin: 20px 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.der-garanties { display: grid; gap: 10px; }
+.der-garantie { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 14px; align-items: center; background: var(--der-fond); border-radius: 14px; padding: 14px 16px; border-left: 4px solid var(--der-rouge); }
+.der-garantie .act { font-size: 13px; }
+.der-montant { text-align: center; min-width: 150px; }
+.der-montant .v { font-family: Montserrat, Poppins, sans-serif; font-weight: 800; font-size: 22px; color: var(--der-rouge); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.der-montant .l { font-size: 11px; color: var(--der-doux); line-height: 1.3; }
+@media (max-width: 700px) { .der-garantie { grid-template-columns: 1fr 1fr; } .der-garantie .act { grid-column: 1 / -1; } .der-montant { min-width: 0; } }
+.der-tab { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+.der-tab th { background: var(--der-rouge); color: #fff; text-align: left; font-weight: 600; padding: 10px 14px; }
+.der-tab th:first-child { border-top-left-radius: 10px; } .der-tab th:last-child { border-top-right-radius: 10px; }
+.der-tab th:nth-child(1) { width: 21%; } .der-tab th:nth-child(2) { width: 24%; } .der-tab th:nth-child(3) { width: 25%; }
+.der-tab-garanties th:nth-child(1) { width: 50%; }
+.der-tab td { padding: 7px 14px; background: var(--der-fond); color: #444; vertical-align: middle; }
+.der-tab tr:nth-child(even) td { background: #fff; }
+.der-tab td.n { font-weight: 500; color: var(--der-texte); }
+.der-tab td b { color: var(--der-texte); }
+.der-tab-garanties { display: none; }
+.der-tab-garanties td:not(:first-child), .der-tab-garanties th:not(:first-child) { text-align: center; }
+.der-filtres { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-weight: 400; }
+.der-filtres input { font: inherit; font-size: 12.5px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--der-filet); width: 190px; color: var(--der-texte); background: #fff; }
+.der-filtres button { font: inherit; font-size: 11.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--der-filet); background: #fff; color: var(--der-gris); cursor: pointer; }
+.der-filtres button[aria-pressed="true"] { background: var(--der-rouge); border-color: var(--der-rouge); color: #fff; }
+.der-tab-defile { overflow-x: auto; border-radius: 10px; }
+.der-tab-vide { padding: 14px; text-align: center; color: var(--der-doux); font-size: 13px; }
+.der-note { font-size: 11.5px; color: #555; margin-top: 8px; }
+.der-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 16px; }
+.der-signatures .col { font-size: 12.5px; color: #444; line-height: 1.6; }
+.der-signatures .col b { display: block; font-family: Montserrat, Poppins, sans-serif; color: var(--der-rouge); font-size: 15px; margin-bottom: 2px; }
+.der-signatures .cadre { margin-top: 10px; height: 90px; border: 1.5px dashed var(--der-filet); border-radius: 12px; }
+.der-docs b { display: block; font-family: Poppins, sans-serif; font-weight: 700; color: var(--der-rouge); font-size: 15px; margin: 14px 0 6px; }
+
+/* apparition douce */
+.der-anim { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.der-anim.visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .der-anim { opacity: 1; transform: none; transition: none; } .der-illus * { animation: none !important; } }
+.der-illus .trait { stroke-dasharray: 520; stroke-dashoffset: 520; animation: der-trait 2.6s .6s ease forwards; }
+.der-illus .flotte { animation: der-flotte 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.der-illus .apparait { opacity: 0; animation: der-apparait .8s ease forwards; }
+@keyframes der-trait { to { stroke-dashoffset: 0; } }
+@keyframes der-flotte { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes der-apparait { to { opacity: 1; } }
+
+@media (max-width: 700px) {
+  .der-couverture { padding: 22px 18px 0; min-height: 0; }
+  .der-couv-haut { flex-direction: column-reverse; }
+  .der-illus { margin: 22px -18px 0; height: 200px; }
+  .der-titre-couv { margin-top: -60px; width: 92%; padding: 18px 20px; }
+  .der-titre-couv .sigle { font-size: 40px; } .der-titre-couv .long { font-size: 21px; }
+  .der-bandeau { margin: 0 -18px; } .der-bandeau .client { padding: 18px 20px; font-size: 18px; }
+  .der-corps { padding: 18px 18px 30px; }
+  .der-section > h2 { margin: 0 -18px 14px; padding: 0 18px 9px; }
+  .der-coord, .der-signatures { grid-template-columns: 1fr; }
+  .der-tab { min-width: 560px; }
+  .der-section p, .der-liste li { text-align: left; }
+}
+
+/* ---------------------------------------------------------------- mode présentation (plein écran, une section à la fois) */
+.der-presentation { position: fixed; inset: 0; z-index: 1000; background: #2a0606; display: grid; grid-template-rows: auto 1fr auto; color: #fff; }
+.der-presentation[hidden] { display: none; }
+.der-pres-haut { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; }
+.der-pres-haut img { height: 34px; border-radius: 2px; }
+.der-pres-haut .titre { font-family: Montserrat, Poppins, sans-serif; font-weight: 700; letter-spacing: .03em; font-size: 14px; opacity: .85; }
+.der-pres-haut button, .der-pres-bas button { font: inherit; border: 0; cursor: pointer; border-radius: 999px; }
+.der-pres-fermer { background: rgba(255, 255, 255, .12); color: #fff; padding: 8px 16px; }
+.der-pres-scene { overflow: auto; display: grid; place-items: start center; padding: 10px 20px 20px; }
+.der-pres-carte { width: min(980px, 100%); background: #fff; color: var(--der-texte); border-radius: 22px; padding: 34px 44px; box-shadow: 0 30px 80px rgba(0, 0, 0, .4); font-size: 17px; animation: der-entree .55s cubic-bezier(.2, .8, .2, 1); }
+.der-pres-carte.retour { animation-name: der-entree-retour; }
+@keyframes der-entree { from { opacity: 0; transform: translateX(40px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes der-entree-retour { from { opacity: 0; transform: translateX(-40px) scale(.98); } to { opacity: 1; transform: none; } }
+.der-pres-carte .der-section { margin: 0; }
+.der-pres-carte .der-section > h2 { font-size: 22px; margin: 0 0 18px; padding: 0 0 12px; }
+.der-pres-carte .der-ico { width: 46px; height: 46px; } .der-pres-carte .der-ico svg { width: 25px; height: 25px; }
+.der-pres-carte .der-tab { font-size: 14px; }
+.der-pres-carte .der-montant .v { font-size: 28px; }
+.der-pres-bas { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 14px 20px 20px; }
+.der-pres-bas .fl { width: 48px; height: 48px; background: #fff; color: var(--der-rouge); font-size: 22px; display: grid; place-items: center; }
+.der-pres-bas .fl:disabled { opacity: .3; cursor: default; }
+.der-points { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; max-width: 60vw; }
+.der-points button { width: 10px; height: 10px; padding: 0; background: rgba(255, 255, 255, .3); transition: width .3s, background .3s; }
+.der-points button[aria-current="true"] { width: 28px; background: #fff; }
+.der-pres-etape { font-size: 13px; opacity: .8; min-width: 70px; text-align: center; }
+@media (max-width: 700px) { .der-pres-carte { padding: 22px 18px; font-size: 15px; } .der-points { display: none; } }
+
+/* ---------------------------------------------------------------- boîte de dialogue */
+.der-dialogue { border: 0; border-radius: 20px; padding: 24px; max-width: 420px; background: var(--carte); color: var(--texte); box-shadow: 0 30px 80px rgba(0, 0, 0, .35); }
+.der-dialogue::backdrop { background: rgba(10, 10, 20, .55); }
+.der-dialogue h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.der-dialogue p { margin: 0 0 16px; color: var(--doux); }
+.der-dialogue .der-ligne-boutons { justify-content: flex-end; }
+.der-toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: #1d1d1d; color: #fff; padding: 12px 18px; border-radius: 14px; font-size: .9rem; z-index: 1100; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); animation: der-apparait .3s ease; }
+
+/* ---------------------------------------------------------------- impression / PDF : pages A4 fidèles au document d'origine */
+@page { size: A4; margin: 14mm 12mm 16mm; }
+@media print {
+  body { background: #fff !important; }
+  body > *:not(main), .der-panneau, .der-sommaire, .page > .titre-section, .der-filtres, .onglets-bas, .der-presentation, .der-toast, .der-dialogue, .entete { display: none !important; }
+  main.page { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+  .der-page { display: block; }
+  .der { box-shadow: none; border-radius: 0; font-size: 10.2pt; line-height: 1.5; }
+  .der-anim { opacity: 1 !important; transform: none !important; }
+  .der-couverture { padding: 0; min-height: 0; display: block; break-after: page; }
+  .der-illus { margin: 22mm 0 0; height: 96mm; }
+  .der-illus * { animation: none !important; } .der-illus .trait { stroke-dashoffset: 0; } .der-illus .apparait { opacity: 1; }
+  .der-titre-couv { margin: -18mm 0 0 auto; width: 78%; padding: 8mm 9mm 6mm; }
+  .der-titre-couv .sigle { font-size: 40pt; } .der-titre-couv .long { font-size: 22pt; }
+  .der-bandeau { margin: 0; grid-template-columns: 22% 1fr; }
+  .der-bandeau .annee { font-size: 22pt; }
+  .der-bandeau .client { font-size: 15pt; padding: 7mm 9mm; }
+  .der-corps { padding: 0; }
+  .der-section > h2 { margin: 0 -12mm 4mm; padding: 0 12mm 2.5mm; font-size: 13.5pt; break-after: avoid; }
+  .der-ico { display: none; }
+  .der-section[data-page="nouvelle"] { break-before: page; margin-top: 0; }
+  .der-section { margin-top: 7mm; }
+  .der-cle { background: none; padding: 0; } .der-cle svg { display: none; }
+  .der-garanties { display: none; }
+  .der-tab-garanties { display: table; }
+  .der-tab { font-size: 9pt; }
+  .der-tab tr, .der-garantie, .der-signatures { break-inside: avoid; }
+  .der-tab thead { display: table-header-group; }
+  .der-tab-defile { overflow: visible; }
+  .der-signatures .cadre { display: none; }
+  .der-coord .vide, .der-identite .vide { color: transparent; background: none; }
+  .der a { color: inherit; text-decoration: none; }
+  .der-h, .der-tableau-titre { break-after: avoid; }
+}
+.der-bloc h2 svg, .der-cle svg { width: 18px; height: 18px; flex: none; } .der-bloc h2 span { display: inline-flex; color: var(--accent); }

@@ -544,7 +544,7 @@ async function chargerEntete(pageActive) {
   // le thème enregistré sur le compte l'emporte (autre appareil, nouvelle connexion)
   if (moi.theme && THEMES_COULEURS[moi.theme] && moi.theme !== themeLocal()) choisirTheme(moi.theme, false);
   if (moi.fiches && COULEURS_FICHES[moi.fiches] && moi.fiches !== couleurFichesLocale()) choisirCouleurFiches(moi.fiches, false);
-  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Outils"]];
+  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"], ["/der", "DER"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Outils"]];
   const nav = liens
     .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${nom}</a>`)
     .join("");
@@ -584,7 +584,7 @@ async function chargerEntete(pageActive) {
     plus: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
   };
   const principaux = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"]];
-  const autres = [["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/dossiers", "Textes en discussion"], ["/glossaire", "Glossaire"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
+  const autres = [["/der", "DER client"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/dossiers", "Textes en discussion"], ["/glossaire", "Glossaire"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
   const dansPlus = autres.some(([h]) => h === pageActive);
   const svg = (k) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
   document.getElementById("onglets-bas")?.remove();
