@@ -90,7 +90,7 @@
   const EXTRAITS = new Set(["sadachbia", "fenrir", "kore", "charon", "zephyr", "laomedeia", "leda", "achird", "puck", "sulafat", "orus", "gacrux"]);
   const LIB_STATUT = { brouillon: "Brouillon", file: "En file d'attente", attente: "Démarrage", en_cours: "En fabrication", pret: "Prête", a_verifier: "Prête · à vérifier", erreur: "Échec", annule: "Annulée" };
   const EN_COURS = ["file", "attente", "en_cours"];
-  const R = { sel: null, onglet: "idees", titreIdee: null, angle: "expliquer", angleManuel: false, angleIA: false, cherche: "", duree: 45, format: "9:16", plateforme: "tiktok", rythme: "dynamique", finMode: "complete", focus: "", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
+  const R = { sel: null, onglet: "idees", titreIdee: null, angle: "expliquer", angleManuel: false, angleIA: false, cherche: "", etape: 1, duree: 45, format: "9:16", plateforme: "tiktok", rythme: "dynamique", finMode: "complete", focus: "", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
   let reglages = null, sources = null, courante = null, suivi = null, chrono = null, audio = null;
 
   const mots = (sc) => (sc || []).reduce((n, s) => n + String(s.texte || "").split(/\s+/).filter((m) => /[\p{L}\d]/u.test(m)).length, 0);
@@ -106,27 +106,51 @@
 
   // ---------------------------------------------------------------- squelette : un parcours en 3 étapes
   const ANGLES_DESC = Object.fromEntries(FAMILLES.flatMap(([, l]) => l.map(([k, , d, ex]) => [k, `${d} <span class="vv-exemple">Exemple : ${ex}</span>`])));
-  // Sources de sujet : [clé, icône, nom, description]
-  const ONGLETS_SUJET = [["idees", "💡", "Idées du moment", "Proposées d'après l'actualité"], ["fiches", "📚", "Thèmes du patrimoine", "PER, donation, SCPI… contenu vérifié"],
-    ["actus", "📰", "Actualités", "Les faits marquants résumés"], ["chiffres", "📅", "Échéances et chiffres", "Calendrier fiscal, taux BCE"], ["autre", "✏️", "Mon sujet", "Un sujet, un texte ou une simulation"]];
+  // Icônes au trait (grille 24 px), dessinées ici : aucune image ni marque extérieure.
+  const ICO = {
+    idee: "M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z", livre: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5",
+    journal: "M4 4h13v16H6a2 2 0 0 1-2-2V4zM17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h5", calendrier: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+    calcul: "M5 2h14v20H5zM8 6h8v4H8zM8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01", crayon: "M17 3l4 4L8 20H4v-4L17 3z",
+    loupe: "M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM21 21l-4.3-4.3", liste: "M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01",
+    question: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01", alerte: "M12 3l9.5 17h-19zM12 10v4M12 17.5h.01",
+    etincelle: "M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM19 3v4M21 5h-4", diese: "M4 9h16M4 15h16M10 3L8 21M16 3l-2 18", barres: "M4 20V10M10 20V4M16 20v-8M22 20H2",
+    duo: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.1a4 4 0 0 1 0 7.8M22 21v-1a6 6 0 0 0-4-5.7", personne: "M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM4 22a8 8 0 0 1 16 0",
+    coche: "M22 12a10 10 0 1 1-5.9-9.1M22 4L12 14l-3-3", horloge: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2", colonnes: "M3 4h7v16H3zM14 4h7v16h-7z",
+    barre: "M2 12h20M12 2v20", masque: "M3 3l18 18M10.6 5.1A10 10 0 0 1 22 12a10 10 0 0 1-2.4 3.3M6.6 6.6A10 10 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6",
+    tirelire: "M5 11a7 6 0 0 1 13-2h2v5h-2a7 6 0 0 1-3 3v3h-3v-2h-3v2H6v-3.5A6 6 0 0 1 5 11zM15 9h.01", maison: "M3 11l9-8 9 8M5 9.5V21h14V9.5M10 21v-6h4v6",
+    graphique: "M3 3v18h18M7 15l4-4 3 3 6-6", balance: "M12 3v18M7 21h10M4 7h16M4 7l-2 6h6zM20 7l-2 6h6z", cadeau: "M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8S9 3 7 5s3 3 5 3c2 0 7-1 5-3s-5 3-5 3",
+    euro: "M18 6a7 7 0 1 0 0 12M4 10h9M4 14h9", fusee: "M12 15l-3-3c1-5 5-9 11-9 0 6-4 10-9 11zM9 12H5l2-4h4M12 15v4l4-2v-4M5 19l2-2",
+  };
+  const svg = (nom, t = 22) => `<svg width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICO[nom] || ICO.idee}"/></svg>`;
+  // Sources de sujet : [clé, icône, nom, description, couleur]
+  const ONGLETS_SUJET = [["idees", "idee", "Idées du moment", "Proposées d'après l'actualité", "#B45309"], ["fiches", "livre", "Thèmes du patrimoine", "PER, donation, SCPI… contenu vérifié", "#1D4ED8"],
+    ["actus", "journal", "Actualités", "Les faits marquants résumés", "#6D28D9"], ["chiffres", "calendrier", "Échéances et chiffres", "Calendrier fiscal, taux BCE", "#047857"],
+    ["simulation", "calcul", "Simulation chiffrée", "Commencer tôt ou attendre : 2 profils", "#0F766E"], ["autre", "crayon", "Mon sujet", "Écrire un sujet ou coller un texte", "#9F1239"]];
+  const COULEUR_SOURCE = { idees: "#B45309", fiches: "#1D4ED8", actus: "#6D28D9", chiffres: "#047857", simulation: "#0F766E", autre: "#9F1239" };
+  const ICO_THEME = { epargne: "tirelire", immo: "maison", marches: "graphique", fisc: "balance", transmission: "cadeau", regl: "document", economie: "euro", crypto: "fusee" };
+  const ICO_ANGLE = { expliquer: "idee", decryptage: "loupe", mode_emploi: "liste", questions: "question", mythe: "masque", saviez: "etincelle", chiffre: "diese", chiffres_cles: "barres",
+    deux_profils: "duo", cas_pratique: "personne", erreur: "alerte", reflexes: "coche", bon_moment: "horloge", comparer: "colonnes" };
+  const COULEUR_FAMILLE = { "Comprendre": "#1D4ED8", "Capter l'attention": "#B45309", "Raconter": "#6D28D9", "Agir": "#047857" };
 
   function monter() {
     $v("vue-video").innerHTML = `
       <section class="carte vv-form" id="vv-nouvelle">
         <div class="vv-intro">
           <h2>Créer une vidéo courte</h2>
-          <p class="doux">TikTok, Reels ou LinkedIn. L'IA écrit le scénario, vous le relisez avant la fabrication.</p>
+          <p class="doux">TikTok, Instagram, Facebook ou LinkedIn. L'IA écrit le scénario, vous le relisez avant la fabrication.</p>
         </div>
-
-        <div class="vv-etape" id="vv-e1">
-          <h3 class="vv-etape-tete"><span class="n" aria-hidden="true">1</span>De quoi parle la vidéo ?</h3>
-          <div class="vv-etape-corps">
-            <div class="vv-choisi" id="vv-choisi" hidden></div>
-            <div id="vv-choix-sujet">
-              <div class="vv-sources" role="tablist" aria-label="Source du sujet">${ONGLETS_SUJET.map(([k, ico, nom, desc]) => `<button type="button" role="tab" id="vv-tab-${k}" aria-controls="vv-panneau" data-tab="${k}"><span class="vv-src-ico" aria-hidden="true">${ico}</span><b>${nom}</b><small>${desc}</small></button>`).join("")}</div>
-              <div class="vv-panneau" id="vv-panneau" role="tabpanel"></div>
-            </div>
-            <div id="vv-sim" class="vv-sim" hidden></div>
+        <ol class="vv-progres" id="vv-progres" aria-label="Étapes">
+          ${[["Sujet", "livre"], ["Façon de raconter", "etincelle"], ["Réglages", "horloge"], ["Scénario", "crayon"]].map(([n, ic], k) => `<li><button type="button" data-aller="${k + 1}" ${k === 3 ? "disabled" : ""}><span class="vv-pr-n">${svg(ic, 18)}</span><span class="vv-pr-t"><small>Étape ${k + 1}</small>${n}</span></button></li>`).join("")}
+        </ol>
+        <div class="vv-cadre">
+          <div class="vv-pas">
+            <div class="vv-etape" id="vv-e1" data-etape="1">
+              <h3 class="vv-etape-tete">De quoi parle la vidéo ?</h3>
+              <div class="vv-etape-corps">
+                <div class="vv-sources" role="tablist" aria-label="Source du sujet">${ONGLETS_SUJET.map(([k, ic, nom, desc, c]) => `<button type="button" role="tab" id="vv-tab-${k}" aria-controls="vv-panneau" data-tab="${k}" style="--c:${c}"><span class="vv-src-ico">${svg(ic, 24)}</span><b>${nom}</b><small>${desc}</small></button>`).join("")}</div>
+                <div class="vv-choisi" id="vv-choisi" hidden></div>
+                <div id="vv-choix-sujet"><div class="vv-panneau" id="vv-panneau" role="tabpanel"></div></div>
+                <div id="vv-sim" class="vv-sim" hidden></div>
             <div id="vv-libre" class="vv-libre" hidden>
               <div class="vv-libre-tete"><label class="bloc-lib" for="vv-libre-texte">Votre sujet ou votre texte</label><button type="button" class="bouton bouton-discret" id="vv-coller" hidden>📋 Coller</button></div>
               <textarea id="vv-libre-texte" rows="6" maxlength="5000" placeholder="Un sujet en une phrase (« pourquoi épargner chaque mois plutôt qu'attendre le bon moment »)&#10;ou un texte complet : collez ici un article en accès libre, une note, un communiqué…"></textarea>
@@ -134,43 +158,50 @@
               <div class="vv-libre-media" id="vv-libre-media" hidden><label for="vv-media">Média ou source (facultatif, cité dans la vidéo)</label><input id="vv-media" maxlength="60" placeholder="Ex. : Les Echos, AMF, ma note interne"></div>
               <p class="alerte-donnees">Jamais de donnée client (nom, téléphone, e-mail…) : le texte est envoyé à l'IA (Gemini). Pour un article payant, seulement la partie en accès libre.</p>
             </div>
-          </div>
-        </div>
+              </div>
+            </div>
 
-        <div class="vv-etape" id="vv-e2">
-          <h3 class="vv-etape-tete"><span class="n" aria-hidden="true">2</span>Comment la raconter ?</h3>
-          <div class="vv-etape-corps">
-            <div class="vv-familles">${FAMILLES.map(([fam, l]) => `<div class="vv-famille"><span class="vv-famille-nom">${fam}</span><div class="vv-angles" role="group" aria-label="${fam}">${l.map(([k, n]) => `<button type="button" class="puce" data-angle="${k}">${n}</button>`).join("")}</div></div>`).join("")}</div>
-            <p class="vv-angle-desc" id="vv-angle-desc"></p>
-            <label class="bloc-lib" for="vv-precision">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
-            <input id="vv-precision" maxlength="300" autocomplete="off" placeholder="Ex. : pour les jeunes actifs, ton rassurant…">
-            <p class="alerte-donnees">Jamais de nom ni d'information sur un client : ce texte est envoyé à l'IA (Gemini).</p>
-          </div>
-        </div>
+            <div class="vv-etape" id="vv-e2" data-etape="2">
+              <h3 class="vv-etape-tete">Comment la raconter ?</h3>
+              <div class="vv-etape-corps">
+                ${FAMILLES.map(([fam, l]) => `<section class="vv-famille" style="--c:${COULEUR_FAMILLE[fam]}"><h4 class="vv-famille-nom">${fam}</h4><div class="vv-angles" role="group" aria-label="${fam}">${l.map(([k, n, d, ex]) => `<button type="button" class="vv-angle" data-angle="${k}"><span class="vv-angle-ico">${svg(ICO_ANGLE[k], 20)}</span><span class="vv-angle-txt"><b>${n}</b><small>${d}</small><em>${ex}</em></span><span class="vv-conseil">Conseillé</span></button>`).join("")}</div></section>`).join("")}
+                <label class="bloc-lib" for="vv-precision">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
+                <input id="vv-precision" maxlength="300" autocomplete="off" placeholder="Ex. : pour les jeunes actifs, ton rassurant…">
+                <p class="alerte-donnees">Jamais de nom ni d'information sur un client : ce texte est envoyé à l'IA (Gemini).</p>
+                <p class="vv-angle-desc" id="vv-angle-desc" hidden></p>
+              </div>
+            </div>
 
-        <div class="vv-etape" id="vv-e3">
-          <h3 class="vv-etape-tete"><span class="n" aria-hidden="true">3</span>Réglages</h3>
-          <div class="vv-etape-corps">
-            <details class="vv-reglages" id="vv-reglages">
-              <summary><span id="vv-resume-reglages"></span><span class="vv-modifier">Modifier</span></summary>
-              <div class="vv-reglages-corps">
-                <div class="reglages">
-                  <div><span class="simu-lib">Durée</span><div class="puces">${DUREES.map(([d, l]) => `<button type="button" class="puce" data-duree="${d}">${l}</button>`).join("")}</div></div>
-                  <div><span class="simu-lib">Plateforme</span><div class="puces">${Object.entries(PLATEFORMES).map(([k, [n, f]]) => `<button type="button" class="puce" data-plateforme="${k}" title="Format ${f}">${n} <span class="doux">${f}</span></button>`).join("")}</div></div>
-                  <div><span class="simu-lib">Rythme</span><div class="vs-cartes">${Object.entries(RYTHMES).map(([k, [n, d]]) => `<button type="button" class="vs-carte" data-rythme="${k}"><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
-                  <div><span class="simu-lib">Fin de la vidéo</span><div class="vs-cartes">${Object.entries(MODES_FIN).map(([k, [n, d]]) => `<button type="button" class="vs-carte" data-finmode="${k}"><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
-                </div>
+            <div class="vv-etape" id="vv-e3" data-etape="3">
+              <h3 class="vv-etape-tete">Réglages</h3>
+              <div class="vv-etape-corps">
+                <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("horloge", 18)} Durée</span>
+                  <div class="vv-segment" role="group" aria-label="Durée">${DUREES.map(([d, l]) => `<button type="button" data-duree="${d}">${l}</button>`).join("")}</div></div>
+                <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("journal", 18)} Plateforme</span>
+                  <div class="vv-plateformes">${Object.entries(PLATEFORMES).map(([k, [n, f]]) => `<button type="button" class="vv-plat" data-plateforme="${k}"><span class="vv-format f${f.replace(":", "x")}" aria-hidden="true"></span><b>${n}</b><small>${f === "9:16" ? "vertical 9:16" : "4:5"}</small></button>`).join("")}</div></div>
+                <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("barres", 18)} Rythme</span>
+                  <div class="vv-choix2">${Object.entries(RYTHMES).map(([k, [n, d]]) => `<button type="button" class="vv-carte2" data-rythme="${k}"><span class="vv-mini r-${k}" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
+                <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("coche", 18)} Fin de la vidéo</span>
+                  <div class="vv-choix3">${Object.entries(MODES_FIN).map(([k, [n, d]]) => `<button type="button" class="vv-carte2" data-finmode="${k}"><span class="vv-mini fin-${k}" aria-hidden="true"><i></i><i></i><i></i></span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
+                <details class="vv-reg-bloc vv-plus-reg"><summary>${svg("personne", 18)} Voix et coordonnées de la carte de fin <span class="doux" id="vv-resume-reglages"></span></summary>
                 <span class="simu-lib">Voix</span><div id="vv-voix"></div>
                 <details class="vv-coord" id="vv-coord"><summary>Carte de fin : <span id="vv-coord-resume">coordonnées du cabinet</span></summary><div id="vv-coord-corps"></div></details>
+                </details>
               </div>
-            </details>
-          </div>
-        </div>
+            </div>
 
-        <div class="vv-action">
-          <p class="vv-recap" id="vv-recap" aria-live="polite"></p>
-          <button type="button" class="bouton gros-bouton" id="vv-proposer">✨ Proposer un scénario</button>
-          <span class="doux petit" id="vv-quota"></span>
+            <div class="vv-nav-etapes">
+              <button type="button" class="bouton bouton-discret" id="vv-retour">← Retour</button>
+              <span class="vv-nav-aide doux petit" id="vv-nav-aide"></span>
+              <button type="button" class="bouton" id="vv-suivant">Suivant →</button>
+              <button type="button" class="bouton gros-bouton" id="vv-proposer">✨ Proposer un scénario</button>
+            </div>
+          </div>
+          <aside class="vv-resume" aria-label="Votre vidéo">
+            <h4>Votre vidéo</h4>
+            <div id="vv-recap"></div>
+            <div class="doux petit" id="vv-quota"></div>
+          </aside>
         </div>
         <div id="vv-msg" aria-live="polite"></div>
       </section>
@@ -179,13 +210,23 @@
         <div class="vv-galerie-tete"><h2>Mes vidéos</h2><span class="doux petit">Les 10 dernières vidéos terminées sont gardées.</span></div>
         <div class="vv-galerie" id="vv-galerie"><div class="attente"><span class="rond"></span>Chargement…</div></div>
       </section>`;
-    document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { R.onglet = b.dataset.tab; R.cherche = ""; afficherPanneau(); });
-    // flèches gauche/droite entre les onglets (clavier)
-    $v("vv-choix-sujet").querySelector(".vv-sources").onkeydown = (e) => {
+    const ouvrirSource = (k) => {
+      R.onglet = k; R.cherche = "";
+      if (k === "simulation") return choisirSujet("simulation");
+      if (k === "autre") return choisirSujet("libre");
+      if (R.sel && sourceDe(R.sel) !== k) { $v("vv-choisi").hidden = true; $v("vv-choix-sujet").hidden = false; }
+      afficherPanneau();
+    };
+    document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => ouvrirSource(b.dataset.tab));
+    // flèches gauche/droite entre les sources (clavier)
+    document.querySelector(".vv-sources").onkeydown = (e) => {
       if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
       const l = ONGLETS_SUJET.map(([k]) => k), i = (l.indexOf(R.onglet) + (e.key === "ArrowRight" ? 1 : l.length - 1)) % l.length;
-      R.onglet = l[i]; R.cherche = ""; afficherPanneau(); $v("vv-tab-" + l[i]).focus();
+      ouvrirSource(l[i]); $v("vv-tab-" + l[i]).focus();
     };
+    document.querySelectorAll("[data-aller]").forEach((b) => b.onclick = () => allerEtape(+b.dataset.aller));
+    $v("vv-retour").onclick = () => allerEtape(R.etape - 1);
+    $v("vv-suivant").onclick = () => allerEtape(R.etape + 1);
     document.querySelectorAll("[data-angle]").forEach((b) => b.onclick = () => { R.angle = b.dataset.angle; R.angleManuel = true; majAngle(); });
     document.querySelectorAll("[data-duree]").forEach((b) => b.onclick = () => { R.duree = +b.dataset.duree; majReglages(); });
     document.querySelectorAll("[data-plateforme]").forEach((b) => b.onclick = () => { R.plateforme = b.dataset.plateforme; R.format = PLATEFORMES[R.plateforme][1]; majReglages(); });
@@ -205,7 +246,7 @@
     document.querySelectorAll("[data-plateforme]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.plateforme === R.plateforme));
     document.querySelectorAll("[data-rythme]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.rythme === R.rythme));
     document.querySelectorAll("[data-finmode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.finmode === R.finMode));
-    $v("vv-resume-reglages").innerHTML = `<b>${dureeLib(R.duree)}</b> · ${PLATEFORMES[R.plateforme][0]} (${R.format}) · rythme ${RYTHMES[R.rythme][0].toLowerCase()} · ${MODES_FIN[R.finMode][0].toLowerCase()} · voix ${R.voix}`;
+    $v("vv-resume-reglages").textContent = `(voix ${R.voix})`;
     const voix = reglages?.voix || ["Sadachbia"];
     $v("vv-voix").innerHTML = ["Dynamiques", "Posées"].map((gr) => `<div class="vv-voix-groupe"><span class="petit doux">${gr}</span><div class="puces">${voix.filter((n) => (VOIX_INFO[n]?.[0] || "Posées") === gr).map((n) => `<span class="vv-voix"><button type="button" class="puce" data-voix="${n}" aria-pressed="${n === R.voix}">${n} <small>· ${VOIX_INFO[n]?.[1] || ""}</small></button>${EXTRAITS.has(n.toLowerCase()) ? `<button type="button" class="vv-ecoute" data-ecoute="${n}" aria-label="Écouter la voix ${n}" title="Écouter">▶</button>` : `<span class="vv-bientot" title="Extrait disponible prochainement">bientôt</span>`}</span>`).join("")}</div></div>`).join("");
     document.querySelectorAll("[data-voix]").forEach((b) => b.onclick = () => { R.voix = b.dataset.voix; majReglages(); });
@@ -278,15 +319,17 @@
       const ok = (f) => q.every((m) => sansAccent(`${f.titre} ${f.sousTitre || ""} ${THEMES[f.theme] || ""} ${f.recherche || ""}`).includes(m));
       const groupes = Object.entries(THEMES).map(([t, nom]) => [nom, LES_FICHES().filter((f) => f.theme === t && ok(f))]).filter(([, l]) => l.length);
       h = `<input type="search" class="vv-cherche" id="vv-cherche" placeholder="🔍 Rechercher un thème : PER, donation, SCPI…" aria-label="Rechercher un thème" autocomplete="off" value="${echapper(R.cherche)}">
-        <div class="vv-liste vv-themes">${groupes.length ? groupes.map(([nom, l]) => `<div class="vv-groupe"><span class="vv-groupe-nom">${nom}</span><div class="vv-grille">${l.map((f) => `<button type="button" class="vv-theme" data-sujet="fiche:${echapper(f.id)}" aria-pressed="${`fiche:${f.id}` === R.sel}"><b>${echapper(f.titre)}</b><small>${echapper(f.sousTitre || "")}</small></button>`).join("")}</div></div>`).join("") : vide("Aucun thème ne correspond.")}</div>`;
+        <div class="vv-liste vv-themes">${groupes.length ? groupes.map(([nom, l]) => `<div class="vv-groupe"><span class="vv-groupe-nom">${svg(ICO_THEME[Object.keys(THEMES).find((k) => THEMES[k] === nom)] || "livre", 16)} ${nom}</span><div class="vv-grille">${l.map((f) => `<button type="button" class="vv-theme" data-sujet="fiche:${echapper(f.id)}" aria-pressed="${`fiche:${f.id}` === R.sel}"><b>${echapper(f.titre)}</b><small>${echapper(f.sousTitre || "")}</small></button>`).join("")}</div></div>`).join("") : vide("Aucun thème ne correspond.")}</div>`;
     } else if (R.onglet === "actus") {
       const a = sources?.actus || [];
-      h = chargement() || (a.length ? `<div class="vv-liste">${a.map((x) => ligne(`actu:${x.id}`, x.titre, [x.sources.join(", "), dateCourte(x.date)].filter(Boolean).join(" · "))).join("")}</div>` : vide("Aucune actualité importante ces derniers jours."));
+      h = chargement() || (a.length ? `<div class="vv-liste"><div class="vv-grille vv-grille-large">${a.map((x) => `<button type="button" class="vv-theme" data-sujet="actu:${echapper(x.id)}" aria-pressed="${`actu:${x.id}` === R.sel}"><b>${echapper(x.titre)}</b><span class="vv-etiquettes">${x.sources.slice(0, 2).map((n) => `<i>${echapper(n)}</i>`).join("")}${x.date ? `<i>${echapper(dateCourte(x.date))}</i>` : ""}</span></button>`).join("")}</div></div>` : vide("Aucune actualité importante ces derniers jours."));
     } else if (R.onglet === "chiffres") {
       const e = sources?.echeances || [], c = sources?.chiffres || [];
+      const dans = (d) => { const n = Math.round((new Date(d) - new Date(new Date().toDateString())) / 864e5); return Number.isFinite(n) ? (n <= 0 ? "aujourd'hui" : n === 1 ? "demain" : `dans ${n} jours`) : ""; };
+      const jm = (d) => { const x = new Date(d); return Number.isNaN(+x) ? ["", d] : [x.getDate(), x.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "")]; };
       h = chargement() || `<div class="vv-liste">
-        <div class="vv-groupe"><span class="vv-groupe-nom">Échéances fiscales · impots.gouv.fr</span>${e.length ? e.map((x) => ligne(`echeance:${x.ref}`, x.titre, dateCourte(x.date))).join("") : vide("Calendrier pas encore disponible.")}</div>
-        <div class="vv-groupe"><span class="vv-groupe-nom">Chiffres de la semaine · BCE</span>${c.length ? ligne("chiffre:", "Taux et inflation : vue d'ensemble", "Tous les derniers chiffres") + c.map((x) => ligne(`chiffre:${x.ref}`, x.libelle, `${String(x.valeur).replace(".", ",")} %${x.date ? " · " + x.date : ""}`)).join("") : vide("Chiffres pas encore disponibles.")}</div>
+        <div class="vv-groupe"><span class="vv-groupe-nom">${svg("calendrier", 16)} Échéances fiscales · impots.gouv.fr</span>${e.length ? `<div class="vv-grille vv-grille-large">${e.map((x) => { const [j, m] = jm(x.date); return `<button type="button" class="vv-echeance" data-sujet="echeance:${echapper(x.ref)}" aria-pressed="${`echeance:${x.ref}` === R.sel}"><span class="vv-date"><b>${j}</b><small>${echapper(m)}</small></span><span><b>${echapper(x.titre)}</b><small>${dans(x.date)}</small></span></button>`; }).join("")}</div>` : vide("Calendrier pas encore disponible.")}</div>
+        <div class="vv-groupe"><span class="vv-groupe-nom">${svg("graphique", 16)} Chiffres de la semaine · BCE</span>${c.length ? `<div class="vv-tuiles">${[`<button type="button" class="vv-tuile vv-tuile-txt" data-sujet="chiffre:" aria-pressed="${R.sel === "chiffre:"}"><b>Vue d'ensemble</b><small>Taux et inflation</small></button>`, ...c.map((x) => `<button type="button" class="vv-tuile" data-sujet="chiffre:${echapper(x.ref)}" aria-pressed="${`chiffre:${x.ref}` === R.sel}"><b>${String(x.valeur).replace(".", ",")} %</b><small>${echapper(x.libelle)}${x.date ? " · " + echapper(x.date) : ""}</small></button>`)].join("")}</div>` : vide("Chiffres pas encore disponibles.")}</div>
       </div>`;
     } else {
       h = `<div class="vv-idees">
@@ -334,7 +377,9 @@
     const d = decrireSujet(), z = $v("vv-choisi");
     if (!d) { z.hidden = true; $v("vv-choix-sujet").hidden = false; afficherPanneau(); return; }
     z.hidden = false; $v("vv-choix-sujet").hidden = true;
-    z.innerHTML = `<span class="vv-choisi-ico" aria-hidden="true">${d.ico}</span><div><strong>${echapper(d.titre)}</strong><span>${echapper(d.source)}</span></div><button type="button" class="bouton bouton-discret" id="vv-changer">Changer</button>`;
+    R.onglet = sourceDe(R.sel); document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === R.onglet));
+    z.style.setProperty("--c", COULEUR_SOURCE[R.onglet]);
+    z.innerHTML = `<span class="vv-choisi-ico" aria-hidden="true">${svg(ONGLETS_SUJET.find(([k]) => k === R.onglet)[1], 24)}</span><div><strong>${echapper(d.titre)}</strong><span>${echapper(d.source)}</span></div><button type="button" class="bouton bouton-discret" id="vv-changer">Changer</button>`;
     // Fiche : toute la fiche, ou un point précis pour aller dans le détail
     const [type, ref] = (R.sel || "").split(/:(.*)/s), f = type === "fiche" && LES_FICHES().find((x) => x.id === ref);
     if (f) {
@@ -343,6 +388,7 @@
       z.insertAdjacentHTML("beforeend", `<label class="vv-focus"><span>Point précis</span><select id="vv-focus"><option value="">Toute la fiche</option>${parties.map((t) => `<option ${t === R.focus ? "selected" : ""}>${echapper(t)}</option>`).join("")}</select><small class="doux">La vidéo s'adresse au public (« vous ») : rien de scolaire.</small></label>`);
       $v("vv-focus").onchange = (e) => { R.focus = e.target.value; if (R.focus && !R.angleManuel) R.angle = "decryptage"; majAngle(); };
     } else R.focus = "";
+    if (["simulation", "autre"].includes(R.onglet)) $v("vv-changer").hidden = true;
     $v("vv-changer").onclick = () => { $v("vv-choix-sujet").hidden = false; z.hidden = true; afficherPanneau(); $v("vv-tab-" + R.onglet).focus(); };
   }
 
@@ -358,16 +404,34 @@
   }
 
   // Étapes 2 et 3 actives seulement une fois le sujet choisi ; bouton prêt quand tout est complet.
+  // Source (carte de l'étape 1) d'un sujet choisi.
+  const sourceDe = (sel) => ({ fiche: "fiches", actu: "actus", echeance: "chiffres", chiffre: "chiffres", simulation: "simulation", libre: "autre" }[String(sel || "").split(":")[0]] || "idees");
+  // Assistant : une étape visible à la fois.
+  function allerEtape(n) {
+    if (n === 4) { $v("vv-travail")?.scrollIntoView({ behavior: "smooth" }); return; }
+    if ($v("vv-nouvelle")?.classList.contains("vv-replie")) replier(false);
+    if (n > 1 && !R.sel) n = 1;
+    R.etape = Math.max(1, Math.min(3, n));
+    document.querySelectorAll(".vv-etape[data-etape]").forEach((e) => e.classList.toggle("vv-active", +e.dataset.etape === R.etape));
+    majEtat();
+    const f = $v("vv-nouvelle"); if (f && f.getBoundingClientRect().top < 0) f.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   function majRecap() {
     const z = $v("vv-recap"); if (!z) return;
     const d = R.sel && decrireSujet();
-    z.innerHTML = d ? `<b>Votre vidéo :</b> ${echapper(d.titre)}${R.focus ? ` (${echapper(R.focus)})` : ""} · ${echapper(ANGLES_LIB[R.angle] || "")} · ${dureeLib(R.duree)} · ${PLATEFORMES[R.plateforme][0]} · rythme ${RYTHMES[R.rythme][0].toLowerCase()} · ${MODES_FIN[R.finMode][0].toLowerCase()}` : "";
+    const c = COULEUR_SOURCE[sourceDe(R.sel)];
+    const ligneR = (n, lib, val, coul) => `<button type="button" class="vv-r" data-aller="${n}"${coul ? ` style="--c:${coul}"` : ""}><small>${lib}</small><b>${val}</b></button>`;
+    z.innerHTML = ligneR(1, "Sujet", d ? echapper(d.titre) + (R.focus ? ` <span class="doux">· ${echapper(R.focus)}</span>` : "") : `<span class="doux">à choisir</span>`, d ? c : "")
+      + ligneR(2, "Façon de raconter", echapper(ANGLES_LIB[R.angle] || ""), COULEUR_FAMILLE[(FAMILLES.find(([, l]) => l.some(([k]) => k === R.angle)) || [])[0]])
+      + `<div class="vv-r-puces">${[dureeLib(R.duree), PLATEFORMES[R.plateforme][0], "Rythme " + RYTHMES[R.rythme][0].toLowerCase(), MODES_FIN[R.finMode][0]].map((x) => `<button type="button" class="vv-puce-r" data-aller="3">${echapper(x)}</button>`).join("")}</div>`;
+    z.querySelectorAll("[data-aller]").forEach((b) => b.onclick = () => allerEtape(+b.dataset.aller));
   }
   function majEtat() {
     majRecap();
     const choisi = !!R.sel, libre = (R.sel || "").startsWith("libre");
-    ["vv-e2", "vv-e3"].forEach((id) => { $v(id).classList.toggle("vv-attente", !choisi); $v(id).querySelector(".vv-etape-corps").hidden = !choisi; });
-    $v("vv-e1").classList.toggle("vv-faite", choisi);
+    // barre de progression : étape en cours, étapes faites
+    const replie = $v("vv-nouvelle")?.classList.contains("vv-replie");
+    document.querySelectorAll("#vv-progres [data-aller]").forEach((b) => { const n = +b.dataset.aller; if (replie) { b.closest("li").className = n === 4 ? "en-cours" : "faite"; b.disabled = false; return; } b.closest("li").className = n === R.etape ? "en-cours" : n < R.etape || (n === 1 && choisi) ? "faite" : ""; if (n > 1 && n < 4) b.disabled = !choisi; });
     $v("vv-precision-note").textContent = "(facultatif)";
     $v("vv-precision").placeholder = "Ex. : pour les jeunes actifs, ton rassurant…";
     majLibre();
@@ -375,8 +439,11 @@
     const b = $v("vv-proposer");
     b.disabled = !!manque || b.dataset.occupe === "1";
     b.title = manque;
-    $v("vv-quota").dataset.manque = manque;
-    if (manque) $v("vv-quota").innerHTML = `<span class="vv-equipe">${manque}</span>`; else majCompteurs();
+    b.hidden = R.etape !== 3; $v("vv-suivant").hidden = R.etape === 3; $v("vv-retour").hidden = R.etape === 1;
+    $v("vv-suivant").disabled = R.etape === 1 && !!manque;
+    $v("vv-nav-aide").textContent = R.etape === 1 ? manque : R.etape === 2 ? "Choisissez la façon de raconter, puis « Suivant »." : "";
+    $v("vv-quota").dataset.manque = "";
+    majCompteurs();
   }
 
   // ---------------------------------------------------------------- scénario
@@ -397,7 +464,16 @@
     b.dataset.occupe = ""; majEtat();
   }
 
+  // Étape 4 : le scénario (ou la fabrication) remplace le formulaire ; un clic sur une étape le fait revenir.
+  function replier(oui) {
+    const f = $v("vv-nouvelle"); if (!f) return;
+    f.classList.toggle("vv-replie", oui);
+    document.querySelectorAll("#vv-progres li").forEach((li, k) => { if (oui) li.className = k === 3 ? "en-cours" : "faite"; });
+    const b4 = document.querySelector('#vv-progres [data-aller="4"]'); if (b4) b4.disabled = !oui;
+    if (!oui) majEtat();
+  }
   function ouvrir(v) {
+    replier(true);
     courante = v; lect?.arreter();
     const z = $v("vv-travail"); z.hidden = false;
     arreterSuivi();
@@ -636,7 +712,7 @@
       </div>
       <p class="doux petit" id="vs-info-lancer"></p>
       <div id="vv-msg2"></div>`;
-    $v("vv-fermer").onclick = () => { lect?.arreter(); $v("vv-travail").hidden = true; courante = null; S = null; };
+    $v("vv-fermer").onclick = () => { lect?.arreter(); $v("vv-travail").hidden = true; replier(false); courante = null; S = null; };
     majVerif();
     const reg = $v("vs-reglages"); reg.innerHTML = reglagesHtml(); brancherReglages();
     const resumeReg = () => { $v("vs-reg-resume").textContent = `Musique ${AMB[S.reglages.ambiance][0].toLowerCase()} · sous-titres ${SOUS[S.reglages.sous_titres][0].toLowerCase()} · ${S.format}${S.reglages.deux_formats ? " + " + (S.format === "4:5" ? "9:16" : "4:5") : ""} · voix ${S.voix}`; };
@@ -683,7 +759,7 @@
     $v("vs-info-lancer").textContent = `Fabrication ≈ ${Math.ceil(fabrication([...S.scenes, finLocale()]) / 60)} min sur un robot gratuit (GitHub) : vous pouvez fermer la page, la vidéo arrivera dans « Mes vidéos ».${reglages ? ` ${reglages.lancees_aujourdhui}/${reglages.limite_personne} aujourd'hui${reglages.restant_equipe <= 4 ? ` · plus que ${reglages.restant_equipe} pour toute l'équipe` : ""}.` : ""}`;
     $v("vv-sauver").onclick = async () => { try { recharger(await sauver()); notifier("Brouillon enregistré."); } catch (e) { notifier(e.message, true); } };
     $v("vv-graine").onclick = async () => { try { await sauver(); const r = await appelApi(`/api/video/${v.id}/storyboard`, "POST", { nouvelle_graine: true }); recharger(r.video); notifier("Nouvelle mise en scène : décors, lumière, objets et tenues changent (voir l'aperçu)."); } catch (e) { notifier(e.message, true); } };
-    $v("vv-reproposer").onclick = () => { lect?.arreter(); $v("vv-travail").hidden = true; document.getElementById("vv-nouvelle").scrollIntoView({ behavior: "smooth" }); proposer(); };
+    $v("vv-reproposer").onclick = () => { lect?.arreter(); $v("vv-travail").hidden = true; replier(false); document.getElementById("vv-nouvelle").scrollIntoView({ behavior: "smooth" }); proposer(); };
     $v("vv-lancer").onclick = async () => {
       const b = $v("vv-lancer"); b.disabled = true;
       try {
@@ -720,7 +796,7 @@
       <ol class="vv-etapes">${["Démarrage du robot", "Voix off", "Nettoyage et calage de la voix", "Animation des scènes", "Musique et montage", "Contrôle qualité", "Envoi de la vidéo"].map((e) => `<li data-etape="${e}">${e}</li>`).join("")}</ol>
       <p class="doux petit">Vous pouvez fermer cette page : la vidéo continue d'être fabriquée et apparaîtra dans « Mes vidéos ».</p>
       <button type="button" class="bouton bouton-discret" id="vv-annuler">Annuler la fabrication</button>`;
-    $v("vv-fermer").onclick = () => { arreterSuivi(); $v("vv-travail").hidden = true; courante = null; };
+    $v("vv-fermer").onclick = () => { arreterSuivi(); $v("vv-travail").hidden = true; replier(false); courante = null; };
     $v("vv-annuler").onclick = async (e) => {
       const b = e.currentTarget;
       if (b.dataset.confirme !== "1") { b.dataset.confirme = "1"; b.textContent = "Confirmer l'annulation ?"; setTimeout(() => { b.dataset.confirme = ""; b.textContent = "Annuler la fabrication"; }, 4000); return; }
@@ -778,7 +854,7 @@
           <p class="doux petit">Rappel : relisez la vidéo avant publication. Les chiffres « exemple fictif » ne sont pas garantis.</p>
         </div>
       </div>`;
-    $v("vv-fermer").onclick = () => { $v("vv-travail").hidden = true; courante = null; };
+    $v("vv-fermer").onclick = () => { $v("vv-travail").hidden = true; replier(false); courante = null; };
     $v("vv-copier").onclick = () => copier($v("vv-post2").value);
     $v("vv-vers-post").onclick = () => {
       const src = v.donnees?.source;
@@ -834,7 +910,7 @@
       g.querySelectorAll("[data-ouvrir]").forEach((b) => b.onclick = async () => { try { const r = await appelApi(`/api/video/${b.dataset.ouvrir}`); ouvrir(r.video); } catch (e) { notifier(e.message, true); } });
       g.querySelectorAll("[data-suppr]").forEach((b) => b.onclick = async () => {
         if (b.dataset.confirme !== "1") { b.dataset.confirme = "1"; b.textContent = "Confirmer ?"; setTimeout(() => { b.dataset.confirme = ""; b.textContent = "Supprimer"; }, 4000); return; }
-        try { await appelApi(`/api/video/${b.dataset.suppr}/supprimer`, "POST", {}); if (courante?.id === b.dataset.suppr) { $v("vv-travail").hidden = true; courante = null; } chargerGalerie(); } catch (e) { notifier(e.message, true); }
+        try { await appelApi(`/api/video/${b.dataset.suppr}/supprimer`, "POST", {}); if (courante?.id === b.dataset.suppr) { $v("vv-travail").hidden = true; replier(false); courante = null; } chargerGalerie(); } catch (e) { notifier(e.message, true); }
       });
       // une fabrication en cours et rien d'ouvert : on l'affiche (retour sur la page pendant la fabrication)
       const enCours = videos.find((v) => EN_COURS.includes(v.statut));
@@ -875,7 +951,7 @@
     if ($v("vv-nouvelle")) { chargerGalerie(); return; }
     // ?video_fiche=ID (bouton « Faire une vidéo » d'une fiche Apprendre) : la fiche est présélectionnée.
     const q = new URLSearchParams(location.search).get("video_fiche");
-    monter(); majReglages(); majAngle();
+    monter(); majReglages(); majAngle(); allerEtape(1);
     if (q && LES_FICHES().some((f) => f.id === q)) { R.onglet = "fiches"; choisirSujet(`fiche:${q}`); } else afficherChoisi();
     majEtat();
     appelApi("/api/video/idees").then((s) => { sources = s; }).catch(() => { sources = { idees: [], actus: [], echeances: [], chiffres: [] }; })
