@@ -53,5 +53,6 @@ for m in cal["mots"]: m["debut"], m["fin"] = decale(m["debut"]), decale(m["fin"]
 for p in cal["phrases"]: p["debut"], p["fin"] = decale(p["debut"]), decale(p["fin"])
 total = sum(d for _, d, _ in coupes)
 cal["duree_voix"] = round(cal["duree_voix"] + total, 3); cal["duree_totale"] = S[-1]["fin"]
+cal["pauses_ajoutees"] = round(total, 3)   # à retirer pour mesurer le vrai débit de la voix
 json.dump(cal, open(calf, "w", encoding="utf-8"), ensure_ascii=False)
 print(f"respiration : {len(coupes)} pause(s), {total:.1f} s ajoutées ({'rythme posé' if pose else 'durée minimale des scènes'}) ; durée {cal['duree_totale']:.1f} s")

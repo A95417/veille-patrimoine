@@ -80,7 +80,7 @@ try {
   const cal = JSON.parse(readFileSync("calage.json", "utf8"));
   const total = Math.round(cal.duree_totale * 30);
   // Débit réel de la voix (syllabes par seconde, pauses comprises) : renvoyé au site pour affiner ses estimations.
-  const debit = globalThis.VideoApercu.syllabes(texte) / Math.max(1, cal.duree_voix);
+  const debit = globalThis.VideoApercu.syllabes(texte) / Math.max(1, cal.duree_voix - (cal.pauses_ajoutees || 0));
   console.log(`Débit mesuré : ${debit.toFixed(2)} syllabes/s (estimation du site ${job.duree_estimee} s, voix ${cal.duree_voix.toFixed(1)} s).`);
 
   // 3) Rendu des images, avec suivi (deux passes si les deux formats sont demandés).
