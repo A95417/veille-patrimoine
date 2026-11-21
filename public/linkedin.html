@@ -764,6 +764,14 @@
     .vv-ecran.f45 .vv-e-titre { top: 52px; font-size: .86rem; } .vv-ecran.f45 .vv-e-pill { top: 26px; }
     .vv-e-st { font-size: .68rem; bottom: 12px; } .vv-e-perso { bottom: 44px; width: 42%; } .vv-e-duree { font-size: .62rem; top: 9px; right: 9px; }
     .vv-tel-leg { font-size: .76rem; }
+    @media (max-width: 1000px) {
+      .vv-cadre { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+      .vv-tel { position: static; grid-template-columns: 84px minmax(0, 1fr); gap: 4px 14px; align-items: center; border-top: 1px solid var(--ligne); padding-top: 14px; }
+      .vv-ecran { grid-row: span 3; border-width: 3px; border-radius: 14px; }
+      .vv-e-titre { top: 10px; font-size: .55rem; }
+      .vv-e-perso { bottom: 8px; width: 50%; border-width: 2px; }
+      .vv-r-puces, .vv-quota { justify-content: flex-start; text-align: left; }
+    }
   </style>
 </head>
 <body>
