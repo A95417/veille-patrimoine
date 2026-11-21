@@ -6,3 +6,6 @@ cours-*.mp4
 cours-*.jpg
 cours-*.json
 script-*.json
+
+# photos téléchargées par le robot vidéo
+video/moteur/photos/
