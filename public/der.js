@@ -5,7 +5,7 @@
 (function () {
   const zone = document.getElementById("der-zone");
   const INACTIVITE = 15 * 60 * 1000;
-  let C = null, moi = null, admin = false, historique = [];
+  let C = null, moi = null, admin = false, historique = [], cabinet = null, profil = null;
   const client = { civilite: "M.", nom: "", prenom: "", naissance: "", telephone: "", email: "" };
   let contact = {};
 
@@ -190,13 +190,22 @@
         <p class="der-alerte" id="der-alerte-email" hidden>Cet e-mail semble incomplet (exemple : prenom.nom@domaine.fr).</p>
         <div class="der-confidentiel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
           <span><b>Jamais enregistré, jamais envoyé.</b> Ces informations restent dans cette page et s'effacent quand vous la quittez, après 15 minutes sans activité ou avec « Nouveau client ».</span></div></section>
-      <div class="der-generer"><button type="button" class="bouton" id="der-generer" ${C ? "" : "disabled"}>Générer le DER</button>
+      <section class="der-carte der-recit"><h2>🎬 Récit de présentation</h2><p class="aide">Avant le DER : l'histoire du cabinet, la directrice, puis vous. Les écrans vides affichent « À compléter ».</p>
+        <div class="der-recit-etat" id="der-recit-etat"></div>
+        <div class="der-ligne-boutons"><button type="button" class="puce" id="der-mon-profil">👤 Mon profil</button>${admin ? '<button type="button" class="puce" id="der-le-cabinet">🏛️ Le cabinet</button>' : ""}</div></section>
+      <div class="der-generer"><div class="der-ligne-boutons" style="justify-content:center;margin:0"><button type="button" class="bouton" id="der-recit-lancer" ${C ? "" : "disabled"}>▶ Présenter au client (avec le récit)</button>
+        <button type="button" class="bouton bouton-discret" id="der-generer" ${C ? "" : "disabled"}>Générer le DER (présentation classique)</button></div>
         <p class="der-msg" id="der-msg-generer" role="status">${C ? "" : "Disponible dès que le texte du DER est déposé."}</p>
         <button type="button" class="puce" id="der-vider">↺ Vider les informations du client</button></div>
       ${admin ? `<details class="der-admin"><summary>⚙️ Administration du DER</summary>${alerteAge()}
         <p class="doux petit">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · déposée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte déposé pour l'instant."}</p>
         <div class="der-ligne-boutons"><label class="puce" style="cursor:pointer">📥 Déposer une nouvelle version<input type="file" accept="application/json,.json" id="der-import" hidden></label><button type="button" class="puce" id="der-versions">🕘 Versions précédentes (${(historique || []).length})</button></div></details>` : ""}
     </div>`;
+  }
+  function majRecit() {
+    const e = DerRecit.etat(), z = document.getElementById("der-recit-etat"); if (!z) return;
+    const pastille = (n, t, lib) => `<span class="der-pastille ${n >= t ? "ok" : ""}">${lib} : ${n} / ${t}</span>`;
+    z.innerHTML = pastille(e.cab, e.cabTotal, "Le cabinet") + pastille(e.pro, e.proTotal, "Votre profil");
   }
   function remplirChamps() {
     document.querySelectorAll("#der-etape1 [data-zone]").forEach((el) => { const src = el.dataset.zone === "contact" ? contact : client; el.value = src[el.dataset.k] ?? ""; });
@@ -384,7 +393,7 @@
     moi = await chargerEntete("/der");
     let d;
     try { d = await appelApi("/api/der"); } catch (e) { zone.innerHTML = `<p class="message ko">${esc(e.message)}</p>`; return; }
-    C = d.contenu; admin = d.admin; historique = d.historique || [];
+    C = d.contenu; admin = d.admin; historique = d.historique || []; cabinet = d.cabinet; profil = d.profil;
     if (C) { try { sourceHtml(); } catch { C = null; } }   // texte abîmé : on reste sur le formulaire, l'administrateur peut redéposer
     const defaut = C?.contact_defaut || {};
     contact = { ...(d.contact ? d.contact : { email: defaut.email || "", civilite: "", nom: d.conseiller || defaut.nom || "", telephone: "" }), ...CABINET };
@@ -416,11 +425,18 @@
       const m = document.getElementById("der-msg-contact");
       try { await appelApi("/api/der/contact", "POST", { oublier: true }); m.textContent = "Coordonnées retirées de votre compte."; document.getElementById("der-oublier").hidden = true; } catch (x) { m.textContent = "Échec : " + x.message; }
     };
-    document.getElementById("der-generer").onclick = () => {
+    const clientPret = () => {
       const m = document.getElementById("der-msg-generer");
-      if (!client.nom || !client.prenom) { m.textContent = "Indiquez au moins le nom et le prénom du client."; document.querySelector(`[data-zone="client"][data-k="${client.nom ? "prenom" : "nom"}"]`).focus(); return; }
-      m.textContent = ""; montrerEtape(2);
+      if (!client.nom || !client.prenom) { m.textContent = "Indiquez au moins le nom et le prénom du client."; document.querySelector(`[data-zone="client"][data-k="${client.nom ? "prenom" : "nom"}"]`).focus(); return false; }
+      m.textContent = ""; return true;
     };
+    document.getElementById("der-generer").onclick = () => { if (clientPret()) montrerEtape(2); };
+    document.getElementById("der-recit-lancer").onclick = async () => { if (!clientPret()) return; try { await document.fonts?.ready; } catch {} DerRecit.presenter(); };
+    DerRecit.init({ C: () => C, contact: () => contact, cabinet: () => cabinet, profil: () => profil, setCabinet: (c) => { cabinet = c; }, setProfil: (x) => { profil = x; },
+      composer, fmt, toast, setPresentation: (b) => { enPresentation = b; derniere = Date.now(); }, majRecit });
+    document.getElementById("der-mon-profil").onclick = () => DerRecit.editerProfil();
+    document.getElementById("der-le-cabinet")?.addEventListener("click", () => DerRecit.editerCabinet());
+    majRecit();
     document.getElementById("der-vider").onclick = () => effacerClient("Informations du client effacées.", true);
   }
   function brancherAdmin() {

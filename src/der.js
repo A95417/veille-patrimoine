@@ -65,6 +65,10 @@ function nettoyer(c) {
     sections: c.sections.map((s) => ({ ...garder(s, ["id", "titre", "icone", "page"]), blocs: s.blocs.map((b) => ({ t: b.t, ...garder(b, CLES[b.t]) })) })) };
 }
 
+const texte = (x, n) => String(x ?? "").replace(/[<>]/g, "").trim().slice(0, n);
+const liste = (a, n, f) => (Array.isArray(a) ? a.slice(0, n).map(f) : []);
+const photoId = (x) => (/^[a-f0-9]{32}$/.test(String(x || "")) ? String(x) : "");
+
 export async function routeDer(request, env, chemin, moi) {
   const db = env.DB, methode = request.method;
   const lire = async () => { try { return await request.json(); } catch { return {}; } };
@@ -74,7 +78,50 @@ export async function routeDer(request, env, chemin, moi) {
     const contenu = (await lireEtat(db, "der_contenu"))?.valeur || null;
     const contact = (await lireEtat(db, "der_contact:" + moi.id))?.valeur || null;
     const historique = admin ? ((await lireEtat(db, "der_historique"))?.valeur || []).map((h) => ({ version: h.version, importe_le: h.importe_le, par: h.par })) : undefined;
-    return json({ contenu, contact, admin, conseiller: moi.nom || "", historique });
+    const cabinet = (await lireEtat(db, "der_cabinet"))?.valeur || null;
+    const profil = (await lireEtat(db, "der_profil:" + moi.id))?.valeur || null;
+    return json({ contenu, contact, admin, conseiller: moi.nom || "", historique, cabinet, profil });
+  }
+  // ---------------------------------------------------------------- récit de présentation (cabinet, conseiller)
+  // Textes et photos fournis par le cabinet : rangés dans la base, visibles seulement après connexion.
+  if (chemin === "/api/der/cabinet" && methode === "POST") {
+    if (!admin) return erreur("Seul l'administrateur modifie la présentation du cabinet.", 403);
+    const c = (await lire()).cabinet || {};
+    const propre = {
+      accroche: texte(c.accroche, 200), annee: texte(c.annee, 10), histoire: texte(c.histoire, 1500),
+      etapes: liste(c.etapes, 8, (e) => ({ annee: texte(e?.annee, 10), texte: texte(e?.texte, 200) })).filter((e) => e.texte),
+      chiffres: liste(c.chiffres, 6, (e) => ({ valeur: texte(e?.valeur, 30), libelle: texte(e?.libelle, 80) })).filter((e) => e.valeur),
+      valeurs: liste(c.valeurs, 6, (e) => texte(e, 120)).filter(Boolean),
+      metiers: liste(c.metiers, 8, (e) => texte(e, 120)).filter(Boolean),
+      directrice: { nom: texte(c.directrice?.nom, 80), role: texte(c.directrice?.role, 80), texte: texte(c.directrice?.texte, 800), photo: photoId(c.directrice?.photo) },
+      logo: photoId(c.logo),
+    };
+    await ecrireEtat(db, "der_cabinet", propre);
+    return json({ ok: true, cabinet: propre });
+  }
+  if (chemin === "/api/der/profil" && methode === "POST") {
+    const c = (await lire()).profil || {};
+    const propre = { nom: texte(c.nom, 80), titre: texte(c.titre, 120), parcours: texte(c.parcours, 1200),
+      specialites: liste(c.specialites, 8, (e) => texte(e, 80)).filter(Boolean), photo: photoId(c.photo) };
+    await ecrireEtat(db, "der_profil:" + moi.id, propre);
+    return json({ ok: true, profil: propre });
+  }
+  // Photos (directrice, logo, conseiller) : image JPEG ou PNG déjà réduite dans le navigateur (≤ 700 Ko).
+  if (chemin === "/api/der/photo" && methode === "POST") {
+    const d = await lire(), m = String(d.image || "").match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+    if (!m) return erreur("Image invalide (JPEG, PNG ou WebP).");
+    if (m[2].length > 950000) return erreur("Image trop lourde.");
+    if (["directrice", "logo"].includes(d.cible) && !admin) return erreur("Seul l'administrateur modifie cette image.", 403);
+    const id = crypto.randomUUID().replace(/-/g, "");
+    await ecrireEtat(db, "der_photo:" + id, { type: "image/" + m[1], donnees: m[2], par: moi.id });
+    return json({ ok: true, id });
+  }
+  const ph = chemin.match(/^\/api\/der\/photo\/([a-f0-9]{32})$/);
+  if (ph && methode === "GET") {
+    const v = (await lireEtat(db, "der_photo:" + ph[1]))?.valeur;
+    if (!v) return new Response("Introuvable", { status: 404 });
+    const octets = Uint8Array.from(atob(v.donnees), (c) => c.charCodeAt(0));
+    return new Response(octets, { headers: { "Content-Type": v.type, "Cache-Control": "private, max-age=86400" } });
   }
   // Coordonnées du conseiller gardées sur son compte (ce ne sont pas des données du client).
   if (chemin === "/api/der/contact" && methode === "POST") {
