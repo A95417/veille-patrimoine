@@ -16,7 +16,7 @@
   function ecrans(apercu) {
     const cab = X.cabinet() || {}, pro = X.profil() || {}, d = cab.directrice || {};
     const masqueC = new Set(cab.masques || []), masqueP = new Set(pro.masques || []);
-    const L = [];
+    const L = [], titreConseil = pro.feminin ? "Votre conseillère" : "Votre conseiller";
     const ajouter = (ch, cle, titre, rempli, html, masque) => { if (masque.has(cle)) return; if (!rempli && !apercu) return; L.push({ ch, titre, html }); };
     ajouter(0, "ouverture", "Le cabinet", true, `<div class="rc-ouverture"><img class="rc-logo" src="${photo(cab.logo, "/der-logo.png")}" alt="BSC Patrimoine">
       ${cab.accroche ? `<p class="rc-accroche">${esc(cab.accroche)}</p>` : vide("une phrase d'accroche du cabinet")}</div>`, masqueC);
@@ -30,11 +30,14 @@
       <div><h3>Nos valeurs</h3>${(cab.valeurs || []).length ? `<ul class="rc-puces">${cab.valeurs.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>` : vide("les valeurs du cabinet")}</div></div>`, masqueC);
     ajouter(0, "engagements", "Nos engagements", !!(cab.engagements || []).length, (cab.engagements || []).length ? `<ul class="rc-puces rc-engagements">${cab.engagements.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>` : vide("les engagements et certifications du cabinet"), masqueC);
     (cab.libres || []).forEach((e) => L.push({ ch: 0, titre: e.titre || "Le cabinet", html: libreHtml(e) }));
-    ajouter(1, "conseiller", "Votre conseiller", true, `<div class="rc-personne">${pro.photo ? `<img src="${photo(pro.photo)}" alt="">` : `<div class="rc-photo-vide">Photo</div>`}
+    // La directrice présente elle-même : elle figure déjà dans « La direction », pas de chapitre « Votre conseiller ».
+    if (!pro.directrice) {
+    ajouter(1, "conseiller", titreConseil, true, `<div class="rc-personne">${pro.photo ? `<img src="${photo(pro.photo)}" alt="">` : `<div class="rc-photo-vide">Photo</div>`}
       <div><h3>${esc(pro.nom || X.contact().nom || "")}</h3>${pro.titre ? `<p class="rc-role">${esc(pro.titre)}</p>` : apercu ? vide("votre titre (ex. Conseiller en gestion de patrimoine)") : ""}
       ${pro.parcours ? `<p class="rc-texte">${esc(pro.parcours).replace(/\n/g, "<br>")}</p>` : apercu ? vide("votre parcours") : ""}
       ${(pro.specialites || []).length ? `<div class="rc-chips">${pro.specialites.map((x) => `<span>${esc(x)}</span>`).join("")}</div>` : apercu ? vide("vos spécialités") : ""}</div></div>`, masqueP);
-    (pro.libres || []).forEach((e) => L.push({ ch: 1, titre: e.titre || "Votre conseiller", html: libreHtml(e) }));
+    (pro.libres || []).forEach((e) => L.push({ ch: 1, titre: e.titre || titreConseil, html: libreHtml(e) }));
+    }
     L.push({ ch: 2, titre: "Le Document d'Entrée en Relation", der: true });
     return L;
   }
@@ -42,7 +45,7 @@
   // ---------------------------------------------------------------- la présentation
   function presenter(apercu = false) {
     const L = ecrans(apercu);
-    const chapitres = ["Le cabinet", "Votre conseiller", "Le DER"];
+    const chapitres = ["Le cabinet", X.profil()?.feminin ? "Votre conseillère" : "Votre conseiller", "Le DER"];
     const r = document.createElement("div"); r.className = "rc"; r.setAttribute("role", "dialog"); r.setAttribute("aria-label", "Présentation au client");
     r.innerHTML = `<div class="rc-haut"><img src="${photo(X.cabinet()?.logo, "/der-logo.png")}" alt="BSC Patrimoine" class="rc-mini">
         <nav class="rc-chapitres">${chapitres.map((c, i) => `<button type="button" data-ch="${i}"><span>${i + 1}</span>${c}</button>`).join("")}</nav>
@@ -89,7 +92,8 @@
     };
     addEventListener("keydown", touches);
     r.querySelectorAll(".rc-fl").forEach((b) => b.onclick = () => montrer(i + Number(b.dataset.d)));
-    r.querySelectorAll(".rc-chapitres button").forEach((b) => { const k = L.findIndex((e) => e.ch === Number(b.dataset.ch)); if (k < 0) b.hidden = true; else b.onclick = () => montrer(k); });
+    let num = 0;
+    r.querySelectorAll(".rc-chapitres button").forEach((b) => { const k = L.findIndex((e) => e.ch === Number(b.dataset.ch)); if (k < 0) { b.hidden = true; return; } b.querySelector("span").textContent = ++num; b.onclick = () => montrer(k); });
     if (apercu) r.querySelector(".rc-haut").insertAdjacentHTML("beforeend", '<span class="rc-badge-apercu">Aperçu conseiller</span>');
     r.querySelector(".rc-quitter").onclick = fermer;
     r.querySelectorAll("[data-z]").forEach((b) => b.onclick = () => { const z = Number(b.dataset.z); facteur = z === 0 ? 1 : Math.max(.5, Math.min(3, facteur + z * .25)); zoomDer(); });
@@ -203,6 +207,10 @@
   function editerProfil() {
     const p = X.profil() || {};
     dialogue("Mon profil (récit de présentation)", `
+      <fieldset class="rc-groupe"><legend>Mon rôle</legend><div class="rc-coches rc-une-colonne">
+        <label><input type="checkbox" name="directrice" ${p.directrice ? "checked" : ""}> Je suis la directrice du cabinet <span class="doux">(pas de chapitre « Votre conseiller » : je suis déjà présentée dans « La direction »)</span></label>
+        <label><input type="radio" name="genre" value="m" ${p.feminin ? "" : "checked"}> Titre du chapitre : « Votre conseiller »</label>
+        <label><input type="radio" name="genre" value="f" ${p.feminin ? "checked" : ""}> Titre du chapitre : « Votre conseillère »</label></div></fieldset>
       ${champMasques([["conseiller", "Ma présentation (photo, parcours, spécialités)"]], p.masques)}
       ${champPhoto("Ma photo", "photo", p.photo)}
       ${ligne("Nom affiché", "nom", p.nom || X.contact().nom)}
@@ -210,14 +218,14 @@
       ${zone("Mon parcours", "parcours", p.parcours, 4)}
       ${zone("Mes spécialités", "specialites", (p.specialites || []).join("\n"), 3, "une par ligne")}
       ${champLibres(p.libres)}`,
-    async (v, dlg) => { const j = await appelApi("/api/der/profil", "POST", { profil: { nom: v.nom, titre: v.titre, parcours: v.parcours, photo: v.photo, specialites: lignes(v.specialites), libres: lireLibres(dlg), masques: lireMasques(dlg) } }); X.setProfil(j.profil); });
+    async (v, dlg) => { const j = await appelApi("/api/der/profil", "POST", { profil: { nom: v.nom, titre: v.titre, parcours: v.parcours, photo: v.photo, specialites: lignes(v.specialites), libres: lireLibres(dlg), masques: lireMasques(dlg), directrice: v.directrice === "on", feminin: v.genre === "f" } }); X.setProfil(j.profil); });
   }
   // État du récit (écrans remplis) pour le formulaire de préparation.
   function etat() {
     const c = X.cabinet() || {}, p = X.profil() || {}, d = c.directrice || {};
     const cab = [c.accroche, c.annee || c.histoire || (c.etapes || []).length, (c.chiffres || []).length, d.nom || d.photo, (c.metiers || []).length || (c.valeurs || []).length, (c.engagements || []).length].filter(Boolean).length;
     const pro = [p.titre, p.parcours, (p.specialites || []).length, p.photo].filter(Boolean).length;
-    return { cab, cabTotal: 6, pro, proTotal: 4 };
+    return { cab, cabTotal: 6, pro, proTotal: 4, directrice: !!p.directrice };
   }
 
   window.DerRecit = { init: (ctx) => { X = ctx; }, presenter, editerCabinet, editerProfil, etat };

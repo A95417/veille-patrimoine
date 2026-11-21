@@ -205,7 +205,7 @@
   function majRecit() {
     const e = DerRecit.etat(), z = document.getElementById("der-recit-etat"); if (!z) return;
     const pastille = (n, t, lib) => `<span class="der-pastille ${n >= t ? "ok" : ""}">${lib} : ${n} / ${t}</span>`;
-    z.innerHTML = pastille(e.cab, e.cabTotal, "Le cabinet") + pastille(e.pro, e.proTotal, "Votre profil");
+    z.innerHTML = pastille(e.cab, e.cabTotal, "Le cabinet") + (e.directrice ? '<span class="der-pastille ok">Directrice : pas de chapitre « Votre conseiller »</span>' : pastille(e.pro, e.proTotal, "Votre profil"));
   }
   function remplirChamps() {
     document.querySelectorAll("#der-etape1 [data-zone]").forEach((el) => { const src = el.dataset.zone === "contact" ? contact : client; el.value = src[el.dataset.k] ?? ""; });

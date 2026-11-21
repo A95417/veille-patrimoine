@@ -264,3 +264,6 @@ details.der-admin > summary { cursor: pointer; font-weight: 600; font-size: .9re
 .rc-zoom { display: inline-flex; gap: 4px; margin-left: 18px; }
 .rc-zoom button { font: inherit; font-size: 14px; min-width: 40px; height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid #ddd; background: #fff; color: #333; cursor: pointer; }
 .rc-zoom button:hover { border-color: #5e0000; }
+.rc-coches label { display: flex; align-items: flex-start; gap: 8px; font-weight: 400; color: var(--texte); }
+.rc-coches input { width: auto; flex: none; margin: 3px 0 0; }
+.rc-coches.rc-une-colonne { grid-template-columns: minmax(0, 1fr); }

@@ -107,7 +107,8 @@ export async function routeDer(request, env, chemin, moi) {
   if (chemin === "/api/der/profil" && methode === "POST") {
     const c = (await lire()).profil || {};
     const propre = { nom: texte(c.nom, 80), titre: texte(c.titre, 120), parcours: texte(c.parcours, 1200),
-      specialites: liste(c.specialites, 8, (e) => texte(e, 80)).filter(Boolean), photo: photoId(c.photo), libres: libres(c.libres), masques: masques(c.masques) };
+      specialites: liste(c.specialites, 8, (e) => texte(e, 80)).filter(Boolean), photo: photoId(c.photo), libres: libres(c.libres), masques: masques(c.masques),
+      directrice: c.directrice === true, feminin: c.feminin === true };
     await ecrireEtat(db, "der_profil:" + moi.id, propre);
     return json({ ok: true, profil: propre });
   }
