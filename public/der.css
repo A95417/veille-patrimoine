@@ -164,37 +164,58 @@
 .der-toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: #1d1d1d; color: #fff; padding: 12px 18px; border-radius: 14px; font-size: .9rem; z-index: 1100; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); animation: der-apparait .3s ease; }
 
 /* ---------------------------------------------------------------- impression / PDF : pages A4 fidèles au document d'origine */
-@page { size: A4; margin: 14mm 12mm 16mm; }
+/* Pages A4 composées par la page elle-même (mêmes pages sur Chrome, Safari, Edge, Firefox) :
+   marges nulles côté navigateur, donc aucun en-tête ni pied de page ajouté par le navigateur ; numéros de page faits ici. */
+@page { size: A4; margin: 0; }
+.der-feuilles { position: absolute; left: -10000px; top: 0; width: 210mm; }
+.der-feuille { width: 210mm; height: 297mm; box-sizing: border-box; padding: 14mm 12mm 0; position: relative; overflow: hidden; background: #fff; }
+.der-feuille .contenu { height: 262mm; overflow: hidden; }
+.der-feuille .pied { position: absolute; left: 12mm; right: 12mm; bottom: 8mm; display: flex; justify-content: space-between; font: 7.5pt Poppins, sans-serif; color: #a8a8a8; }
+.der-feuille .pied .num { color: #444; font-size: 8pt; }
+.der-feuilles .der { box-shadow: none; border-radius: 0; font-size: 10.2pt; line-height: 1.5; overflow: visible; background: none; }
+.der-feuilles .der-anim { opacity: 1; transform: none; transition: none; }
+.der-feuilles .der-couverture { padding: 0; min-height: 0; display: block; }
+.der-feuilles .der-illus { margin: 22mm 0 0; height: 96mm; }
+.der-feuilles .der-illus * { animation: none !important; } .der-feuilles .der-illus .trait { stroke-dashoffset: 0; } .der-feuilles .der-illus .apparait { opacity: 1; }
+.der-feuilles .der-titre-couv { margin: -18mm 0 0 auto; width: 78%; padding: 8mm 9mm 6mm; }
+.der-feuilles .der-titre-couv .sigle { font-size: 40pt; } .der-feuilles .der-titre-couv .long { font-size: 22pt; }
+.der-feuilles .der-bandeau { margin: 0; grid-template-columns: 22% 1fr; }
+.der-feuilles .der-bandeau .annee { font-size: 22pt; }
+.der-feuilles .der-bandeau .client { font-size: 15pt; padding: 7mm 9mm; }
+.der-feuilles .der-section { margin: 0; padding: 0; }
+.der-feuilles .der-section > h2 { margin: 6mm -12mm 4mm; padding: 0 12mm 2.5mm; font-size: 13.5pt; }
+.der-feuilles .contenu > .der > :first-child > h2, .der-feuilles .contenu > .der > .der-section:first-child > h2 { margin-top: 0; }
+.der-feuilles .der-doc-titre { margin: 0 0 6mm; }
+.der-feuilles .der-ico { display: none; }
+.der-feuilles .der-cle { background: none; padding: 0; } .der-feuilles .der-cle svg { display: none; }
+.der-feuilles .der-garanties { display: none; }
+.der-feuilles .der-tab-garanties { display: table; }
+.der-feuilles .der-tab { font-size: 9pt; min-width: 0; }
+.der-feuilles .der-tab-defile { overflow: visible; }
+.der-feuilles .der-signatures .cadre { display: none; }
+.der-feuilles .der-coord .vide, .der-feuilles .der-identite .vide { color: transparent; background: none; }
+.der-feuilles .der a { color: inherit; text-decoration: none; }
+.der-feuilles .der-maj { animation: none; }
 @media print {
-  body { background: #fff !important; }
-  body > *:not(main), .der-panneau, .der-sommaire, .page > .titre-section, .der-filtres, .onglets-bas, .der-presentation, .der-toast, .der-dialogue, .entete { display: none !important; }
-  main.page { padding: 0 !important; margin: 0 !important; max-width: none !important; }
-  .der-page { display: block; }
-  .der { box-shadow: none; border-radius: 0; font-size: 10.2pt; line-height: 1.5; }
-  .der-anim { opacity: 1 !important; transform: none !important; }
-  .der-couverture { padding: 0; min-height: 0; display: block; break-after: page; }
-  .der-illus { margin: 22mm 0 0; height: 96mm; }
-  .der-illus * { animation: none !important; } .der-illus .trait { stroke-dashoffset: 0; } .der-illus .apparait { opacity: 1; }
-  .der-titre-couv { margin: -18mm 0 0 auto; width: 78%; padding: 8mm 9mm 6mm; }
-  .der-titre-couv .sigle { font-size: 40pt; } .der-titre-couv .long { font-size: 22pt; }
-  .der-bandeau { margin: 0; grid-template-columns: 22% 1fr; }
-  .der-bandeau .annee { font-size: 22pt; }
-  .der-bandeau .client { font-size: 15pt; padding: 7mm 9mm; }
-  .der-corps { padding: 0; }
-  .der-section > h2 { margin: 0 -12mm 4mm; padding: 0 12mm 2.5mm; font-size: 13.5pt; break-after: avoid; }
-  .der-ico { display: none; }
-  .der-section[data-page="nouvelle"] { break-before: page; margin-top: 0; }
-  .der-section { margin-top: 7mm; }
-  .der-cle { background: none; padding: 0; } .der-cle svg { display: none; }
-  .der-garanties { display: none; }
-  .der-tab-garanties { display: table; }
-  .der-tab { font-size: 9pt; }
-  .der-tab tr, .der-garantie, .der-signatures { break-inside: avoid; }
-  .der-tab thead { display: table-header-group; }
-  .der-tab-defile { overflow: visible; }
-  .der-signatures .cadre { display: none; }
-  .der-coord .vide, .der-identite .vide { color: transparent; background: none; }
-  .der a { color: inherit; text-decoration: none; }
-  .der-h, .der-tableau-titre { break-after: avoid; }
+  html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+  body > *:not(.der-feuilles) { display: none !important; }
+  .der-feuilles { position: static; left: auto; }
+  .der-feuille { break-after: page; page-break-after: always; }
+  .der-feuille:last-child { break-after: auto; page-break-after: auto; }
 }
 .der-bloc h2 svg, .der-cle svg { width: 18px; height: 18px; flex: none; } .der-bloc h2 span { display: inline-flex; color: var(--accent); }
+/* panneau : blocs repliables, alertes, astuce */
+details.der-bloc > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+details.der-bloc > summary::-webkit-details-marker { display: none; }
+details.der-bloc > summary h2 { margin: 0; }
+details.der-bloc > summary::after { content: "▾"; color: var(--doux); transition: transform .2s; }
+details.der-bloc:not([open]) > summary::after { transform: rotate(-90deg); }
+details.der-bloc[open] > summary { margin-bottom: 4px; }
+.der-resume { font-size: .8rem; color: var(--doux); margin-left: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+details.der-bloc[open] .der-resume { display: none; }
+.der-alerte { margin: 8px 0 0; padding: 8px 11px; border-radius: 10px; background: #fff4e0; color: #7a4b00; font-size: .8rem; line-height: 1.4; }
+.der-astuce { margin: -2px 0 2px; font-size: .76rem; color: var(--doux); text-align: center; }
+.der-toast { display: flex; align-items: center; gap: 14px; }
+.der-toast button { font: inherit; font-weight: 700; color: #ffd27a; background: none; border: 0; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
+.der-toast button:focus-visible { outline: 2px solid #ffd27a; }
+.der-toast-alerte { background: #7a1010; }

@@ -1,8 +1,8 @@
-// version 2.0 — notifications (brief prêt à 7 h et 18 h) + lecture hors ligne.
+// version 2.1 — notifications (brief prêt à 7 h et 18 h) + lecture hors ligne.
 // Hors ligne : chaque page, script et lecture (brief, actualités, fiches) consultés est gardé sur l'appareil.
 // Avec du réseau, on charge toujours la version à jour (et on met la copie à jour) ; sans réseau, on affiche la copie.
 const CACHE = "veille-v2";
-const API_LECTURE = /^\/api\/(moi|une|brief|calendrier|marches|selection|sujet|progression|quiz|actualites|themes|filtres|recherche)(\/|$)/;
+const API_LECTURE = /^\/api\/(der|moi|une|brief|calendrier|marches|selection|sujet|progression|quiz|actualites|themes|filtres|recherche)(\/|$)/;
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil((async () => {

@@ -139,24 +139,34 @@
   // ---------------------------------------------------------------- panneau de préparation
   const champ = (zoneN, k, lib, type = "text", cls = "", extra = "") => `<label class="${cls}">${lib}<input type="${type}" data-zone="${zoneN}" data-k="${k}" autocomplete="off" data-lpignore="true" data-1p-ignore spellcheck="false" ${extra}></label>`;
   const civ = (zoneN, opts) => `<label>Civilité<select data-zone="${zoneN}" data-k="civilite">${opts.map((o) => `<option>${o}</option>`).join("")}</select></label>`;
+  // Texte du DER trop ancien : prévenir l'administrateur (l'année de la couverture, elle, change toute seule).
+  function alerteAge() {
+    if (!C?.importe_le) return "";
+    const d = new Date(C.importe_le), mois = (Date.now() - d) / (30.44 * 864e5);
+    if (new Date().getFullYear() > d.getFullYear()) return `<p class="der-alerte">Nouvelle année : vérifiez le DER (partenaires, garanties, ORIAS, tarifs), puis importez la version ${new Date().getFullYear()}.</p>`;
+    if (mois > 12) return `<p class="der-alerte">Texte importé il y a plus de 12 mois : pensez à le vérifier.</p>`;
+    return "";
+  }
   function panneau() {
     return `<aside class="der-panneau" aria-label="Préparer le DER">
-      <div class="der-bloc"><h2>${ico("contact", "")} Votre contact</h2><p class="aide">Le conseiller qui présente le DER.</p>
+      <details class="der-bloc" id="der-bloc-contact" open><summary><h2>${ico("contact", "")} Votre contact</h2><span class="der-resume" id="der-resume-contact"></span></summary><p class="aide">Le conseiller qui présente le DER.</p>
         <div class="der-champs">${civ("contact", ["Mme", "M.", ""])}${champ("contact", "nom", "Nom")}${champ("contact", "cabinet", "Cabinet", "text", "large")}
           ${champ("contact", "adresse", "Adresse", "text", "large")}${champ("contact", "ville", "Ville", "text", "large")}${champ("contact", "telephone", "Téléphone", "tel", "large")}${champ("contact", "email", "E-mail", "email", "large")}</div>
         <div class="der-ligne-boutons"><button type="button" class="puce" id="der-memoriser">💾 Garder sur mon compte</button><button type="button" class="puce" id="der-oublier" hidden>Oublier</button></div>
-        <p class="doux petit" id="der-msg-contact" style="margin:6px 0 0" role="status"></p></div>
-      <div class="der-bloc"><h2>${ico("identite", "")} Vos informations d'identité</h2><p class="aide">Le client à qui vous remettez le DER.</p>
+        <p class="doux petit" id="der-msg-contact" style="margin:6px 0 0" role="status"></p></details>
+      <details class="der-bloc" open><summary><h2>${ico("identite", "")} Vos informations d'identité</h2></summary><p class="aide">Le client à qui vous remettez le DER.</p>
         <div class="der-champs">${civ("client", ["M.", "Mme"])}${champ("client", "nom", "Nom")}${champ("client", "prenom", "Prénom", "text", "large")}
           ${champ("client", "naissance", "Date de naissance", "date", "large")}${champ("client", "telephone", "Téléphone", "tel", "large")}${champ("client", "email", "E-mail", "email", "large")}</div>
         <div class="der-confidentiel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
-          <span><b>Jamais enregistré, jamais envoyé.</b> Ces informations restent dans cette page et s'effacent quand vous la quittez, après 15 minutes sans activité ou avec « Nouveau client ».</span></div></div>
+          <span><b>Jamais enregistré, jamais envoyé.</b> Ces informations restent dans cette page et s'effacent quand vous la quittez, après 15 minutes sans activité ou avec « Nouveau client ».</span></div>
+        <p class="der-alerte" id="der-alerte-email" hidden>Cet e-mail semble incomplet (exemple : prenom.nom@domaine.fr).</p></details>
       <div class="der-bloc der-actions">
         <button type="button" class="bouton" id="der-presenter">▶ Présenter au client</button>
         <button type="button" class="bouton bouton-discret" id="der-pdf">⬇ Générer le PDF</button>
+        <p class="der-astuce">Dans la fenêtre qui s'ouvre, choisissez <b>Enregistrer au format PDF</b>.</p>
         <button type="button" class="bouton bouton-discret" id="der-nouveau">↺ Nouveau client</button>
-        <div class="der-minuteur" id="der-minuteur"></div></div>
-      ${admin ? `<div class="der-bloc"><h2>⚙️ Texte du DER (administrateur)</h2><p class="aide">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · importée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte importé."}</p>
+        <div class="der-minuteur" id="der-minuteur" aria-live="polite"></div></div>
+      ${admin ? `<div class="der-bloc"><h2>⚙️ Texte du DER (administrateur)</h2>${alerteAge()}<p class="aide">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · importée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte importé."}</p>
         <div class="der-ligne-boutons" style="margin:0"><label class="puce" style="cursor:pointer">📥 Importer un fichier<input type="file" accept="application/json,.json" id="der-import" hidden></label>${C ? '<button type="button" class="puce" id="der-export">📤 Télécharger le texte actuel</button>' : ""}</div>
         <p class="doux petit" id="der-msg-admin" style="margin:6px 0 0" role="status"></p></div>` : ""}
     </aside>`;
@@ -182,15 +192,24 @@
   }
 
   // Effacement des informations du client (jamais rien d'enregistré : on vide la page).
-  function effacerClient(message) {
+  let copieAnnulation = null, minuteurAnnulation = 0;
+  function effacerClient(message, annulable = false) {
+    clearTimeout(minuteurAnnulation); copieAnnulation = annulable && clientRempli() ? { ...client } : null;
     Object.assign(client, { civilite: "M.", nom: "", prenom: "", naissance: "", telephone: "", email: "" });
-    remplirChamps(); rafraichir("client");
-    if (message) toast(message);
+    document.getElementById("der-feuilles")?.remove();
+    remplirChamps(); rafraichir("client"); verifierEmail();
+    if (copieAnnulation) {
+      toast(message, "Annuler", () => { Object.assign(client, copieAnnulation); copieAnnulation = null; remplirChamps(); rafraichir("client"); toast("Informations rétablies."); }, 5000);
+      minuteurAnnulation = setTimeout(() => { copieAnnulation = null; }, 5000);   // passé 5 s, la copie disparaît
+    } else if (message) toast(message);
   }
-  function toast(m) {
+  function toast(m, action, faire, duree = 4200) {
     document.querySelector(".der-toast")?.remove();
-    const t = document.createElement("div"); t.className = "der-toast"; t.setAttribute("role", "status"); t.textContent = m; document.body.appendChild(t);
-    setTimeout(() => t.remove(), 4200);
+    const t = document.createElement("div"); t.className = "der-toast"; t.setAttribute("role", "status");
+    t.innerHTML = `<span>${esc(m)}</span>${action ? `<button type="button">${esc(action)}</button>` : ""}`;
+    if (action) t.querySelector("button").onclick = () => { t.remove(); faire(); };
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), duree);
   }
   const clientRempli = () => ["nom", "prenom", "naissance", "telephone", "email"].some((k) => client[k]);
 
@@ -198,10 +217,19 @@
   let derniere = Date.now();
   const activite = () => { derniere = Date.now(); };
   ["pointerdown", "keydown", "scroll", "input", "touchstart"].forEach((e) => addEventListener(e, activite, { passive: true, capture: true }));
+  let enPresentation = false;
   setInterval(() => {
-    const reste = INACTIVITE - (Date.now() - derniere), m = document.getElementById("der-minuteur");
-    if (!clientRempli()) { if (m) m.textContent = ""; derniere = Date.now(); return; }
-    if (reste <= 0) { effacerClient("Informations du client effacées (15 minutes sans activité)."); derniere = Date.now(); return; }
+    const m = document.getElementById("der-minuteur");
+    if (!clientRempli() || enPresentation) { if (m) m.textContent = enPresentation && clientRempli() ? "Effacement automatique en pause pendant la présentation" : ""; derniere = Date.now(); document.getElementById("der-garder")?.remove(); return; }
+    const reste = INACTIVITE - (Date.now() - derniere);
+    if (reste <= 0) { document.getElementById("der-garder")?.remove(); effacerClient("Informations du client effacées (15 minutes sans activité)."); derniere = Date.now(); return; }
+    if (reste <= 60000 && !document.getElementById("der-garder")) {
+      const a = document.createElement("div"); a.id = "der-garder"; a.className = "der-toast der-toast-alerte"; a.setAttribute("role", "alert");
+      a.innerHTML = `<span>Sans activité : les informations du client s'effacent dans 1 minute.</span><button type="button">Garder</button>`;
+      a.querySelector("button").onclick = () => { derniere = Date.now(); a.remove(); };
+      document.body.appendChild(a);
+    }
+    if (reste > 60000) document.getElementById("der-garder")?.remove();
     if (m) m.textContent = `Effacement automatique dans ${Math.ceil(reste / 60000)} min sans activité`;
   }, 5000);
   // Page quittée ou remise depuis l'historique : rien ne doit réapparaître.
@@ -254,7 +282,10 @@
       <div class="der-pres-scene"></div>
       <div class="der-pres-bas"><button type="button" class="fl" data-d="-1" aria-label="Section précédente">‹</button><div class="der-points">${etapes.map((e, i) => `<button type="button" data-i="${i}" aria-label="${esc(e.titre)}"></button>`).join("")}</div>
         <span class="der-pres-etape"></span><button type="button" class="fl" data-d="1" aria-label="Section suivante">›</button></div>`;
+    p.insertAdjacentHTML("beforeend", '<div class="sr" aria-live="polite" id="der-pres-annonce"></div>');
     document.body.appendChild(p);
+    enPresentation = true;
+    const retour = document.activeElement;
     const scene = p.querySelector(".der-pres-scene");
     let i = 0;
     const montrer = (n, sens = 1) => {
@@ -269,34 +300,108 @@
       compter(clone);
       p.querySelectorAll(".der-points button").forEach((b, k) => b.setAttribute("aria-current", k === i));
       p.querySelector(".der-pres-etape").textContent = `${i + 1} / ${etapes.length}`;
+      p.querySelector("#der-pres-annonce").textContent = `Section ${i + 1} sur ${etapes.length} : ${e.titre}`;
       p.querySelector('[data-d="-1"]').disabled = i === 0; p.querySelector('[data-d="1"]').disabled = i === etapes.length - 1;
     };
-    const fermer = () => { removeEventListener("keydown", touches); p.remove(); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
-    const touches = (ev) => { if (ev.key === "ArrowRight" || ev.key === "PageDown" || ev.key === " ") { ev.preventDefault(); montrer(i + 1); } else if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); montrer(i - 1, -1); } else if (ev.key === "Escape") fermer(); };
+    const fermer = () => { removeEventListener("keydown", touches); p.remove(); enPresentation = false; derniere = Date.now(); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); retour?.focus?.(); };
+    const touches = (ev) => {
+      if (ev.key === "Tab") {   // le clavier reste dans la présentation
+        const f = [...p.querySelectorAll("button:not(:disabled), a[href]")].filter((x) => x.offsetParent !== null);
+        if (!f.length) return;
+        const k = f.indexOf(document.activeElement);
+        if (ev.shiftKey && k <= 0) { ev.preventDefault(); f[f.length - 1].focus(); } else if (!ev.shiftKey && k === f.length - 1) { ev.preventDefault(); f[0].focus(); }
+        return;
+      }
+      if (ev.key === " " && document.activeElement?.tagName === "BUTTON") return; if (ev.key === "ArrowRight" || ev.key === "PageDown" || ev.key === " ") { ev.preventDefault(); montrer(i + 1); } else if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); montrer(i - 1, -1); } else if (ev.key === "Escape") fermer(); };
     addEventListener("keydown", touches);
     p.querySelectorAll(".fl").forEach((b) => b.onclick = () => montrer(i + Number(b.dataset.d), Number(b.dataset.d)));
     p.querySelectorAll(".der-points button").forEach((b) => b.onclick = () => montrer(Number(b.dataset.i), Number(b.dataset.i) < i ? -1 : 1));
     p.querySelector(".der-pres-fermer").onclick = fermer;
-    document.addEventListener("fullscreenchange", function f() { if (!document.fullscreenElement && document.body.contains(p)) { /* sortie du plein écran : la présentation reste ouverte */ } if (!document.body.contains(p)) document.removeEventListener("fullscreenchange", f); });
     document.documentElement.requestFullscreen?.().catch(() => {});
     montrer(0);
+    p.querySelector('[data-d="1"]').focus();
   }
 
-  // ---------------------------------------------------------------- PDF (impression du navigateur, rien n'est envoyé)
-  let styleImpression = null;
-  function genererPdf() {
+  // ---------------------------------------------------------------- PDF : pages A4 composées ici (rien n'est envoyé)
+  // La page découpe elle-même le document en feuilles A4 (numéros de page compris) ; le navigateur n'a plus qu'à les
+  // enregistrer en PDF. Marges nulles côté navigateur : pas d'adresse du site ni de date ajoutées, même rendu partout.
+  const TITRES = ".der-h, .der-h3, .der-tableau-titre";
+  async function composerFeuilles() {
+    try { await document.fonts?.ready; } catch {}
+    return composer();
+  }
+  function composer() {
+    document.getElementById("der-feuilles")?.remove();
+    const racine = document.createElement("div"); racine.className = "der-feuilles"; racine.id = "der-feuilles"; racine.setAttribute("aria-hidden", "true");
+    document.body.appendChild(racine);
+    const src = document.getElementById("der-doc"), feuilles = [];
+    const propre = (n) => { const c = n.cloneNode(true); c.removeAttribute?.("id"); c.querySelectorAll?.("[id]").forEach((x) => x.removeAttribute("id")); c.querySelectorAll?.(".der-filtres, .der-tab-vide").forEach((x) => x.remove()); c.classList?.add("visible"); return c; };
+    let cur;
+    const nouvelle = () => {
+      const f = document.createElement("div"); f.className = "der-feuille";
+      f.innerHTML = `<div class="contenu"><div class="der"></div></div><div class="pied"><span>BSC Patrimoine · DER établi le ${aujourdhui()}</span><span class="num"></span></div>`;
+      racine.appendChild(f); feuilles.push(f); cur = f.querySelector(".der"); return cur;
+    };
+    const deborde = () => cur.offsetHeight > cur.parentElement.clientHeight + 1;
+    const coquille = (sec, avecTitre) => { const c = sec.cloneNode(false); c.removeAttribute("id"); c.classList.add("visible"); if (avecTitre) c.appendChild(propre(sec.querySelector(":scope > h2"))); return c; };
+    nouvelle().appendChild(propre(src.querySelector(".der-couverture")));
+    nouvelle();
+    const titreDoc = propre(src.querySelector(".der-doc-titre")); cur.appendChild(titreDoc);
+    for (const sec of src.querySelectorAll(".der-corps > .der-section")) {
+      if (sec.dataset.page === "nouvelle" && cur.childElementCount) nouvelle();
+      let boite = coquille(sec, true); cur.appendChild(boite);
+      if (deborde()) { boite.remove(); nouvelle(); cur.appendChild(boite); }
+      // place un élément ; s'il ne tient pas, il passe sur une nouvelle feuille avec les titres qui le précèdent
+      const placer = (el) => {
+        boite.appendChild(el);
+        if (!deborde()) return;
+        el.remove();
+        const suiveurs = [];
+        while (boite.lastElementChild && boite.lastElementChild.matches(TITRES)) { const t = boite.lastElementChild; t.remove(); suiveurs.unshift(t); }
+        const seulTitre = boite.children.length === 1 && boite.firstElementChild.tagName === "H2";
+        if (seulTitre) { boite.remove(); nouvelle(); cur.appendChild(boite); }
+        else { if (!boite.children.length) boite.remove(); nouvelle(); boite = coquille(sec, false); cur.appendChild(boite); }
+        suiveurs.forEach((x) => boite.appendChild(x));
+        boite.appendChild(el);
+      };
+      for (const enfant of sec.children) {
+        if (enfant.tagName === "H2" || enfant.matches(".der-garanties")) continue;
+        const tab = enfant.matches(".der-tab-defile") ? enfant.querySelector("table") : null;
+        if (!tab) { placer(propre(enfant)); continue; }
+        // tableau long : coupé ligne par ligne, en-tête répété sur chaque feuille
+        const nouveauTableau = () => { const w = propre(enfant); w.querySelector("tbody").innerHTML = ""; return w; };
+        let w = nouveauTableau(); placer(w);
+        const lignes = [...tab.querySelectorAll("tbody tr")];
+        lignes.forEach((tr, k) => {
+          const ligne = tr.cloneNode(true); ligne.hidden = false;
+          w.querySelector("tbody").appendChild(ligne);
+          if (!deborde()) return;
+          ligne.remove();
+          if (!w.querySelector("tbody").children.length) { w.remove(); placer(w); w.querySelector("tbody").appendChild(ligne); return; }
+          // pas de ligne seule en haut de la feuille suivante : on emporte aussi la précédente
+          const emportees = [];
+          if (lignes.length - k === 1 && w.querySelector("tbody").children.length >= 3) emportees.push(w.querySelector("tbody").lastElementChild);
+          emportees.forEach((x) => x.remove());
+          nouvelle(); boite = coquille(sec, false); cur.appendChild(boite);
+          w = nouveauTableau(); boite.appendChild(w); [...emportees, ligne].forEach((x) => w.querySelector("tbody").appendChild(x));
+        });
+      }
+    }
+    feuilles.forEach((f, k) => { f.querySelector(".num").textContent = `${k + 1}/${feuilles.length}`; });
+    return feuilles.length;
+  }
+  // Impression lancée par le menu du navigateur (Ctrl+P) : les feuilles sont composées à la volée, puis retirées.
+  addEventListener("beforeprint", () => { if (C && !document.getElementById("der-feuilles")) { reinitFiltres(); composer(); } });
+  addEventListener("afterprint", () => setTimeout(() => document.getElementById("der-feuilles")?.remove(), 0));
+  async function genererPdf() {
     reinitFiltres();
-    document.querySelectorAll("#der-doc .der-anim").forEach((el) => el.classList.add("visible"));
-    document.querySelectorAll("#der-doc [data-montant]").forEach((el) => (el.textContent = el.dataset.montant));
-    styleImpression?.remove();
-    styleImpression = document.createElement("style");
-    const pied = `BSC Patrimoine · DER établi le ${aujourdhui()}`.replace(/"/g, "");
-    styleImpression.textContent = `@page { @bottom-left { content: "${pied}"; font: 7.5pt Poppins, sans-serif; color: #a8a8a8; } @bottom-right { content: counter(page) "/" counter(pages); font: 8pt Poppins, sans-serif; color: #444; } }`;
-    document.head.appendChild(styleImpression);
+    const b = document.getElementById("der-pdf"); b.disabled = true; b.textContent = "Préparation des pages…";
+    try { await composerFeuilles(); } finally { b.disabled = false; b.textContent = "⬇ Générer le PDF"; }
     const titre = document.title, nom = [client.prenom, (client.nom || "").toUpperCase()].filter(Boolean).join(" ");
     document.title = `DER ${nom ? "- " + nom + " " : ""}- ${aujourdhui().replace(/\//g, "-")}`;
     const apres = () => {
       removeEventListener("afterprint", apres); document.title = titre;
+      document.getElementById("der-feuilles")?.remove();   // la copie imprimée (avec le nom du client) ne reste pas dans la page
       if (clientRempli()) setTimeout(proposerEffacement, 300);
     };
     addEventListener("afterprint", apres);
@@ -311,6 +416,28 @@
     d.showModal();
   }
 
+  // ---------------------------------------------------------------- saisie
+  function mettreEnForme(k, v) {
+    v = String(v || "").replace(/\s+/g, " ").trim();
+    if (k === "telephone") {
+      const c = v.replace(/[^\d+]/g, "");
+      if (/^0\d{9}$/.test(c)) return c.replace(/(\d{2})(?=\d)/g, "$1 ");
+      if (/^\+33\d{9}$/.test(c)) return "+33 " + c.slice(3, 4) + " " + c.slice(4).replace(/(\d{2})(?=\d)/g, "$1 ");
+      return v;
+    }
+    if (k === "prenom") return v.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+    if (k === "nom" || k === "ville") return v.toUpperCase();
+    if (k === "email") return v.toLowerCase();
+    return v;
+  }
+  function verifierEmail() {
+    const a = document.getElementById("der-alerte-email"); if (!a) return;
+    a.hidden = !client.email || /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(client.email);
+  }
+  function resumeContact() {
+    const r = document.getElementById("der-resume-contact"); if (r) r.textContent = [contact.civilite, contact.nom].filter(Boolean).join(" ");
+  }
+
   // ---------------------------------------------------------------- démarrage
   async function demarrer() {
     moi = await chargerEntete("/der");
@@ -318,7 +445,8 @@
     try { d = await appelApi("/api/der"); } catch (e) { zone.innerHTML = `<p class="message ko">${esc(e.message)}</p>`; return; }
     C = d.contenu; admin = d.admin;
     const defaut = C?.contact_defaut || {};
-    contact = d.contact ? { ...d.contact } : { ...defaut, ...(d.conseiller && !defaut.nom ? { nom: d.conseiller } : {}) };
+    // « Votre contact » : les coordonnées gardées par le conseiller, sinon son nom (et l'adresse du cabinet)
+    contact = d.contact ? { ...d.contact } : { ...defaut, civilite: d.conseiller ? "" : defaut.civilite, nom: d.conseiller || defaut.nom || "", telephone: defaut.telephone || "" };
     if (!C) {
       zone.innerHTML = `<div class="der-page"><div class="carte bloc"><h2 style="margin-top:0">Le texte du DER n'est pas encore chargé</h2>
         <p class="doux">${admin ? "Importez le fichier du DER (JSON) fourni : il est rangé dans la base du site, jamais dans le code." : "L'administrateur doit d'abord importer le texte du DER."}</p></div>${admin ? panneau() : ""}</div>`;
@@ -327,10 +455,18 @@
     zone.innerHTML = `<div class="der-page">${panneau()}<div><nav class="der-sommaire" aria-label="Sommaire du DER">${C.sections.map((s) => `<a href="#s-${s.id}">${esc(s.titre)}</a>`).join("")}</nav>${documentHtml()}</div></div>`;
     remplirChamps();
     document.getElementById("der-oublier").hidden = !d.contact;
-    document.querySelectorAll(".der-panneau [data-zone]").forEach((el) => el.addEventListener("input", () => {
-      (el.dataset.zone === "contact" ? contact : client)[el.dataset.k] = el.value.slice(0, 120);
-      rafraichir(el.dataset.zone);
-    }));
+    document.querySelectorAll(".der-panneau [data-zone]").forEach((el) => {
+      const maj = () => { (el.dataset.zone === "contact" ? contact : client)[el.dataset.k] = el.value.slice(0, 120); rafraichir(el.dataset.zone); resumeContact(); };
+      el.addEventListener("input", maj);
+      el.addEventListener("change", maj);
+      el.addEventListener("blur", () => {   // mise en forme à la sortie du champ
+        const v = mettreEnForme(el.dataset.k, el.value);
+        if (v !== el.value) { el.value = v; maj(); }
+        if (el.dataset.zone === "client" && el.dataset.k === "email") verifierEmail();
+      });
+    });
+    resumeContact();
+    if (matchMedia("(max-width: 1100px)").matches && d.contact) document.getElementById("der-bloc-contact").open = false;
     document.getElementById("der-memoriser").onclick = async () => {
       const m = document.getElementById("der-msg-contact");
       try { await appelApi("/api/der/contact", "POST", { contact }); m.textContent = "✓ Coordonnées gardées sur votre compte."; document.getElementById("der-oublier").hidden = false; } catch (e) { m.textContent = e.message; }
@@ -341,7 +477,7 @@
     };
     document.getElementById("der-presenter").onclick = presenter;
     document.getElementById("der-pdf").onclick = genererPdf;
-    document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.");
+    document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.", true);
     filtres(document); animer(); brancherAdmin();
   }
   function brancherAdmin() {
