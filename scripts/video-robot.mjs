@@ -73,7 +73,10 @@ try {
   const rapport = py(`${M}/nettoyer_voix.py`, "voix_brute.flac", "voix.flac", "1.08");
   console.log(rapport);
   if (!/pics saturés restants : aucun/.test(rapport)) throw new Error("la voix contient encore un grésillement après nettoyage");
-  console.log(py(`${M}/calage.py`, "job.json", "voix.flac", "calage.json"));
+  const finJob = job.scenes.find((s) => s.type === "fin"), tenue = finJob?.p?.mode && finJob.p.mode !== "complete" ? "2.5" : "3.6";
+  console.log(py(`${M}/calage.py`, "job.json", "voix.flac", "calage.json", tenue));
+  // respiration entre les scènes (rythme posé, durée minimale de lecture de chaque scène)
+  console.log(py(`${M}/respirer.py`, "job.json", "voix.flac", "calage.json"));
   const cal = JSON.parse(readFileSync("calage.json", "utf8"));
   const total = Math.round(cal.duree_totale * 30);
   // Débit réel de la voix (syllabes par seconde, pauses comprises) : renvoyé au site pour affiner ses estimations.

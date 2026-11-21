@@ -197,6 +197,18 @@
     .vv-choisi > div > span { font-size: .82rem; color: var(--doux); }
     .vv-choisi .bouton { flex: 0 0 auto; }
     .vv-angles { display: flex; flex-wrap: wrap; gap: 6px; }
+    .vv-familles { display: grid; gap: 10px; }
+    .puce[aria-pressed="true"] .doux { color: inherit; opacity: .8; }
+    .vv-famille { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: start; }
+    .vv-famille-nom { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); padding-top: 8px; }
+    @media (max-width: 640px) { .vv-famille { grid-template-columns: 1fr; gap: 4px; } .vv-famille-nom { padding-top: 0; } }
+    .vv-exemple { display: block; margin-top: 4px; font-size: .82rem; color: var(--doux); font-style: italic; }
+    .vv-focus { flex-basis: 100%; display: grid; gap: 4px; font-size: .82rem; font-weight: 600; }
+    .vv-focus select { font: inherit; font-weight: 400; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--bord-fort, #ccc); background: var(--carte); color: var(--texte); }
+    .vv-choisi:has(.vv-focus) { flex-wrap: wrap; }
+    .vv-relu { margin-bottom: 8px; font-size: .86rem; }
+    .vv-relu summary { cursor: pointer; color: var(--ok, #1f8a4c); font-weight: 600; }
+    .vv-relu ul { margin: 6px 0 0 18px; padding: 0; }
     .vv-angles .puce.vv-conseille { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
     .vv-angle-desc { margin: 10px 0 14px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--fond); border-radius: 0 10px 10px 0; font-size: .9rem; }
     .vv-suggere { color: var(--accent-fonce); font-weight: 600; font-size: .82rem; white-space: nowrap; }

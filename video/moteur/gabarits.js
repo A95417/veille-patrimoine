@@ -391,11 +391,13 @@ GAB.fin = {
   dessin(S, t) {
     const p = S.p, C = CONFIG, st = FIN_STYLES[p.style] || FIN_STYLES.cercles, c = st.c;
     let o = st.fond(t, S);
-    const q = court(p.question || "Et si on prenait le temps d'en parler ?", 60), cut = q.length > 26 ? q.lastIndexOf(" ", Math.min(q.length - 1, Math.max(26, Math.ceil(q.length / 2)))) : -1;
+    // fins courtes : logo et coordonnées (« courte ») ou logo et mentions seulement (« sans » appel commercial)
+    const bref = p.mode === "courte" || p.mode === "sans";
+    const q = bref ? "" : court(p.question || "Et si on prenait le temps d'en parler ?", 60), cut = q.length > 26 ? q.lastIndexOf(" ", Math.min(q.length - 1, Math.max(26, Math.ceil(q.length / 2)))) : -1;
     const k1 = lin(t, S.debut + .15, S.debut + .6), tq = q.length > 40 ? 54 : 62;
-    o += g(txt(540, 470, cut > 0 ? q.slice(0, cut) : q, { size: tq, w: 700, f: c.q }) + (cut > 0 ? txt(540, 548, q.slice(cut + 1), { size: tq, w: 700, f: c.q }) : ""), `translate(0 ${(1 - eo(k1)) * 40})`, k1);
+    if (q) o += g(txt(540, 470, cut > 0 ? q.slice(0, cut) : q, { size: tq, w: 700, f: c.q }) + (cut > 0 ? txt(540, 548, q.slice(cut + 1), { size: tq, w: 700, f: c.q }) : ""), `translate(0 ${(1 - eo(k1)) * 40})`, k1);
     // le logo arrive avec le nom du cabinet (avant-dernière phrase), l'offre avec la dernière phrase
-    const t2 = nbP(S) > 2 ? ph(S, nbP(S) - 2) : nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2, k2 = lin(t, t2, t2 + .5);
+    const t2 = bref ? S.debut + .1 : nbP(S) > 2 ? ph(S, nbP(S) - 2) : nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2, k2 = lin(t, t2, t2 + .5);
     const nomCab = court(C.cabinet || "BSC PATRIMOINE", 30).toUpperCase(), [m1, ...m2] = nomCab.split(" ");
     // Logo officiel du cabinet B-S-C Patrimoine (image fournie par le cabinet) ; un autre cabinet garde son nom en texte.
     const logo = /\bB-?S-?C\b/.test(nomCab)
@@ -406,9 +408,9 @@ GAB.fin = {
       : `<line x1="400" y1="640" x2="680" y2="640" stroke="${c.trait}" stroke-width="4"/>` + txt(540, 800, m1, { size: m1.length > 6 ? 120 : 180, w: 900, f: c.txt, fam: "Inter Display", ls: 16 }) + (m2.length ? txt(540, 890, m2.join(" "), { size: 66, w: 600, f: c.txt, ls: 24 }) : "") + txt(540, 955, court(C.activite || "Conseil en gestion de patrimoine", 44), { size: 34, w: 500, f: c.ment, ls: 1 });
     o += g(logo, `translate(540 780) scale(${.92 + .08 * eo(k2)}) translate(-540 -780)`, k2);
     const t3 = nbP(S) > 2 ? ph(S, nbP(S) - 1) : t2 + 1, k3 = lin(t, t3, t3 + .34);
-    o += g(pill(540, 1080, 840, 104, c.pill, txt(540, 1098, court(p.offre || "Premier échange offert · sans engagement", 44), { size: 36, w: 800, f: c.pillT })), `translate(540 1080) scale(${back(k3)}) translate(-540 -1080)`, cl(k3 * 3));
-    const t4 = phf(S, nbP(S) - 1) - .4, k4 = lin(t, t4, t4 + .4), k5 = lin(t, t4 + .3, t4 + .7);
-    const contacts = [C.mail && ["mail", C.mail], C.telephone && ["tel", C.telephone]].filter(Boolean);
+    if (!bref) o += g(pill(540, 1080, 840, 104, c.pill, txt(540, 1098, court(p.offre || "Premier échange offert · sans engagement", 44), { size: 36, w: 800, f: c.pillT })), `translate(540 1080) scale(${back(k3)}) translate(-540 -1080)`, cl(k3 * 3));
+    const t4 = bref ? S.debut + .6 : phf(S, nbP(S) - 1) - .4, k4 = lin(t, t4, t4 + .4), k5 = lin(t, t4 + .3, t4 + .7);
+    const contacts = p.mode === "sans" ? [] : [C.mail && ["mail", C.mail], C.telephone && ["tel", C.telephone]].filter(Boolean);
     if (contacts.length) {
       o += g(`<rect x="150" y="1180" width="780" height="${contacts.length * 120 + 40}" rx="36" fill="${c.boite}" opacity="${c.boiteOp}"/>`, "", k4);
       contacts.forEach(([ic, v], i) => { o += g(icone(ic, 240, 1260 + i * 120) + txt(305, 1276 + i * 120, court(v, 34), { anchor: "start", size: 46, w: 800, f: c.txt, ls: 1 }), `translate(${(1 - eo(i ? k5 : k4)) * -60} 0)`, i ? k5 : k4); });
@@ -419,7 +421,7 @@ GAB.fin = {
     ment.forEach((m, i) => { o += txt(540, 1496 + i * 34, m, { size: 25, w: 500, f: c.ment, op: .9 }); });
     return o;
   },
-  sons(S) { const t3 = nbP(S) > 2 ? ph(S, nbP(S) - 1) : (nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2) + 1; return [["pop", t3, .4]]; },   // rien après la dernière phrase
+  sons(S) { if (S.p.mode === "courte" || S.p.mode === "sans") return [["pop", S.debut + .15, .35]]; const t3 = nbP(S) > 2 ? ph(S, nbP(S) - 1) : (nbP(S) > 1 ? ph(S, 1) : S.debut + 1.2) + 1; return [["pop", t3, .4]]; },   // rien après la dernière phrase
   masqueSousTitres() { return true; },
 };
 

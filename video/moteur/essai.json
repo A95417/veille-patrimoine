@@ -1,14 +1,155 @@
-{"format":"9:16","config":{"cabinet":"BSC PATRIMOINE","activite":"Conseil en gestion de patrimoine","mail":"contact@example.com","telephone":"06 39 98 12 34","mentions":["Exemple fictif à visée pédagogique : 100 €/mois, 4 %/an, rendement non garanti.","Investir comporte un risque de perte en capital.","Coordonnées fictives (provisoires)."]},
-"scenes":[
-{"type":"accroche","texte":"Il a attendu le bon moment pour épargner… et ça lui a coûté près de 49 000 € !","p":{"personnage":"tom","bandeau":"Le coût d'attendre","gros_texte":"− 49 000 €","petit_texte":"exemple fictif"}},
-{"type":"personnage","texte":"Voici Léa. 25 ans. Chaque mois, 100 € mis de côté. Automatiquement.","p":{"personnage":"lea","decor":"appartement","nom":"Léa","sous_nom":"25 ans","notification_titre":"Virement programmé","notification_texte":"100 € → épargne · chaque mois","bocal":true}},
-{"type":"personnage","texte":"Et voici Tom. Même âge, même salaire. Mais Tom, lui, attend le bon moment.","p":{"personnage":"tom","decor":"cafe","nom":"Tom","sous_nom":"25 ans","puces":["Même âge","Même salaire"],"bulle":"le bon moment…"}},
-{"type":"marche","texte":"Les marchés montent ? Trop tard ! Ils baissent ? Trop risqué !","p":{"tampon1":"Trop tard","tampon2":"Trop risqué"}},
-{"type":"calendrier","texte":"Dix ans passent… Tom se lance enfin, à 35 ans. 100 € par mois, lui aussi.","p":{"libelle":"Âge de Tom","de":25,"a":35,"unite":"ans","personnage":"tom_age","montant":"100 € / mois"}},
-{"type":"comparaison","texte":"À 65 ans, Léa a près de 118 000 €. Tom ? Environ 69 000.","p":{"bandeau":"À 65 ans","gauche":{"nom":"Léa · dès 25 ans","valeur":118196,"verse":48000,"personnage":"lea"},"droite":{"nom":"Tom · dès 35 ans","valeur":69405,"verse":36000,"personnage":"tom_age"},"unite":"€","note":"Exemple fictif : 100 €/mois, 4 %/an, non garanti"}},
-{"type":"egalite","texte":"Même effort chaque mois. La seule différence ?","p":{"gauche":"100 €/mois","droite":"100 €/mois","question":"La seule différence ?"}},
-{"type":"grand_mot","texte":"Dix ans ! Parce que vos intérêts produisent, eux aussi, des intérêts.","p":{"texte":"10 ans","legende":"Intérêts sur intérêts","boule":true}},
-{"type":"bocaux","texte":"Bien sûr, chaque situation est unique. Mais plus vous épargnez, et plus tôt vous commencez, plus votre capital peut devenir important.","p":{"titre":"Chaque situation est unique","colonnes":[{"libelle":"50 €/mois","niveau":0.3},{"libelle":"150 €/mois","niveau":0.6},{"libelle":"300 €/mois","niveau":0.95}],"puce":"Commencer tôt","courbe":"Capital ↗"}},
-{"type":"sablier","texte":"Le bon moment, personne ne le connaît. Votre meilleur allié, c'est le temps !","p":{"questions":true,"haut":"Votre meilleur allié :","gros":"Le temps"}},
-{"type":"fin","texte":"Et si on prenait le temps d'en parler ? BSC Patrimoine. Premier échange offert, sans engagement.","p":{"question":"Et si on prenait le temps d'en parler ?","offre":"Premier échange offert · sans engagement"}}
-]}
+{
+ "format": "9:16",
+ "config": {
+  "cabinet": "BSC PATRIMOINE",
+  "activite": "Conseil en gestion de patrimoine",
+  "mail": "contact@example.com",
+  "telephone": "06 39 98 12 34",
+  "mentions": [
+   "Exemple fictif à visée pédagogique : 100 €/mois, 4 %/an, rendement non garanti.",
+   "Investir comporte un risque de perte en capital.",
+   "Coordonnées fictives (provisoires)."
+  ]
+ },
+ "scenes": [
+  {
+   "type": "accroche",
+   "texte": "Il a attendu le bon moment pour épargner… et ça lui a coûté près de 49 000 € !",
+   "p": {
+    "personnage": "tom",
+    "bandeau": "Le coût d'attendre",
+    "gros_texte": "− 49 000 €",
+    "petit_texte": "exemple fictif"
+   }
+  },
+  {
+   "type": "personnage",
+   "texte": "Voici Léa. 25 ans. Chaque mois, 100 € mis de côté. Automatiquement.",
+   "p": {
+    "personnage": "lea",
+    "decor": "appartement",
+    "nom": "Léa",
+    "sous_nom": "25 ans",
+    "notification_titre": "Virement programmé",
+    "notification_texte": "100 € → épargne · chaque mois",
+    "bocal": true
+   }
+  },
+  {
+   "type": "personnage",
+   "texte": "Et voici Tom. Même âge, même salaire. Mais Tom, lui, attend le bon moment.",
+   "p": {
+    "personnage": "tom",
+    "decor": "cafe",
+    "nom": "Tom",
+    "sous_nom": "25 ans",
+    "puces": [
+     "Même âge",
+     "Même salaire"
+    ],
+    "bulle": "le bon moment…"
+   }
+  },
+  {
+   "type": "marche",
+   "texte": "Les marchés montent ? Trop tard ! Ils baissent ? Trop risqué !",
+   "p": {
+    "tampon1": "Trop tard",
+    "tampon2": "Trop risqué"
+   }
+  },
+  {
+   "type": "calendrier",
+   "texte": "Dix ans passent… Tom se lance enfin, à 35 ans. 100 € par mois, lui aussi.",
+   "p": {
+    "libelle": "Âge de Tom",
+    "de": 25,
+    "a": 35,
+    "unite": "ans",
+    "personnage": "tom_age",
+    "montant": "100 € / mois"
+   }
+  },
+  {
+   "type": "comparaison",
+   "texte": "À 65 ans, Léa a près de 118 000 €. Tom ? Environ 69 000.",
+   "p": {
+    "bandeau": "À 65 ans",
+    "gauche": {
+     "nom": "Léa · dès 25 ans",
+     "valeur": 118196,
+     "verse": 48000,
+     "personnage": "lea"
+    },
+    "droite": {
+     "nom": "Tom · dès 35 ans",
+     "valeur": 69405,
+     "verse": 36000,
+     "personnage": "tom_age"
+    },
+    "unite": "€",
+    "note": "Exemple fictif : 100 €/mois, 4 %/an, non garanti"
+   }
+  },
+  {
+   "type": "egalite",
+   "texte": "Même effort chaque mois. La seule différence ?",
+   "p": {
+    "gauche": "100 €/mois",
+    "droite": "100 €/mois",
+    "question": "La seule différence ?"
+   }
+  },
+  {
+   "type": "grand_mot",
+   "texte": "Dix ans ! Parce que vos intérêts produisent, eux aussi, des intérêts.",
+   "p": {
+    "texte": "10 ans",
+    "legende": "Intérêts sur intérêts",
+    "boule": true
+   }
+  },
+  {
+   "type": "bocaux",
+   "texte": "Bien sûr, chaque situation est unique. Mais plus vous épargnez, et plus tôt vous commencez, plus votre capital peut devenir important.",
+   "p": {
+    "titre": "Chaque situation est unique",
+    "colonnes": [
+     {
+      "libelle": "50 €/mois",
+      "niveau": 0.3
+     },
+     {
+      "libelle": "150 €/mois",
+      "niveau": 0.6
+     },
+     {
+      "libelle": "300 €/mois",
+      "niveau": 0.95
+     }
+    ],
+    "puce": "Commencer tôt",
+    "courbe": "Capital ↗"
+   }
+  },
+  {
+   "type": "sablier",
+   "texte": "Le bon moment, personne ne le connaît. Votre meilleur allié, c'est le temps !",
+   "p": {
+    "questions": true,
+    "haut": "Votre meilleur allié :",
+    "gros": "Le temps"
+   }
+  },
+  {
+   "type": "fin",
+   "texte": "Et si on prenait le temps d'en parler ? BSC Patrimoine. Premier échange offert, sans engagement.",
+   "p": {
+    "question": "Et si on prenait le temps d'en parler ?",
+    "offre": "Premier échange offert · sans engagement",
+    "rythme": "pose",
+    "mode": "complete"
+   }
+  }
+ ]
+}

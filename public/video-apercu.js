@@ -3,7 +3,9 @@
 // Sert aux vignettes du scénario et au lecteur « Aperçu ». Aucun appel à l'IA, aucun quota.
 (function (racine) {
   let SYL_PAR_S = 4.45;   // remplacé par le débit réellement mesuré sur les dernières vidéos (réglage du site)
-  const TENUE = 3.6, PAUSE = .2;
+  const PAUSE = .2, PAUSE_POSE = .7, SCENE_MIN = 2.4;   // mêmes valeurs que le serveur et le robot
+  const finDe = (scenes) => (scenes || []).find((s) => s.type === "fin");
+  const tenueDe = (f) => (f?.p?.mode && f.p.mode !== "complete" ? 2.5 : 3.6);
   const regler = (d) => { if (d >= 3.5 && d <= 5.8) SYL_PAR_S = d; };
   const UN = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize"];
   const DIZ = { 2: "vingt", 3: "trente", 4: "quarante", 5: "cinquante", 6: "soixante", 8: "quatre-vingt" };
@@ -23,7 +25,10 @@
     return t.split(/\s+/).filter(Boolean).reduce((n, m) => n + Math.max(1, (m.toLowerCase().match(/[aeiouyàâéèêëîïôûùœ]+/g) || []).length), 0);
   }
   const dureeScene = (s) => syllabes(s.texte) / SYL_PAR_S;
-  const dureeEstimee = (scenes) => Math.round(scenes.reduce((n, s) => n + dureeScene(s), 0) + TENUE);
+  function dureeEstimee(scenes) {
+    const f = finDe(scenes), corps = scenes.filter((s) => s.type !== "fin");
+    return Math.round(corps.reduce((n, s) => n + Math.max(SCENE_MIN, dureeScene(s)), 0) + (f ? dureeScene(f) : 0) + (f?.p?.rythme === "pose" ? PAUSE_POSE * corps.length : 0) + tenueDe(f));
+  }
 
   // Calage estimé : phrases et mots datés comme le ferait le calage sur la vraie voix.
   function calageEstime(scenes) {
@@ -38,9 +43,11 @@
       if (!phrases.some((p) => p.scene === i)) phrases.push({ texte: "…", scene: i });
     });
     const debit = 1 / (SYL_PAR_S * 1.12);   // parole un peu plus rapide que la moyenne (les pauses font le reste)
-    let x = .15;
-    const mots = [];
+    let x = .15, debutScene = x;
+    const mots = [], f = finDe(scenes), pose = f?.p?.rythme === "pose";
     phrases.forEach((p, j) => {
+      // changement de scène : respiration (rythme posé) et durée minimale de la scène précédente (comme le robot)
+      if (j && p.scene !== phrases[j - 1].scene) { const prec = scenes[phrases[j - 1].scene]; if (prec?.type !== "fin") x += (pose ? PAUSE_POSE : 0) + Math.max(0, SCENE_MIN - (x - debutScene)); debutScene = x; }
       p.texte = p.texte.replace(/\s+([?!:;])/g, " $1").replace(/(\d)\s+(?=\d{3}\b)/g, "$1 ").replace(/(\d)\s+(€|%|ans\b)/g, "$1 $2");
       const ws = p.texte.split(" "), poids = ws.map((w) => syllabes(w) + .3), T = poids.reduce((a, b) => a + b, 0);
       const d = Math.max(.5, syllabes(p.texte) * debit);
@@ -51,7 +58,7 @@
     const sc = scenes.map((_, i) => { const ps = phrases.filter((p) => p.scene === i); return { P: ps.map((p) => p.debut), PF: ps.map((p) => p.fin) }; });
     sc.forEach((s, i) => { s.debut = i === 0 ? 0 : Math.max(sc[i - 1].P[sc[i - 1].P.length - 1] + .2, s.P[0] - .25); });
     const finVoix = phrases[phrases.length - 1].fin;
-    sc.forEach((s, i) => { s.fin = i + 1 < sc.length ? sc[i + 1].debut : finVoix + TENUE; });
+    sc.forEach((s, i) => { s.fin = i + 1 < sc.length ? sc[i + 1].debut : finVoix + tenueDe(f); });
     return { scenes: sc, mots, phrases, duree_voix: finVoix, duree_totale: sc[sc.length - 1].fin };
   }
 

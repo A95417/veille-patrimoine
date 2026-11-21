@@ -4,22 +4,59 @@
   const $v = (id) => document.getElementById(id);
   // Menu « Sujet » : fiches Apprendre (par thème), actualités, échéances, chiffres, simulation, sujet libre.
   const THEMES = { epargne: "Épargne", immo: "Immobilier", marches: "Marchés", fisc: "Fiscalité", transmission: "Transmission", regl: "Réglementation", economie: "Économie", crypto: "Crypto" };
-  const ANGLES_LIB = { expliquer: "Expliquer simplement", mythe: "Mythe ou réalité ?", reflexes: "3 réflexes à avoir", chiffre: "Le chiffre clé", deux_profils: "Histoire de deux profils", erreur: "Erreur fréquente à éviter" };
+  // Façons de raconter, par famille : [clé, libellé, description, exemple].
+  const FAMILLES = [
+    ["Comprendre", [
+      ["expliquer", "Expliquer simplement", "L'enjeu, comment ça marche, ce qu'il faut retenir.", "« Le PER en 45 secondes »"],
+      ["decryptage", "Décryptage en profondeur", "On rentre dans le détail : règles, conditions, exceptions, exemples. Idéal en 1 min 30 ou 2 min.", "« Sortir de son PER : tout ce qu'il faut savoir »"],
+      ["mode_emploi", "Mode d'emploi étape par étape", "La démarche dans l'ordre : quoi faire, quand, quoi vérifier.", "« Faire une donation : les 4 étapes »"],
+      ["questions", "Questions-réponses", "3 à 5 questions que le public se pose, chacune avec sa réponse claire.", "« Assurance-vie : vos 4 questions »"]]],
+    ["Capter l'attention", [
+      ["mythe", "Mythe ou réalité ?", "Une ou plusieurs idées reçues, puis la réalité.", "« L'assurance-vie est bloquée 8 ans ? Faux. »"],
+      ["saviez", "Le saviez-vous ?", "Des faits peu connus mais exacts, révélés comme une surprise.", "« 3 choses que peu de gens savent sur le PEA »"],
+      ["chiffre", "Le chiffre clé", "Toute la vidéo autour d'un chiffre de la source.", "« 100 000 € : le chiffre à connaître »"],
+      ["chiffres_cles", "Les chiffres à connaître", "3 à 5 chiffres de la source, un par scène, expliqués simplement.", "« IFI : les 4 chiffres à retenir »"]]],
+    ["Raconter", [
+      ["deux_profils", "Histoire de deux profils", "Deux personnages, deux choix, deux résultats.", "« Léa commence à 25 ans, Tom attend »"],
+      ["cas_pratique", "Cas pratique fictif", "Un personnage suivi du début à la fin : sa situation, ce qu'il découvre.", "« Michel prépare sa transmission »"],
+      ["erreur", "Erreur fréquente à éviter", "Une erreur courante, ce qu'elle coûte, puis le bon réflexe.", "« L'erreur à ne pas faire avec son PER »"]]],
+    ["Agir", [
+      ["reflexes", "3 réflexes à avoir", "Trois réflexes concrets et prudents.", "« 3 réflexes avant d'investir en SCPI »"],
+      ["bon_moment", "Le bon moment pour agir", "Quand agir : dates, délais, moments de vie (uniquement d'après la source).", "« Déclaration de revenus : le calendrier »"],
+      ["comparer", "Comparer deux solutions", "Points communs et différences, sans recommander l'une ou l'autre.", "« PER ou assurance-vie : ce qui change »"]]],
+  ];
+  const ANGLES_LIB = Object.fromEntries(FAMILLES.flatMap(([, l]) => l.map(([k, n]) => [k, n])));
+  const DUREES = [[30, "30 s"], [45, "45 s"], [60, "1 min"], [90, "1 min 30"], [120, "2 min"]];
+  const dureeLib = (d) => (DUREES.find(([x]) => x === d) || [0, d + " s"])[1];
+  const PLATEFORMES = { tiktok: ["TikTok", "9:16"], reels: ["Instagram Reels", "9:16"], insta: ["Instagram publication", "4:5"], fb_reels: ["Facebook Reels", "9:16"], facebook: ["Facebook publication", "4:5"], linkedin: ["LinkedIn", "4:5"] };
+  const RYTHMES = { dynamique: ["Dynamique", "enchaînements rapides"], pose: ["Posé", "plus de respiration, une idée par scène"] };
+  const MODES_FIN = { complete: ["Carte du cabinet complète", "question, offre et coordonnées"], courte: ["Fin courte", "logo et coordonnées, environ 2 s"], sans: ["Sans appel commercial", "logo et mentions obligatoires seulement"] };
   const ANGLE_DEFAUT = { fiche: "expliquer", actu: "expliquer", echeance: "reflexes", chiffre: "chiffre", simulation: "deux_profils", libre: "expliquer" };
   const NOMS_SOURCES = { fiche: "Fiche Apprendre", actu: "Actualité", echeance: "Échéance fiscale", chiffre: "Chiffre de la semaine", simulation: "Commencer tôt ou attendre", libre: "Sujet libre",
     deux_profils: "Deux profils", chiffre_semaine: "Chiffre de la semaine", mythe: "Mythe ou réalité" };
   const sansAccent = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const LES_FICHES = () => (typeof FICHES !== "undefined" ? FICHES : []);
   // Contenu vérifié d'une fiche, envoyé à l'IA comme source (ses chiffres sont alors autorisés).
-  function texteFiche(f) {
-    const l = [f.titre + (f.sousTitre ? " — " + f.sousTitre : ""), f.enUnePhrase || ""];
-    (f.chiffres || []).forEach((c) => l.push(`Chiffre : ${c.valeur} ${c.libelle}`));
-    (f.essentiel || []).forEach((e) => l.push(`${e.titre} : ${e.texte}`));
-    (f.pieges || []).forEach((p) => l.push("Piège : " + p));
-    (f.vraiFaux || []).forEach((v) => l.push(`${v.vrai ? "Vrai" : "Faux"} : ${v.texte} ${v.explication || ""}`));
-    return l.join("\n").slice(0, 5000);
+  // La fiche est écrite pour des conseillers : les rubriques sont renommées pour une vidéo grand public (l'IA reformule en « vous »).
+  // Le point précis choisi passe en tête (il n'est jamais coupé).
+  function partiesFiche(f) {
+    const P = [];
+    (f.essentiel || []).forEach((e) => P.push([e.titre, `${e.titre} : ${e.texte}`]));
+    if ((f.chiffres || []).length) P.push(["Les chiffres clés", "Chiffres clés :\n" + f.chiffres.map((c) => `- ${c.valeur} ${c.libelle}`).join("\n")]);
+    if ((f.schema || []).length) P.push(["Comment ça marche, étape par étape", "Étapes :\n" + f.schema.map((e, i) => `${i + 1}. ${e.titre} : ${e.texte}`).join("\n")]);
+    (f.fiscalite || []).forEach((t) => P.push([`Fiscalité : ${t.titre}`, `Fiscalité — ${t.titre} (${(t.colonnes || []).join(" | ")}) :\n` + (t.lignes || []).map((l) => "- " + l.join(" | ")).join("\n")]));
+    if ((f.pourQui || []).length || (f.pasPourQui || []).length) P.push(["Pour qui ?", `Profils pour qui c'est adapté (à dire au public en « vous ») :\n${(f.pourQui || []).map((x) => "- " + x).join("\n")}\nMoins adapté quand :\n${(f.pasPourQui || []).map((x) => "- " + x).join("\n")}`]);
+    if ((f.pieges || []).length) P.push(["Les points de vigilance", "Points de vigilance (erreurs fréquentes) :\n" + f.pieges.map((x) => "- " + x).join("\n")]);
+    if ((f.vraiFaux || []).length) P.push(["Les idées reçues", "Idées reçues et réalité :\n" + f.vraiFaux.map((v) => `- « ${v.texte} » : ${v.vrai ? "exact" : "faux"}. ${v.explication || ""}`).join("\n")]);
+    if (f.cas?.enonce) P.push(["Un exemple concret", `Exemple (personnage fictif) : ${f.cas.enonce} ${f.cas.question || ""} ${f.cas.reponse || ""}`]);
+    return P;
   }
-  const NOMS_TYPES = { accroche: "Accroche", personnage: "Personnage", marche: "Marchés", calendrier: "Le temps passe", comparaison: "Comparaison chiffrée", egalite: "Même effort", grand_mot: "Mot géant", bocaux: "Chaque situation est unique", chiffre: "Chiffre clé", liste: "Liste", mythe: "Idée reçue", sablier: "Sablier", fin: "Carte de fin" };
+  function texteFiche(f, focus) {
+    const P = partiesFiche(f), un = P.find(([t]) => t === focus);
+    const l = [f.titre + (f.sousTitre ? " — " + f.sousTitre : ""), f.enUnePhrase || "", ...(un ? [un[1]] : []), ...P.filter((x) => x !== un).map(([, t]) => t)];
+    return l.join("\n").slice(0, 8000);
+  }
+  const NOMS_TYPES = { accroche: "Accroche", personnage: "Personnage", marche: "Marchés", calendrier: "Le temps passe", comparaison: "Comparaison chiffrée", egalite: "Même effort", grand_mot: "Mot géant", bocaux: "Chaque situation est unique", chiffre: "Chiffre clé", liste: "Liste", mythe: "Idée reçue", sablier: "Sablier", frise: "Frise (étapes)", tableau: "Tableau", recap: "Récapitulatif", chapitre: "Nouvelle partie", fin: "Carte de fin" };
   // Paramètres affichés à l'écran modifiables, par gabarit (les autres restent tels que proposés).
   const CHAMPS = {
     accroche: [["bandeau", "Bandeau"], ["gros_texte", "Gros texte"], ["petit_texte", "Petite mention"]],
@@ -32,6 +69,7 @@
     bocaux: [["titre", "Titre"], ["puce", "Puce"], ["courbe", "Courbe"]],
     chiffre: [["bandeau", "Bandeau"], ["valeur", "Valeur"], ["libelle", "Libellé"], ["source", "Source"]],
     liste: [["titre", "Titre"]],
+    frise: [["titre", "Titre"]], tableau: [["titre", "Titre"]], recap: [["titre", "Titre"]], chapitre: [["titre", "Titre de la partie"], ["sous_titre", "Sous-titre"]],
     mythe: [["mythe", "Idée reçue"], ["realite", "Réalité"]],
     sablier: [["haut", "Texte du haut"], ["gros", "Gros message"]],
   };
@@ -50,7 +88,7 @@
   const EXTRAITS = new Set(["sadachbia", "fenrir", "kore", "charon", "zephyr", "laomedeia", "leda", "achird", "puck", "sulafat", "orus", "gacrux"]);
   const LIB_STATUT = { brouillon: "Brouillon", file: "En file d'attente", attente: "Démarrage", en_cours: "En fabrication", pret: "Prête", a_verifier: "Prête · à vérifier", erreur: "Échec", annule: "Annulée" };
   const EN_COURS = ["file", "attente", "en_cours"];
-  const R = { sel: null, onglet: "idees", titreIdee: null, angle: "expliquer", angleManuel: false, angleIA: false, cherche: "", duree: 45, format: "9:16", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
+  const R = { sel: null, onglet: "idees", titreIdee: null, angle: "expliquer", angleManuel: false, angleIA: false, cherche: "", duree: 45, format: "9:16", plateforme: "tiktok", rythme: "dynamique", finMode: "complete", focus: "", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
   let reglages = null, sources = null, courante = null, suivi = null, chrono = null, audio = null;
 
   const mots = (sc) => (sc || []).reduce((n, s) => n + String(s.texte || "").split(/\s+/).filter((m) => /[\p{L}\d]/u.test(m)).length, 0);
@@ -65,14 +103,7 @@
   }
 
   // ---------------------------------------------------------------- squelette : un parcours en 3 étapes
-  const ANGLES_DESC = {
-    expliquer: "L'enjeu, comment ça marche, ce qu'il faut retenir.",
-    mythe: "Une idée reçue, puis la réalité.",
-    reflexes: "Trois réflexes concrets et prudents.",
-    chiffre: "Toute la vidéo autour d'un chiffre de la source.",
-    deux_profils: "Deux personnages, deux choix, deux résultats.",
-    erreur: "Une erreur courante, ce qu'elle coûte, puis le bon réflexe.",
-  };
+  const ANGLES_DESC = Object.fromEntries(FAMILLES.flatMap(([, l]) => l.map(([k, , d, ex]) => [k, `${d} <span class="vv-exemple">Exemple : ${ex}</span>`])));
   const ONGLETS_SUJET = [["idees", "💡 Idées du moment"], ["fiches", "🎓 Fiches Apprendre"], ["actus", "📰 Actualités"], ["chiffres", "📅 Échéances et chiffres"], ["autre", "✏️ Autre"]];
 
   function monter() {
@@ -105,7 +136,7 @@
         <div class="vv-etape" id="vv-e2">
           <h3 class="vv-etape-tete"><span class="n" aria-hidden="true">2</span>Comment la raconter ?</h3>
           <div class="vv-etape-corps">
-            <div class="vv-angles" role="group" aria-label="Angle de la vidéo">${Object.entries(ANGLES_LIB).map(([k, l]) => `<button type="button" class="puce" data-angle="${k}">${l}</button>`).join("")}</div>
+            <div class="vv-familles">${FAMILLES.map(([fam, l]) => `<div class="vv-famille"><span class="vv-famille-nom">${fam}</span><div class="vv-angles" role="group" aria-label="${fam}">${l.map(([k, n]) => `<button type="button" class="puce" data-angle="${k}">${n}</button>`).join("")}</div></div>`).join("")}</div>
             <p class="vv-angle-desc" id="vv-angle-desc"></p>
             <label class="bloc-lib" for="vv-precision">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
             <input id="vv-precision" maxlength="300" autocomplete="off" placeholder="Ex. : pour les jeunes actifs, ton rassurant…">
@@ -120,8 +151,10 @@
               <summary><span id="vv-resume-reglages"></span><span class="vv-modifier">Modifier</span></summary>
               <div class="vv-reglages-corps">
                 <div class="reglages">
-                  <div><span class="simu-lib">Durée</span><div class="puces">${[30, 45, 60].map((d) => `<button type="button" class="puce" data-duree="${d}">${d} s</button>`).join("")}</div></div>
-                  <div><span class="simu-lib">Format</span><div class="puces"><button type="button" class="puce" data-format-v="9:16">9:16 · TikTok, Reels</button><button type="button" class="puce" data-format-v="4:5">4:5 · LinkedIn</button></div></div>
+                  <div><span class="simu-lib">Durée</span><div class="puces">${DUREES.map(([d, l]) => `<button type="button" class="puce" data-duree="${d}">${l}</button>`).join("")}</div></div>
+                  <div><span class="simu-lib">Plateforme</span><div class="puces">${Object.entries(PLATEFORMES).map(([k, [n, f]]) => `<button type="button" class="puce" data-plateforme="${k}" title="Format ${f}">${n} <span class="doux">${f}</span></button>`).join("")}</div></div>
+                  <div><span class="simu-lib">Rythme</span><div class="vs-cartes">${Object.entries(RYTHMES).map(([k, [n, d]]) => `<button type="button" class="vs-carte" data-rythme="${k}"><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
+                  <div><span class="simu-lib">Fin de la vidéo</span><div class="vs-cartes">${Object.entries(MODES_FIN).map(([k, [n, d]]) => `<button type="button" class="vs-carte" data-finmode="${k}"><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
                 </div>
                 <span class="simu-lib">Voix</span><div id="vv-voix"></div>
                 <details class="vv-coord" id="vv-coord"><summary>Carte de fin : <span id="vv-coord-resume">coordonnées du cabinet</span></summary><div id="vv-coord-corps"></div></details>
@@ -150,7 +183,9 @@
     };
     document.querySelectorAll("[data-angle]").forEach((b) => b.onclick = () => { R.angle = b.dataset.angle; R.angleManuel = true; majAngle(); });
     document.querySelectorAll("[data-duree]").forEach((b) => b.onclick = () => { R.duree = +b.dataset.duree; majReglages(); });
-    document.querySelectorAll("[data-format-v]").forEach((b) => b.onclick = () => { R.format = b.dataset.formatV; majReglages(); });
+    document.querySelectorAll("[data-plateforme]").forEach((b) => b.onclick = () => { R.plateforme = b.dataset.plateforme; R.format = PLATEFORMES[R.plateforme][1]; majReglages(); });
+    document.querySelectorAll("[data-rythme]").forEach((b) => b.onclick = () => { R.rythme = b.dataset.rythme; majReglages(); });
+    document.querySelectorAll("[data-finmode]").forEach((b) => b.onclick = () => { R.finMode = b.dataset.finmode; majReglages(); });
     $v("vv-precision").oninput = majEtat;
     $v("vv-libre-texte").oninput = majEtat;
     if (navigator.clipboard?.readText) {
@@ -162,8 +197,10 @@
 
   function majReglages() {
     document.querySelectorAll("[data-duree]").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.duree === R.duree));
-    document.querySelectorAll("[data-format-v]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.formatV === R.format));
-    $v("vv-resume-reglages").innerHTML = `<b>${R.duree} s</b> · ${R.format === "4:5" ? "4:5 LinkedIn" : "9:16 TikTok, Reels"} · voix ${R.voix}`;
+    document.querySelectorAll("[data-plateforme]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.plateforme === R.plateforme));
+    document.querySelectorAll("[data-rythme]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.rythme === R.rythme));
+    document.querySelectorAll("[data-finmode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.finmode === R.finMode));
+    $v("vv-resume-reglages").innerHTML = `<b>${dureeLib(R.duree)}</b> · ${PLATEFORMES[R.plateforme][0]} (${R.format}) · rythme ${RYTHMES[R.rythme][0].toLowerCase()} · ${MODES_FIN[R.finMode][0].toLowerCase()} · voix ${R.voix}`;
     const voix = reglages?.voix || ["Sadachbia"];
     $v("vv-voix").innerHTML = ["Dynamiques", "Posées"].map((gr) => `<div class="vv-voix-groupe"><span class="petit doux">${gr}</span><div class="puces">${voix.filter((n) => (VOIX_INFO[n]?.[0] || "Posées") === gr).map((n) => `<span class="vv-voix"><button type="button" class="puce" data-voix="${n}" aria-pressed="${n === R.voix}">${n} <small>· ${VOIX_INFO[n]?.[1] || ""}</small></button>${EXTRAITS.has(n.toLowerCase()) ? `<button type="button" class="vv-ecoute" data-ecoute="${n}" aria-label="Écouter la voix ${n}" title="Écouter">▶</button>` : `<span class="vv-bientot" title="Extrait disponible prochainement">bientôt</span>`}</span>`).join("")}</div></div>`).join("");
     document.querySelectorAll("[data-voix]").forEach((b) => b.onclick = () => { R.voix = b.dataset.voix; majReglages(); });
@@ -293,6 +330,14 @@
     if (!d) { z.hidden = true; $v("vv-choix-sujet").hidden = false; afficherPanneau(); return; }
     z.hidden = false; $v("vv-choix-sujet").hidden = true;
     z.innerHTML = `<span class="vv-choisi-ico" aria-hidden="true">${d.ico}</span><div><strong>${echapper(d.titre)}</strong><span>${echapper(d.source)}</span></div><button type="button" class="bouton bouton-discret" id="vv-changer">Changer</button>`;
+    // Fiche : toute la fiche, ou un point précis pour aller dans le détail
+    const [type, ref] = (R.sel || "").split(/:(.*)/s), f = type === "fiche" && LES_FICHES().find((x) => x.id === ref);
+    if (f) {
+      const parties = partiesFiche(f).map(([t]) => t);
+      if (!parties.includes(R.focus)) R.focus = "";
+      z.insertAdjacentHTML("beforeend", `<label class="vv-focus"><span>Point précis</span><select id="vv-focus"><option value="">Toute la fiche</option>${parties.map((t) => `<option ${t === R.focus ? "selected" : ""}>${echapper(t)}</option>`).join("")}</select><small class="doux">La vidéo s'adresse au public (« vous ») : rien de scolaire.</small></label>`);
+      $v("vv-focus").onchange = (e) => { R.focus = e.target.value; if (R.focus && !R.angleManuel) { R.angle = "decryptage"; majAngle(); } };
+    } else R.focus = "";
     $v("vv-changer").onclick = () => { $v("vv-choix-sujet").hidden = false; z.hidden = true; afficherPanneau(); $v("vv-tab-" + R.onglet).focus(); };
   }
 
@@ -327,11 +372,11 @@
     const b = $v("vv-proposer");
     if (!R.sel) return;
     b.disabled = true; b.dataset.occupe = "1";
-    $v("vv-msg").innerHTML = `<div class="attente"><span class="rond"></span>L'IA écrit le scénario, 10 à 40 secondes…</div>`;
+    $v("vv-msg").innerHTML = `<div class="attente"><span class="rond"></span>L'IA écrit le scénario, puis le relit en « rédacteur en chef » : 20 secondes à 1 minute…</div>`;
     try {
       const [type, ref] = R.sel.split(/:(.*)/s);
-      const corps = { source: type, ref: ref || "", angle: R.angle, precision: $v("vv-precision").value, duree: R.duree, format: R.format, voix: R.voix, simulation: R.sim };
-      if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); if (f) corps.fiche = { id: f.id, titre: f.titre, verifie: f.verifie, contenu: texteFiche(f) }; }
+      const corps = { source: type, ref: ref || "", angle: R.angle, precision: $v("vv-precision").value, duree: R.duree, format: R.format, plateforme: R.plateforme, rythme: R.rythme, fin_mode: R.finMode, voix: R.voix, simulation: R.sim };
+      if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); if (f) corps.fiche = { id: f.id, titre: f.titre, verifie: f.verifie, focus: R.focus || "", contenu: texteFiche(f, R.focus) }; }
       if (type === "libre") { corps.libre = $v("vv-libre-texte").value.trim(); corps.media = $v("vv-media").value.trim(); }
       const r = await appelApi("/api/video/scenario", "POST", corps);
       $v("vv-msg").innerHTML = "";
@@ -371,8 +416,9 @@
   }
   // Carte de fin telle que le serveur la reconstruira (texte lu compris : il compte dans la durée).
   function finLocale() {
-    const q = questionPropre(S.fin.question), cl = q === CLASSIQUE;
-    return { type: "fin", texte: `${q}${cl ? "" : " Prenons le temps d'en parler."} ${nomParle()}. Premier échange offert, sans engagement.`, p: { question: q, offre: OFFRE, style: S.fin.style || "cercles" } };
+    const q = questionPropre(S.fin.question), cl = q === CLASSIQUE, mode = MODES_FIN[S.fin.mode] ? S.fin.mode : "complete";
+    const texte = mode === "complete" ? `${q}${cl ? "" : " Prenons le temps d'en parler."} ${nomParle()}. Premier échange offert, sans engagement.` : `${nomParle()}.`;
+    return { type: "fin", texte, p: { question: q, offre: OFFRE, style: S.fin.style || "cercles", mode, rythme: S.fin.rythme === "pose" ? "pose" : "dynamique" } };
   }
   function configApercu() {
     const c = reglages?.coordonnees || {};
@@ -387,9 +433,9 @@
   function etatDepuis(v) {
     const sb = v.storyboard || [], f = sb.find((x) => x.type === "fin");
     return { v, scenes: sb.filter((x) => x.type !== "fin").map((x) => ({ ...x, p: { ...(x.p || {}) } })),
-      fin: { question: f?.p?.question || CLASSIQUE, style: f?.p?.style || "cercles" }, finIA: v.donnees?.fin_proposee || null,
+      fin: { question: f?.p?.question || CLASSIQUE, style: f?.p?.style || "cercles", mode: f?.p?.mode || "complete", rythme: f?.p?.rythme || "dynamique" }, finIA: v.donnees?.fin_proposee || null,
       reglages: { ...(v.reglages || { ambiance: "dynamique", sous_titres: "mot", deux_formats: false }) }, format: v.format || "9:16", voix: v.voix || "Sadachbia",
-      duree: [30, 45, 60].includes(+v.duree_cible) ? +v.duree_cible : 45, ouverte: null };
+      duree: DUREES.some(([x]) => x === +v.duree_cible) ? +v.duree_cible : 45, ouverte: null };
   }
 
   function sceneHtml(s, i, n) {
@@ -427,12 +473,15 @@
       <button type="button" class="vs-vign ${S.format === "4:5" ? "f45" : ""}" data-voir="${i}" aria-label="Voir la carte de fin dans l'aperçu"><span data-vign="${i}"></span><em>▶</em></button>
       <div class="vs-corps">
         <div class="vs-tete-scene"><span class="vs-num">${i + 1}</span><b>Carte de fin</b><span class="vs-sec" data-sec="fin">${secondes(f)}</span></div>
-        <label class="vs-lib" for="vs-question">Phrase d'appel <span class="doux">(affichée et lue)</span></label>
+        <span class="vs-lib">Type de fin</span>
+        <div class="vs-cartes" role="group" aria-label="Type de fin">${Object.entries(MODES_FIN).map(([k, [n, d]]) => `<button type="button" class="vs-carte" data-mode="${k}" aria-pressed="${k === S.fin.mode}"><b>${n}</b><small>${d}</small></button>`).join("")}</div>
+        <div ${S.fin.mode === "complete" ? "" : "hidden"}><label class="vs-lib" for="vs-question">Phrase d'appel <span class="doux">(affichée et lue)</span></label>
         <input id="vs-question" maxlength="60" value="${echapper(S.fin.question)}" autocomplete="off">
         <div class="vs-sugg">${sugg.map((q) => `<button type="button" class="puce" data-q="${echapper(q)}" aria-pressed="${q === S.fin.question}">${q === CLASSIQUE ? "Classique : " : "✨ "}${echapper(q)}</button>`).join("")}</div>
         <span class="vs-lib">Mise en scène</span>
         <div class="vs-styles" role="group" aria-label="Mise en scène de la carte de fin">${Object.keys(FINS_LIB).map((k) => `<button type="button" class="vs-style s-${k}" data-style="${k}" aria-pressed="${k === S.fin.style}"><i aria-hidden="true"></i><b>${FINS_LIB[k]}</b><small>${FINS_DESC[k]}</small></button>`).join("")}</div>
-        <p class="doux petit vs-note">Toujours présents : votre logo, « ${OFFRE} », les coordonnées et les mentions obligatoires.</p>
+        </div>
+        <p class="doux petit vs-note">${S.fin.mode === "sans" ? "Seulement votre logo et les mentions obligatoires (risque de perte en capital, sources, exemple fictif)." : S.fin.mode === "courte" ? "Votre logo, vos coordonnées et les mentions obligatoires, sans phrase d'appel ni offre." : `Toujours présents : votre logo, « ${OFFRE} », les coordonnées et les mentions obligatoires.`}</p>
       </div></li>`;
   }
   // Zone de texte à la hauteur de son contenu (tout le texte lu reste visible, même sur téléphone).
@@ -449,11 +498,11 @@
     const pc = (x) => Math.max(0, Math.min(100, x / max * 100)).toFixed(1);
     $v("vs-duree").innerHTML = `<div class="vs-duree-l">
         <span class="vs-duree-chiffre ${ok ? "ok" : "ko"}">≈ ${est} s</span>
-        <span class="vs-duree-txt">${ok ? "✓ Bonne durée" : est < d ? `Trop court pour ${d} s` : `Trop long pour ${d} s`}<small>estimée sur le texte lu · objectif</small></span>
-        <span class="puces vs-objectif" role="group" aria-label="Durée visée">${[30, 45, 60].map((x) => `<button type="button" class="puce" data-obj="${x}" aria-pressed="${x === d}">${x} s</button>`).join("")}</span>
+        <span class="vs-duree-txt">${ok ? "✓ Bonne durée" : est < d ? `Trop court pour ${dureeLib(d)}` : `Trop long pour ${dureeLib(d)}`}<small>estimée sur le texte lu · objectif</small></span>
+        <span class="puces vs-objectif" role="group" aria-label="Durée visée">${DUREES.map(([x, l]) => `<button type="button" class="puce" data-obj="${x}" aria-pressed="${x === d}">${l}</button>`).join("")}</span>
       </div>
       <div class="vs-jauge" aria-hidden="true"><span class="vs-zone" style="left:${pc(d * .9)}%;width:${(+pc(d * 1.1) - +pc(d * .9)).toFixed(1)}%"></span><span class="vs-rempli ${ok ? "ok" : "ko"}" style="width:${pc(est)}%"></span></div>
-      ${ok ? "" : `<div class="vs-ajuster"><button type="button" class="bouton" id="vs-ajuster">✨ ${est < d ? "Allonger" : "Raccourcir"} à ${d} s avec l'IA</button><span class="doux petit">ou modifiez le texte des scènes vous-même.</span></div>`}`;
+      ${ok ? "" : `<div class="vs-ajuster"><button type="button" class="bouton" id="vs-ajuster">✨ ${est < d ? "Allonger" : "Raccourcir"} à ${dureeLib(d)} avec l'IA</button><span class="doux petit">ou modifiez le texte des scènes vous-même.</span></div>`}`;
     $v("vs-duree").querySelectorAll("[data-obj]").forEach((b) => b.onclick = () => { S.duree = +b.dataset.obj; majDuree(); });
     const aj = $v("vs-ajuster"); if (aj) aj.onclick = ajuster;
     $v("vs-lancer-duree").textContent = `${est} s`;
@@ -509,15 +558,17 @@
     } catch (e) { notifier(e.message, true); occupe(b, false); }
   }
   function majVerif() {
-    const verif = S.v.a_verifier || [];
+    const verif = S.v.a_verifier || [], relu = S.v.donnees?.relecture;
     $v("vs-verif").innerHTML = verif.length ? (() => { const li = (x) => `<li>Scène ${x.scene} : <strong>${echapper(String(x.chiffre).replace(".", ","))}</strong> dans « ${echapper(x.texte)} »</li>`;
       return `<div class="conformite"><strong>${verif.length} chiffre${verif.length > 1 ? "s" : ""} à vérifier</strong> (ni calculés par le site, ni tirés de ses données officielles) :<ul>${verif.slice(0, 3).map(li).join("")}</ul>${verif.length > 3 ? `<details><summary>Voir les ${verif.length - 3} autres</summary><ul>${verif.slice(3).map(li).join("")}</ul></details>` : ""}Corrigez-les ou retirez-les si vous n'avez pas de source officielle.</div>`; })() : `<p class="vv-ok">✓ Tous les chiffres viennent du calcul du site ou de ses données officielles.</p>`;
+    if (relu) $v("vs-verif").insertAdjacentHTML("afterbegin", `<details class="vv-relu"><summary>✓ Relu par le rédacteur en chef${relu.length ? ` · ${relu.length} amélioration${relu.length > 1 ? "s" : ""}` : " · rien à corriger"}</summary>${relu.length ? `<ul>${relu.map((x) => `<li>${echapper(x)}</li>`).join("")}</ul>` : ""}</details>`);
   }
   function reglagesHtml() {
-    const R2 = S.reglages, autre = S.format === "4:5" ? "9:16 (TikTok, Reels)" : "4:5 (LinkedIn)";
+    const R2 = S.reglages, autre = S.format === "4:5" ? "9:16 (TikTok, Reels)" : "4:5 (LinkedIn, Instagram, Facebook)";
     return `<div class="vs-reg"><span class="vs-lib">Musique</span><div class="vs-cartes">${Object.entries(AMB).map(([k, [n, d]]) => `<button type="button" class="vs-carte" data-amb="${k}" aria-pressed="${k === R2.ambiance}"><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
       <div class="vs-reg"><span class="vs-lib">Sous-titres</span><div class="vs-cartes">${Object.entries(SOUS).map(([k, [n, d]]) => `<button type="button" class="vs-carte vs-st-${k}" data-st="${k}" aria-pressed="${k === R2.sous_titres}"><span class="vs-st-ex" aria-hidden="true"><i>Votre</i> épargne</span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
-      <div class="vs-reg"><span class="vs-lib">Format</span><div class="puces">${[["9:16", "9:16 · TikTok, Reels"], ["4:5", "4:5 · LinkedIn"]].map(([k, l]) => `<button type="button" class="puce" data-fmt="${k}" aria-pressed="${k === S.format}">${l}</button>`).join("")}</div>
+      <div class="vs-reg"><span class="vs-lib">Rythme</span><div class="vs-cartes">${Object.entries(RYTHMES).map(([k, [n, d]]) => `<button type="button" class="vs-carte" data-ry="${k}" aria-pressed="${k === S.fin.rythme}"><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
+      <div class="vs-reg"><span class="vs-lib">Format</span><div class="puces">${[["9:16", "9:16 · TikTok, Reels, Facebook Reels"], ["4:5", "4:5 · LinkedIn, Instagram, Facebook"]].map(([k, l]) => `<button type="button" class="puce" data-fmt="${k}" aria-pressed="${k === S.format}">${l}</button>`).join("")}</div>
         <label class="vs-case"><input type="checkbox" id="vs-deux" ${R2.deux_formats ? "checked" : ""}><span>Fabriquer aussi en ${autre} <span class="doux">· même voix, sans quota en plus, fabrication un peu plus longue</span></span></label></div>
       <div class="vs-reg"><span class="vs-lib">Voix</span><select id="vs-voix" class="vs-select">${(reglages?.voix || [S.voix]).map((n) => `<option value="${n}" ${n === S.voix ? "selected" : ""}>${n}${VOIX_INFO[n] ? " · " + VOIX_INFO[n][1] : ""}</option>`).join("")}</select></div>`;
   }
@@ -526,6 +577,7 @@
     z.querySelectorAll("[data-amb]").forEach((b) => b.onclick = () => { S.reglages.ambiance = b.dataset.amb; z.innerHTML = reglagesHtml(); brancherReglages(); });
     z.querySelectorAll("[data-st]").forEach((b) => b.onclick = () => { S.reglages.sous_titres = b.dataset.st; z.innerHTML = reglagesHtml(); brancherReglages(); planifierApercu(); });
     z.querySelectorAll("[data-fmt]").forEach((b) => b.onclick = () => { S.format = b.dataset.fmt; z.innerHTML = reglagesHtml(); brancherReglages(); rendreScenes(); });
+    z.querySelectorAll("[data-ry]").forEach((b) => b.onclick = () => { S.fin.rythme = b.dataset.ry; z.innerHTML = reglagesHtml(); brancherReglages(); rendreScenes(); });
     $v("vs-deux").onchange = (e) => { S.reglages.deux_formats = e.target.checked; };
     $v("vs-voix").onchange = (e) => { S.voix = e.target.value; };
   }
@@ -596,6 +648,7 @@
       if (d.refaire != null) { const p = document.querySelector(`[data-panneau="${d.refaire}"]`); p.hidden = !p.hidden; if (!p.hidden) p.querySelector("input").focus(); return; }
       if (d.go != null) return refaire(+d.go);
       if (d.q != null) { S.fin.question = d.q; $v("vs-question").value = d.q; document.querySelectorAll("[data-q]").forEach((x) => x.setAttribute("aria-pressed", x === b)); majDuree(); planifierApercu(true); return; }
+      if (d.mode) { S.fin.mode = d.mode; rendreScenes(); return; }
       if (d.style) { S.fin.style = d.style; document.querySelectorAll("[data-style]").forEach((x) => x.setAttribute("aria-pressed", x === b)); planifierApercu(true); setTimeout(() => { const cal = lect?.calage; if (cal) lect.lire(cal.scenes[cal.scenes.length - 1].debut); }, 450); return; }
       if (d.monter != null) { const i = +d.monter; [l[i - 1], l[i]] = [l[i], l[i - 1]]; }
       else if (d.descendre != null) { const i = +d.descendre; [l[i + 1], l[i]] = [l[i], l[i + 1]]; }
