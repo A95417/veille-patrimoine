@@ -234,9 +234,12 @@ export const PAUSE_POSE = .7, SCENE_MIN = 2.4;
 const tenueDe = (finScene) => (finScene?.p?.mode && finScene.p.mode !== "complete" ? 2.5 : 3.6);
 let SYL_PAR_S = DEBIT_DEPART, MOTS_PAR_S = 2.68;
 async function chargerDebit(db) {
-  const l = ((await lireEtat(db, "video_debit"))?.valeur?.mesures || []).filter((x) => x >= 3.5 && x <= 5.8);
+  // les 3 dernières mesures comptent (la voix de Google peut changer de vitesse d'une version à l'autre)
+  const l = ((await lireEtat(db, "video_debit"))?.valeur?.mesures || []).filter((x) => x >= 3 && x <= 9).slice(-3);
   SYL_PAR_S = DEBIT_DEPART;
-  if (l.length >= 3) { const t = [...l].sort((a, b) => a - b); SYL_PAR_S = t[Math.floor(t.length / 2)]; }
+  if (l.length) { const t = [...l].sort((a, b) => a - b); SYL_PAR_S = t.length === 2 ? (t[0] + t[1]) / 2 : t[Math.floor(t.length / 2)]; }
+  // la dernière mesure s'écarte nettement (nouvelle version de la voix) : elle prime
+  if (l.length && Math.abs(l[l.length - 1] - SYL_PAR_S) > SYL_PAR_S * .2) SYL_PAR_S = l[l.length - 1];
   MOTS_PAR_S = SYL_PAR_S * (2.68 / 4.45);
   return SYL_PAR_S;
 }
@@ -331,8 +334,8 @@ async function sourceDe(db, d, source) {
 
 // Scènes renvoyées par l'IA : gabarits connus, paramètres filtrés, pas de comparaison chiffrée sans simulation.
 function nettoyerScenes(liste, sim, max = 22) {
-  let scenes = (Array.isArray(liste) ? liste : []).filter((s) => GABARITS[s?.type] && court(s.texte, 400))
-    .map((s) => ({ type: s.type, texte: court(s.texte, 400), p: nettoyerP(s.p, s.type) })).slice(0, max);
+  let scenes = (Array.isArray(liste) ? liste : []).filter((s) => GABARITS[s?.type] && court(s.texte, 600))
+    .map((s) => ({ type: s.type, texte: court(s.texte, 600), p: nettoyerP(s.p, s.type) })).slice(0, max);
   if (!sim) scenes = scenes.filter((s) => s.type !== "comparaison");
   return numeroter(scenes);
 }
@@ -717,7 +720,7 @@ Angles possibles (valeur exacte) : ${Object.keys(ANGLES).filter((k) => k !== "de
     const d = await lire();
     const ancien = JSON.parse(v.storyboard || "[]");
     let scenes = (Array.isArray(d.scenes) ? d.scenes : ancien).filter((s) => GABARITS[s?.type] || s?.type === "fin")
-      .map((s) => s.type === "fin" ? null : { type: s.type, texte: court(s.texte, 400), p: nettoyerP(s.p, s.type) }).filter((s) => s && s.texte).slice(0, 22);
+      .map((s) => s.type === "fin" ? null : { type: s.type, texte: court(s.texte, 600), p: nettoyerP(s.p, s.type) }).filter((s) => s && s.texte).slice(0, 22);
     numeroter(scenes);
     if (scenes.length < 2) return erreur("Il faut au moins deux scènes avec du texte.");
     const ch = finDe(ancien), choixFin = { question: d.fin?.question ?? ch.question, style: d.fin?.style ?? ch.style, mode: d.fin?.mode ?? ch.mode, rythme: d.fin?.rythme ?? ch.rythme };
@@ -933,9 +936,19 @@ export async function routeVideoRobot(request, env, chemin) {
     const alertes = (Array.isArray(d.alertes) ? d.alertes : []).map((a) => court(a, 160)).slice(0, 10);
     // Débit réel de la voix (syllabes par seconde) : affine les prochaines estimations de durée.
     const debit = Number(d.debit);
-    if (debit >= 3 && debit <= 6 && !JSON.parse(v.donnees || "{}").jumelle_de) {
+    if (debit >= 3 && debit <= 9 && !JSON.parse(v.donnees || "{}").jumelle_de) {
       const m = (await lireEtat(db, "video_debit"))?.valeur?.mesures || [];
       await ecrireEtat(db, "video_debit", { mesures: [...m, Math.round(debit * 100) / 100].slice(-12) });
+    }
+    // texte lu ajusté par le robot à la durée demandée : le scénario enregistré suit la vidéo (mêmes scènes, nouveaux textes)
+    if (Array.isArray(d.scenes)) {
+      const ancien = JSON.parse(v.storyboard || "[]");
+      if (d.scenes.length === ancien.length && d.scenes.every((x, k) => x?.type === ancien[k].type)) {
+        const nouveau = ancien.map((x, k) => (x.type === "fin" ? x : { ...x, texte: court(d.scenes[k].texte, 600) }));
+        const don = JSON.parse(v.donnees || "{}");
+        await db.prepare("UPDATE videos SET storyboard = ?, a_verifier = ? WHERE id = ?")
+          .bind(JSON.stringify(nouveau), JSON.stringify(chiffresAVerifier(nouveau, new Set(don.permis || []), v.texte_post || "")), id).run();
+      }
     }
     await db.prepare(`UPDATE videos SET statut = ?, etape = NULL, progression = 1, eta_s = 0, termine_le = ?, maj_le = ?, duree = ?, taille = ?, morceaux = ?, srt = ?, miniature = ?, alertes = ?, duree_fabrication = ? WHERE id = ?`)
       .bind(alertes.length ? "a_verifier" : "pret", iso, iso, Number(d.duree) || null, Number(d.taille), Number(d.morceaux), court(d.srt, 20000), mini, JSON.stringify(alertes), Number(d.duree_fabrication) || null, id).run();

@@ -6,7 +6,7 @@
   const PAUSE = .2, PAUSE_POSE = .7, SCENE_MIN = 2.4;   // mêmes valeurs que le serveur et le robot
   const finDe = (scenes) => (scenes || []).find((s) => s.type === "fin");
   const tenueDe = (f) => (f?.p?.mode && f.p.mode !== "complete" ? 2.5 : 3.6);
-  const regler = (d) => { if (d >= 3.5 && d <= 5.8) SYL_PAR_S = d; };
+  const regler = (d) => { if (d >= 3 && d <= 9) SYL_PAR_S = d; };
   const UN = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize"];
   const DIZ = { 2: "vingt", 3: "trente", 4: "quarante", 5: "cinquante", 6: "soixante", 8: "quatre-vingt" };
   function lettres(n) {

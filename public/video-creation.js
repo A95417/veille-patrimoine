@@ -452,7 +452,7 @@
             <button type="button" class="vs-ico" data-retirer="${i}" aria-label="Retirer la scène ${i + 1}">✕</button>
           </span></div>
         <label class="sr" for="vs-t${i}">Texte lu, scène ${i + 1}</label>
-        <textarea id="vs-t${i}" data-texte="${i}" rows="2" maxlength="400">${echapper(s.texte)}</textarea>
+        <textarea id="vs-t${i}" data-texte="${i}" rows="2" maxlength="600">${echapper(s.texte)}</textarea>
         <div class="vs-refaire" data-panneau="${i}" hidden>
           <input data-consigne="${i}" maxlength="200" placeholder="Facultatif : « plus court », « avec Michel », « plus percutant »…" aria-label="Demande pour réécrire la scène ${i + 1}">
           <button type="button" class="bouton" data-go="${i}">Réécrire</button>
