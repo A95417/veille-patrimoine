@@ -135,19 +135,17 @@
   function monter() {
     $v("vue-video").innerHTML = `
       <section class="carte vv-form" id="vv-nouvelle">
-        <div class="vv-intro">
-          <h2>Créer une vidéo courte</h2>
-          <p class="doux">TikTok, Instagram, Facebook ou LinkedIn. L'IA écrit le scénario, vous le relisez avant la fabrication.</p>
-        </div>
         <ol class="vv-progres" id="vv-progres" aria-label="Étapes">
-          ${[["Sujet", "livre"], ["Façon de raconter", "etincelle"], ["Réglages", "horloge"], ["Scénario", "crayon"]].map(([n, ic], k) => `<li><button type="button" data-aller="${k + 1}" ${k === 3 ? "disabled" : ""}><span class="vv-pr-n">${svg(ic, 18)}</span><span class="vv-pr-t"><small>Étape ${k + 1}</small>${n}</span></button></li>`).join("")}
+          ${["Sujet", "Façon de raconter", "Réglages", "Scénario"].map((n, k) => `<li><button type="button" data-aller="${k + 1}" ${k === 3 ? "disabled" : ""} aria-label="Étape ${k + 1} : ${n}" title="${n}"></button></li>`).join("")}
         </ol>
         <div class="vv-cadre">
           <div class="vv-pas">
             <div class="vv-etape" id="vv-e1" data-etape="1">
-              <h3 class="vv-etape-tete">De quoi parle la vidéo ?</h3>
+              <p class="vv-kicker">Question 1 sur 4</p>
+              <h3 class="vv-etape-tete">De quoi voulez-vous parler ?</h3>
+              <p class="vv-chapo">Choisissez d'où part la vidéo : l'IA écrit le scénario à partir de cette source, sans rien inventer.</p>
               <div class="vv-etape-corps">
-                <div class="vv-sources" role="tablist" aria-label="Source du sujet">${ONGLETS_SUJET.map(([k, ic, nom, desc, c]) => `<button type="button" role="tab" id="vv-tab-${k}" aria-controls="vv-panneau" data-tab="${k}" style="--c:${c}"><span class="vv-src-ico">${svg(ic, 24)}</span><b>${nom}</b><small>${desc}</small></button>`).join("")}</div>
+                <div class="vv-sources" role="tablist" aria-label="Source du sujet">${ONGLETS_SUJET.map(([k, ic, nom, desc]) => `<button type="button" role="tab" id="vv-tab-${k}" aria-controls="vv-panneau" data-tab="${k}"><span class="vv-src-ico">${svg(ic, 28)}</span><span><b>${nom}</b><small>${desc}</small></span></button>`).join("")}</div>
                 <div class="vv-choisi" id="vv-choisi" hidden></div>
                 <div id="vv-choix-sujet"><div class="vv-panneau" id="vv-panneau" role="tabpanel"></div></div>
                 <div id="vv-sim" class="vv-sim" hidden></div>
@@ -162,7 +160,9 @@
             </div>
 
             <div class="vv-etape" id="vv-e2" data-etape="2">
-              <h3 class="vv-etape-tete">Comment la raconter ?</h3>
+              <p class="vv-kicker">Question 2 sur 4</p>
+              <h3 class="vv-etape-tete">Comment voulez-vous la raconter ?</h3>
+              <p class="vv-chapo">La façon de raconter change le rythme et la structure de la vidéo.</p>
               <div class="vv-etape-corps">
                 ${FAMILLES.map(([fam, l]) => `<section class="vv-famille" style="--c:${COULEUR_FAMILLE[fam]}"><h4 class="vv-famille-nom">${fam}</h4><div class="vv-angles" role="group" aria-label="${fam}">${l.map(([k, n, d, ex]) => `<button type="button" class="vv-angle" data-angle="${k}"><span class="vv-angle-ico">${svg(ICO_ANGLE[k], 20)}</span><span class="vv-angle-txt"><b>${n}</b><small>${d}</small><em>${ex}</em></span><span class="vv-conseil">Conseillé</span></button>`).join("")}</div></section>`).join("")}
                 <label class="bloc-lib" for="vv-precision">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
@@ -173,7 +173,9 @@
             </div>
 
             <div class="vv-etape" id="vv-e3" data-etape="3">
-              <h3 class="vv-etape-tete">Réglages</h3>
+              <p class="vv-kicker">Question 3 sur 4</p>
+              <h3 class="vv-etape-tete">Pour quelle plateforme et quelle durée ?</h3>
+              <p class="vv-chapo">Le format de l'image et le texte de publication s'adaptent à la plateforme.</p>
               <div class="vv-etape-corps">
                 <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("horloge", 18)} Durée</span>
                   <div class="vv-segment" role="group" aria-label="Durée">${DUREES.map(([d, l]) => `<button type="button" data-duree="${d}">${l}</button>`).join("")}</div></div>
@@ -191,16 +193,17 @@
             </div>
 
             <div class="vv-nav-etapes">
-              <button type="button" class="bouton bouton-discret" id="vv-retour">← Retour</button>
-              <span class="vv-nav-aide doux petit" id="vv-nav-aide"></span>
-              <button type="button" class="bouton" id="vv-suivant">Suivant →</button>
-              <button type="button" class="bouton gros-bouton" id="vv-proposer">✨ Proposer un scénario</button>
+              <button type="button" class="vv-lien" id="vv-retour">Retour</button>
+              <span class="vv-nav-aide" id="vv-nav-aide"></span>
+              <button type="button" class="vv-continuer" id="vv-suivant">Continuer</button>
+              <button type="button" class="vv-continuer vv-final" id="vv-proposer">Écrire le scénario</button>
             </div>
           </div>
-          <aside class="vv-resume" aria-label="Votre vidéo">
-            <h4>Votre vidéo</h4>
+          <aside class="vv-tel" aria-label="Aperçu de votre vidéo">
+            <div class="vv-ecran" id="vv-ecran"></div>
+            <p class="vv-tel-leg">Votre vidéo prend forme à chaque réponse.</p>
             <div id="vv-recap"></div>
-            <div class="doux petit" id="vv-quota"></div>
+            <div class="vv-quota" id="vv-quota"></div>
           </aside>
         </div>
         <div id="vv-msg" aria-live="polite"></div>
@@ -385,7 +388,7 @@
     if (f) {
       const parties = partiesFiche(f).map(([t]) => t);
       if (!parties.includes(R.focus)) R.focus = "";
-      z.insertAdjacentHTML("beforeend", `<label class="vv-focus"><span>Point précis</span><select id="vv-focus"><option value="">Toute la fiche</option>${parties.map((t) => `<option ${t === R.focus ? "selected" : ""}>${echapper(t)}</option>`).join("")}</select><small class="doux">La vidéo s'adresse au public (« vous ») : rien de scolaire.</small></label>`);
+      z.insertAdjacentHTML("beforeend", `<label class="vv-focus"><span>Point précis</span><select id="vv-focus"><option value="">Tout le thème</option>${parties.map((t) => `<option ${t === R.focus ? "selected" : ""}>${echapper(t)}</option>`).join("")}</select><small class="doux">La vidéo s'adresse au public (« vous ») : rien de scolaire.</small></label>`);
       $v("vv-focus").onchange = (e) => { R.focus = e.target.value; if (R.focus && !R.angleManuel) R.angle = "decryptage"; majAngle(); };
     } else R.focus = "";
     if (["simulation", "autre"].includes(R.onglet)) $v("vv-changer").hidden = true;
@@ -416,14 +419,21 @@
     majEtat();
     const f = $v("vv-nouvelle"); if (f && f.getBoundingClientRect().top < 0) f.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+  // Aperçu téléphone : la vidéo prend forme à chaque réponse (sujet, façon de raconter, format, durée).
+  const PERSO_SOURCE = { idees: "ines", fiches: "lea", actus: "hugo", chiffres: "sarah", simulation: "tom", autre: "michel" };
   function majRecap() {
-    const z = $v("vv-recap"); if (!z) return;
-    const d = R.sel && decrireSujet();
-    const c = COULEUR_SOURCE[sourceDe(R.sel)];
-    const ligneR = (n, lib, val, coul) => `<button type="button" class="vv-r" data-aller="${n}"${coul ? ` style="--c:${coul}"` : ""}><small>${lib}</small><b>${val}</b></button>`;
-    z.innerHTML = ligneR(1, "Sujet", d ? echapper(d.titre) + (R.focus ? ` <span class="doux">· ${echapper(R.focus)}</span>` : "") : `<span class="doux">à choisir</span>`, d ? c : "")
-      + ligneR(2, "Façon de raconter", echapper(ANGLES_LIB[R.angle] || ""), COULEUR_FAMILLE[(FAMILLES.find(([, l]) => l.some(([k]) => k === R.angle)) || [])[0]])
-      + `<div class="vv-r-puces">${[dureeLib(R.duree), PLATEFORMES[R.plateforme][0], "Rythme " + RYTHMES[R.rythme][0].toLowerCase(), MODES_FIN[R.finMode][0]].map((x) => `<button type="button" class="vv-puce-r" data-aller="3">${echapper(x)}</button>`).join("")}</div>`;
+    const z = $v("vv-recap"), e = $v("vv-ecran"); if (!z || !e) return;
+    document.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("vv-pris", !!R.sel && sourceDe(R.sel) === b.dataset.tab));
+    const d = R.sel && decrireSujet(), src = R.sel ? sourceDe(R.sel) : R.onglet;
+    const nomSrc = (ONGLETS_SUJET.find(([k]) => k === src) || [])[2] || "";
+    e.className = "vv-ecran" + (R.format === "4:5" ? " f45" : "");
+    e.innerHTML = `<span class="vv-e-duree">${dureeLib(R.duree)}</span>
+      ${d ? `<span class="vv-e-pill">${echapper(nomSrc)}</span>` : ""}
+      <div class="vv-e-titre">${d ? echapper(d.titre) + (R.focus ? `<small>${echapper(R.focus)}</small>` : "") : "Votre sujet apparaîtra ici"}</div>
+      <img class="vv-e-perso" src="/video-persos/${PERSO_SOURCE[src] || "lea"}.png" alt="">
+      <div class="vv-e-st">${echapper(ANGLES_LIB[R.angle] || "")}</div>`;
+    const puce = (n, x) => `<button type="button" class="vv-puce-r" data-aller="${n}">${echapper(x)}</button>`;
+    z.innerHTML = `<div class="vv-r-puces">${puce(2, ANGLES_LIB[R.angle] || "")}${puce(3, PLATEFORMES[R.plateforme][0])}${puce(3, "Rythme " + RYTHMES[R.rythme][0].toLowerCase())}${puce(3, MODES_FIN[R.finMode][0])}</div>`;
     z.querySelectorAll("[data-aller]").forEach((b) => b.onclick = () => allerEtape(+b.dataset.aller));
   }
   function majEtat() {
@@ -435,13 +445,13 @@
     $v("vv-precision-note").textContent = "(facultatif)";
     $v("vv-precision").placeholder = "Ex. : pour les jeunes actifs, ton rassurant…";
     majLibre();
-    const manque = !choisi ? "Choisissez d'abord un sujet (étape 1)." : libre && !$v("vv-libre-texte").value.trim() ? "Écrivez votre sujet ou collez votre texte (étape 1)." : "";
+    const manque = !choisi ? "Choisissez une réponse pour continuer." : libre && !$v("vv-libre-texte").value.trim() ? "Écrivez votre sujet ou collez votre texte." : "";
     const b = $v("vv-proposer");
     b.disabled = !!manque || b.dataset.occupe === "1";
     b.title = manque;
     b.hidden = R.etape !== 3; $v("vv-suivant").hidden = R.etape === 3; $v("vv-retour").hidden = R.etape === 1;
     $v("vv-suivant").disabled = R.etape === 1 && !!manque;
-    $v("vv-nav-aide").textContent = R.etape === 1 ? manque : R.etape === 2 ? "Choisissez la façon de raconter, puis « Suivant »." : "";
+    $v("vv-nav-aide").textContent = R.etape === 1 ? manque : R.etape === 2 ? "" : "";
     $v("vv-quota").dataset.manque = "";
     majCompteurs();
   }
