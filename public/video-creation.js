@@ -217,7 +217,9 @@
       R.onglet = k; R.cherche = "";
       if (k === "simulation") return choisirSujet("simulation");
       if (k === "autre") return choisirSujet("libre");
-      if (R.sel && sourceDe(R.sel) !== k) { $v("vv-choisi").hidden = true; $v("vv-choix-sujet").hidden = false; }
+      // autre source : le sujet précédent est abandonné (le texte écrit dans « Mon sujet » est gardé)
+      if (R.sel && R.source !== k) { R.sel = null; R.source = null; R.focus = ""; majSimulation(); majEtat(); }
+      $v("vv-choisi").hidden = true; $v("vv-choix-sujet").hidden = false;
       afficherPanneau();
     };
     document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => ouvrirSource(b.dataset.tab));
@@ -344,7 +346,7 @@
     z.querySelectorAll("[data-sujet]").forEach((b) => b.onclick = () => choisirSujet(b.dataset.sujet));
     z.querySelectorAll("[data-idee]").forEach((b) => b.onclick = () => {
       const i = sources.idees[+b.dataset.idee];
-      choisirSujet(`actu:${i.sujet_id}`, { angle: i.angle || "expliquer", ia: !sources.simple, titre: i.titre });
+      choisirSujet(`actu:${i.sujet_id}`, { angle: i.angle || "expliquer", ia: !sources.simple, titre: i.titre, source: "idees" });
       // le titre de l'idée sert de précision (modifiable), seulement si le champ est vide
       if (!sources.simple && !$v("vv-precision").value) { $v("vv-precision").value = R.precisionAuto = i.titre; majEtat(); }
     });
@@ -366,6 +368,7 @@
 
   function choisirSujet(v, opts = {}) {
     R.sel = v; R.titreIdee = opts.titre || null;
+    R.source = opts.source || sourceDe(v);
     // une précision remplie automatiquement par une idée ne suit pas vers un autre sujet
     if (R.precisionAuto && $v("vv-precision").value === R.precisionAuto) $v("vv-precision").value = "";
     R.precisionAuto = null;
@@ -379,8 +382,10 @@
   function afficherChoisi() {
     const d = decrireSujet(), z = $v("vv-choisi");
     if (!d) { z.hidden = true; $v("vv-choix-sujet").hidden = false; afficherPanneau(); return; }
-    z.hidden = false; $v("vv-choix-sujet").hidden = true;
-    R.onglet = sourceDe(R.sel); document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === R.onglet));
+    R.onglet = R.source || sourceDe(R.sel);
+    // Simulation et Mon sujet : la carte choisie et la zone en dessous suffisent (pas de bandeau en double)
+    if (["simulation", "autre"].includes(R.onglet)) { z.hidden = true; $v("vv-choix-sujet").hidden = true; document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === R.onglet)); R.focus = ""; return; }
+    z.hidden = false; $v("vv-choix-sujet").hidden = true; document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === R.onglet));
     z.style.setProperty("--c", COULEUR_SOURCE[R.onglet]);
     z.innerHTML = `<span class="vv-choisi-ico" aria-hidden="true">${svg(ONGLETS_SUJET.find(([k]) => k === R.onglet)[1], 24)}</span><div><strong>${echapper(d.titre)}</strong><span>${echapper(d.source)}</span></div><button type="button" class="bouton bouton-discret" id="vv-changer">Changer</button>`;
     // Fiche : toute la fiche, ou un point précis pour aller dans le détail
@@ -423,13 +428,14 @@
   const PERSO_SOURCE = { idees: "ines", fiches: "lea", actus: "hugo", chiffres: "sarah", simulation: "tom", autre: "michel" };
   function majRecap() {
     const z = $v("vv-recap"), e = $v("vv-ecran"); if (!z || !e) return;
-    document.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("vv-pris", !!R.sel && sourceDe(R.sel) === b.dataset.tab));
-    const d = R.sel && decrireSujet(), src = R.sel ? sourceDe(R.sel) : R.onglet;
+    const srcPrise = R.sel ? R.source || sourceDe(R.sel) : null;
+    document.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("vv-pris", b.dataset.tab === srcPrise));
+    const d = R.sel && decrireSujet(), src = srcPrise || R.onglet;
     const nomSrc = (ONGLETS_SUJET.find(([k]) => k === src) || [])[2] || "";
     e.className = "vv-ecran" + (R.format === "4:5" ? " f45" : "");
     e.innerHTML = `<span class="vv-e-duree">${dureeLib(R.duree)}</span>
       ${d ? `<span class="vv-e-pill">${echapper(nomSrc)}</span>` : ""}
-      <div class="vv-e-titre">${d ? echapper(d.titre) + (R.focus ? `<small>${echapper(R.focus)}</small>` : "") : "Votre sujet apparaîtra ici"}</div>
+      <div class="vv-e-titre">${R.sel === "libre" && $v("vv-libre-texte")?.value.trim() ? echapper($v("vv-libre-texte").value.trim().slice(0, 70)) + ($v("vv-libre-texte").value.trim().length > 70 ? "…" : "") : d ? echapper(d.titre) + (R.focus ? `<small>${echapper(R.focus)}</small>` : "") : "Votre sujet apparaîtra ici"}</div>
       <img class="vv-e-perso" src="/video-persos/${PERSO_SOURCE[src] || "lea"}.png" alt="">
       <div class="vv-e-st">${echapper(ANGLES_LIB[R.angle] || "")}</div>`;
     const puce = (n, x) => `<button type="button" class="vv-puce-r" data-aller="${n}">${echapper(x)}</button>`;
@@ -581,9 +587,10 @@
         <div ${S.fin.mode === "complete" ? "" : "hidden"}><label class="vs-lib" for="vs-question">Phrase d'appel <span class="doux">(affichée et lue)</span></label>
         <input id="vs-question" maxlength="60" value="${echapper(S.fin.question)}" autocomplete="off">
         <div class="vs-sugg">${sugg.map((q) => `<button type="button" class="puce" data-q="${echapper(q)}" aria-pressed="${q === S.fin.question}">${q === CLASSIQUE ? "Classique : " : "✨ "}${echapper(q)}</button>`).join("")}</div>
+
+        </div>
         <span class="vs-lib">Fond</span>
         <div class="vs-styles" role="group" aria-label="Mise en scène de la carte de fin">${Object.keys(FINS_LIB).map((k) => `<button type="button" class="vs-style s-${k}" data-style="${k}" aria-pressed="${k === S.fin.style}"><i aria-hidden="true"></i><b>${FINS_LIB[k]}</b><small>${FINS_DESC[k]}</small></button>`).join("")}</div>
-        </div>
         <p class="doux petit vs-note">${S.fin.mode === "sans" ? "Seulement votre logo et les mentions obligatoires (risque de perte en capital, sources, exemple fictif)." : S.fin.mode === "courte" ? "Votre logo, vos coordonnées et les mentions obligatoires, sans phrase d'appel ni offre." : `Toujours présents : votre logo, « ${OFFRE} », les coordonnées et les mentions obligatoires.`}</p>
       </div></li>`;
   }
@@ -952,7 +959,7 @@
   window.videoDepuisPost = ({ sel, precision, media }) => {
     if (typeof window.choisirVue === "function") window.choisirVue("video"); else window.demarrerVideo();
     if (!$v("vv-nouvelle")) return;
-    choisirSujet(sel);
+    R.onglet = sourceDe(sel); choisirSujet(sel); allerEtape(1);
     if (media) $v("vv-media").value = media;
     if (precision) { if (sel === "libre") $v("vv-libre-texte").value = precision; else $v("vv-precision").value = precision; majEtat(); }
     scrollTo({ top: 0, behavior: "smooth" });
