@@ -1,15 +1,15 @@
 // Rubrique DER (Document d'Entrée en Relation).
 // - Le texte réglementaire du DER est rangé dans la base du site (jamais dans le code : le dépôt est public),
-//   lisible après connexion, mis à jour par l'administrateur (fichier JSON ou petit éditeur), avec historique.
+//   lisible après connexion, remplacé par l'administrateur (nouvelle version préparée hors du site), avec historique.
+// - Le DER se consulte et se présente seulement : ni téléchargement, ni impression depuis le site.
 // - Les coordonnées du conseiller (« Votre contact ») peuvent être gardées sur son compte.
-// - Registre des remises : seulement une référence anonyme, la date et le conseiller. Rien sur le client.
 // - Les informations du client ne passent JAMAIS par le serveur : aucune route ne les reçoit.
 import { lireEtat, ecrireEtat } from "./linkedin.js";
 
 const json = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 const erreur = (m, s = 400) => json({ erreur: m }, s);
 const CHAMPS_CONTACT = ["civilite", "nom", "cabinet", "adresse", "ville", "telephone", "email"];
-const HISTORIQUE = 5, REGISTRE = 3000;
+const HISTORIQUE = 5;
 
 // ---------------------------------------------------------------- contrôle strict du texte importé
 const estTexte = (x, max = 4000) => typeof x === "string" && x.length <= max;
@@ -84,19 +84,6 @@ export async function routeDer(request, env, chemin, moi) {
     for (const k of CHAMPS_CONTACT) c[k] = String(d.contact?.[k] ?? "").replace(/[<>]/g, "").trim().slice(0, 120);
     await ecrireEtat(db, "der_contact:" + moi.id, c);
     return json({ ok: true, contact: c });
-  }
-  // Registre des remises : référence anonyme, date, conseiller. Jamais de donnée du client.
-  if (chemin === "/api/der/reference" && methode === "POST") {
-    const d = await lire(), ref = String(d.reference || "");
-    if (!/^DER-\d{8}-[A-Z0-9]{4}$/.test(ref)) return erreur("Référence invalide.");
-    const liste = (await lireEtat(db, "der_registre"))?.valeur || [];
-    if (!liste.some((x) => x.ref === ref)) liste.unshift({ ref, le: new Date().toISOString(), conseiller: moi.nom || "", uid: moi.id, version: String(d.version || "").slice(0, 120) });
-    await ecrireEtat(db, "der_registre", liste.slice(0, REGISTRE));
-    return json({ ok: true });
-  }
-  if (chemin === "/api/der/registre" && methode === "GET") {
-    const liste = (await lireEtat(db, "der_registre"))?.valeur || [];
-    return json({ registre: (admin ? liste : liste.filter((x) => x.uid === moi.id)).map(({ uid, ...x }) => x).slice(0, 500), admin });
   }
   // Mise à jour du texte du DER (administrateur) : contrôle strict, ancienne version gardée.
   if (chemin === "/api/der/contenu" && methode === "POST") {

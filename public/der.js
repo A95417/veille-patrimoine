@@ -1,7 +1,7 @@
-// Rubrique DER : le document d'entrée en relation du cabinet, présenté au client puis généré en PDF.
+// Rubrique DER : le document d'entrée en relation du cabinet, consulté et présenté au client (ni téléchargement, ni impression).
 // RÈGLE : les informations du client ne quittent jamais cette page. Elles ne sont envoyées à aucun serveur,
 // ni gardées dans le navigateur (pas de stockage local), et s'effacent : page quittée ou rechargée,
-// bouton « Nouveau client », 15 minutes sans activité, et sur proposition après la génération du PDF.
+// bouton « Nouveau client » (avec « Annuler » 5 s) et 15 minutes sans activité (en pause pendant la présentation).
 (function () {
   const zone = document.getElementById("der-zone");
   const INACTIVITE = 15 * 60 * 1000;
@@ -167,14 +167,10 @@
         <p class="der-alerte" id="der-alerte-email" hidden>Cet e-mail semble incomplet (exemple : prenom.nom@domaine.fr).</p></details>
       <div class="der-bloc der-actions">
         <button type="button" class="bouton" id="der-presenter">▶ Présenter au client</button>
-        <button type="button" class="bouton bouton-discret" id="der-pdf">⬇ Générer le PDF</button>
-        <p class="der-astuce">Dans la fenêtre qui s'ouvre, choisissez <b>Enregistrer au format PDF</b>.</p>
-        <button type="button" class="bouton bouton-discret" id="der-apercu">👁 Aperçu des pages</button>
         <button type="button" class="bouton bouton-discret" id="der-nouveau">↺ Nouveau client</button>
-        <button type="button" class="der-lien-registre" id="der-registre">📋 Registre des DER remis</button>
         <div class="der-minuteur" id="der-minuteur" aria-live="polite"></div></div>
       ${admin ? `<div class="der-bloc"><h2>⚙️ Texte du DER (administrateur)</h2>${alerteAge()}<p class="aide">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · importée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte importé."}</p>
-        <div class="der-ligne-boutons" style="margin:0">${C ? '<button type="button" class="puce" id="der-editer">✏️ Mettre à jour (partenaires, garanties…)</button>' : ""}<label class="puce" style="cursor:pointer">📥 Importer un fichier<input type="file" accept="application/json,.json" id="der-import" hidden></label>${C ? '<button type="button" class="puce" id="der-export">📤 Télécharger le texte actuel</button>' : ""}<button type="button" class="puce" id="der-versions">🕘 Versions précédentes (${(historique || []).length})</button></div>
+        <div class="der-ligne-boutons" style="margin:0"><label class="puce" style="cursor:pointer">📥 Déposer une nouvelle version<input type="file" accept="application/json,.json" id="der-import" hidden></label><button type="button" class="puce" id="der-versions">🕘 Versions précédentes (${(historique || []).length})</button></div>
         <p class="doux petit" id="der-msg-admin" style="margin:6px 0 0" role="status"></p></div>` : ""}
     </aside>`;
   }
@@ -203,8 +199,7 @@
   function effacerClient(message, annulable = false) {
     clearTimeout(minuteurAnnulation); copieAnnulation = annulable && clientRempli() ? { ...client } : null;
     Object.assign(client, { civilite: "M.", nom: "", prenom: "", naissance: "", telephone: "", email: "" });
-    document.getElementById("der-feuilles")?.remove();
-    remplirChamps(); rafraichir("client"); verifierEmail();
+        remplirChamps(); rafraichir("client"); verifierEmail();
     if (copieAnnulation) {
       toast(message, "Annuler", () => { Object.assign(client, copieAnnulation); copieAnnulation = null; remplirChamps(); rafraichir("client"); toast("Informations rétablies."); }, 5000);
       minuteurAnnulation = setTimeout(() => { copieAnnulation = null; }, 5000);   // passé 5 s, la copie disparaît
@@ -329,136 +324,6 @@
     p.querySelector('[data-d="1"]').focus();
   }
 
-  // ---------------------------------------------------------------- PDF : pages A4 composées ici (rien n'est envoyé)
-  // La page découpe elle-même le document en feuilles A4 (numéros de page compris) ; le navigateur n'a plus qu'à les
-  // enregistrer en PDF. Marges nulles côté navigateur : pas d'adresse du site ni de date ajoutées, même rendu partout.
-  const TITRES = ".der-h, .der-h3, .der-tableau-titre";
-  async function composerFeuilles(ref) {
-    try { await document.fonts?.ready; } catch {}
-    return composer(ref);
-  }
-  // Référence anonyme du DER remis (imprimée sur chaque page, notée au registre avec la date et le conseiller).
-  function nouvelleReference() {
-    const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(4)), d = new Date();
-    return `DER-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${[...r].map((x) => A[x % 32]).join("")}`;
-  }
-  async function noterReference(ref) {
-    try {
-      const c = new AbortController(); setTimeout(() => c.abort(), 4000);
-      const r = await fetch("/api/der/reference", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: ref, version: C?.version || "" }), credentials: "same-origin", signal: c.signal });
-      return r.ok;
-    } catch { return false; }
-  }
-  function composer(ref = "") {
-    document.getElementById("der-feuilles")?.remove();
-    const racine = document.createElement("div"); racine.className = "der-feuilles"; racine.id = "der-feuilles"; racine.setAttribute("aria-hidden", "true");
-    document.body.appendChild(racine);
-    const src = document.getElementById("der-doc"), feuilles = [];
-    const propre = (n) => { const c = n.cloneNode(true); c.removeAttribute?.("id"); c.querySelectorAll?.("[id]").forEach((x) => x.removeAttribute("id")); c.querySelectorAll?.(".der-filtres, .der-tab-vide").forEach((x) => x.remove()); c.classList?.add("visible"); return c; };
-    let cur;
-    const nouvelle = () => {
-      const f = document.createElement("div"); f.className = "der-feuille";
-      f.innerHTML = `<div class="contenu"><div class="der"></div></div><div class="pied"><span>BSC Patrimoine · DER établi le ${aujourdhui()}${ref ? " · Réf. " + ref : ""}</span><span class="num"></span></div>`;
-      racine.appendChild(f); feuilles.push(f); cur = f.querySelector(".der"); return cur;
-    };
-    const deborde = () => cur.offsetHeight > cur.parentElement.clientHeight + 1;
-    const coquille = (sec, avecTitre) => { const c = sec.cloneNode(false); c.removeAttribute("id"); c.classList.add("visible"); if (avecTitre) c.appendChild(propre(sec.querySelector(":scope > h2"))); return c; };
-    nouvelle().appendChild(propre(src.querySelector(".der-couverture")));
-    nouvelle();
-    const titreDoc = propre(src.querySelector(".der-doc-titre")); cur.appendChild(titreDoc);
-    for (const sec of src.querySelectorAll(".der-corps > .der-section")) {
-      if (sec.dataset.page === "nouvelle" && cur.childElementCount) nouvelle();
-      let boite = coquille(sec, true); cur.appendChild(boite);
-      if (deborde()) { boite.remove(); nouvelle(); cur.appendChild(boite); }
-      // place un élément ; s'il ne tient pas, il passe sur une nouvelle feuille avec les titres qui le précèdent
-      const placer = (el) => {
-        boite.appendChild(el);
-        if (!deborde()) return;
-        el.remove();
-        const suiveurs = [];
-        while (boite.lastElementChild && boite.lastElementChild.matches(TITRES)) { const t = boite.lastElementChild; t.remove(); suiveurs.unshift(t); }
-        const seulTitre = boite.children.length === 1 && boite.firstElementChild.tagName === "H2";
-        if (seulTitre) { boite.remove(); nouvelle(); cur.appendChild(boite); }
-        else { if (!boite.children.length) boite.remove(); nouvelle(); boite = coquille(sec, false); cur.appendChild(boite); }
-        suiveurs.forEach((x) => boite.appendChild(x));
-        boite.appendChild(el);
-      };
-      for (const enfant of sec.children) {
-        if (enfant.tagName === "H2" || enfant.matches(".der-garanties")) continue;
-        const tab = enfant.matches(".der-tab-defile") ? enfant.querySelector("table") : null;
-        if (!tab) { placer(propre(enfant)); continue; }
-        // tableau long : coupé ligne par ligne, en-tête répété sur chaque feuille
-        const nouveauTableau = () => { const w = propre(enfant); w.querySelector("tbody").innerHTML = ""; return w; };
-        let w = nouveauTableau(); placer(w);
-        const lignes = [...tab.querySelectorAll("tbody tr")];
-        lignes.forEach((tr, k) => {
-          const ligne = tr.cloneNode(true); ligne.hidden = false;
-          w.querySelector("tbody").appendChild(ligne);
-          if (!deborde()) return;
-          ligne.remove();
-          if (!w.querySelector("tbody").children.length) { w.remove(); placer(w); w.querySelector("tbody").appendChild(ligne); return; }
-          // pas de ligne seule en haut de la feuille suivante : on emporte aussi la précédente
-          const emportees = [];
-          if (lignes.length - k === 1 && w.querySelector("tbody").children.length >= 3) emportees.push(w.querySelector("tbody").lastElementChild);
-          emportees.forEach((x) => x.remove());
-          nouvelle(); boite = coquille(sec, false); cur.appendChild(boite);
-          w = nouveauTableau(); boite.appendChild(w); [...emportees, ligne].forEach((x) => w.querySelector("tbody").appendChild(x));
-        });
-      }
-    }
-    feuilles.forEach((f, k) => { f.querySelector(".num").textContent = `${k + 1}/${feuilles.length}`; });
-    return feuilles.length;
-  }
-  // Impression lancée par le menu du navigateur (Ctrl+P) : les feuilles sont composées à la volée, puis retirées.
-  addEventListener("beforeprint", () => { if (C && !document.getElementById("der-feuilles")) { reinitFiltres(); const ref = nouvelleReference(); composer(ref); noterReference(ref); } });
-  addEventListener("afterprint", () => setTimeout(() => document.getElementById("der-feuilles")?.remove(), 0));
-  async function genererPdf() {
-    reinitFiltres();
-    const b = document.getElementById("der-pdf"); b.disabled = true; b.textContent = "Préparation des pages…";
-    const ref = nouvelleReference();
-    const note = noterReference(ref);
-    try { await composerFeuilles(ref); } finally { b.disabled = false; b.textContent = "⬇ Générer le PDF"; }
-    if (!(await note)) toast(`Référence ${ref} imprimée, mais pas notée au registre (pas de connexion). Notez-la dans le dossier du client.`, null, null, 7000);
-    const titre = document.title, nom = [client.prenom, (client.nom || "").toUpperCase()].filter(Boolean).join(" ");
-    document.title = `DER ${nom ? "- " + nom + " " : ""}- ${aujourdhui().replace(/\//g, "-")}`;
-    const apres = () => {
-      removeEventListener("afterprint", apres); document.title = titre;
-      document.getElementById("der-feuilles")?.remove();   // la copie imprimée (avec le nom du client) ne reste pas dans la page
-      setTimeout(() => proposerEffacement(ref), 300);
-    };
-    addEventListener("afterprint", apres);
-    window.print();
-  }
-  // Aperçu : les vraies pages A4 en vignettes, à l'écran (rien n'est envoyé ; tout disparaît à la fermeture).
-  async function apercu() {
-    reinitFiltres();
-    const n = await composerFeuilles("");
-    const racine = document.getElementById("der-feuilles");
-    const d = document.createElement("dialog"); d.className = "der-dialogue der-apercu";
-    d.innerHTML = `<div class="der-apercu-haut"><h2>Aperçu des pages · ${n} pages A4</h2><button type="button" class="bouton" data-pdf>⬇ Générer le PDF</button><button type="button" class="der-pres-fermer" data-f aria-label="Fermer l'aperçu">✕</button></div>
-      <div class="der-apercu-grille der-feuilles"></div><p class="petit doux" style="margin:10px 0 0">La référence du document est attribuée au moment de la génération du PDF.</p>`;
-    const g = d.querySelector(".der-apercu-grille");
-    [...racine.children].forEach((f, k) => { const c = document.createElement("div"); c.className = "der-vignette"; const x = f.cloneNode(true); c.appendChild(x); c.insertAdjacentHTML("beforeend", `<span>${k + 1}</span>`); g.appendChild(c); });
-    racine.remove();
-    document.body.appendChild(d);
-    const ajuster = () => g.querySelectorAll(".der-vignette").forEach((v) => { const f = v.querySelector(".der-feuille"); f.style.transform = `scale(${v.clientWidth / f.offsetWidth})`; });
-    new ResizeObserver(ajuster).observe(g);
-    const fermer = () => { d.close(); d.remove(); };
-    d.addEventListener("cancel", (e) => { e.preventDefault(); fermer(); });
-    d.querySelector("[data-f]").onclick = fermer;
-    d.querySelector("[data-pdf]").onclick = () => { fermer(); genererPdf(); };
-    d.showModal();
-  }
-  function proposerEffacement(ref) {
-    const d = document.createElement("dialog"); d.className = "der-dialogue";
-    const avecClient = clientRempli();
-    d.innerHTML = `<h2>${avecClient ? "Effacer les informations du client ?" : "PDF prêt"}</h2><p>Référence du document : <b class="der-ref">${esc(ref)}</b>. Reportez-la dans le dossier du client.${avecClient ? " La page, elle, ne garde rien : pensez à ranger le PDF." : ""}</p>
-      <div class="der-ligne-boutons">${avecClient ? '<button type="button" class="bouton bouton-discret" data-r="non">Garder pour l\'instant</button><button type="button" class="bouton" data-r="oui">Effacer</button>' : '<button type="button" class="bouton" data-r="non">Fermer</button>'}</div>`;
-    document.body.appendChild(d);
-    d.querySelectorAll("button").forEach((b) => b.onclick = () => { d.close(); d.remove(); if (b.dataset.r === "oui") effacerClient("Informations du client effacées."); });
-    d.showModal();
-  }
-
   // ---------------------------------------------------------------- saisie
   function mettreEnForme(k, v) {
     v = String(v || "").replace(/\s+/g, " ").trim();
@@ -524,24 +389,14 @@
       try { await appelApi("/api/der/contact", "POST", { oublier: true }); m.textContent = "Coordonnées retirées de votre compte."; document.getElementById("der-oublier").hidden = true; } catch (e) { m.textContent = e.message; }
     };
     document.getElementById("der-presenter").onclick = presenter;
-    document.getElementById("der-pdf").onclick = genererPdf;
     document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.", true);
-    document.getElementById("der-apercu").onclick = apercu;
     filtres(document); animer();
   }
   function brancherAdmin() {
     const recharger = () => { toast("✓ DER mis à jour. Rechargement…"); setTimeout(() => location.reload(), 900); };
-    const reg = document.getElementById("der-registre"); if (reg) reg.onclick = () => DerAdmin.registre();
     const imp = document.getElementById("der-import");
     if (imp) imp.onchange = async () => { const f = imp.files[0]; imp.value = ""; if (f) await DerAdmin.importer(f, C, recharger); };
-    const ed = document.getElementById("der-editer"); if (ed) ed.onclick = () => DerAdmin.editeur(C, recharger);
     const ve = document.getElementById("der-versions"); if (ve) ve.onclick = () => DerAdmin.historique(historique, recharger);
-    const exp = document.getElementById("der-export");
-    if (exp) exp.onclick = () => {
-      const { importe_le, par, ...sans } = C;
-      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(sans, null, 2)], { type: "application/json" }));
-      a.download = "der-contenu.json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    };
   }
   demarrer();
 })();
