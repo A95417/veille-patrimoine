@@ -21,6 +21,9 @@ window.init = (job, calage) => {
   SCENES = calage.scenes.map((c, i) => ({ i, type: job.scenes[i].type, p: job.scenes[i].p || {}, debut: c.debut, fin: c.fin, P: c.P, PF: c.PF }));
   SCENES.forEach((S) => { if (!GAB[S.type]) { ALERTES.add("gabarit inconnu : " + S.type); S.type = "grand_mot"; S.p = { texte: "" }; } });
   preparer();
+  // photos des scènes « photo » : préchargées pour être prêtes avant la première image filmée
+  document.querySelectorAll("img[data-photo]").forEach((i) => i.remove());
+  SCENES.forEach((S) => { if (S.type === "photo" && S.p.image_src) { const i = document.createElement("img"); i.src = S.p.image_src; i.dataset.photo = "1"; i.alt = ""; i.style.cssText = "position:absolute;width:1px;height:1px;opacity:0"; document.body.appendChild(i); } });
   const svg = document.getElementById("s");
   if (job.format === "4:5") { svg.setAttribute("height", "1350"); svg.setAttribute("viewBox", `0 ${COUPE_4_5} 1080 1350`); }
   else { svg.setAttribute("height", "1920"); svg.setAttribute("viewBox", "0 0 1080 1920"); }

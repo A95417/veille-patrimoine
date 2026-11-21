@@ -207,6 +207,27 @@
     .vv-focus select { font: inherit; font-weight: 400; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--bord-fort, #ccc); background: var(--carte); color: var(--texte); }
     .vv-choisi:has(.vv-focus) { flex-wrap: wrap; }
     .vv-relu { margin-bottom: 8px; font-size: .86rem; }
+    .vv-sources { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+    .vv-sources button { font: inherit; text-align: left; display: grid; gap: 2px; align-content: start; padding: 12px; border-radius: 14px; border: 1.5px solid var(--bord); background: var(--carte); color: var(--texte); cursor: pointer; transition: border-color .15s, background .15s; }
+    .vv-sources button:hover { border-color: var(--accent); }
+    .vv-sources button[aria-selected="true"] { border-color: var(--accent); background: var(--accent-doux); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+    .vv-src-ico { font-size: 1.3rem; } .vv-sources b { font-size: .9rem; line-height: 1.25; } .vv-sources small { font-size: .76rem; color: var(--doux); line-height: 1.3; }
+    @media (max-width: 900px) { .vv-sources { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .vv-sources { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .vv-sources button { flex: 0 0 62%; scroll-snap-align: start; } }
+    .vv-themes { max-height: 460px; }
+    .vv-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+    .vv-theme { font: inherit; text-align: left; display: grid; gap: 3px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--bord); background: var(--carte); color: var(--texte); cursor: pointer; }
+    .vv-theme:hover { border-color: var(--accent); } .vv-theme[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-doux); }
+    .vv-theme b { font-size: .92rem; line-height: 1.25; } .vv-theme small { font-size: .78rem; color: var(--doux); line-height: 1.3; }
+    .vv-action { flex-wrap: wrap; }
+    .vv-recap { flex-basis: 100%; margin: 0 0 4px; font-size: .88rem; color: var(--doux); text-align: center; } .vv-recap b { color: var(--texte); }
+    .vv-recap:empty { display: none; }
+    .vs-photo { display: flex; gap: 10px; align-items: center; margin-top: 8px; padding: 8px; border-radius: 12px; background: var(--fond); border: 1px solid var(--bord); flex-wrap: wrap; }
+    .vs-photo img { width: 64px; height: 84px; object-fit: cover; border-radius: 8px; flex: none; }
+    .vs-photo > div { display: grid; gap: 4px; flex: 1; min-width: 200px; font-size: .84rem; }
+    .vs-photo small { color: var(--doux); }
+    .vs-photo-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .vs-photo-actions input { font: inherit; font-size: .82rem; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--bord-fort, #ccc); background: var(--carte); color: var(--texte); min-width: 0; flex: 1 1 160px; }
     .vv-relu summary { cursor: pointer; color: var(--ok, #1f8a4c); font-weight: 600; }
     .vv-relu ul { margin: 6px 0 0 18px; padding: 0; }
     .vv-angles .puce.vv-conseille { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
@@ -522,6 +543,7 @@
     .vs-style i { display: block; height: 34px; border-radius: 8px; margin-bottom: 4px; }
     .vs-style b { font-size: .86rem; } .vs-style small { font-size: .74rem; color: var(--doux); line-height: 1.2; }
     .vs-style[aria-pressed="true"], .vs-carte[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+    .s-bordeaux i { background: radial-gradient(circle at 50% 40%, #6E0E22, #3A0611); }
     .s-cercles i { background: radial-gradient(circle at 50% 60%, #7A0F24 30%, #3E0611 31%, #3E0611 45%, #5a0b1b 46%); }
     .s-clair i { background: #F7F1EE; border: 2px solid #6E0B1F55; }
     .s-horizon i { background: radial-gradient(circle at 50% 110%, #E2B45A 0 22%, transparent 23%), linear-gradient(#2E0510, #C2604A); }

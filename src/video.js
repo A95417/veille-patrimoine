@@ -80,9 +80,13 @@ const P = {   // nom → [type, longueur max ou valeurs permises]
   mythe: ["txt", 60], realite: ["txt", 60], questions: ["bool"], haut: ["txt", 30], gros: ["txt", 12],
   gauche_nom: ["txt", 22], droite_nom: ["txt", 22], note: ["txt", 60],
   sous_titre: ["txt", 50], etapes: ["etapes"], entetes: ["liste", 24, 3], lignes: ["lignes"],
+  barres: ["barres"], items: ["items"], citation: ["txt", 170], auteur: ["txt", 44], reponse: ["txt", 130], recherche: ["txt", 40],
+  image: ["image"], image_src: ["url"], image_credit: ["txt", 40],
 };
+export const PICTOS = ["maison", "piece", "calendrier", "bouclier", "cadeau", "famille", "graphique", "cle", "document", "balance", "sablier", "cible", "tirelire", "entreprise", "retraite", "pourcent", "coeur", "horloge", "valise", "ampoule"];
 // Limites propres à certains gabarits (mêmes noms de paramètres, autres longueurs).
-const P_TYPE = { recap: { points: ["liste", 60, 5], titre: ["txt", 22] }, chapitre: { titre: ["txt", 40] }, frise: { titre: ["txt", 30] }, tableau: { titre: ["txt", 30] } };
+const P_TYPE = { recap: { points: ["liste", 60, 5], titre: ["txt", 22] }, chapitre: { titre: ["txt", 40] }, frise: { titre: ["txt", 30] }, tableau: { titre: ["txt", 30] },
+  barres: { titre: ["txt", 34] }, icones: { titre: ["txt", 34] }, questions: { question: ["txt", 90] }, photo: { legende: ["txt", 60] } };
 const GABARITS = {
   accroche: "ouverture choc (2 premières secondes) : personnage sur son téléphone + gros chiffre ou mot qui claque. p : personnage, decor (facultatif), bandeau, gros_texte, petit_texte",
   personnage: "personnage en situation réelle. p : personnage, humeur, decor (lieu adapté à la situation), nom, sous_nom (ex. « 25 ans »), notification_titre + notification_texte (virement, rappel…), bocal (true = épargne qui se remplit), puces (2 max), bulle (pensée courte)",
@@ -100,6 +104,11 @@ const GABARITS = {
   tableau: "un tableau très simple (UNIQUEMENT des informations de la SOURCE). Texte lu : une phrase d'introduction, puis exactement une phrase par ligne. p : titre, entetes (2 ou 3 en-têtes de 24 car.), lignes (2 à 4 lignes de cellules de 30 car.)",
   recap: "récapitulatif « ce qu'il faut retenir » : 3 à 5 points cochés. Texte lu : « Ce qu'il faut retenir. » puis exactement une phrase par point. p : titre (22 car.), points (60 car. chacun)",
   chapitre: "ouverture d'une partie (vidéos d'au moins 90 s seulement). Texte lu : le titre de la partie puis une courte phrase qui annonce la suite. p : titre (40 car.), sous_titre (50 car.)",
+  barres: "graphique en barres de 2 à 5 valeurs comparables tirées de la SOURCE ou des DONNÉES (jamais inventées). Texte lu : une phrase d'introduction, puis une phrase par barre. p : titre (34 car.), barres [{libelle (30 car.), valeur (14 car., ex. « 37 680 € »)}], source",
+  icones: `grille de 2 à 6 pictogrammes avec un libellé court (idées, avantages, cas, étapes sans ordre). Texte lu : une phrase d'introduction puis une phrase par élément. p : titre (34 car.), items [{icone (parmi : ${PICTOS.join(", ")}), libelle (36 car.)}]`,
+  citation: "citation EXACTE d'un texte officiel présent dans la SOURCE (mots identiques, entre 8 et 25 mots), avec sa référence. Texte lu : une courte introduction puis la citation. p : citation (170 car.), auteur (référence courte, ex. « Code général des impôts »)",
+  questions: "une question que se pose le public, puis sa réponse claire. Texte lu : la question (1re phrase), puis la réponse. p : question (90 car.), reponse (130 car.)",
+  photo: "photo plein écran libre de droits (le site la cherche lui-même) pour illustrer une situation concrète ; aucun visage, aucune marque. Texte lu : 1 ou 2 phrases. p : recherche (2 à 4 mots-clés EN ANGLAIS décrivant un objet ou un lieu, ex. « house keys table », « calendar desk », « coins jar »), legende (60 car.)",
 };
 
 function nettoyerP(p, type) {
@@ -114,6 +123,11 @@ function nettoyerP(p, type) {
     else if (r[0] === "colonnes" && Array.isArray(v)) o[k] = v.slice(0, 3).map((c) => ({ libelle: court(c?.libelle, 12), niveau: Math.max(.1, Math.min(.95, Number(c?.niveau) || .5)) }));
     else if (r[0] === "etapes" && Array.isArray(v)) o[k] = v.slice(0, 4).map((e) => ({ titre: court(e?.titre, 26), texte: court(e?.texte, 60) })).filter((e) => e.titre);
     else if (r[0] === "lignes" && Array.isArray(v)) o[k] = v.slice(0, 4).map((l) => (Array.isArray(l) ? l : [l]).slice(0, 3).map((c) => court(c, 30)));
+    else if (r[0] === "barres" && Array.isArray(v)) o[k] = v.slice(0, 5).map((b) => ({ libelle: court(b?.libelle, 30), valeur: court(b?.valeur, 14) })).filter((b) => b.libelle && /\d/.test(b.valeur));
+    else if (r[0] === "image" && v && typeof v === "object" && /^[\w-]{8,64}$/.test(String(v.id || "")) && /^https:\/\//.test(String(v.url || "")))
+      o[k] = { id: String(v.id), url: court(v.url, 500), page: /^https:\/\//.test(String(v.page || "")) ? court(v.page, 500) : "", licence: court(v.licence, 20), auteur: court(v.auteur, 60), fournisseur: court(v.fournisseur, 40), titre: court(v.titre, 100) };
+    else if (r[0] === "url" && /^https:\/\/api\.openverse\.org\/v1\/images\/[\w-]+\/thumb\/$/.test(String(v))) o[k] = String(v);
+    else if (r[0] === "items" && Array.isArray(v)) o[k] = v.slice(0, 6).map((e) => ({ icone: PICTOS.includes(e?.icone) ? e.icone : "ampoule", libelle: court(e?.libelle, 36) })).filter((e) => e.libelle);
   }
   // le tableau du moteur lit « colonnes » (en-têtes) : renommé ici pour ne pas croiser les bocaux
   if (type === "tableau" && o.entetes) { o.colonnes = o.entetes; delete o.entetes; }
@@ -163,10 +177,11 @@ function chiffresAVerifier(scenes, permis, post = "") {
   scenes.forEach((s, i) => {
     if (s.type === "fin") return;
     verifier(s.texte, i + 1);
-    for (const v of Object.values(s.p || {})) {
+    for (const [k, v] of Object.entries(s.p || {})) {
+      if (["image", "image_src", "image_credit", "recherche", "numero", "total"].includes(k)) continue;   // données techniques, pas des chiffres affichés
       if (typeof v === "string") verifier(v, i + 1);
       else if (typeof v === "number") { if (!ok({ v, unite: true })) r.push({ scene: i + 1, chiffre: v, texte: String(v) }); }
-      else if (Array.isArray(v)) v.forEach((x) => verifier(typeof x === "string" ? x : Array.isArray(x) ? x.join(" ") : [x?.libelle, x?.titre, x?.texte].filter(Boolean).join(" "), i + 1));
+      else if (Array.isArray(v)) v.forEach((x) => verifier(typeof x === "string" ? x : Array.isArray(x) ? x.join(" ") : [x?.libelle, x?.titre, x?.texte, x?.valeur].filter(Boolean).join(" "), i + 1));
     }
   });
   if (post) verifier(post.replace(/#\S+/g, ""), "texte de publication");
@@ -180,11 +195,13 @@ const SCHEMA = {
     scenes: { type: "ARRAY", items: { type: "OBJECT", properties: {
       type: { type: "STRING", enum: Object.keys(GABARITS) },
       texte: { type: "STRING" },
-      p: { type: "OBJECT", properties: Object.fromEntries(Object.entries(P).map(([k, r]) => [k,
+      p: { type: "OBJECT", properties: Object.fromEntries(Object.entries(P).filter(([, r]) => !["image", "url"].includes(r[0]) && r !== P.image_credit).map(([k, r]) => [k,
         r[0] === "bool" ? { type: "BOOLEAN" } : r[0] === "num" ? { type: "NUMBER" } : r[0] === "liste" ? { type: "ARRAY", items: { type: "STRING" } }
           : r[0] === "colonnes" ? { type: "ARRAY", items: { type: "OBJECT", properties: { libelle: { type: "STRING" }, niveau: { type: "NUMBER" } } } }
             : r[0] === "etapes" ? { type: "ARRAY", items: { type: "OBJECT", properties: { titre: { type: "STRING" }, texte: { type: "STRING" } } } }
             : r[0] === "lignes" ? { type: "ARRAY", items: { type: "ARRAY", items: { type: "STRING" } } }
+            : r[0] === "barres" ? { type: "ARRAY", items: { type: "OBJECT", properties: { libelle: { type: "STRING" }, valeur: { type: "STRING" } } } }
+            : r[0] === "items" ? { type: "ARRAY", items: { type: "OBJECT", properties: { icone: { type: "STRING", enum: PICTOS }, libelle: { type: "STRING" } } } }
             : r[0] === "enum" ? { type: "STRING", enum: r[1] } : { type: "STRING" }])) },
     }, required: ["type", "texte"] } },
     texte_post: { type: "STRING" },
@@ -193,12 +210,10 @@ const SCHEMA = {
   required: ["titre", "scenes", "texte_post"],
 };
 
-// ---------------------------------------------------------------- Carte de fin : 6 mises en scène, phrase d'appel adaptée au sujet
-// Le logo, l'offre « Premier échange offert · sans engagement », les coordonnées et les mentions restent sur toutes les fins.
-export const FINS = {
-  cercles: "Cercles (classique)", clair: "Clair et sobre", horizon: "Horizon (long terme)", courbe: "Courbe qui monte", maison: "Maison (immobilier)", bandes: "Dynamique (actualité)",
-};
-const THEMES_FIN = { immobilier: "maison", epargne: "courbe", placements: "courbe", marches: "courbe", retraite: "horizon", transmission: "horizon", famille: "horizon", fiscalite: "clair", entreprise: "bandes", actualite: "bandes", general: "cercles" };
+// ---------------------------------------------------------------- Carte de fin sobre : fond uni bordeaux ou clair, logo du cabinet
+// Le logo, les coordonnées et les mentions restent sur toutes les fins (l'offre et la question seulement sur la carte complète).
+export const FINS = { bordeaux: "Bordeaux", clair: "Clair" };
+const THEMES_FIN = Object.fromEntries(["immobilier", "epargne", "placements", "marches", "retraite", "transmission", "famille", "fiscalite", "entreprise", "actualite", "general"].map((k) => [k, "bordeaux"]));
 export const QUESTION_CLASSIQUE = "Et si on prenait le temps d'en parler ?";
 const OFFRE = "Premier échange offert · sans engagement";
 // Phrase d'appel : courte, sans chiffre (rien d'inventé), terminée par « ? » ou « . ».
@@ -215,7 +230,7 @@ export const RYTHMES = { dynamique: "Dynamique", pose: "Posé" };
 function fin(cabinet, choix = {}) {
   const nom = court(cabinet || "BSC Patrimoine", 30);
   const parle = nom === nom.toUpperCase() ? nom.split(" ").map((m, i) => (i === 0 && m.length <= 4 ? m : m.charAt(0) + m.slice(1).toLowerCase())).join(" ") : nom;
-  const question = questionPropre(choix.question), style = FINS[choix.style] ? choix.style : "cercles";
+  const question = questionPropre(choix.question), style = FINS[choix.style] ? choix.style : "bordeaux";
   const mode = MODES_FIN[choix.mode] ? choix.mode : "complete", rythme = RYTHMES[choix.rythme] ? choix.rythme : "dynamique";
   const classique = question === QUESTION_CLASSIQUE;
   const texte = mode === "complete" ? `${question}${classique ? "" : " Prenons le temps d'en parler."} ${parle}. Premier échange offert, sans engagement.` : `${parle}.`;
@@ -384,6 +399,50 @@ async function caler(env, db, scenes, duree, finScene, contexte, sim) {
 // Un « sujet libre » de plus de quelques phrases est traité comme un texte à reformuler (sinon, c'est un simple sujet).
 const estTexte = (t) => { const x = String(t || "").trim(); return x.length >= 280 || (x.match(/[.!?…](\s|$)/g) || []).length >= 3; };
 
+// ---------------------------------------------------------------- Photos libres de droits (Openverse : domaine public et CC0 uniquement)
+// Aucun visage ni personne, aucune marque ni logo : les résultats douteux sont écartés ; l'utilisateur peut changer ou retirer la photo.
+const EXCLUS_IMAGE = /\b(person|people|man|men|woman|women|girl|boy|child|children|kid|baby|portrait|face|selfie|crowd|family|couple|logo|brand|trademark|advert|nude|celebrity|politician|president|minister|flag)\b/i;
+async function chercherImages(recherche, format) {
+  const q = court(String(recherche || "").replace(/[^\p{L}\d ]/gu, " ").replace(/\s+/g, " ").trim(), 60);
+  if (!q) return [];
+  const u = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&license=cc0,pdm&category=photograph&mature=false&page_size=30${format === "9:16" ? "&aspect_ratio=tall" : ""}`;
+  try {
+    const r = await fetch(u, { headers: { "User-Agent": "VeillePatrimoine/1.0 (video pedagogique)" }, signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return [];
+    const j = await r.json();
+    return (j.results || []).filter((x) => ["cc0", "pdm"].includes(String(x.license).toLowerCase()) && /^https:\/\//.test(x.url || "")
+      && (Number(x.width) >= 800 || Number(x.height) >= 800)
+      && !EXCLUS_IMAGE.test([x.title, ...(x.tags || []).map((t) => t.name)].join(" ")))
+      .map((x) => ({ id: String(x.id), url: x.url, page: x.foreign_landing_url || "", licence: String(x.license).toUpperCase(), auteur: x.creator || "", fournisseur: x.source || x.provider || "", titre: x.title || "" }));
+  } catch { return []; }
+}
+const vignetteImage = (id) => `https://api.openverse.org/v1/images/${id}/thumb/`;
+// Choisit une photo pour chaque scène « photo » (en évitant celles des dernières vidéos) ; sans résultat, la scène garde un fond sobre.
+async function illustrer(db, scenes, format) {
+  const recents = (await lireEtat(db, "video_recents"))?.valeur?.liste || [];
+  const dejaVues = new Set(recents.flatMap((r) => r.images || []));
+  for (const sc of scenes) {
+    if (sc.type !== "photo" || sc.p.image) continue;
+    const l = await chercherImages(sc.p.recherche, format);
+    const choix = l.find((x) => !dejaVues.has(x.id)) || l[0];
+    if (choix) { sc.p.image = choix; sc.p.image_src = vignetteImage(choix.id); sc.p.image_credit = court(choix.fournisseur, 40); dejaVues.add(choix.id); }
+  }
+  return scenes;
+}
+// Mémoire des dernières vidéos (gabarits, personnages, décors, photos) : la suivante varie.
+async function memoriser(db, scenes) {
+  const l = (await lireEtat(db, "video_recents"))?.valeur?.liste || [];
+  const r = { types: scenes.map((x) => x.type).filter((t) => t !== "fin"), persos: [...new Set(scenes.flatMap((x) => [x.p?.personnage, x.p?.personnage_gauche, x.p?.personnage_droite]).filter(Boolean))],
+    decors: [...new Set(scenes.map((x) => x.p?.decor).filter(Boolean))], images: scenes.map((x) => x.p?.image?.id).filter(Boolean) };
+  await ecrireEtat(db, "video_recents", { liste: [...l, r].slice(-6) });
+}
+async function consigneVariete(db) {
+  const l = (await lireEtat(db, "video_recents"))?.valeur?.liste || [];
+  if (!l.length) return "";
+  const top = (cle, n) => { const c = {}; l.forEach((r) => (r[cle] || []).forEach((x) => { c[x] = (c[x] || 0) + 1; })); return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k); };
+  return `- VARIÉTÉ (indispensable) : les dernières vidéos ont surtout utilisé les gabarits ${top("types", 5).join(", ")}, les personnages ${top("persos", 3).join(", ") || "—"} et les décors ${top("decors", 3).join(", ") || "—"}. Cette fois, privilégie d'AUTRES gabarits (barres, icones, citation, questions, photo, frise, tableau…), d'autres personnages et d'autres décors, si le sujet s'y prête. Pas plus de 2 scènes « personnage ».`;
+}
+
 // Seconde passe « rédacteur en chef » : vérifie et améliore le scénario sans changer sa longueur.
 const SCHEMA_RELU = { type: "OBJECT", properties: { scenes: SCHEMA.properties.scenes, corrections: { type: "ARRAY", items: { type: "STRING" } } }, required: ["scenes"] };
 async function relire(env, db, scenes, demande, sim, duree, angleNom) {
@@ -422,7 +481,7 @@ async function proposerScenario(env, db, d, coord) {
   const src = await sourceDe(db, d, source), data = src.data;
   const titreSujet = src.ref?.titre || sujetCourt || (sim ? "Commencer tôt ou attendre : le temps est le meilleur allié" : "");
   // budget de mots calculé avec une fin type (question personnalisée)
-  const choixFin = { mode: d.fin_mode, rythme: d.rythme }, plateforme = plateformeDe(d.plateforme, d.format);
+  const choixFin = { mode: d.fin_mode, rythme: d.rythme }, plateforme = plateformeDe(d.plateforme, d.format), variete = await consigneVariete(db);
   const finType = fin(coord.cabinet, { question: "Votre épargne travaille-t-elle vraiment pour vous ?", ...choixFin });
   const pose = finType.p.rythme === "pose", focus = source === "fiche" ? court(d.fiche?.focus, 120) : "";
   const mots = cibleMots(duree, finType), [nA, nB] = SCENES_CONSEIL[duree];
@@ -461,6 +520,8 @@ RÈGLES STRICTES :
 - Décors disponibles (adapte le lieu à la situation et varie-les d'une scène à l'autre) : ${LIEUX.join(", ")}.
   Exemples : immobilier → maison_vente ; vacances, projets → mer ; budget du quotidien → cuisine ; rendez-vous → banque ou bureau ; le soir, l'inquiétude → chambre_soir.
 - Les paramètres « p » sont des textes très courts affichés à l'écran : ne pas répéter mot pour mot la phrase lue.
+- Utilise au moins une scène « photo » (photo libre de droits d'un objet ou d'un lieu) quand une image concrète aide à comprendre.
+${variete}
 GABARITS :
 ${LISTE_GABARITS()}
 Termine par :
@@ -476,14 +537,15 @@ Termine par :
   if (!r.donnees) throw new Error(r.erreur || "L'IA n'a pas répondu.");
   let scenes = nettoyerScenes(r.donnees.scenes, sim);
   if (scenes.length < 3) throw new Error("Le scénario proposé est incomplet. Réessayez.");
-  const finScene = fin(coord.cabinet, { question: r.donnees.fin_question, style: THEMES_FIN[r.donnees.fin_theme] || "cercles", ...choixFin });
+  const finScene = fin(coord.cabinet, { question: r.donnees.fin_question, style: "bordeaux", ...choixFin });
   // Relecture par un « rédacteur en chef » : sources, accroche, enchaînements, structure (le scénario d'origine est gardé si elle échoue).
   const relu = await relire(env, db, scenes, demande, sim, duree, ANGLES[angle][0]).catch(() => null);
   if (relu) scenes = relu.scenes;
   if (texteColle) src.ref.titre = court(r.donnees.titre, 100) || "Texte collé";
   const contexte = court(demande, 7000);
   const calage = await caler(env, db, scenes, duree, finScene, contexte, sim);
-  scenes = [...calage.scenes, finScene];
+  scenes = [...await illustrer(db, calage.scenes, FORMATS.includes(d.format) ? d.format : "9:16"), finScene];
+  await memoriser(db, scenes);
   const permis = autorises([...(sim ? [sim.mensuel, sim.taux, sim.age1, sim.age2, sim.age_fin, sim.attente, sim.A.versements, sim.A.capital, sim.B.versements, sim.B.capital, sim.ecart,
       sim.A.capital - sim.A.versements, sim.B.capital - sim.B.versements, sim.A.versements - sim.B.versements, ...[.5, 1.5, 2, 3].map((k) => sim.mensuel * k)] : []),
     ...(data.length || src.texte ? [new Date().getFullYear(), new Date().getFullYear() + 1] : []),
@@ -763,6 +825,28 @@ RÈGLES STRICTES :
     if (!r.donnees?.texte) return erreur(r.erreur || "L'IA n'a pas répondu. Réessayez.", 502);
     const p = nettoyerP(r.donnees.p, s.type);
     scenes[i] = { type: s.type, texte: court(r.donnees.texte, 400), p: Object.keys(p).length ? { ...s.p, ...p } : s.p };
+    await enregistrerScenes(db, v, scenes, null, iso);
+    return json({ video: sortie(await db.prepare(SELECT_COMPLET).bind(id).first(), true) });
+  }
+
+  // Photo d'une scène : autre photo, nouvelle recherche, ou retrait (la scène garde alors un fond sobre).
+  if (action === "image" && methode === "POST") {
+    if (!proprio(v)) return erreur("Seul l'auteur peut modifier ce scénario.", 403);
+    if (!["brouillon", "erreur", "annule"].includes(v.statut)) return erreur("Cette vidéo est déjà lancée.", 409);
+    const d = await lire(), scenes = JSON.parse(v.storyboard || "[]"), sc = scenes[Number(d.i)];
+    if (!sc || sc.type !== "photo") return erreur("Scène introuvable.");
+    if (d.retirer) { delete sc.p.image; delete sc.p.image_src; delete sc.p.image_credit; }
+    else {
+      if (d.recherche) {
+        const perso = donneesPerso(d.recherche);
+        if (perso) return erreur(`La recherche semble contenir ${perso}.`);
+        sc.p.recherche = court(d.recherche, 40);
+      }
+      const l = await chercherImages(sc.p.recherche, v.format), i = l.findIndex((x) => x.id === sc.p.image?.id);
+      const choix = d.recherche ? l[0] : l[(i + 1) % Math.max(1, l.length)];
+      if (!choix || choix.id === sc.p.image?.id) return erreur("Aucune autre photo libre de droits trouvée pour cette recherche : essayez d'autres mots-clés (en anglais, ex. « house keys »).");
+      sc.p.image = choix; sc.p.image_src = vignetteImage(choix.id); sc.p.image_credit = court(choix.fournisseur, 40);
+    }
     await enregistrerScenes(db, v, scenes, null, iso);
     return json({ video: sortie(await db.prepare(SELECT_COMPLET).bind(id).first(), true) });
   }

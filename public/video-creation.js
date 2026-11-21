@@ -32,7 +32,7 @@
   const RYTHMES = { dynamique: ["Dynamique", "enchaînements rapides"], pose: ["Posé", "plus de respiration, une idée par scène"] };
   const MODES_FIN = { complete: ["Carte du cabinet complète", "question, offre et coordonnées"], courte: ["Fin courte", "logo et coordonnées, environ 2 s"], sans: ["Sans appel commercial", "logo et mentions obligatoires seulement"] };
   const ANGLE_DEFAUT = { fiche: "expliquer", actu: "expliquer", echeance: "reflexes", chiffre: "chiffre", simulation: "deux_profils", libre: "expliquer" };
-  const NOMS_SOURCES = { fiche: "Fiche Apprendre", actu: "Actualité", echeance: "Échéance fiscale", chiffre: "Chiffre de la semaine", simulation: "Commencer tôt ou attendre", libre: "Sujet libre",
+  const NOMS_SOURCES = { fiche: "Thème du patrimoine", actu: "Actualité", echeance: "Échéance fiscale", chiffre: "Chiffre de la semaine", simulation: "Commencer tôt ou attendre", libre: "Sujet libre",
     deux_profils: "Deux profils", chiffre_semaine: "Chiffre de la semaine", mythe: "Mythe ou réalité" };
   const sansAccent = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const LES_FICHES = () => (typeof FICHES !== "undefined" ? FICHES : []);
@@ -56,7 +56,7 @@
     const l = [f.titre + (f.sousTitre ? " — " + f.sousTitre : ""), f.enUnePhrase || "", ...(un ? [un[1]] : []), ...P.filter((x) => x !== un).map(([, t]) => t)];
     return l.join("\n").slice(0, 8000);
   }
-  const NOMS_TYPES = { accroche: "Accroche", personnage: "Personnage", marche: "Marchés", calendrier: "Le temps passe", comparaison: "Comparaison chiffrée", egalite: "Même effort", grand_mot: "Mot géant", bocaux: "Chaque situation est unique", chiffre: "Chiffre clé", liste: "Liste", mythe: "Idée reçue", sablier: "Sablier", frise: "Frise (étapes)", tableau: "Tableau", recap: "Récapitulatif", chapitre: "Nouvelle partie", fin: "Carte de fin" };
+  const NOMS_TYPES = { accroche: "Accroche", personnage: "Personnage", marche: "Marchés", calendrier: "Le temps passe", comparaison: "Comparaison chiffrée", egalite: "Même effort", grand_mot: "Mot géant", bocaux: "Chaque situation est unique", chiffre: "Chiffre clé", liste: "Liste", mythe: "Idée reçue", sablier: "Sablier", frise: "Frise (étapes)", tableau: "Tableau", recap: "Récapitulatif", chapitre: "Nouvelle partie", barres: "Graphique en barres", icones: "Pictogrammes", citation: "Citation officielle", questions: "Question-réponse", photo: "Photo", fin: "Carte de fin" };
   // Paramètres affichés à l'écran modifiables, par gabarit (les autres restent tels que proposés).
   const CHAMPS = {
     accroche: [["bandeau", "Bandeau"], ["gros_texte", "Gros texte"], ["petit_texte", "Petite mention"]],
@@ -70,6 +70,8 @@
     chiffre: [["bandeau", "Bandeau"], ["valeur", "Valeur"], ["libelle", "Libellé"], ["source", "Source"]],
     liste: [["titre", "Titre"]],
     frise: [["titre", "Titre"]], tableau: [["titre", "Titre"]], recap: [["titre", "Titre"]], chapitre: [["titre", "Titre de la partie"], ["sous_titre", "Sous-titre"]],
+    barres: [["titre", "Titre"], ["source", "Source"]], icones: [["titre", "Titre"]], citation: [["citation", "Citation exacte"], ["auteur", "Référence"]],
+    questions: [["question", "Question"], ["reponse", "Réponse"]], photo: [["legende", "Légende"]],
     mythe: [["mythe", "Idée reçue"], ["realite", "Réalité"]],
     sablier: [["haut", "Texte du haut"], ["gros", "Gros message"]],
   };
@@ -104,7 +106,9 @@
 
   // ---------------------------------------------------------------- squelette : un parcours en 3 étapes
   const ANGLES_DESC = Object.fromEntries(FAMILLES.flatMap(([, l]) => l.map(([k, , d, ex]) => [k, `${d} <span class="vv-exemple">Exemple : ${ex}</span>`])));
-  const ONGLETS_SUJET = [["idees", "💡 Idées du moment"], ["fiches", "🎓 Fiches Apprendre"], ["actus", "📰 Actualités"], ["chiffres", "📅 Échéances et chiffres"], ["autre", "✏️ Autre"]];
+  // Sources de sujet : [clé, icône, nom, description]
+  const ONGLETS_SUJET = [["idees", "💡", "Idées du moment", "Proposées d'après l'actualité"], ["fiches", "📚", "Thèmes du patrimoine", "PER, donation, SCPI… contenu vérifié"],
+    ["actus", "📰", "Actualités", "Les faits marquants résumés"], ["chiffres", "📅", "Échéances et chiffres", "Calendrier fiscal, taux BCE"], ["autre", "✏️", "Mon sujet", "Un sujet, un texte ou une simulation"]];
 
   function monter() {
     $v("vue-video").innerHTML = `
@@ -119,7 +123,7 @@
           <div class="vv-etape-corps">
             <div class="vv-choisi" id="vv-choisi" hidden></div>
             <div id="vv-choix-sujet">
-              <div class="vv-onglets" role="tablist" aria-label="Type de sujet">${ONGLETS_SUJET.map(([k, l]) => `<button type="button" role="tab" id="vv-tab-${k}" aria-controls="vv-panneau" data-tab="${k}">${l}</button>`).join("")}</div>
+              <div class="vv-sources" role="tablist" aria-label="Source du sujet">${ONGLETS_SUJET.map(([k, ico, nom, desc]) => `<button type="button" role="tab" id="vv-tab-${k}" aria-controls="vv-panneau" data-tab="${k}"><span class="vv-src-ico" aria-hidden="true">${ico}</span><b>${nom}</b><small>${desc}</small></button>`).join("")}</div>
               <div class="vv-panneau" id="vv-panneau" role="tabpanel"></div>
             </div>
             <div id="vv-sim" class="vv-sim" hidden></div>
@@ -164,6 +168,7 @@
         </div>
 
         <div class="vv-action">
+          <p class="vv-recap" id="vv-recap" aria-live="polite"></p>
           <button type="button" class="bouton gros-bouton" id="vv-proposer">✨ Proposer un scénario</button>
           <span class="doux petit" id="vv-quota"></span>
         </div>
@@ -176,7 +181,7 @@
       </section>`;
     document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { R.onglet = b.dataset.tab; R.cherche = ""; afficherPanneau(); });
     // flèches gauche/droite entre les onglets (clavier)
-    $v("vv-choix-sujet").querySelector(".vv-onglets").onkeydown = (e) => {
+    $v("vv-choix-sujet").querySelector(".vv-sources").onkeydown = (e) => {
       if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
       const l = ONGLETS_SUJET.map(([k]) => k), i = (l.indexOf(R.onglet) + (e.key === "ArrowRight" ? 1 : l.length - 1)) % l.length;
       R.onglet = l[i]; R.cherche = ""; afficherPanneau(); $v("vv-tab-" + l[i]).focus();
@@ -209,7 +214,7 @@
       audio = new Audio(`/voix/${b.dataset.ecoute.toLowerCase()}.m4a`); audio.play().catch(() => notifier("Lecture impossible sur cet appareil.", true));
     });
     majSimulation();
-    majCompteurs();
+    majCompteurs(); majRecap();
   }
 
   // Réglages de la simulation « commencer tôt ou attendre » (seulement si ce sujet est choisi).
@@ -267,13 +272,13 @@
       const idees = sources?.idees || [];
       h = chargement() || (idees.length ? `<div class="vv-idees">${idees.map((i, k) => `<button type="button" class="vv-idee" data-idee="${k}"><strong>${echapper(i.titre)}</strong><span class="vv-tag">${ANGLES_LIB[i.angle] || ANGLES_LIB.expliquer}</span></button>`).join("")}</div>
         <p class="doux petit vv-note">${sources.simple ? "Les plus grosses actualités du moment (idées de l'IA indisponibles pour l'instant)." : "Proposées par l'IA à partir des grosses actualités du site, mises à jour toutes les 4 heures."}</p>`
-        : vide("Pas d'actualité marquante pour l'instant : choisissez une fiche Apprendre ou un autre sujet."));
+        : vide("Pas d'actualité marquante pour l'instant : choisissez un thème du patrimoine ou un autre sujet."));
     } else if (R.onglet === "fiches") {
       const q = sansAccent(R.cherche).trim().split(/\s+/).filter(Boolean);
       const ok = (f) => q.every((m) => sansAccent(`${f.titre} ${f.sousTitre || ""} ${THEMES[f.theme] || ""} ${f.recherche || ""}`).includes(m));
       const groupes = Object.entries(THEMES).map(([t, nom]) => [nom, LES_FICHES().filter((f) => f.theme === t && ok(f))]).filter(([, l]) => l.length);
-      h = `<input type="search" class="vv-cherche" id="vv-cherche" placeholder="🔍 Rechercher une fiche : PER, donation, SCPI…" aria-label="Rechercher une fiche" autocomplete="off" value="${echapper(R.cherche)}">
-        <div class="vv-liste">${groupes.length ? groupes.map(([nom, l]) => `<div class="vv-groupe"><span class="vv-groupe-nom">${nom}</span>${l.map((f) => ligne(`fiche:${f.id}`, f.titre, f.sousTitre)).join("")}</div>`).join("") : vide("Aucune fiche ne correspond.")}</div>`;
+      h = `<input type="search" class="vv-cherche" id="vv-cherche" placeholder="🔍 Rechercher un thème : PER, donation, SCPI…" aria-label="Rechercher un thème" autocomplete="off" value="${echapper(R.cherche)}">
+        <div class="vv-liste vv-themes">${groupes.length ? groupes.map(([nom, l]) => `<div class="vv-groupe"><span class="vv-groupe-nom">${nom}</span><div class="vv-grille">${l.map((f) => `<button type="button" class="vv-theme" data-sujet="fiche:${echapper(f.id)}" aria-pressed="${`fiche:${f.id}` === R.sel}"><b>${echapper(f.titre)}</b><small>${echapper(f.sousTitre || "")}</small></button>`).join("")}</div></div>`).join("") : vide("Aucun thème ne correspond.")}</div>`;
     } else if (R.onglet === "actus") {
       const a = sources?.actus || [];
       h = chargement() || (a.length ? `<div class="vv-liste">${a.map((x) => ligne(`actu:${x.id}`, x.titre, [x.sources.join(", "), dateCourte(x.date)].filter(Boolean).join(" · "))).join("")}</div>` : vide("Aucune actualité importante ces derniers jours."));
@@ -304,7 +309,7 @@
   // Titre et source du sujet choisi (bandeau « ✓ Sujet »).
   function decrireSujet() {
     const [type, ref] = (R.sel || "").split(/:(.*)/s);
-    if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); return f && { ico: "🎓", titre: f.titre, source: `Fiche Apprendre vérifiée le ${f.verifie || "—"} : ses chiffres sont autorisés et elle sera citée.` }; }
+    if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); return f && { ico: "📚", titre: f.titre, source: `Thème du patrimoine · contenu vérifié le ${f.verifie || "—"} : ses chiffres sont autorisés et la source sera citée.` }; }
     if (type === "actu") { const a = sources?.actus?.find((x) => x.id === ref); return { ico: "📰", titre: a?.titre || R.titreIdee || "Actualité du moment", source: `Résumé du site (parties gratuites des articles)${a?.sources?.length ? " · source citée : " + a.sources.join(", ") : ""}.` }; }
     if (type === "echeance") { const e = sources?.echeances?.find((x) => x.ref === ref); return { ico: "📅", titre: e ? `${e.titre} (${dateCourte(e.date)})` : "Échéance fiscale", source: "Calendrier officiel (impots.gouv.fr, service-public.gouv.fr)." }; }
     if (type === "chiffre") return { ico: "📈", titre: ref || "Taux et inflation : vue d'ensemble", source: "Derniers chiffres publiés par la BCE (page Marchés)." };
@@ -336,7 +341,7 @@
       const parties = partiesFiche(f).map(([t]) => t);
       if (!parties.includes(R.focus)) R.focus = "";
       z.insertAdjacentHTML("beforeend", `<label class="vv-focus"><span>Point précis</span><select id="vv-focus"><option value="">Toute la fiche</option>${parties.map((t) => `<option ${t === R.focus ? "selected" : ""}>${echapper(t)}</option>`).join("")}</select><small class="doux">La vidéo s'adresse au public (« vous ») : rien de scolaire.</small></label>`);
-      $v("vv-focus").onchange = (e) => { R.focus = e.target.value; if (R.focus && !R.angleManuel) { R.angle = "decryptage"; majAngle(); } };
+      $v("vv-focus").onchange = (e) => { R.focus = e.target.value; if (R.focus && !R.angleManuel) R.angle = "decryptage"; majAngle(); };
     } else R.focus = "";
     $v("vv-changer").onclick = () => { $v("vv-choix-sujet").hidden = false; z.hidden = true; afficherPanneau(); $v("vv-tab-" + R.onglet).focus(); };
   }
@@ -348,11 +353,18 @@
       b.setAttribute("aria-pressed", on);
       b.classList.toggle("vv-conseille", !R.angleManuel && on);
     });
+    majRecap();
     $v("vv-angle-desc").innerHTML = `${ANGLES_DESC[R.angle] || ""}${!R.angleManuel ? ` <span class="vv-suggere">✨ ${R.angleIA ? "suggéré par l'IA" : "conseillé pour ce sujet"}</span>` : ""}`;
   }
 
   // Étapes 2 et 3 actives seulement une fois le sujet choisi ; bouton prêt quand tout est complet.
+  function majRecap() {
+    const z = $v("vv-recap"); if (!z) return;
+    const d = R.sel && decrireSujet();
+    z.innerHTML = d ? `<b>Votre vidéo :</b> ${echapper(d.titre)}${R.focus ? ` (${echapper(R.focus)})` : ""} · ${echapper(ANGLES_LIB[R.angle] || "")} · ${dureeLib(R.duree)} · ${PLATEFORMES[R.plateforme][0]} · rythme ${RYTHMES[R.rythme][0].toLowerCase()} · ${MODES_FIN[R.finMode][0].toLowerCase()}` : "";
+  }
   function majEtat() {
+    majRecap();
     const choisi = !!R.sel, libre = (R.sel || "").startsWith("libre");
     ["vv-e2", "vv-e3"].forEach((id) => { $v(id).classList.toggle("vv-attente", !choisi); $v(id).querySelector(".vv-etape-corps").hidden = !choisi; });
     $v("vv-e1").classList.toggle("vv-faite", choisi);
@@ -396,8 +408,8 @@
   }
 
   // ---------------------------------------------------------------- scénario : storyboard visuel, aperçu animé, réglages
-  const FINS_LIB = { cercles: "Cercles", clair: "Clair", horizon: "Horizon", courbe: "Courbe", maison: "Maison", bandes: "Dynamique" };
-  const FINS_DESC = { cercles: "classique, tous sujets", clair: "sobre, fiscalité", horizon: "retraite, transmission", courbe: "épargne, placements", maison: "immobilier", bandes: "actualité, entreprise" };
+  const FINS_LIB = { bordeaux: "Bordeaux", clair: "Clair" };
+  const FINS_DESC = { bordeaux: "fond uni, logo en valeur", clair: "fond clair, très sobre" };
   const AMB = { dynamique: ["Dynamique", "rythmée, TikTok et Reels"], calme: ["Calme", "douce, sujet sérieux"], inspirante: ["Inspirante", "lumineuse, projet de vie"] };
   const SOUS = { mot: ["Mot à mot", "le mot lu s'allume"], sobre: ["Sobre", "phrase blanche, sans fond"], clair: ["Encadré clair", "fond blanc, texte bordeaux"] };
   const CLASSIQUE = "Et si on prenait le temps d'en parler ?", OFFRE = "Premier échange offert · sans engagement";
@@ -418,7 +430,7 @@
   function finLocale() {
     const q = questionPropre(S.fin.question), cl = q === CLASSIQUE, mode = MODES_FIN[S.fin.mode] ? S.fin.mode : "complete";
     const texte = mode === "complete" ? `${q}${cl ? "" : " Prenons le temps d'en parler."} ${nomParle()}. Premier échange offert, sans engagement.` : `${nomParle()}.`;
-    return { type: "fin", texte, p: { question: q, offre: OFFRE, style: S.fin.style || "cercles", mode, rythme: S.fin.rythme === "pose" ? "pose" : "dynamique" } };
+    return { type: "fin", texte, p: { question: q, offre: OFFRE, style: FINS_LIB[S.fin.style] ? S.fin.style : "bordeaux", mode, rythme: S.fin.rythme === "pose" ? "pose" : "dynamique" } };
   }
   function configApercu() {
     const c = reglages?.coordonnees || {};
@@ -433,13 +445,17 @@
   function etatDepuis(v) {
     const sb = v.storyboard || [], f = sb.find((x) => x.type === "fin");
     return { v, scenes: sb.filter((x) => x.type !== "fin").map((x) => ({ ...x, p: { ...(x.p || {}) } })),
-      fin: { question: f?.p?.question || CLASSIQUE, style: f?.p?.style || "cercles", mode: f?.p?.mode || "complete", rythme: f?.p?.rythme || "dynamique" }, finIA: v.donnees?.fin_proposee || null,
+      fin: { question: f?.p?.question || CLASSIQUE, style: FINS_LIB[f?.p?.style] ? f.p.style : "bordeaux", mode: f?.p?.mode || "complete", rythme: f?.p?.rythme || "dynamique" }, finIA: v.donnees?.fin_proposee || null,
       reglages: { ...(v.reglages || { ambiance: "dynamique", sous_titres: "mot", deux_formats: false }) }, format: v.format || "9:16", voix: v.voix || "Sadachbia",
       duree: DUREES.some(([x]) => x === +v.duree_cible) ? +v.duree_cible : 45, ouverte: null };
   }
 
   function sceneHtml(s, i, n) {
-    const champs = (CHAMPS[s.type] || []).filter(([k]) => s.p?.[k] !== undefined || ["bandeau", "gros_texte", "texte", "valeur", "mythe", "realite", "titre", "gros"].includes(k));
+    const champs = (CHAMPS[s.type] || []).filter(([k]) => s.p?.[k] !== undefined || ["bandeau", "gros_texte", "texte", "valeur", "mythe", "realite", "titre", "gros", "legende", "question", "reponse", "citation"].includes(k));
+    const im = s.type === "photo" ? s.p?.image : null;
+    const photoHtml = s.type !== "photo" ? "" : `<div class="vs-photo">${im ? `<img src="${echapper(s.p.image_src || "")}" alt="" loading="lazy"><div><b>Photo libre de droits</b><small>${echapper(im.licence)} · ${echapper(im.fournisseur || "Openverse")}${im.page ? ` · <a href="${echapper(im.page)}" target="_blank" rel="noopener">voir la source</a>` : ""}</small>` : `<div><b>Aucune photo</b><small>La scène aura un fond sobre.</small>`}
+      <span class="vs-photo-actions">${im ? `<button type="button" class="vs-mini" data-photo-autre="${i}">↻ Autre photo</button><button type="button" class="vs-mini" data-photo-retirer="${i}">Retirer</button>` : ""}
+        <input data-photo-q="${i}" maxlength="40" value="${echapper(s.p?.recherche || "")}" placeholder="Mots-clés en anglais (ex. house keys)" aria-label="Recherche de photo, scène ${i + 1}"><button type="button" class="vs-mini" data-photo-chercher="${i}">Chercher</button></span></div></div>`;
     const choix = CHOIX[s.type] || [];
     return `<li class="vs-scene" data-i="${i}">
       <button type="button" class="vs-vign ${S.format === "4:5" ? "f45" : ""}" data-voir="${i}" aria-label="Voir la scène ${i + 1} dans l'aperçu"><span data-vign="${i}"></span><em>▶</em></button>
@@ -453,6 +469,7 @@
           </span></div>
         <label class="sr" for="vs-t${i}">Texte lu, scène ${i + 1}</label>
         <textarea id="vs-t${i}" data-texte="${i}" rows="2" maxlength="600">${echapper(s.texte)}</textarea>
+        ${photoHtml}
         <div class="vs-refaire" data-panneau="${i}" hidden>
           <input data-consigne="${i}" maxlength="200" placeholder="Facultatif : « plus court », « avec Michel », « plus percutant »…" aria-label="Demande pour réécrire la scène ${i + 1}">
           <button type="button" class="bouton" data-go="${i}">Réécrire</button>
@@ -478,7 +495,7 @@
         <div ${S.fin.mode === "complete" ? "" : "hidden"}><label class="vs-lib" for="vs-question">Phrase d'appel <span class="doux">(affichée et lue)</span></label>
         <input id="vs-question" maxlength="60" value="${echapper(S.fin.question)}" autocomplete="off">
         <div class="vs-sugg">${sugg.map((q) => `<button type="button" class="puce" data-q="${echapper(q)}" aria-pressed="${q === S.fin.question}">${q === CLASSIQUE ? "Classique : " : "✨ "}${echapper(q)}</button>`).join("")}</div>
-        <span class="vs-lib">Mise en scène</span>
+        <span class="vs-lib">Fond</span>
         <div class="vs-styles" role="group" aria-label="Mise en scène de la carte de fin">${Object.keys(FINS_LIB).map((k) => `<button type="button" class="vs-style s-${k}" data-style="${k}" aria-pressed="${k === S.fin.style}"><i aria-hidden="true"></i><b>${FINS_LIB[k]}</b><small>${FINS_DESC[k]}</small></button>`).join("")}</div>
         </div>
         <p class="doux petit vs-note">${S.fin.mode === "sans" ? "Seulement votre logo et les mentions obligatoires (risque de perte en capital, sources, exemple fictif)." : S.fin.mode === "courte" ? "Votre logo, vos coordonnées et les mentions obligatoires, sans phrase d'appel ni offre." : `Toujours présents : votre logo, « ${OFFRE} », les coordonnées et les mentions obligatoires.`}</p>
@@ -547,6 +564,11 @@
       const r = await appelApi(`/api/video/${S.v.id}/ajuster`, "POST", { duree: S.duree });
       recharger(r.video); notifier(`Scénario ajusté : ≈ ${r.apres} s (avant ≈ ${r.avant} s).`);
     } catch (e) { notifier(e.message, true); occupe(b, false); }
+  }
+  async function photo(b, i, opts) {
+    occupe(b, true, "…");
+    try { await sauver(); const r = await appelApi(`/api/video/${S.v.id}/image`, "POST", { i, ...opts }); recharger(r.video); notifier(opts.retirer ? "Photo retirée." : "Photo changée."); }
+    catch (e) { notifier(e.message, true); occupe(b, false); }
   }
   async function refaire(i) {
     const b = document.querySelector(`[data-go="${i}"]`); occupe(b, true, "Réécriture…");
@@ -647,6 +669,7 @@
       if (d.voir != null) { const i = +d.voir, cal = lect?.calage; if (lect && cal) { lect.lire(cal.scenes[i].debut, cal.scenes[i].fin); $v("vs-lecteur").scrollIntoView({ behavior: "smooth", block: "nearest" }); } return; }
       if (d.refaire != null) { const p = document.querySelector(`[data-panneau="${d.refaire}"]`); p.hidden = !p.hidden; if (!p.hidden) p.querySelector("input").focus(); return; }
       if (d.go != null) return refaire(+d.go);
+      if (d.photoAutre != null || d.photoRetirer != null || d.photoChercher != null) return photo(b, +(d.photoAutre ?? d.photoRetirer ?? d.photoChercher), d.photoRetirer != null ? { retirer: true } : d.photoChercher != null ? { recherche: document.querySelector(`[data-photo-q="${d.photoChercher}"]`).value.trim() } : {});
       if (d.q != null) { S.fin.question = d.q; $v("vs-question").value = d.q; document.querySelectorAll("[data-q]").forEach((x) => x.setAttribute("aria-pressed", x === b)); majDuree(); planifierApercu(true); return; }
       if (d.mode) { S.fin.mode = d.mode; rendreScenes(); return; }
       if (d.style) { S.fin.style = d.style; document.querySelectorAll("[data-style]").forEach((x) => x.setAttribute("aria-pressed", x === b)); planifierApercu(true); setTimeout(() => { const cal = lect?.calage; if (cal) lect.lire(cal.scenes[cal.scenes.length - 1].debut); }, 450); return; }

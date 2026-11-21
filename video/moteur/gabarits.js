@@ -320,73 +320,147 @@ GAB.sablier = {
   masqueSousTitres(S, t) { return !!S.p.gros && t >= ph(S, nbP(S) - 1); },
 };
 
-// 13) Carte de fin professionnelle (coordonnées du cabinet, mentions légales), en 6 mises en scène choisies selon le sujet.
+// ---------------------------------------------------------------- Nouvelles scènes (variété) : barres, icônes, citation, questions-réponses, photo
+// Pictogrammes au trait (64 px, centrés sur 0,0), dessinés par le code : aucune image externe, aucune marque.
+const PICTOS = {
+  maison: "M-28 6 L0 -22 L28 6 M-20 0 V26 H20 V0 M-6 26 V10 H6 V26",
+  piece: "M0 -26 A26 26 0 1 0 0.01 -26 M-8 -10 Q0 -16 8 -10 M-10 0 H6 M-10 7 H6 M8 10 Q0 16 -8 10",
+  calendrier: "M-24 -16 H24 V26 H-24 Z M-24 -4 H24 M-12 -24 V-10 M12 -24 V-10 M-12 8 H-4 M4 8 H12",
+  bouclier: "M0 -26 L22 -16 V2 Q22 20 0 28 Q-22 20 -22 2 V-16 Z M-9 2 L-2 9 L11 -5",
+  cadeau: "M-24 -6 H24 V4 H-24 Z M-20 4 V26 H20 V4 M0 -6 V26 M0 -6 Q-14 -24 -18 -12 Q-16 -6 0 -6 Q14 -24 18 -12 Q16 -6 0 -6",
+  famille: "M-14 -14 A7 7 0 1 0 -13.99 -14 M14 -14 A7 7 0 1 0 14.01 -14 M-24 22 Q-24 0 -14 0 Q-4 0 -4 22 M4 22 Q4 0 14 0 Q24 0 24 22",
+  graphique: "M-26 24 H26 M-18 24 V8 M-6 24 V-4 M6 24 V2 M18 24 V-16 M-20 -2 L-6 -14 L6 -8 L20 -24",
+  cle: "M-14 -6 A10 10 0 1 0 -13.99 -6 M-4 -6 H26 M18 -6 V4 M10 -6 V2",
+  document: "M-18 -26 H8 L18 -16 V26 H-18 Z M8 -26 V-16 H18 M-10 -4 H10 M-10 6 H10 M-10 16 H4",
+  balance: "M0 -24 V24 M-14 24 H14 M-24 -14 H24 M-24 -14 L-32 6 H-16 Z M24 -14 L16 6 H32 Z",
+  sablier: "M-16 -26 H16 M-16 26 H16 M-12 -26 Q-12 -6 0 0 Q12 -6 12 -26 M-12 26 Q-12 6 0 0 Q12 6 12 26",
+  cible: "M0 -26 A26 26 0 1 0 0.01 -26 M0 -14 A14 14 0 1 0 0.01 -14 M0 -4 A4 4 0 1 0 0.01 -4 M0 0 L22 -22",
+  tirelire: "M-24 2 Q-24 -18 0 -18 Q22 -18 24 0 Q24 16 12 20 V26 H4 V22 H-6 V26 H-14 V18 Q-24 14 -24 2 M-4 -18 V-24 M14 -6 A2 2 0 1 0 14.01 -6",
+  entreprise: "M-24 26 V-10 H-4 V26 M-4 26 V-24 H24 V26 M-28 26 H28 M4 -14 H14 M4 -4 H14 M4 6 H14 M-16 0 H-10 M-16 10 H-10",
+  retraite: "M-14 -24 A6 6 0 1 0 -13.99 -24 M-14 -12 V10 H8 L14 26 M-14 0 H6 M-22 26 Q-28 6 -14 -4",
+  pourcent: "M-18 22 L18 -22 M-12 -16 A6 6 0 1 0 -11.99 -16 M12 16 A6 6 0 1 0 12.01 16",
+  coeur: "M0 24 Q-28 4 -24 -12 Q-18 -26 0 -12 Q18 -26 24 -12 Q28 4 0 24",
+  horloge: "M0 -26 A26 26 0 1 0 0.01 -26 M0 -14 V0 L12 8",
+  valise: "M-26 -10 H26 V24 H-26 Z M-10 -10 V-20 H10 V-10 M-26 4 H26",
+  ampoule: "M-14 -4 Q-20 -26 0 -28 Q20 -26 14 -4 Q8 4 8 12 H-8 Q-8 4 -14 -4 M-8 18 H8 M-5 24 H5",
+};
+function picto(nom, x, y, taille = 1, coul = BX) {
+  const d = PICTOS[nom] || PICTOS.ampoule;
+  return `<g transform="translate(${x} ${y}) scale(${taille})"><path d="${d}" fill="none" stroke="${coul}" stroke-width="${4.5 / taille}" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+}
+
+// Graphique en barres : 2 à 5 valeurs de la source, une barre par phrase (après la phrase d'introduction).
+GAB.barres = {
+  dessin(S, t) {
+    const p = S.p, br = (p.barres || []).slice(0, 5), n = Math.max(1, br.length);
+    let o = fondMarque("clair", S.i, t);
+    if (p.titre) o += txt(540, 400, court(p.titre, 34), { size: 58, w: 900, f: BX, fam: "Inter Display", op: cl(lin(t, S.debut, S.debut + .3) * 3) });
+    const vals = br.map((b) => nombreDans(b.valeur) || 0), max = Math.max(1e-9, ...vals);
+    const x0 = 120, L = 840, w = Math.min(150, L / n - 30), base = 1420, hmax = 780;
+    o += `<line x1="${x0 - 20}" y1="${base}" x2="${x0 + L + 20}" y2="${base}" stroke="${BX}" stroke-opacity=".25" stroke-width="4"/>`;
+    br.forEach((b, i) => {
+      const d = nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .4 + i * (S.fin - S.debut - .6) / n, k = eo(lin(t, d, d + .6));
+      const cx = x0 + (i + .5) * L / n, h = Math.max(24, hmax * vals[i] / max) * k;
+      o += `<rect x="${cx - w / 2}" y="${base - h}" width="${w}" height="${h}" rx="14" fill="${i === n - 1 ? BX : ROSE}"/>`;
+      if (k > .05) o += txt(cx, base - h - 26, compteurTexte(court(b.valeur, 14), k), { size: 40, w: 900, f: NUIT, op: cl(k * 2) });
+      lignes(court(b.libelle, 30), 12, 2).forEach((l, m) => { o += txt(cx, base + 56 + m * 40, l, { size: 32, w: 600, f: GRIS, op: cl(k * 3) }); });
+    });
+    if (p.source) o += txt(540, 1590, "Source : " + court(p.source, 50), { size: 28, w: 500, f: GRIS, op: .9 });
+    return o;
+  },
+  sons(S) { return (S.p.barres || []).slice(0, 5).map((_, i) => ["pop", nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .4 + i * .7, .3]); },
+};
+
+// Grille d'icônes : 2 à 6 éléments (pictogramme + libellé) qui apparaissent ensemble ou au fil des phrases.
+GAB.icones = {
+  dessin(S, t) {
+    const p = S.p, it = (p.items || []).slice(0, 6), n = Math.max(1, it.length), cols = n <= 2 ? n : n === 4 ? 2 : 3, rows = Math.ceil(n / cols);
+    let o = fondMarque(S.i % 2 ? "sombre" : "clair", S.i, t);
+    const sombre = S.i % 2 === 1;
+    if (p.titre) o += txt(540, 420, court(p.titre, 34), { size: 58, w: 900, f: sombre ? BLANC : BX, fam: "Inter Display", op: cl(lin(t, S.debut, S.debut + .3) * 3) });
+    const cw = 900 / cols, ch = Math.min(380, 1000 / rows);
+    it.forEach((e, i) => {
+      const r = Math.floor(i / cols), c = i % cols, cx = 90 + cw * (c + .5), cy = 600 + ch * r + ch / 2 - 60;
+      const d = nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .3 + i * .25, k = lin(t, d, d + .35);
+      o += g(`<circle cx="${cx}" cy="${cy}" r="92" fill="${sombre ? ROSE2 : BLANC}"/>` + picto(e.icone, cx, cy, 2) +
+        lignes(court(e.libelle, 36), 16, 2).map((l, m) => txt(cx, cy + 150 + m * 44, l, { size: 38, w: 800, f: sombre ? BLANC : NUIT })).join(""),
+        `translate(${cx} ${cy}) scale(${.7 + .3 * back(k)}) translate(${-cx} ${-cy})`, cl(k * 3));
+    });
+    return o;
+  },
+  sons(S) { return (S.p.items || []).slice(0, 6).map((_, i) => ["pop", nbP(S) > i + 1 ? ph(S, i + 1) : S.debut + .3 + i * .25, .3]); },
+};
+
+// Citation d'un texte officiel (mots exacts de la source), avec sa référence.
+GAB.citation = {
+  dessin(S, t) {
+    const p = S.p, k = lin(t, S.debut + .1, S.debut + .6), k2 = lin(t, S.debut + .6, S.debut + 1);
+    let o = fondMarque("sombre", S.i, t);
+    o += txt(540, 680, "“", { size: 300, w: 700, f: ROSE, op: cl(k * 2), fam: "Georgia, serif" });
+    const L = lignes(court(p.citation, 170), 24, 6);
+    L.forEach((l, i) => { o += g(txt(540, 760 + i * 84, l, { size: 60, w: 700, f: BLANC }), `translate(0 ${(1 - eo(k)) * 30})`, cl(k * 2)); });
+    const y = 760 + L.length * 84 + 40;
+    if (p.auteur) o += g(`<rect x="440" y="${y}" width="200" height="6" rx="3" fill="${ROSE}"/>` + txt(540, y + 70, court(p.auteur, 44), { size: 38, w: 700, f: ROSE2 }), "", k2);
+    return o;
+  },
+  sons(S) { return [["pop", S.debut + .15, .35]]; },
+  masqueSousTitres() { return true; },   // la citation est écrite à l'écran
+};
+
+// Carte question puis réponse (la question avec la 1re phrase, la réponse avec la suivante).
+GAB.questions = {
+  dessin(S, t) {
+    const p = S.p, tr = nbP(S) > 1 ? ph(S, 1) : S.debut + (S.fin - S.debut) * .45, k = lin(t, S.debut, S.debut + .35), kr = lin(t, tr, tr + .4);
+    let o = fondMarque("clair", S.i, t);
+    o += g(pill(540, 470, 300, 84, BX, txt(540, 486, "QUESTION", { size: 38, w: 900, f: BLANC, ls: 6 })), "", cl(k * 3));
+    const Q = lignes(court(p.question, 90), 22, 4);
+    o += g(`<rect x="90" y="560" width="900" height="${Q.length * 74 + 80}" rx="36" fill="${BLANC}"/>` + Q.map((l, i) => txt(540, 640 + i * 74, l, { size: 58, w: 800, f: NUIT })).join(""), `translate(0 ${(1 - eo(k)) * 40})`, cl(k * 3));
+    const y = 560 + Q.length * 74 + 140, R = lignes(court(p.reponse, 130), 28, 4);
+    o += g(`<rect x="90" y="${y}" width="900" height="${R.length * 64 + 120}" rx="36" fill="${BX}"/>` + txt(150, y + 70, "RÉPONSE", { anchor: "start", size: 30, w: 900, f: ROSE2, ls: 4 })
+      + R.map((l, i) => txt(150, y + 130 + i * 64, l, { anchor: "start", size: 46, w: 700, f: BLANC })).join(""), `translate(0 ${(1 - eo(kr)) * 60})`, cl(kr * 3));
+    return o;
+  },
+  sons(S) { return [["pop", S.debut + .1, .35], ["ping", nbP(S) > 1 ? ph(S, 1) : S.debut + 1.5, .3]]; },
+  masqueSousTitres() { return true; },   // question et réponse sont écrites
+};
+
+// Photo plein écran libre de droits (domaine public ou CC0), léger mouvement de caméra, légende courte.
+GAB.photo = {
+  dessin(S, t) {
+    const p = S.p, src = p.image_src, k = lin(t, S.debut, S.fin), kl = lin(t, S.debut + .3, S.debut + .8);
+    let o = "";
+    if (src) {
+      const z = 1.06 + .08 * k, dx = (GRAINE % 2 ? -1 : 1) * 30 * k;
+      o += `<rect width="1080" height="1920" fill="#000"/><image href="${src}" x="0" y="0" width="1080" height="1920" preserveAspectRatio="xMidYMid slice" transform="translate(540 960) scale(${z}) translate(${-540 + dx} -960)"/>`;
+      // voile sombre en haut (légende) et en bas (sous-titres)
+      o += `<defs><linearGradient id="ph${S.i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A0509" stop-opacity=".85"/><stop offset=".32" stop-color="#000" stop-opacity="0"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#1A0509" stop-opacity=".8"/></linearGradient></defs><rect width="1080" height="1920" fill="url(#ph${S.i})"/>`;
+    } else o += fondMarque("sombre", S.i, t);
+    if (p.legende) {
+      const L = lignes(court(p.legende, 60), 22, 2);
+      o += g(`<rect x="440" y="350" width="200" height="8" rx="4" fill="${ROSE}"/>` + L.map((l, i) => txt(540, 450 + i * 76, l, { size: 64, w: 900, f: BLANC, fam: "Inter Display" })).join(""), `translate(0 ${(1 - eo(kl)) * -30})`, cl(kl * 2));
+    }
+    if (src) o += txt(540, 1600, "Photo libre de droits" + (p.image_credit ? " · " + court(p.image_credit, 40) : ""), { size: 24, w: 500, f: BLANC, op: .7 });
+    return o;
+  },
+  sons(S) { return []; },
+};
+
+// 13) Carte de fin professionnelle (coordonnées du cabinet, mentions légales), sur fond uni bordeaux ou clair.
 // Toutes gardent le logo, la phrase d'appel, l'offre, les coordonnées et les mentions, aux mêmes places (lisibles en 9:16 et 4:5).
 const FIN_STYLES = {
-  cercles: {
+  // fond uni bordeaux, très légère lumière derrière le logo (aucun motif)
+  bordeaux: {
     c: { q: ROSE2, pill: BLANC, pillT: BX, boite: "#000", boiteOp: .22, txt: BLANC, ment: ROSE2, trait: ROSE },
-    fond(t) { let o = fond("#7A0F24", "#3E0611"); for (let i = 0; i < 5; i++) o += `<circle cx="540" cy="900" r="${220 + i * 120 + (t * 12) % 120}" fill="none" stroke="${BLANC}" stroke-opacity="${.05 - i * .008}" stroke-width="2"/>`; return o; },
+    fond() { return `<defs><radialGradient id="fb" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#6E0E22"/><stop offset="1" stop-color="#3A0611"/></radialGradient></defs><rect width="1080" height="1920" fill="url(#fb)"/>`; },
   },
+  // fond uni clair
   clair: {
     c: { q: NUIT, pill: BX, pillT: BLANC, boite: BLANC, boiteOp: .9, txt: NUIT, ment: "#6E5F64", trait: BX },
-    fond(t, S) {
-      const k = eo(lin(t, S.debut, S.debut + 1.2)), L = 2 * (900 + 1440);
-      let o = fond(CREME, "#EFE2DE");
-      o += `<rect x="90" y="330" width="900" height="1340" rx="40" fill="none" stroke="${BX}" stroke-opacity=".35" stroke-width="3" stroke-dasharray="${L}" stroke-dashoffset="${L * (1 - k)}"/>`;
-      for (let i = 0; i < 18; i++) o += `<circle cx="${120 + (i * 211) % 840}" cy="${360 + (i * 337) % 1280}" r="3" fill="${BX}" opacity="${.12 * k}"/>`;
-      return o;
-    },
-  },
-  horizon: {
-    c: { q: "#FFE7D6", pill: BLANC, pillT: BX, boite: "#000", boiteOp: .25, txt: BLANC, ment: "#FFE7D6", trait: OR },
-    fond(t, S) {
-      const k = eo(lin(t, S.debut, S.fin - .5)), cy = mix(1150, 820, k);
-      let o = `<defs><linearGradient id="fh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E0510"/><stop offset=".55" stop-color="#7A1A2E"/><stop offset="1" stop-color="#C2604A"/></linearGradient>
-        <radialGradient id="fs"><stop offset="0" stop-color="${OR}" stop-opacity=".75"/><stop offset=".45" stop-color="${OR}" stop-opacity=".22"/><stop offset="1" stop-color="${OR}" stop-opacity="0"/></radialGradient></defs>
-        <rect width="1080" height="1920" fill="url(#fh)"/><circle cx="540" cy="${cy}" r="620" fill="url(#fs)"/>`;
-      for (let i = 0; i < 12; i++) { const a = -Math.PI + (i + .5) * Math.PI / 12; o += `<line x1="${540 + Math.cos(a) * 330}" y1="${cy + Math.sin(a) * 330}" x2="${540 + Math.cos(a) * 520}" y2="${cy + Math.sin(a) * 520}" stroke="${OR}" stroke-opacity="${.10 + .05 * Math.sin(t * 2 + i)}" stroke-width="6" stroke-linecap="round"/>`; }
-      o += `<rect x="0" y="1660" width="1080" height="260" fill="#3A0715" opacity=".55"/>`;
-      for (let i = 0; i < 6; i++) o += `<line x1="${180 + i * 30}" y1="${1700 + i * 34}" x2="${900 - i * 30}" y2="${1700 + i * 34}" stroke="${OR}" stroke-opacity="${.18 - i * .025}" stroke-width="4"/>`;
-      return o;
-    },
-  },
-  courbe: {
-    c: { q: ROSE2, pill: BLANC, pillT: BX, boite: "#000", boiteOp: .28, txt: BLANC, ment: ROSE2, trait: VERT },
-    fond(t, S) {
-      let o = fond("#2A0A12", "#4A0614");
-      for (let i = 0; i < 9; i++) o += `<line x1="0" y1="${400 + i * 150}" x2="1080" y2="${400 + i * 150}" stroke="${BLANC}" stroke-opacity=".05" stroke-width="2"/>`;
-      const k = eo(lin(t, S.debut + .1, S.debut + 2.2)), n = 50, pts = [];
-      for (let i = 0; i <= n; i++) { const x = -20 + i * 22.4, y = 1640 - Math.pow(i / n, 1.8) * 1180 + Math.sin(i * 1.3) * 18; pts.push([x, y]); }
-      const m = Math.max(2, Math.round(k * (n + 1))), vis = pts.slice(0, m);
-      const d = vis.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
-      o += `<path d="${d} L${vis[vis.length - 1][0]} 1920 L-20 1920Z" fill="${VERT}" opacity=".10"/><path d="${d}" stroke="${VERT}" stroke-opacity=".55" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-      const e = vis[vis.length - 1]; o += `<circle cx="${e[0]}" cy="${e[1]}" r="16" fill="${VERT}" opacity=".8"/>`;
-      return o;
-    },
-  },
-  maison: {
-    c: { q: ROSE2, pill: BLANC, pillT: BX, boite: "#000", boiteOp: .25, txt: BLANC, ment: ROSE2, trait: OR },
-    fond(t, S) {
-      let o = fond("#4A0614", "#22050C");
-      for (let i = 0; i < 22; i++) o += `<circle cx="${(i * 197) % 1080}" cy="${320 + (i * 131) % 380}" r="${2 + i % 3}" fill="${BLANC}" opacity="${.15 + .15 * Math.sin(t * 2 + i)}"/>`;
-      const k = lin(t, S.debut + .1, S.debut + 2), L = 4200;
-      const maison = "M140 1640 L140 1060 L540 700 L940 1060 L940 1640 Z M760 860 L760 720 L840 720 L840 935 M440 1640 L440 1380 L640 1380 L640 1640";
-      o += `<path d="${maison}" fill="none" stroke="${ROSE}" stroke-opacity=".28" stroke-width="10" stroke-linejoin="round" stroke-dasharray="${L}" stroke-dashoffset="${L * (1 - eo(k))}"/>`;
-      const kf = lin(t, S.debut + 1.8, S.debut + 2.4);
-      o += `<rect x="455" y="1395" width="170" height="230" rx="6" fill="${OR}" opacity="${.18 * kf}"/>`;
-      return o;
-    },
-  },
-  bandes: {
-    c: { q: BLANC, pill: BLANC, pillT: BX, boite: "#000", boiteOp: .25, txt: BLANC, ment: ROSE2, trait: BLANC },
-    fond(t) {
-      let o = fond("#8A1029", "#4A0614");
-      const dec = (t * 60) % 240;
-      for (let i = -6; i < 14; i++) o += `<rect x="${i * 240 + dec}" y="-200" width="90" height="2600" fill="${BLANC}" opacity=".05" transform="rotate(20 540 960)"/>`;
-      return o;
-    },
+    fond() { return fond(CREME, "#F1E6E2"); },
   },
 };
+// anciennes mises en scène : la claire reste claire, toutes les autres deviennent bordeaux unies
+FIN_STYLES.cercles = FIN_STYLES.horizon = FIN_STYLES.courbe = FIN_STYLES.maison = FIN_STYLES.bandes = FIN_STYLES.bordeaux;
 GAB.fin = {
   dessin(S, t) {
     const p = S.p, C = CONFIG, st = FIN_STYLES[p.style] || FIN_STYLES.cercles, c = st.c;
@@ -417,7 +491,7 @@ GAB.fin = {
     }
     // mentions sur 1 ou 2 lignes chacune (jamais coupées), avec un bandeau discret pour la lisibilité
     const ment = (C.mentions || []).slice(0, 4).flatMap((m) => lignes(court(m, 130), 66, 2)).slice(0, 5);
-    if (ment.length && p.style && p.style !== "clair" && p.style !== "cercles") o += `<rect x="70" y="1468" width="940" height="${ment.length * 34 + 26}" rx="20" fill="#000" opacity=".28"/>`;
+    if (ment.length && p.style && p.style !== "clair" && p.style !== "bordeaux" && p.style !== "cercles") o += `<rect x="70" y="1468" width="940" height="${ment.length * 34 + 26}" rx="20" fill="#000" opacity=".28"/>`;
     ment.forEach((m, i) => { o += txt(540, 1496 + i * 34, m, { size: 25, w: 500, f: c.ment, op: .9 }); });
     return o;
   },

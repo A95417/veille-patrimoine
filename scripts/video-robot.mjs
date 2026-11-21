@@ -132,6 +132,24 @@ RÈGLES STRICTES :
   // Débit réel de la voix (syllabes par seconde, pauses comprises) : renvoyé au site pour affiner ses estimations.
   console.log(`Débit mesuré : ${debit.toFixed(2)} syllabes/s (estimation du site ${job.duree_estimee} s, voix ${cal.duree_voix.toFixed(1)} s).`);
 
+  // Photos libres de droits : licence revérifiée auprès d'Openverse (domaine public ou CC0), puis téléchargement local.
+  const alertesPhotos = [];
+  for (const sc of job.scenes) {
+    if (sc.type !== "photo" || !sc.p?.image?.id) { if (sc.p) delete sc.p.image_src; continue; }
+    try {
+      const info = await (await fetch(`https://api.openverse.org/v1/images/${encodeURIComponent(sc.p.image.id)}/`, { signal: AbortSignal.timeout(15000) })).json();
+      if (!["cc0", "pdm"].includes(String(info.license).toLowerCase())) throw new Error("licence " + info.license);
+      const r = await fetch(info.url || sc.p.image.url, { signal: AbortSignal.timeout(30000), headers: { "User-Agent": "VeillePatrimoine/1.0" } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      execFileSync("mkdir", ["-p", `${M}/photos`]);
+      writeFileSync("photo_brute", Buffer.from(await r.arrayBuffer()));
+      const f = `photos/${sc.p.image.id.replace(/[^\w-]/g, "")}.jpg`;
+      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", "photo_brute", "-vf", "scale='min(1600,iw)':-2", "-q:v", "3", `${M}/${f}`]);
+      sc.p.image_src = f;
+    } catch (e) { delete sc.p.image_src; alertesPhotos.push(`photo de la scène « ${sc.p.legende || ""} » non utilisée (${e.message})`); console.log("Photo écartée :", e.message); }
+  }
+  writeFileSync("job.json", JSON.stringify(job));
+
   // 3) Rendu des images, avec suivi (deux passes si les deux formats sont demandés).
   const totalImages = total * (second ? 2 : 1);
   await etat("Animation des scènes", .2, 25 + totalImages / vitesse + 20);
@@ -154,7 +172,7 @@ RÈGLES STRICTES :
 
   // 4) Musique, bruitages, montage.
   await etat("Musique et montage", .88, 18);
-  console.log(py(`${M}/son.py`, "calage.json", "sortie/evenements.json", "musique.wav", "bruitages.wav", job.ambiance || "dynamique"));
+  console.log(py(`${M}/son.py`, "calage.json", "sortie/evenements.json", "musique.wav", "bruitages.wav", job.ambiance || "dynamique", String(job.graine || 7)));
   execFileSync("bash", [`${M}/monter.sh`, "sortie/video_muette.mp4", "voix.flac", "musique.wav", "bruitages.wav", "video.mp4", String(cal.duree_totale)], { stdio: "inherit" });
   if (second) execFileSync("bash", [`${M}/monter.sh`, "sortie2/video_muette.mp4", "voix.flac", "musique.wav", "bruitages.wav", "video2.mp4", String(cal.duree_totale)], { stdio: "inherit" });
 
@@ -167,7 +185,7 @@ sat = sorted(set(np.round(np.where(np.abs(a) > 0.97)[0] / 16000, 1).tolist()))
 v = np.frombuffer(subprocess.run(["ffmpeg","-loglevel","error","-i","voix.flac","-ac","1","-ar","16000","-f","s16le","-"],capture_output=True).stdout, np.int16)/32768
 print(json.dumps({"pics": sat[:20], "debut": round(float(np.abs(v[:240]).max()), 3), "duree": round(len(a) / 16000, 2)}))`);
   const son = JSON.parse(audio.trim().split("\n").pop());
-  const alertes = JSON.parse(readFileSync("sortie/alertes.json", "utf8"));
+  const alertes = [...JSON.parse(readFileSync("sortie/alertes.json", "utf8")), ...alertesPhotos];
   if (son.pics.length) alertes.push(`son saturé vers ${son.pics.slice(0, 5).join(", ")} s`);
   if (son.debut > .3) alertes.push("clic possible au tout début de la voix");
   // Durée : la vidéo doit correspondre à la durée demandée (± 15 %).

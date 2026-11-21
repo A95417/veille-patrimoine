@@ -35,18 +35,38 @@ def ajoute(piste, son, debut, gain=1.0):
     if j > i: piste[i:j] += son[:j - i] * gain
 
 # ---------------------------------------------------------------- Musique
+# Chaque vidéo a son morceau : la graine de la vidéo choisit la tonalité, le tempo, la suite d'accords, la mélodie,
+# l'instrument de la mélodie et le motif de batterie, à l'intérieur du caractère de l'ambiance choisie.
 AMBIANCE = sys.argv[5] if len(sys.argv) > 5 else "dynamique"
-STYLES = {
-    # tempo, accords (basse, notes), mélodie, gains (pad, kick, caisse claire, charleston, basse, mélodie), 1 note de mélodie sur n
-    "dynamique": dict(bpm=100, accords=[(57, [57, 60, 64]), (53, [53, 57, 60]), (48, [55, 60, 64]), (55, [55, 59, 62])],   # La m, Fa, Do, Sol
-                      melodie=[76, 72, 74, 72, 69, 72, 71, 67], g=(0.42, 0.9, 0.35, 0.18, 0.45, 0.16), saute=3, kick_tous=True),
-    "calme": dict(bpm=76, accords=[(53, [57, 60, 65]), (48, [55, 60, 64]), (50, [57, 62, 65]), (46, [53, 58, 62])],          # Fa, Do, Ré m, Si b
-                  melodie=[72, 0, 69, 0, 67, 0, 69, 0], g=(0.62, 0.45, 0.0, 0.06, 0.32, 0.12), saute=99, kick_tous=False),
-    "inspirante": dict(bpm=92, accords=[(48, [60, 64, 67]), (55, [59, 62, 67]), (57, [60, 64, 69]), (53, [60, 65, 69])],     # Do, Sol, La m, Fa
-                       melodie=[72, 76, 79, 76, 74, 76, 79, 84], g=(0.5, 0.75, 0.22, 0.14, 0.4, 0.15), saute=4, kick_tous=True),
+GRAINE = int(sys.argv[6]) if len(sys.argv) > 6 else 7
+rm = np.random.default_rng(GRAINE)
+MAJ, MIN = [0, 2, 4, 5, 7, 9, 11], [0, 2, 3, 5, 7, 8, 10]
+# degrés des accords (0 = I) ; plusieurs suites par ambiance
+SUITES = {
+    "dynamique": [(MIN, [0, 5, 2, 6]), (MIN, [0, 3, 6, 4]), (MAJ, [5, 3, 0, 4]), (MIN, [0, 6, 5, 6]), (MAJ, [0, 4, 5, 3])],
+    "calme": [(MAJ, [3, 0, 1, 6]), (MAJ, [0, 5, 3, 4]), (MAJ, [0, 2, 3, 0]), (MIN, [0, 5, 2, 6]), (MAJ, [3, 4, 2, 5])],
+    "inspirante": [(MAJ, [0, 4, 5, 3]), (MAJ, [3, 0, 4, 5]), (MAJ, [0, 5, 3, 4]), (MAJ, [5, 3, 0, 4]), (MAJ, [0, 3, 5, 4])],
 }
-ST = STYLES.get(AMBIANCE, STYLES["dynamique"])
-BPM = ST["bpm"]; BEAT = 60 / BPM; MES = 4 * BEAT
+BASE = {"dynamique": dict(bpm=100, g=(0.42, 0.9, 0.35, 0.18, 0.45, 0.16), saute=3),
+        "calme": dict(bpm=76, g=(0.62, 0.45, 0.0, 0.06, 0.32, 0.12), saute=99),
+        "inspirante": dict(bpm=92, g=(0.5, 0.75, 0.22, 0.14, 0.4, 0.15), saute=4)}
+ST = BASE.get(AMBIANCE, BASE["dynamique"]); AMBIANCE = AMBIANCE if AMBIANCE in BASE else "dynamique"
+gamme, degres = SUITES[AMBIANCE][rm.integers(len(SUITES[AMBIANCE]))]
+TONIQUE = 57 + int(rm.integers(-4, 5))                       # La ± 4 demi-tons
+BPM = ST["bpm"] + int(rm.integers(-8, 9)); BEAT = 60 / BPM; MES = 4 * BEAT
+def ton(d, oct=0): return TONIQUE + 12 * (oct + d // 7) + gamme[d % 7]
+ACCORDS = [(ton(d, -1), [ton(d), ton(d + 2), ton(d + 4)]) for d in degres]
+# deux motifs de 8 croches tirés des notes de l'accord et de la gamme (A A B A), quelques silences
+def motif():
+    m, d = [], int(rm.integers(0, 5))
+    for k in range(8):
+        if k and rm.random() < (.35 if AMBIANCE == "calme" else .18): m.append(None); continue
+        d = int(np.clip(d + rm.choice([-2, -1, 1, 2, 0], p=[.15, .3, .3, .15, .1]), 0, 9)); m.append(d)
+    return m
+MOTIFS = [motif(), motif()]
+INSTR = ["pluck", "marimba", "piano"][int(rm.integers(3))] if AMBIANCE != "calme" else ["piano", "marimba"][int(rm.integers(2))]
+BATTERIE = int(rm.integers(3))          # 0 : temps forts, 1 : quatre temps, 2 : syncopé
+G_PAD, G_KICK, G_CAISSE, G_HAT, G_BASSE, G_MEL = ST["g"]
 musique = np.zeros(int(DUREE * SR))
 def kick():
     t = t_(0.35); f = 120 * np.exp(-t * 22) + 45
@@ -58,11 +78,12 @@ def hat(ouvert=False):
     t = t_(0.12 if not ouvert else 0.3); b = rng.standard_normal(len(t))
     b = b - passe_bas(b, 0.35)
     return b * env(len(t), 0.001, 0.025 if not ouvert else 0.09)
+DET = float(rm.uniform(.08, .2))
 def pad(notes, d):
     t = t_(d); s = np.zeros(len(t))
     for n in notes:
         f = note(n)
-        for det in (-0.12, 0.12):
+        for det in (-DET, DET):
             s += np.sin(2 * np.pi * f * (1 + det / 100) * t) + 0.3 * np.sin(2 * np.pi * 2 * f * t)
     a = np.minimum(1, t / 0.25) * np.minimum(1, (d - t) / 0.3)
     return s * a / (len(notes) * 4)
@@ -70,14 +91,17 @@ def basse(n, d):
     t = t_(d); f = note(n)
     s = np.sin(2 * np.pi * f * t) + 0.25 * np.sin(2 * np.pi * 2 * f * t)
     return s * np.minimum(1, t / 0.01) * np.exp(-t / 0.5)
-def pluck(n, d=0.4):
+def lead(n, d=0.4):
     t = t_(d); f = note(n)
+    if INSTR == "marimba":   # bois doux : fondamentale + 4e harmonique très brève
+        s = np.sin(2 * np.pi * f * t) + 0.35 * np.sin(2 * np.pi * 4 * f * t) * np.exp(-t / 0.03)
+        return s * env(len(t), 0.002, 0.18) * 0.9
+    if INSTR == "piano":     # piano électrique doux
+        s = sum(g * np.sin(2 * np.pi * k * f * t) * np.exp(-t * k * 1.5) for k, g in ((1, 1), (2, .4), (3, .15)))
+        return s * env(len(t), 0.003, 0.45)
     s = (2 * ((f * t) % 1) - 1); s = passe_bas(s, 0.25)
     return s * env(len(t), 0.002, 0.12)
 
-
-ACCORDS, MELODIE = ST["accords"], ST["melodie"]
-G_PAD, G_KICK, G_CAISSE, G_HAT, G_BASSE, G_MEL = ST["g"]
 for m in range(int(DUREE / MES) + 1):
     t0 = m * MES
     racine, acc = ACCORDS[m % 4]
@@ -86,21 +110,26 @@ for m in range(int(DUREE / MES) + 1):
     for b in range(4):
         tb = t0 + b * BEAT
         if tb < INTRO and b not in (0, 2): continue
-        if ST["kick_tous"] or b == 0:
-            if not intro or b in (0, 2): ajoute(musique, kick(), tb, G_KICK if tb >= INTRO else G_KICK * 0.55)
+        frappe = b in (0, 2) if BATTERIE == 0 else True if BATTERIE == 1 else b in (0, 3)
+        if AMBIANCE == "calme": frappe = b == 0
+        if frappe and (not intro or b in (0, 2)): ajoute(musique, kick(), tb, G_KICK if tb >= INTRO else G_KICK * 0.55)
+        if BATTERIE == 2 and b == 1 and tb >= INTRO and AMBIANCE != "calme": ajoute(musique, kick(), tb + BEAT / 2, G_KICK * .6)
         if G_CAISSE and tb >= INTRO and not fin and b in (1, 3): ajoute(musique, snare(), tb, G_CAISSE)
         if tb >= INTRO:
             ajoute(musique, hat(), tb, G_HAT); ajoute(musique, hat(b == 3), tb + BEAT / 2, G_HAT * 0.78)
             ajoute(musique, basse(racine - 12, BEAT * 0.9), tb, G_BASSE if b % 2 == 0 else G_BASSE * 0.67)
     if t0 >= INTRO and not fin:
-        for k, n in enumerate(MELODIE):
-            if n and (m + k) % ST["saute"] != ST["saute"] - 1: ajoute(musique, pluck(n, 0.4 if AMBIANCE != "calme" else 0.9), t0 + k * BEAT / 2, G_MEL)
+        mot = MOTIFS[1] if m % 4 == 2 else MOTIFS[0]
+        for k, d in enumerate(mot):
+            if d is not None and (m + k) % ST["saute"] != ST["saute"] - 1:
+                ajoute(musique, lead(ton(d, 1), 0.4 if AMBIANCE != "calme" else 0.9), t0 + k * BEAT / 2, G_MEL)
 mont = rng.standard_normal(int(2.0 * SR)); mont = mont - passe_bas(mont, 0.05)
 mont *= np.linspace(0, 1, len(mont)) ** 2
 ajoute(musique, mont, max(0, INTRO - 2.0), 0.12)
 n = len(musique); fade = np.ones(n); fe = int(min(3.4, DUREE / 4) * SR); fade[-fe:] = np.linspace(1, 0, fe) ** 1.5
 musique *= fade
 musique /= np.max(np.abs(musique)) / 0.8
+print(f"morceau : {AMBIANCE}, tonique {TONIQUE}, {BPM} bpm, accords {degres}, mélodie {INSTR}, batterie {BATTERIE}")
 
 # ---------------------------------------------------------------- Bruitages
 def glissement(d=0.4):
