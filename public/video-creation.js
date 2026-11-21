@@ -108,9 +108,9 @@
   const ANGLES_DESC = Object.fromEntries(FAMILLES.flatMap(([, l]) => l.map(([k, , d, ex]) => [k, `${d} <span class="vv-exemple">Exemple : ${ex}</span>`])));
   // Icônes au trait (grille 24 px), dessinées ici : aucune image ni marque extérieure.
   const ICO = {
-    idee: "M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z", livre: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5",
-    journal: "M4 4h13v16H6a2 2 0 0 1-2-2V4zM17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h5", calendrier: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
-    calcul: "M5 2h14v20H5zM8 6h8v4H8zM8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01", crayon: "M17 3l4 4L8 20H4v-4L17 3z",
+    idee: "M9 18h6M10 21.5h4M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.6V17h6v-1.1c0-.6.3-1.2.8-1.6A6.5 6.5 0 0 0 12 2.5z", livre: "M2.5 5.5c2.5-1 6-1 9.5 1 3.5-2 7-2 9.5-1v13c-2.5-1-6-1-9.5 1-3.5-2-7-2-9.5-1zM12 6.5v13",
+    journal: "M4.5 4.5h12v14a2 2 0 0 0 2 2h-12a2 2 0 0 1-2-2zM16.5 8.5h3v10a2 2 0 0 1-2 2M7.5 8h6M7.5 11.5h6M7.5 15h4", calendrier: "M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v13a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5zM3.5 9.5h17M8 2.5v4M16 2.5v4M8 13.5h3v3H8z",
+    calcul: "M6 2.5h12a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 20V4A1.5 1.5 0 0 1 6 2.5zM8 6h8v3.5H8zM8.5 13h.01M12 13h.01M15.5 13h.01M8.5 17h.01M12 17h.01M15.5 17h.01", crayon: "M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4zM14.5 5.5l3 3",
     loupe: "M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM21 21l-4.3-4.3", liste: "M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01",
     question: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01", alerte: "M12 3l9.5 17h-19zM12 10v4M12 17.5h.01",
     etincelle: "M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM19 3v4M21 5h-4", diese: "M4 9h16M4 15h16M10 3L8 21M16 3l-2 18", barres: "M4 20V10M10 20V4M16 20v-8M22 20H2",
@@ -136,14 +136,14 @@
     $v("vue-video").innerHTML = `
       <section class="carte vv-form" id="vv-nouvelle">
         <ol class="vv-progres" id="vv-progres" aria-label="Étapes">
-          ${["Sujet", "Façon de raconter", "Réglages", "Scénario"].map((n, k) => `<li><button type="button" data-aller="${k + 1}" ${k === 3 ? "disabled" : ""} aria-label="Étape ${k + 1} : ${n}" title="${n}"></button></li>`).join("")}
+          ${["Sujet", "Récit", "Réglages", "Scénario"].map((n, k) => `<li><button type="button" data-aller="${k + 1}" ${k === 3 ? "disabled" : ""}><i aria-hidden="true"></i><span>${k + 1}. ${n}</span></button></li>`).join("")}
         </ol>
         <div class="vv-cadre">
           <div class="vv-pas">
             <div class="vv-etape" id="vv-e1" data-etape="1">
               <p class="vv-kicker">Question 1 sur 4</p>
               <h3 class="vv-etape-tete">De quoi voulez-vous parler ?</h3>
-              <p class="vv-chapo">Choisissez d'où part la vidéo : l'IA écrit le scénario à partir de cette source, sans rien inventer.</p>
+              <p class="vv-chapo">L'IA écrit le scénario à partir de cette source, sans rien inventer.</p>
               <div class="vv-etape-corps">
                 <div class="vv-sources" role="tablist" aria-label="Source du sujet">${ONGLETS_SUJET.map(([k, ic, nom, desc]) => `<button type="button" role="tab" id="vv-tab-${k}" aria-controls="vv-panneau" data-tab="${k}"><span class="vv-src-ico">${svg(ic, 28)}</span><span><b>${nom}</b><small>${desc}</small></span></button>`).join("")}</div>
                 <div class="vv-choisi" id="vv-choisi" hidden></div>
@@ -162,7 +162,7 @@
             <div class="vv-etape" id="vv-e2" data-etape="2">
               <p class="vv-kicker">Question 2 sur 4</p>
               <h3 class="vv-etape-tete">Comment voulez-vous la raconter ?</h3>
-              <p class="vv-chapo">La façon de raconter change le rythme et la structure de la vidéo.</p>
+              <p class="vv-chapo">Elle fixe la structure et le ton de la vidéo.</p>
               <div class="vv-etape-corps">
                 ${FAMILLES.map(([fam, l]) => `<section class="vv-famille" style="--c:${COULEUR_FAMILLE[fam]}"><h4 class="vv-famille-nom">${fam}</h4><div class="vv-angles" role="group" aria-label="${fam}">${l.map(([k, n, d, ex]) => `<button type="button" class="vv-angle" data-angle="${k}"><span class="vv-angle-ico">${svg(ICO_ANGLE[k], 20)}</span><span class="vv-angle-txt"><b>${n}</b><small>${d}</small><em>${ex}</em></span><span class="vv-conseil">Conseillé</span></button>`).join("")}</div></section>`).join("")}
                 <label class="bloc-lib" for="vv-precision">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
@@ -174,17 +174,17 @@
 
             <div class="vv-etape" id="vv-e3" data-etape="3">
               <p class="vv-kicker">Question 3 sur 4</p>
-              <h3 class="vv-etape-tete">Pour quelle plateforme et quelle durée ?</h3>
-              <p class="vv-chapo">Le format de l'image et le texte de publication s'adaptent à la plateforme.</p>
+              <h3 class="vv-etape-tete">Où et combien de temps ?</h3>
+              <p class="vv-chapo">Le format de l'image et le texte de publication suivent la plateforme.</p>
               <div class="vv-etape-corps">
-                <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("horloge", 18)} Durée</span>
+                <div class="vv-reg-ligne"><div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("horloge", 18)} Durée</span>
                   <div class="vv-segment" role="group" aria-label="Durée">${DUREES.map(([d, l]) => `<button type="button" data-duree="${d}">${l}</button>`).join("")}</div></div>
                 <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("journal", 18)} Plateforme</span>
-                  <div class="vv-plateformes">${Object.entries(PLATEFORMES).map(([k, [n, f]]) => `<button type="button" class="vv-plat" data-plateforme="${k}"><span class="vv-format f${f.replace(":", "x")}" aria-hidden="true"></span><b>${n}</b><small>${f === "9:16" ? "vertical 9:16" : "4:5"}</small></button>`).join("")}</div></div>
-                <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("barres", 18)} Rythme</span>
+                  <div class="vv-plateformes">${Object.entries(PLATEFORMES).map(([k, [n, f]]) => `<button type="button" class="vv-plat" data-plateforme="${k}"><span class="vv-format f${f.replace(":", "x")}" aria-hidden="true"></span><b>${n}</b><small>${f === "9:16" ? "vertical 9:16" : "4:5"}</small></button>`).join("")}</div></div></div>
+                <div class="vv-reg-ligne"><div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("barres", 18)} Rythme</span>
                   <div class="vv-choix2">${Object.entries(RYTHMES).map(([k, [n, d]]) => `<button type="button" class="vv-carte2" data-rythme="${k}"><span class="vv-mini r-${k}" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
                 <div class="vv-reg-bloc"><span class="vv-reg-lib">${svg("coche", 18)} Fin de la vidéo</span>
-                  <div class="vv-choix3">${Object.entries(MODES_FIN).map(([k, [n, d]]) => `<button type="button" class="vv-carte2" data-finmode="${k}"><span class="vv-mini fin-${k}" aria-hidden="true"><i></i><i></i><i></i></span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
+                  <div class="vv-choix3">${Object.entries(MODES_FIN).map(([k, [n, d]]) => `<button type="button" class="vv-carte2" data-finmode="${k}"><span class="vv-mini fin-${k}" aria-hidden="true"><i></i><i></i><i></i></span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div></div>
                 <details class="vv-reg-bloc vv-plus-reg"><summary>${svg("personne", 18)} Voix et coordonnées de la carte de fin <span class="doux" id="vv-resume-reglages"></span></summary>
                 <span class="simu-lib">Voix</span><div id="vv-voix"></div>
                 <details class="vv-coord" id="vv-coord"><summary>Carte de fin : <span id="vv-coord-resume">coordonnées du cabinet</span></summary><div id="vv-coord-corps"></div></details>
@@ -355,7 +355,7 @@
   // Titre et source du sujet choisi (bandeau « ✓ Sujet »).
   function decrireSujet() {
     const [type, ref] = (R.sel || "").split(/:(.*)/s);
-    if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); return f && { ico: "📚", titre: f.titre, source: `Thème du patrimoine · contenu vérifié le ${f.verifie || "—"} : ses chiffres sont autorisés et la source sera citée.` }; }
+    if (type === "fiche") { const f = LES_FICHES().find((x) => x.id === ref); return f && { ico: "📚", titre: f.titre, source: `Contenu vérifié le ${f.verifie || "—"}, source citée dans la vidéo.` }; }
     if (type === "actu") { const a = sources?.actus?.find((x) => x.id === ref); return { ico: "📰", titre: a?.titre || R.titreIdee || "Actualité du moment", source: `Résumé du site (parties gratuites des articles)${a?.sources?.length ? " · source citée : " + a.sources.join(", ") : ""}.` }; }
     if (type === "echeance") { const e = sources?.echeances?.find((x) => x.ref === ref); return { ico: "📅", titre: e ? `${e.titre} (${dateCourte(e.date)})` : "Échéance fiscale", source: "Calendrier officiel (impots.gouv.fr, service-public.gouv.fr)." }; }
     if (type === "chiffre") return { ico: "📈", titre: ref || "Taux et inflation : vue d'ensemble", source: "Derniers chiffres publiés par la BCE (page Marchés)." };

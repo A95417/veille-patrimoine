@@ -694,6 +694,76 @@
     .vv-puce-r { font: inherit; font-size: .78rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte); cursor: pointer; }
     .vv-quota { display: grid; gap: 4px; text-align: center; font-size: .8rem; color: var(--doux); } .vv-quota span { display: block; }
     @media (max-width: 1000px) { .vv-tel { position: static; grid-template-columns: 110px 1fr; align-items: center; } .vv-ecran { grid-row: span 3; border-width: 4px; border-radius: 18px; } .vv-e-pill, .vv-e-st, .vv-e-duree { display: none; } .vv-e-titre { top: 14px; font-size: .7rem; left: 6px; right: 6px; } .vv-e-titre small { display: none; } .vv-e-perso { bottom: 10px; } .vv-tel-leg { text-align: left; } .vv-r-puces, .vv-quota { justify-content: flex-start; text-align: left; } }
+    /* ---------------- Vidéo : version compacte (tailles ajustées, icônes en pastilles) */
+    .vv-progres { max-width: 620px; margin: 0 0 22px; gap: 10px; }
+    .vv-progres button { height: auto; background: none; display: grid; gap: 6px; text-align: left; font: inherit; color: var(--doux); box-shadow: none !important; }
+    .vv-progres button i { display: block; height: 4px; border-radius: 2px; background: var(--ligne); }
+    .vv-progres button span { font-size: .78rem; font-weight: 600; }
+    .vv-progres li.faite button, .vv-progres li.en-cours button { background: none; }
+    .vv-progres li.faite button i, .vv-progres li.en-cours button i { background: var(--bx); }
+    .vv-progres li.en-cours button span { color: var(--texte); }
+    .vv-cadre { grid-template-columns: minmax(0, 1fr) 220px; gap: 36px; }
+    .vv-kicker { font-size: .82rem; }
+    .vv-form .vv-etape-tete { font-size: clamp(1.45rem, 2.3vw, 1.85rem); line-height: 1.15; letter-spacing: -.02em; margin: 4px 0 6px; max-width: none; }
+    .vv-chapo { font-size: .95rem; margin: 0 0 18px; }
+    /* pastilles d'icônes */
+    .vv-src-ico, .vv-angle-ico { flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--bx-doux); color: var(--bx-t) !important; padding: 0; }
+    .vv-src-ico svg, .vv-angle-ico svg { width: 20px; height: 20px; stroke-width: 1.7; }
+    .vv-sources button.vv-pris .vv-src-ico, .vv-angle[aria-pressed="true"] .vv-angle-ico { background: rgba(255, 255, 255, .16); color: #fff !important; }
+    .vv-reg-lib svg { width: 26px; height: 26px; padding: 5px; border-radius: 8px; background: var(--bx-doux); }
+    /* réponses compactes : 3 par ligne */
+    .vv-sources { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: none; margin-bottom: 16px; }
+    .vv-sources button { padding: 12px 14px; gap: 12px; border-radius: 14px; }
+    .vv-sources b { font-size: .93rem; } .vv-sources small { font-size: .78rem; line-height: 1.3; }
+    @media (max-width: 1100px) { .vv-sources { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 640px) { .vv-sources { grid-template-columns: 1fr; } }
+    .vv-choisi, .vv-panneau { max-width: none; }
+    .vv-choisi { padding: 10px 14px; border-radius: 14px; flex-wrap: wrap; }
+    .vv-choisi #vv-changer { font-size: .82rem; padding: 6px 12px; min-height: 0; }
+    .vv-choisi-ico { width: 34px; height: 34px; border-radius: 10px; } .vv-choisi-ico svg { width: 18px; height: 18px; }
+    .vv-choisi > div { flex: 1 1 260px; } .vv-choisi > div > span { font-size: .78rem; }
+    .vv-focus { flex: 1 1 240px; display: grid; gap: 3px; font-size: .78rem; } .vv-focus small { display: none; }
+    .vv-liste { max-height: 380px; }
+    .vv-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .vv-grille-large { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 640px) { .vv-grille, .vv-grille-large { grid-template-columns: 1fr; } }
+    .vv-theme, .vv-echeance, .vv-tuile, .vv-idee { padding: 10px 12px; border-radius: 12px; }
+    .vv-theme b { font-size: .9rem; } .vv-theme small { font-size: .78rem; }
+    .vv-date { width: 44px; height: 46px; border-radius: 10px; } .vv-date b { font-size: 1.1rem; }
+    .vv-tuile b { font-size: 1.2rem; }
+    .vv-groupe-nom { font-size: .82rem; margin: 2px 0 6px; }
+    /* façons de raconter compactes : 3 colonnes, exemple sur la carte choisie */
+    .vv-famille { gap: 6px; margin-bottom: 14px; max-width: none; }
+    .vv-famille-nom { font-size: .82rem; }
+    .vv-angles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 1100px) { .vv-angles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 640px) { .vv-angles { grid-template-columns: 1fr; } }
+    .vv-angle { padding: 11px 12px; gap: 10px; border-radius: 14px; align-items: center; }
+    .vv-angle-txt b { font-size: .9rem; } .vv-angle-txt small { font-size: .76rem; line-height: 1.3; }
+    .vv-angle-txt em { display: none; } .vv-angle[aria-pressed="true"] .vv-angle-txt em { display: block; }
+    .vv-conseil { top: -8px; font-size: .66rem; padding: 2px 8px; }
+    /* réglages sur une vue */
+    .vv-reg-ligne { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; margin-bottom: 18px; }
+    .vv-reg-ligne .vv-reg-bloc { margin: 0; }
+    .vv-reg-ligne + .vv-reg-ligne { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+    @media (max-width: 900px) { .vv-reg-ligne, .vv-reg-ligne + .vv-reg-ligne { grid-template-columns: 1fr; gap: 16px; } }
+    .vv-reg-lib { font-size: .9rem; }
+    .vv-segment button { padding: 7px 13px; font-size: .86rem; }
+    .vv-segment { display: grid; grid-template-columns: repeat(3, auto); width: max-content; }
+    .vv-plateformes { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .vv-plat, .vv-carte2 { padding: 9px 11px; border-radius: 12px; gap: 2px; }
+    .vv-plat b, .vv-carte2 b { font-size: .86rem; } .vv-plat small, .vv-carte2 small { font-size: .74rem; }
+    .vv-format { margin-bottom: 4px; } .vv-format.f9x16 { width: 12px; height: 20px; } .vv-format.f4x5 { width: 16px; height: 20px; }
+    .vv-mini { height: 16px; margin-bottom: 4px; }
+    .vv-choix2, .vv-choix3 { gap: 8px; max-width: none; }
+    .vv-nav-etapes { margin-top: 18px; max-width: none; }
+    .vv-continuer { font-size: .95rem; padding: 11px 24px; }
+    /* aperçu plus petit */
+    .vv-tel { top: 110px; gap: 10px; }
+    .vv-ecran { border-width: 5px; border-radius: 24px; }
+    .vv-e-pill { top: 32px; font-size: .58rem; padding: 4px 10px; } .vv-e-titre { top: 58px; font-size: .92rem; } .vv-e-titre small { font-size: .68rem; }
+    .vv-ecran.f45 .vv-e-titre { top: 52px; font-size: .86rem; } .vv-ecran.f45 .vv-e-pill { top: 26px; }
+    .vv-e-st { font-size: .68rem; bottom: 12px; } .vv-e-perso { bottom: 44px; width: 42%; } .vv-e-duree { font-size: .62rem; top: 9px; right: 9px; }
+    .vv-tel-leg { font-size: .76rem; }
   </style>
 </head>
 <body>
