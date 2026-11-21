@@ -188,15 +188,15 @@
         <div class="der-champs">${civ("client", ["M.", "Mme"])}${champ("client", "nom", "Nom", "text", "deux")}${champ("client", "prenom", "Prénom", "text", "tout")}
           ${champ("client", "naissance", "Date de naissance", "date", "tout")}${champ("client", "telephone", "Téléphone", "tel", "deux")}${champ("client", "email", "E-mail", "email")}</div>
         <p class="der-alerte" id="der-alerte-email" hidden>Cet e-mail semble incomplet (exemple : prenom.nom@domaine.fr).</p>
-        <div class="der-confidentiel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
-          <span><b>Jamais enregistré, jamais envoyé.</b> Ces informations restent dans cette page et s'effacent quand vous la quittez, après 15 minutes sans activité ou avec « Nouveau client ».</span></div></section>
-      <section class="der-carte der-recit"><h2>🎬 Récit de présentation</h2><p class="aide">Avant le DER : le cabinet, la direction, puis vous. Devant le client, les écrans vides ou masqués sont sautés ; l'aperçu vous montre ce qui reste à compléter.</p>
+      <div class="der-generer"><div class="der-ligne-boutons" style="justify-content:center;margin:0"><button type="button" class="bouton" id="der-recit-lancer" ${C ? "" : "disabled"}>▶ Présenter</button>
+        <button type="button" class="bouton bouton-discret" id="der-generer" ${C ? "" : "disabled"}>Générer le DER</button></div>
+        <p class="der-msg" id="der-msg-generer" role="status"></p>
+        <button type="button" class="der-lien-discret" id="der-vider">↺ Vider les informations du client</button></div>
+      <details class="der-admin der-preparer"><summary>⚙️ Préparer ma présentation</summary>
+        ${C ? "" : '<p class="doux petit">Le texte du DER n\'est pas encore déposé : « Présenter » et « Générer le DER » seront disponibles ensuite.</p>'}
+        <p class="doux petit">Le récit passe avant le DER : le cabinet, la direction, puis vous. Devant le client, les écrans vides ou masqués sont sautés ; l'aperçu montre ce qui reste à compléter.</p>
         <div class="der-recit-etat" id="der-recit-etat"></div>
-        <div class="der-ligne-boutons"><button type="button" class="puce" id="der-mon-profil">👤 Mon profil</button><button type="button" class="puce" id="der-recit-apercu" ${C ? "" : "disabled"}>👁 Aperçu du récit</button>${admin ? '<button type="button" class="puce" id="der-le-cabinet">🏛️ Le cabinet</button>' : ""}</div></section>
-      <div class="der-generer"><div class="der-ligne-boutons" style="justify-content:center;margin:0"><button type="button" class="bouton" id="der-recit-lancer" ${C ? "" : "disabled"}>▶ Présenter au client (avec le récit)</button>
-        <button type="button" class="bouton bouton-discret" id="der-generer" ${C ? "" : "disabled"}>Générer le DER (présentation classique)</button></div>
-        <p class="der-msg" id="der-msg-generer" role="status">${C ? "" : "Disponible dès que le texte du DER est déposé."}</p>
-        <button type="button" class="puce" id="der-vider">↺ Vider les informations du client</button></div>
+        <div class="der-ligne-boutons"><button type="button" class="puce" id="der-mon-profil">👤 Mon profil</button><button type="button" class="puce" id="der-recit-apercu" ${C ? "" : "disabled"}>👁 Aperçu du récit</button>${admin ? '<button type="button" class="puce" id="der-le-cabinet">🏛️ Le cabinet</button>' : ""}</div></details>
       ${admin ? `<details class="der-admin"><summary>⚙️ Administration du DER</summary>${alerteAge()}
         <p class="doux petit">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · déposée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte déposé pour l'instant."}</p>
         <div class="der-ligne-boutons"><label class="puce" style="cursor:pointer">📥 Déposer une nouvelle version<input type="file" accept="application/json,.json" id="der-import" hidden></label><button type="button" class="puce" id="der-versions">🕘 Versions précédentes (${(historique || []).length})</button></div></details>` : ""}

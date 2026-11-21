@@ -19,7 +19,7 @@
 .der-resume-contact .doux { color: var(--doux); }
 .der-confidentiel { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--ok-doux, #e7f6ec); color: var(--texte); font-size: .82rem; line-height: 1.4; margin-top: 14px; }
 .der-confidentiel svg { flex: none; color: var(--ok, #1f8a4c); margin-top: 1px; }
-.der-generer { display: grid; gap: 8px; justify-items: center; }
+.der-generer { display: grid; gap: 8px; justify-items: center; margin-top: 22px; }
 .der-generer .bouton { font-size: 1.05rem; padding: 14px 34px; }
 .der-generer .bouton:disabled { opacity: .5; cursor: not-allowed; }
 .der-msg { font-size: .85rem; color: #a33; min-height: 1.2em; margin: 0; text-align: center; }
@@ -267,3 +267,6 @@ details.der-admin > summary { cursor: pointer; font-weight: 600; font-size: .9re
 .rc-coches label { display: flex; align-items: flex-start; gap: 8px; font-weight: 400; color: var(--texte); }
 .rc-coches input { width: auto; flex: none; margin: 3px 0 0; }
 .rc-coches.rc-une-colonne { grid-template-columns: minmax(0, 1fr); }
+.der-lien-discret { font: inherit; font-size: .8rem; background: none; border: 0; color: var(--doux); cursor: pointer; padding: 4px 8px; text-decoration: underline; text-underline-offset: 3px; }
+.der-lien-discret:hover { color: var(--texte); }
+details.der-preparer > *:not(summary) { margin-top: 10px; }
