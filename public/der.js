@@ -67,7 +67,7 @@
   function blocContact() {
     const c = contact, v = (x, lib) => (x ? esc(x) : `<span class="vide">${lib}</span>`);
     return `<div class="der-coord" data-zone="contact">
-      <div><div class="gras">${v([c.civilite, (c.nom || "").toUpperCase()].filter(Boolean).join(" "), "Nom du conseiller")}</div><div class="gras">${esc(c.cabinet)}</div><div>${esc(c.adresse)}</div><div>${esc((c.ville || "").toUpperCase())}</div></div>
+      <div><div class="gras">${v([c.civilite, (c.nom || "").toUpperCase()].filter(Boolean).join(" "), "Nom du conseiller")}</div><div class="gras">${esc(c.cabinet)}</div><div>${esc(c.adresse)}</div><div>${esc(c.ville)}</div></div>
       <div style="align-self:center">Téléphone : ${esc(c.telephone)}<br>Email : <b>${esc(c.email)}</b></div></div>`;
   }
   function blocIdentite() {
@@ -334,7 +334,7 @@
       return v;
     }
     if (k === "prenom") return v.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
-    if (k === "nom" || k === "ville") return v.toUpperCase();
+    if (k === "nom") return v.toUpperCase();
     if (k === "email") return v.toLowerCase();
     return v;
   }
@@ -347,25 +347,27 @@
   }
 
   // ---------------------------------------------------------------- démarrage
+  // Coordonnées du cabinet : remises à chaque ouverture de la page (modifiables pour un rendez-vous).
+  const CABINET = { cabinet: "BSC PATRIMOINE", adresse: "8 rue du Ponceau", ville: "Cergy" };
   async function demarrer() {
     moi = await chargerEntete("/der");
     let d;
     try { d = await appelApi("/api/der"); } catch (e) { zone.innerHTML = `<p class="message ko">${esc(e.message)}</p>`; return; }
     C = d.contenu; admin = d.admin; historique = d.historique || [];
     const defaut = C?.contact_defaut || {};
-    // « Votre contact » : les coordonnées gardées par le conseiller, sinon son nom (et l'adresse du cabinet)
-    contact = d.contact ? { ...d.contact } : { ...defaut, civilite: d.conseiller ? "" : defaut.civilite, nom: d.conseiller || defaut.nom || "", telephone: defaut.telephone || "" };
-    if (!C) {
-      zone.innerHTML = `<div class="der-page"><div class="carte bloc"><h2 style="margin-top:0">Le texte du DER n'est pas encore chargé</h2>
-        <p class="doux">${admin ? "Importez le fichier du DER (JSON) fourni : il est rangé dans la base du site, jamais dans le code." : "L'administrateur doit d'abord importer le texte du DER."}</p></div>${admin ? panneau() : ""}</div>`;
-      brancherAdmin(); return;
-    }
+    // « Votre contact » : les coordonnées gardées par le conseiller, sinon son nom ; le cabinet, l'adresse et la ville
+    // sont toujours remis à ceux du cabinet.
+    contact = { ...(d.contact ? d.contact : { email: defaut.email || "", civilite: d.conseiller ? "" : defaut.civilite || "", nom: d.conseiller || defaut.nom || "", telephone: defaut.telephone || "" }), ...CABINET };
+    // Le document à droite (ou un message tant que le texte n'est pas déposé) ; le panneau à gauche est toujours là.
     let docHtml;
-    try { docHtml = `<nav class="der-sommaire" aria-label="Sommaire du DER">${C.sections.map((s) => `<a href="#s-${esc(s.id)}">${esc(s.titre)}</a>`).join("")}</nav>${documentHtml()}`; }
-    catch { docHtml = `<div class="carte bloc"><h2 style="margin-top:0">Le texte du DER est abîmé</h2><p class="doux">${admin ? "Revenez à la version précédente ou réimportez le fichier du DER (outils administrateur)." : "Prévenez l'administrateur du site."}</p></div>`; }
+    if (!C) docHtml = `<div class="carte bloc"><h2 style="margin-top:0">Le texte du DER n'est pas encore déposé</h2><p class="doux">${admin ? "Déposez le fichier du DER avec « 📥 Déposer une nouvelle version » (outils administrateur, à gauche). Il est rangé dans la base du site, jamais dans le code." : "L'administrateur doit d'abord déposer le texte du DER. Vous pouvez déjà enregistrer vos coordonnées."}</p></div>`;
+    else {
+      try { docHtml = `<nav class="der-sommaire" aria-label="Sommaire du DER">${C.sections.map((s) => `<a href="#s-${esc(s.id)}">${esc(s.titre)}</a>`).join("")}</nav>${documentHtml()}`; }
+      catch { docHtml = `<div class="carte bloc"><h2 style="margin-top:0">Le texte du DER est abîmé</h2><p class="doux">${admin ? "Revenez à la version précédente ou déposez de nouveau le fichier du DER (outils administrateur)." : "Prévenez l'administrateur du site."}</p></div>`; }
+    }
     zone.innerHTML = `<div class="der-page">${panneau()}<div>${docHtml}</div></div>`;
     brancherAdmin();
-    if (!document.getElementById("der-doc")) return;
+    const avecDoc = !!document.getElementById("der-doc");
     remplirChamps();
     document.getElementById("der-oublier").hidden = !d.contact;
     document.querySelectorAll(".der-panneau [data-zone]").forEach((el) => {
@@ -380,17 +382,22 @@
     });
     resumeContact();
     if (matchMedia("(max-width: 1100px)").matches && d.contact) document.getElementById("der-bloc-contact").open = false;
-    document.getElementById("der-memoriser").onclick = async () => {
-      const m = document.getElementById("der-msg-contact");
-      try { await appelApi("/api/der/contact", "POST", { contact }); m.textContent = "✓ Coordonnées gardées sur votre compte."; document.getElementById("der-oublier").hidden = false; } catch (e) { m.textContent = e.message; }
+    document.getElementById("der-memoriser").onclick = async (e) => {
+      const m = document.getElementById("der-msg-contact"), b = e.currentTarget;
+      b.disabled = true; m.textContent = "Enregistrement…";
+      try { await appelApi("/api/der/contact", "POST", { contact }); m.textContent = "✓ Coordonnées gardées sur votre compte."; document.getElementById("der-oublier").hidden = false; }
+      catch (x) { m.textContent = "Échec : " + x.message; }
+      finally { b.disabled = false; }
     };
     document.getElementById("der-oublier").onclick = async () => {
       const m = document.getElementById("der-msg-contact");
-      try { await appelApi("/api/der/contact", "POST", { oublier: true }); m.textContent = "Coordonnées retirées de votre compte."; document.getElementById("der-oublier").hidden = true; } catch (e) { m.textContent = e.message; }
+      try { await appelApi("/api/der/contact", "POST", { oublier: true }); m.textContent = "Coordonnées retirées de votre compte."; document.getElementById("der-oublier").hidden = true; } catch (x) { m.textContent = "Échec : " + x.message; }
     };
-    document.getElementById("der-presenter").onclick = presenter;
+    const pres = document.getElementById("der-presenter");
+    if (avecDoc) pres.onclick = presenter;
+    else { pres.disabled = true; pres.insertAdjacentHTML("afterend", '<p class="der-indispo">Disponible dès que le texte du DER est déposé.</p>'); }
     document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.", true);
-    filtres(document); animer();
+    if (avecDoc) { filtres(document); animer(); }
   }
   function brancherAdmin() {
     const recharger = () => { toast("✓ DER mis à jour. Rechargement…"); setTimeout(() => location.reload(), 900); };
