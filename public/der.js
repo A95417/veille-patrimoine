@@ -1,7 +1,7 @@
 // Rubrique DER : le document d'entrée en relation du cabinet, consulté et présenté au client (ni téléchargement, ni impression).
 // RÈGLE : les informations du client ne quittent jamais cette page. Elles ne sont envoyées à aucun serveur,
 // ni gardées dans le navigateur (pas de stockage local), et s'effacent : page quittée ou rechargée,
-// bouton « Nouveau client » (avec « Annuler » 5 s) et 15 minutes sans activité (en pause pendant la présentation).
+// bouton « Nouveau client » (avec « Annuler » 5 s) et 15 minutes sans activité (en pause en plein écran).
 (function () {
   const zone = document.getElementById("der-zone");
   const INACTIVITE = 15 * 60 * 1000;
@@ -124,7 +124,7 @@
   const section = (s) => {
     let corps;
     try { corps = s.blocs.map(bloc).join(""); } catch { corps = `<p class="der-casse">Cette section n'a pas pu s'afficher. L'administrateur doit réimporter le texte du DER ou revenir à la version précédente.</p>`; }
-    return `<section class="der-section der-anim" id="s-${esc(s.id)}" data-page="${s.page === "nouvelle" ? "nouvelle" : ""}"><h2>${ico(s.icone)}${esc(s.titre)}</h2>${corps}</section>`;
+    return `<section class="der-section" id="s-${esc(s.id)}" data-page="${s.page === "nouvelle" ? "nouvelle" : ""}"><h2>${ico(s.icone)}${esc(s.titre)}</h2>${corps}</section>`;
   };
 
   function documentHtml() {
@@ -137,92 +137,177 @@
         <div><div class="der-titre-couv"><div class="sigle">DER</div><div class="long">Document d'Entrée en Relation</div></div>
           <div class="der-bandeau"><div class="annee">${new Date().getFullYear()}</div><div class="client ${nomClientCouv().length > 3 ? "" : "vide"}" id="couv-client">${nomClientCouv().length > 3 ? esc(nomClientCouv()) : "Nom du client"}</div></div></div>
       </section>
-      <div class="der-corps"><div class="der-doc-titre der-anim">Document<span>d'entrée en relation</span></div>${C.sections.map(section).join("")}</div>
+      <div class="der-corps"><div class="der-doc-titre">Document<span>d'entrée en relation</span></div>${C.sections.map(section).join("")}</div>
     </article>`;
   }
 
-  // ---------------------------------------------------------------- panneau de préparation
-  const champ = (zoneN, k, lib, type = "text", cls = "", extra = "") => `<label class="${cls}">${lib}<input type="${type}" data-zone="${zoneN}" data-k="${k}" autocomplete="off" data-lpignore="true" data-1p-ignore spellcheck="false" ${extra}></label>`;
-  const civ = (zoneN, opts) => `<label>Civilité<select data-zone="${zoneN}" data-k="civilite">${opts.map((o) => `<option>${o}</option>`).join("")}</select></label>`;
-  // Texte du DER trop ancien : prévenir l'administrateur (l'année de la couverture, elle, change toute seule).
+  // ---------------------------------------------------------------- étape 1 : préparer le DER
+  const champ = (zoneN, k, lib, type = "text", cls = "") => `<label class="${cls}">${lib}<input type="${type}" data-zone="${zoneN}" data-k="${k}" autocomplete="off" data-lpignore="true" data-1p-ignore spellcheck="false"></label>`;
+  const civ = (zoneN, opts) => `<label>Civilité<select data-zone="${zoneN}" data-k="civilite">${opts.map((o) => `<option value="${o}">${o || "—"}</option>`).join("")}</select></label>`;
+  const svgP = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k]}</svg>`;
+  // Texte du DER trop ancien : prévenir l'administrateur.
   function alerteAge() {
     if (!C?.importe_le) return "";
     const d = new Date(C.importe_le), mois = (Date.now() - d) / (30.44 * 864e5);
-    if (new Date().getFullYear() > d.getFullYear()) return `<p class="der-alerte">Nouvelle année : vérifiez le DER (partenaires, garanties, ORIAS, tarifs), puis importez la version ${new Date().getFullYear()}.</p>`;
-    if (mois > 12) return `<p class="der-alerte">Texte importé il y a plus de 12 mois : pensez à le vérifier.</p>`;
+    if (new Date().getFullYear() > d.getFullYear()) return `<p class="der-alerte">Nouvelle année : vérifiez le DER (partenaires, garanties, ORIAS, tarifs), puis déposez la version ${new Date().getFullYear()}.</p>`;
+    if (mois > 12) return `<p class="der-alerte">Texte déposé il y a plus de 12 mois : pensez à le vérifier.</p>`;
     return "";
   }
-  function panneau() {
-    return `<aside class="der-panneau" aria-label="Préparer le DER">
-      <details class="der-bloc" id="der-bloc-contact" open><summary><h2>${ico("contact", "")} Votre contact</h2><span class="der-resume" id="der-resume-contact"></span></summary><p class="aide">Le conseiller qui présente le DER.</p>
-        <div class="der-champs">${civ("contact", ["Mme", "M.", ""])}${champ("contact", "nom", "Nom")}${champ("contact", "cabinet", "Cabinet", "text", "large")}
-          ${champ("contact", "adresse", "Adresse", "text", "large")}${champ("contact", "ville", "Ville", "text", "large")}${champ("contact", "telephone", "Téléphone", "tel", "large")}${champ("contact", "email", "E-mail", "email", "large")}</div>
-        <div class="der-ligne-boutons"><button type="button" class="puce" id="der-memoriser">💾 Garder sur mon compte</button><button type="button" class="puce" id="der-oublier" hidden>Oublier</button></div>
-        <p class="doux petit" id="der-msg-contact" style="margin:6px 0 0" role="status"></p></details>
-      <details class="der-bloc" open><summary><h2>${ico("identite", "")} Vos informations d'identité</h2></summary><p class="aide">Le client à qui vous remettez le DER.</p>
-        <div class="der-champs">${civ("client", ["M.", "Mme"])}${champ("client", "nom", "Nom")}${champ("client", "prenom", "Prénom", "text", "large")}
-          ${champ("client", "naissance", "Date de naissance", "date", "large")}${champ("client", "telephone", "Téléphone", "tel", "large")}${champ("client", "email", "E-mail", "email", "large")}</div>
-        <div class="der-confidentiel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
-          <span><b>Jamais enregistré, jamais envoyé.</b> Ces informations restent dans cette page et s'effacent quand vous la quittez, après 15 minutes sans activité ou avec « Nouveau client ».</span></div>
-        <p class="der-alerte" id="der-alerte-email" hidden>Cet e-mail semble incomplet (exemple : prenom.nom@domaine.fr).</p></details>
-      <div class="der-bloc der-actions">
-        <button type="button" class="bouton" id="der-presenter">▶ Présenter au client</button>
-        <button type="button" class="bouton bouton-discret" id="der-nouveau">↺ Nouveau client</button>
-        <div class="der-minuteur" id="der-minuteur" aria-live="polite"></div></div>
-      ${admin ? `<div class="der-bloc"><h2>⚙️ Texte du DER (administrateur)</h2>${alerteAge()}<p class="aide">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · importée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte importé."}</p>
-        <div class="der-ligne-boutons" style="margin:0"><label class="puce" style="cursor:pointer">📥 Déposer une nouvelle version<input type="file" accept="application/json,.json" id="der-import" hidden></label><button type="button" class="puce" id="der-versions">🕘 Versions précédentes (${(historique || []).length})</button></div>
-        <p class="doux petit" id="der-msg-admin" style="margin:6px 0 0" role="status"></p></div>` : ""}
-    </aside>`;
+  function resumeContactHtml() {
+    const c = contact;
+    return `<div class="lignes"><b>${esc([c.civilite, c.nom].filter(Boolean).join(" ") || "Nom du conseiller")}</b><br>${esc(c.cabinet)} · ${esc(c.adresse)}, ${esc(c.ville)}<br>
+      <span class="doux">${c.telephone ? "Tél. " + esc(c.telephone) : "Téléphone non renseigné"} · ${c.email ? esc(c.email) : "e-mail non renseigné"}</span></div>`;
   }
-
-  // ---------------------------------------------------------------- mises à jour en direct
-  function rafraichir(zoneN) {
-    const doc = document.getElementById("der-doc"); if (!doc) return;
-    const remplacer = (sel, html) => doc.querySelectorAll(sel).forEach((el) => { const t = document.createElement("div"); t.innerHTML = html; const n = t.firstElementChild; n.classList.add("der-maj"); el.replaceWith(n); });
-    if (zoneN === "contact") {
-      remplacer('[data-zone="contact"]', blocContact());
-      document.getElementById("couv-inter").textContent = interlocuteurCouv();
-      document.getElementById("couv-cab").textContent = contact.cabinet || "";
-      document.getElementById("couv-mail").textContent = contact.email || "";
-    } else {
-      remplacer('[data-zone="identite"]', blocIdentite());
-      const c = document.getElementById("couv-client"), n = nomClientCouv();
-      c.textContent = n.length > 3 ? n : "Nom du client"; c.classList.toggle("vide", n.length <= 3);
-    }
+  function etape1() {
+    return `<div class="der-prep" id="der-etape1">
+      <section class="der-carte"><h2>${svgP("contact")} Votre contact</h2>
+        <div class="der-resume-contact" id="der-contact-resume">${resumeContactHtml()}<button type="button" class="puce" id="der-contact-modifier" aria-expanded="false" aria-controls="der-contact-form">✏️ Modifier</button></div>
+        <div id="der-contact-form" hidden style="margin-top:14px">
+          <div class="der-champs">${civ("contact", ["", "Mme", "M."])}${champ("contact", "nom", "Nom", "text", "deux")}${champ("contact", "cabinet", "Cabinet", "text", "tout")}
+            ${champ("contact", "adresse", "Adresse", "text", "deux")}${champ("contact", "ville", "Ville")}${champ("contact", "telephone", "Téléphone", "tel", "deux")}${champ("contact", "email", "E-mail", "email")}</div>
+          <div class="der-ligne-boutons"><button type="button" class="puce" id="der-memoriser">💾 Garder sur mon compte</button><button type="button" class="puce" id="der-oublier" hidden>Oublier</button><span class="doux petit" id="der-msg-contact" role="status"></span></div>
+          <p class="doux petit" style="margin:8px 0 0">Cabinet, adresse et ville reviennent à ceux du cabinet à chaque ouverture.</p></div></section>
+      <section class="der-carte"><h2>${svgP("identite")} Vos informations d'identité</h2><p class="aide">Le client à qui vous présentez le DER.</p>
+        <div class="der-champs">${civ("client", ["M.", "Mme"])}${champ("client", "nom", "Nom", "text", "deux")}${champ("client", "prenom", "Prénom", "text", "tout")}
+          ${champ("client", "naissance", "Date de naissance", "date", "tout")}${champ("client", "telephone", "Téléphone", "tel", "deux")}${champ("client", "email", "E-mail", "email")}</div>
+        <p class="der-alerte" id="der-alerte-email" hidden>Cet e-mail semble incomplet (exemple : prenom.nom@domaine.fr).</p>
+        <div class="der-confidentiel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+          <span><b>Jamais enregistré, jamais envoyé.</b> Ces informations restent dans cette page et s'effacent quand vous la quittez, après 15 minutes sans activité ou avec « Nouveau client ».</span></div></section>
+      <div class="der-generer"><button type="button" class="bouton" id="der-generer" ${C ? "" : "disabled"}>Générer le DER</button>
+        <p class="der-msg" id="der-msg-generer" role="status">${C ? "" : "Disponible dès que le texte du DER est déposé."}</p>
+        <button type="button" class="puce" id="der-vider">↺ Vider les informations du client</button></div>
+      ${admin ? `<details class="der-admin"><summary>⚙️ Administration du DER</summary>${alerteAge()}
+        <p class="doux petit">${C ? `Version : ${esc(C.version || "")}${C.importe_le ? ` · déposée le ${new Date(C.importe_le).toLocaleDateString("fr-FR")}` : ""}` : "Aucun texte déposé pour l'instant."}</p>
+        <div class="der-ligne-boutons"><label class="puce" style="cursor:pointer">📥 Déposer une nouvelle version<input type="file" accept="application/json,.json" id="der-import" hidden></label><button type="button" class="puce" id="der-versions">🕘 Versions précédentes (${(historique || []).length})</button></div></details>` : ""}
+    </div>`;
   }
   function remplirChamps() {
-    document.querySelectorAll(".der-panneau [data-zone]").forEach((el) => { const src = el.dataset.zone === "contact" ? contact : client; el.value = src[el.dataset.k] ?? ""; });
+    document.querySelectorAll("#der-etape1 [data-zone]").forEach((el) => { const src = el.dataset.zone === "contact" ? contact : client; el.value = src[el.dataset.k] ?? ""; });
   }
 
-  // Effacement des informations du client (jamais rien d'enregistré : on vide la page).
+  // ---------------------------------------------------------------- étape 2 : le document, navigation libre par catégorie
+  let lecteur = null, sections = [], courant = 0, observateur = null;
+  function etape2() {
+    const titres = C.sections.map((s, i) => ({ i, id: s.id, titre: s.titre, icone: s.icone }));
+    return `<div class="der-lecteur" id="der-lecteur" role="region" aria-label="Document d'entrée en relation">
+      <div class="der-barre">
+        <button type="button" id="der-retour">← <span class="txt">Modifier les informations</span></button>
+        <span class="titre" id="der-titre-courant" aria-live="polite"></span>
+        <button type="button" id="der-prec" aria-label="Catégorie précédente">‹ <span class="txt">Précédente</span></button>
+        <button type="button" id="der-suiv" aria-label="Catégorie suivante"><span class="txt">Suivante</span> ›</button>
+        <button type="button" class="principal" id="der-plein">⛶ <span class="txt" id="der-plein-txt">Plein écran</span></button>
+        <button type="button" id="der-nouveau">↺ <span class="txt">Nouveau client</span></button>
+        <select id="der-choix" aria-label="Aller à une catégorie"><option value="-1">Couverture</option>${titres.map((t) => `<option value="${t.i}">${esc(t.titre)}</option>`).join("")}</select>
+      </div>
+      <div class="der-corps-lecteur">
+        <nav class="der-nav" aria-label="Catégories du DER"><ol>
+          <li><button type="button" data-i="-1">${ico("intro")}Couverture</button></li>
+          ${titres.map((t) => `<li><button type="button" data-i="${t.i}">${ico(t.icone)}${esc(t.titre)}</button></li>`).join("")}</ol></nav>
+        <div class="der-vue" id="der-vue" tabindex="0">${documentHtml()}</div>
+      </div></div>`;
+  }
+  const cible = (i) => (i < 0 ? document.querySelector("#der-doc .der-couverture") : document.getElementById("s-" + C.sections[i].id));
+  function aller(i) {
+    i = Math.max(-1, Math.min(C.sections.length - 1, i));
+    const vue = document.getElementById("der-vue"), el = cible(i);
+    if (!vue || !el) return;
+    vue.scrollTo({ top: i < 0 ? 0 : el.getBoundingClientRect().top - vue.getBoundingClientRect().top + vue.scrollTop - 8, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    marquer(i);
+  }
+  function marquer(i) {
+    courant = i;
+    document.querySelectorAll(".der-nav button").forEach((b) => b.setAttribute("aria-current", Number(b.dataset.i) === i));
+    document.querySelector(`.der-nav button[data-i="${i}"]`)?.scrollIntoView({ block: "nearest" });
+    const t = document.getElementById("der-titre-courant"); if (t) t.textContent = i < 0 ? "Couverture" : C.sections[i].titre;
+    const ch = document.getElementById("der-choix"); if (ch) ch.value = String(i);
+    document.getElementById("der-prec").disabled = i <= -1;
+    document.getElementById("der-suiv").disabled = i >= C.sections.length - 1;
+  }
+  // La catégorie en cours suit le défilement.
+  function suivreDefilement() {
+    const vue = document.getElementById("der-vue");
+    let attente = 0;
+    vue.addEventListener("scroll", () => {
+      cancelAnimationFrame(attente);
+      attente = requestAnimationFrame(() => {
+        const haut = vue.getBoundingClientRect().top + 40;
+        let k = -1;
+        C.sections.forEach((s, i) => { const el = document.getElementById("s-" + s.id); if (el && el.getBoundingClientRect().top <= haut) k = i; });
+        if (vue.scrollTop + vue.clientHeight >= vue.scrollHeight - 4) k = C.sections.length - 1;
+        if (k !== courant) marquer(k);
+      });
+    }, { passive: true });
+  }
+  // Plein écran : API du navigateur si possible, sinon le lecteur couvre tout l'écran (iPhone).
+  let plein = false;
+  function basculerPlein(forcer) {
+    const l = document.getElementById("der-lecteur"); if (!l) return;
+    const ouvrir = forcer ?? !plein;
+    if (ouvrir) { l.requestFullscreen?.().catch(() => {}); l.classList.add("plein"); }
+    else { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); l.classList.remove("plein"); }
+    plein = ouvrir; enPresentation = ouvrir; derniere = Date.now();
+    document.getElementById("der-plein-txt").textContent = ouvrir ? "Quitter le plein écran" : "Plein écran";
+    setTimeout(() => aller(courant), 60);
+  }
+  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && plein) basculerPlein(false); });
+  addEventListener("keydown", (ev) => {
+    if (!document.getElementById("der-lecteur") || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "")) return;
+    if (ev.key === "ArrowRight") { ev.preventDefault(); aller(courant + 1); }
+    else if (ev.key === "ArrowLeft") { ev.preventDefault(); aller(courant - 1); }
+    else if (ev.key === "Escape" && plein) basculerPlein(false);
+  });
+
+  function montrerEtape(n) {
+    const e1 = document.getElementById("der-etape1"), z2 = document.getElementById("der-etape2");
+    if (n === 2) {
+      reinitFiltres();
+      z2.innerHTML = etape2(); e1.hidden = true; z2.hidden = false;
+      document.querySelector(".page > .titre-section")?.setAttribute("hidden", "");   // toute la hauteur pour le document
+      document.querySelectorAll(".der-nav button").forEach((b) => b.onclick = () => aller(Number(b.dataset.i)));
+      document.getElementById("der-choix").onchange = (e) => aller(Number(e.target.value));
+      document.getElementById("der-prec").onclick = () => aller(courant - 1);
+      document.getElementById("der-suiv").onclick = () => aller(courant + 1);
+      document.getElementById("der-plein").onclick = () => basculerPlein();
+      document.getElementById("der-retour").onclick = () => montrerEtape(1);
+      document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.", true);
+      filtres(z2); suivreDefilement(); marquer(-1);
+      document.getElementById("der-vue").focus({ preventScroll: true });
+      scrollTo({ top: 0 });
+    } else {
+      if (plein) basculerPlein(false);
+      z2.innerHTML = ""; z2.hidden = true; e1.hidden = false;
+      document.querySelector(".page > .titre-section")?.removeAttribute("hidden");   // le document (avec le nom du client) est retiré de la page
+    }
+  }
+
+  // ---------------------------------------------------------------- effacement des informations du client
   let copieAnnulation = null, minuteurAnnulation = 0;
   function effacerClient(message, annulable = false) {
     clearTimeout(minuteurAnnulation); copieAnnulation = annulable && clientRempli() ? { ...client } : null;
     Object.assign(client, { civilite: "M.", nom: "", prenom: "", naissance: "", telephone: "", email: "" });
-        remplirChamps(); rafraichir("client"); verifierEmail();
+    if (document.getElementById("der-etape2") && !document.getElementById("der-etape2").hidden) montrerEtape(1);
+    remplirChamps(); verifierEmail();
     if (copieAnnulation) {
-      toast(message, "Annuler", () => { Object.assign(client, copieAnnulation); copieAnnulation = null; remplirChamps(); rafraichir("client"); toast("Informations rétablies."); }, 5000);
+      toast(message, "Annuler", () => { Object.assign(client, copieAnnulation); copieAnnulation = null; remplirChamps(); toast("Informations rétablies."); }, 5000);
       minuteurAnnulation = setTimeout(() => { copieAnnulation = null; }, 5000);   // passé 5 s, la copie disparaît
     } else if (message) toast(message);
   }
   function toast(m, action, faire, duree = 4200) {
-    document.querySelector(".der-toast")?.remove();
+    document.querySelector(".der-toast:not(#der-garder)")?.remove();
     const t = document.createElement("div"); t.className = "der-toast"; t.setAttribute("role", "status");
     t.innerHTML = `<span>${esc(m)}</span>${action ? `<button type="button">${esc(action)}</button>` : ""}`;
     if (action) t.querySelector("button").onclick = () => { t.remove(); faire(); };
-    document.body.appendChild(t);
+    (document.fullscreenElement || document.body).appendChild(t);
     setTimeout(() => t.remove(), duree);
   }
   const clientRempli = () => ["nom", "prenom", "naissance", "telephone", "email"].some((k) => client[k]);
 
-  // Minuteur d'inactivité : 15 minutes sans rien faire → effacement.
-  let derniere = Date.now();
+  // Minuteur d'inactivité : 15 minutes sans rien faire → effacement (en pause en plein écran).
+  let derniere = Date.now(), enPresentation = false;
   const activite = () => { derniere = Date.now(); };
-  ["pointerdown", "keydown", "scroll", "input", "touchstart"].forEach((e) => addEventListener(e, activite, { passive: true, capture: true }));
-  let enPresentation = false;
+  ["pointerdown", "keydown", "scroll", "input", "touchstart", "wheel"].forEach((e) => addEventListener(e, activite, { passive: true, capture: true }));
   setInterval(() => {
-    const m = document.getElementById("der-minuteur");
-    if (!clientRempli() || enPresentation) { if (m) m.textContent = enPresentation && clientRempli() ? "Effacement automatique en pause pendant la présentation" : ""; derniere = Date.now(); document.getElementById("der-garder")?.remove(); return; }
+    if (!clientRempli() || enPresentation) { derniere = Date.now(); document.getElementById("der-garder")?.remove(); return; }
     const reste = INACTIVITE - (Date.now() - derniere);
     if (reste <= 0) { document.getElementById("der-garder")?.remove(); effacerClient("Informations du client effacées (15 minutes sans activité)."); derniere = Date.now(); return; }
     if (reste <= 60000 && !document.getElementById("der-garder")) {
@@ -232,36 +317,15 @@
       document.body.appendChild(a);
     }
     if (reste > 60000) document.getElementById("der-garder")?.remove();
-    if (m) m.textContent = `Effacement automatique dans ${Math.ceil(reste / 60000)} min sans activité`;
   }, 5000);
   // Page quittée ou remise depuis l'historique : rien ne doit réapparaître.
-  addEventListener("pagehide", () => { Object.keys(client).forEach((k) => (client[k] = "")); document.querySelectorAll('[data-zone="client"]').forEach((el) => (el.value = "")); });
+  addEventListener("pagehide", () => { Object.keys(client).forEach((k) => (client[k] = "")); document.querySelectorAll('[data-zone="client"]').forEach((el) => (el.value = "")); const z = document.getElementById("der-etape2"); if (z) z.innerHTML = ""; });
   addEventListener("pageshow", (e) => { if (e.persisted) effacerClient(); });
 
-  // ---------------------------------------------------------------- animations
-  function animer() {
-    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("visible"); io.unobserve(e.target); compter(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
-    document.querySelectorAll("#der-doc .der-anim").forEach((el) => io.observe(el));
-    // sommaire : section en cours surlignée
-    const liens = [...document.querySelectorAll(".der-sommaire a")];
-    const io2 = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) liens.forEach((a) => a.classList.toggle("actif", a.hash === "#" + e.target.id)); }), { rootMargin: "-30% 0px -60% 0px" });
-    document.querySelectorAll("#der-doc .der-section").forEach((s) => io2.observe(s));
-  }
-  // Montants garantis : comptage animé jusqu'à la vraie valeur (affichée telle quelle à la fin).
-  function compter(racine) {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    racine.querySelectorAll("[data-montant]").forEach((el) => {
-      const cible = Number(el.dataset.montant.replace(/\D/g, "")); if (!cible) return;
-      const t0 = performance.now(), d = 1200;
-      const pas = (t) => { const k = Math.min(1, (t - t0) / d), v = Math.round(cible * (1 - Math.pow(1 - k, 3)));
-        el.textContent = k < 1 ? v.toLocaleString("fr-FR").replace(/ /g, " ") + "€" : el.dataset.montant; if (k < 1) requestAnimationFrame(pas); };
-      requestAnimationFrame(pas);
-    });
-  }
-  // Tableaux des partenaires : recherche et filtre par nature.
+  // ---------------------------------------------------------------- tableaux des partenaires : recherche et filtre
   function filtres(racine) {
     racine.querySelectorAll(".der-filtres").forEach((f) => {
-      const tab = racine.querySelector("#" + f.dataset.tab) || document.getElementById(f.dataset.tab);
+      const tab = document.getElementById(f.dataset.tab);
       let nature = "";
       const appliquer = () => {
         const q = (f.querySelector("input").value || "").toLowerCase(); let n = 0;
@@ -272,57 +336,7 @@
       f.querySelectorAll("button").forEach((b) => b.onclick = () => { nature = b.dataset.n; f.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); appliquer(); });
     });
   }
-  const reinitFiltres = () => document.querySelectorAll("#der-doc .der-filtres").forEach((f) => { f.querySelector("input").value = ""; f.querySelector("button")?.click(); f.querySelector("input").dispatchEvent(new Event("input")); });
-
-  // ---------------------------------------------------------------- présentation au client (plein écran, section par section)
-  function presenter() {
-    reinitFiltres();
-    const etapes = [{ id: "couv", titre: "Couverture" }, ...C.sections.filter((s) => s.id !== "dossier")];
-    const p = document.createElement("div");
-    p.className = "der-presentation"; p.setAttribute("role", "dialog"); p.setAttribute("aria-modal", "true"); p.setAttribute("aria-label", "Présentation du DER");
-    p.innerHTML = `<div class="der-pres-haut"><img src="/logo-bsc.png" alt="BSC Patrimoine"><span class="titre">DOCUMENT D'ENTRÉE EN RELATION</span><button type="button" class="der-pres-fermer">✕ Quitter</button></div>
-      <div class="der-pres-scene"></div>
-      <div class="der-pres-bas"><button type="button" class="fl" data-d="-1" aria-label="Section précédente">‹</button><div class="der-points">${etapes.map((e, i) => `<button type="button" data-i="${i}" aria-label="${esc(e.titre)}"></button>`).join("")}</div>
-        <span class="der-pres-etape"></span><button type="button" class="fl" data-d="1" aria-label="Section suivante">›</button></div>`;
-    p.insertAdjacentHTML("beforeend", '<div class="sr" aria-live="polite" id="der-pres-annonce"></div>');
-    document.body.appendChild(p);
-    enPresentation = true;
-    const retour = document.activeElement;
-    const scene = p.querySelector(".der-pres-scene");
-    let i = 0;
-    const montrer = (n, sens = 1) => {
-      i = Math.max(0, Math.min(etapes.length - 1, n));
-      const e = etapes[i];
-      const src = e.id === "couv" ? document.querySelector("#der-doc .der-couverture") : document.getElementById("s-" + e.id);
-      const clone = src.cloneNode(true); clone.removeAttribute("id"); clone.classList.add("visible");
-      clone.querySelectorAll("[id]").forEach((x) => x.removeAttribute("id"));
-      clone.querySelectorAll(".der-filtres").forEach((x) => x.remove());
-      scene.innerHTML = `<div class="der-pres-carte der ${sens < 0 ? "retour" : ""}"></div>`;
-      scene.firstElementChild.appendChild(clone); scene.scrollTop = 0;
-      compter(clone);
-      p.querySelectorAll(".der-points button").forEach((b, k) => b.setAttribute("aria-current", k === i));
-      p.querySelector(".der-pres-etape").textContent = `${i + 1} / ${etapes.length}`;
-      p.querySelector("#der-pres-annonce").textContent = `Section ${i + 1} sur ${etapes.length} : ${e.titre}`;
-      p.querySelector('[data-d="-1"]').disabled = i === 0; p.querySelector('[data-d="1"]').disabled = i === etapes.length - 1;
-    };
-    const fermer = () => { removeEventListener("keydown", touches); p.remove(); enPresentation = false; derniere = Date.now(); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); retour?.focus?.(); };
-    const touches = (ev) => {
-      if (ev.key === "Tab") {   // le clavier reste dans la présentation
-        const f = [...p.querySelectorAll("button:not(:disabled), a[href]")].filter((x) => x.offsetParent !== null);
-        if (!f.length) return;
-        const k = f.indexOf(document.activeElement);
-        if (ev.shiftKey && k <= 0) { ev.preventDefault(); f[f.length - 1].focus(); } else if (!ev.shiftKey && k === f.length - 1) { ev.preventDefault(); f[0].focus(); }
-        return;
-      }
-      if (ev.key === " " && document.activeElement?.tagName === "BUTTON") return; if (ev.key === "ArrowRight" || ev.key === "PageDown" || ev.key === " ") { ev.preventDefault(); montrer(i + 1); } else if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); montrer(i - 1, -1); } else if (ev.key === "Escape") fermer(); };
-    addEventListener("keydown", touches);
-    p.querySelectorAll(".fl").forEach((b) => b.onclick = () => montrer(i + Number(b.dataset.d), Number(b.dataset.d)));
-    p.querySelectorAll(".der-points button").forEach((b) => b.onclick = () => montrer(Number(b.dataset.i), Number(b.dataset.i) < i ? -1 : 1));
-    p.querySelector(".der-pres-fermer").onclick = fermer;
-    document.documentElement.requestFullscreen?.().catch(() => {});
-    montrer(0);
-    p.querySelector('[data-d="1"]').focus();
-  }
+  const reinitFiltres = () => {};
 
   // ---------------------------------------------------------------- saisie
   function mettreEnForme(k, v) {
@@ -342,9 +356,6 @@
     const a = document.getElementById("der-alerte-email"); if (!a) return;
     a.hidden = !client.email || /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(client.email);
   }
-  function resumeContact() {
-    const r = document.getElementById("der-resume-contact"); if (r) r.textContent = [contact.civilite, contact.nom].filter(Boolean).join(" ");
-  }
 
   // ---------------------------------------------------------------- démarrage
   // Coordonnées du cabinet : remises à chaque ouverture de la page (modifiables pour un rendez-vous).
@@ -354,24 +365,15 @@
     let d;
     try { d = await appelApi("/api/der"); } catch (e) { zone.innerHTML = `<p class="message ko">${esc(e.message)}</p>`; return; }
     C = d.contenu; admin = d.admin; historique = d.historique || [];
+    if (C) { try { documentHtml(); } catch { C = null; } }   // texte abîmé : on reste sur le formulaire, l'administrateur peut redéposer
     const defaut = C?.contact_defaut || {};
-    // « Votre contact » : les coordonnées gardées par le conseiller, sinon son nom ; le cabinet, l'adresse et la ville
-    // sont toujours remis à ceux du cabinet.
-    contact = { ...(d.contact ? d.contact : { email: defaut.email || "", civilite: d.conseiller ? "" : defaut.civilite || "", nom: d.conseiller || defaut.nom || "", telephone: defaut.telephone || "" }), ...CABINET };
-    // Le document à droite (ou un message tant que le texte n'est pas déposé) ; le panneau à gauche est toujours là.
-    let docHtml;
-    if (!C) docHtml = `<div class="carte bloc"><h2 style="margin-top:0">Le texte du DER n'est pas encore déposé</h2><p class="doux">${admin ? "Déposez le fichier du DER avec « 📥 Déposer une nouvelle version » (outils administrateur, à gauche). Il est rangé dans la base du site, jamais dans le code." : "L'administrateur doit d'abord déposer le texte du DER. Vous pouvez déjà enregistrer vos coordonnées."}</p></div>`;
-    else {
-      try { docHtml = `<nav class="der-sommaire" aria-label="Sommaire du DER">${C.sections.map((s) => `<a href="#s-${esc(s.id)}">${esc(s.titre)}</a>`).join("")}</nav>${documentHtml()}`; }
-      catch { docHtml = `<div class="carte bloc"><h2 style="margin-top:0">Le texte du DER est abîmé</h2><p class="doux">${admin ? "Revenez à la version précédente ou déposez de nouveau le fichier du DER (outils administrateur)." : "Prévenez l'administrateur du site."}</p></div>`; }
-    }
-    zone.innerHTML = `<div class="der-page">${panneau()}<div>${docHtml}</div></div>`;
+    contact = { ...(d.contact ? d.contact : { email: defaut.email || "", civilite: "", nom: d.conseiller || defaut.nom || "", telephone: "" }), ...CABINET };
+    zone.innerHTML = etape1() + '<div id="der-etape2" hidden></div>';
     brancherAdmin();
-    const avecDoc = !!document.getElementById("der-doc");
     remplirChamps();
     document.getElementById("der-oublier").hidden = !d.contact;
-    document.querySelectorAll(".der-panneau [data-zone]").forEach((el) => {
-      const maj = () => { (el.dataset.zone === "contact" ? contact : client)[el.dataset.k] = el.value.slice(0, 120); rafraichir(el.dataset.zone); resumeContact(); };
+    document.querySelectorAll("#der-etape1 [data-zone]").forEach((el) => {
+      const maj = () => { (el.dataset.zone === "contact" ? contact : client)[el.dataset.k] = el.value.slice(0, 120); if (el.dataset.zone === "contact") document.querySelector("#der-contact-resume .lignes").outerHTML = resumeContactHtml(); document.getElementById("der-msg-generer").textContent = C ? "" : document.getElementById("der-msg-generer").textContent; };
       el.addEventListener("input", maj);
       el.addEventListener("change", maj);
       el.addEventListener("blur", () => {   // mise en forme à la sortie du champ
@@ -380,8 +382,9 @@
         if (el.dataset.zone === "client" && el.dataset.k === "email") verifierEmail();
       });
     });
-    resumeContact();
-    if (matchMedia("(max-width: 1100px)").matches && d.contact) document.getElementById("der-bloc-contact").open = false;
+    const mod = document.getElementById("der-contact-modifier");
+    mod.onclick = () => { const f = document.getElementById("der-contact-form"); f.hidden = !f.hidden; mod.setAttribute("aria-expanded", !f.hidden); mod.textContent = f.hidden ? "✏️ Modifier" : "Fermer"; };
+    if (!d.contact || !d.contact.telephone || !d.contact.email) mod.click();   // première fois : on ouvre pour compléter
     document.getElementById("der-memoriser").onclick = async (e) => {
       const m = document.getElementById("der-msg-contact"), b = e.currentTarget;
       b.disabled = true; m.textContent = "Enregistrement…";
@@ -393,11 +396,12 @@
       const m = document.getElementById("der-msg-contact");
       try { await appelApi("/api/der/contact", "POST", { oublier: true }); m.textContent = "Coordonnées retirées de votre compte."; document.getElementById("der-oublier").hidden = true; } catch (x) { m.textContent = "Échec : " + x.message; }
     };
-    const pres = document.getElementById("der-presenter");
-    if (avecDoc) pres.onclick = presenter;
-    else { pres.disabled = true; pres.insertAdjacentHTML("afterend", '<p class="der-indispo">Disponible dès que le texte du DER est déposé.</p>'); }
-    document.getElementById("der-nouveau").onclick = () => effacerClient("Prêt pour un nouveau client : informations effacées.", true);
-    if (avecDoc) { filtres(document); animer(); }
+    document.getElementById("der-generer").onclick = () => {
+      const m = document.getElementById("der-msg-generer");
+      if (!client.nom || !client.prenom) { m.textContent = "Indiquez au moins le nom et le prénom du client."; document.querySelector(`[data-zone="client"][data-k="${client.nom ? "prenom" : "nom"}"]`).focus(); return; }
+      m.textContent = ""; montrerEtape(2);
+    };
+    document.getElementById("der-vider").onclick = () => effacerClient("Informations du client effacées.", true);
   }
   function brancherAdmin() {
     const recharger = () => { toast("✓ DER mis à jour. Rechargement…"); setTimeout(() => location.reload(), 900); };
