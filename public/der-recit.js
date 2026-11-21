@@ -69,8 +69,8 @@
       r.classList.toggle("rc-mode-der", !!e.der);
       r.querySelector(".rc-zoom").hidden = !e.der;
       if (e.der) {
-        scene.innerHTML = `<div class="rc-der"><nav class="der-nav rc-der-nav" aria-label="Catégories du DER"><ol><li><button type="button" data-i="-1">Couverture</button></li>
-            ${X.C().sections.map((s, k) => `<li><button type="button" data-i="${k}">${esc(s.titre)}</button></li>`).join("")}</ol></nav>
+        scene.innerHTML = `<div class="rc-der"><nav class="der-nav rc-der-nav" aria-label="Catégories du DER"><ol>
+            ${X.C().sections.map((s, k) => (window.DerHorsSommaire?.has(s.id) ? "" : `<li><button type="button" data-i="${k}">${esc(s.titre)}</button></li>`)).join("")}</ol></nav>
           <div class="der-vue rc-der-vue"><div class="dp-pile"></div></div></div>`;
         const pile = scene.querySelector(".dp-pile"), vue = scene.querySelector(".rc-der-vue");
         X.composer().forEach((f) => { f.removeAttribute("id"); f.querySelectorAll("[id]").forEach((x) => { x.dataset.cible = x.id; x.removeAttribute("id"); }); pile.appendChild(f); });

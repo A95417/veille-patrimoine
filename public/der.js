@@ -213,9 +213,16 @@
   }
 
   // ---------------------------------------------------------------- étape 2 : le document, navigation libre par catégorie
+  // Sommaire : seules les catégories de fond. Les autres pages restent dans le document (accès par défilement).
+  const HORS_SOMMAIRE = new Set(["contact", "identite", "informations", "signature", "dossier"]);
+  window.DerHorsSommaire = HORS_SOMMAIRE;
+  const auSommaire = (i) => i >= 0 && i < C.sections.length && !HORS_SOMMAIRE.has(C.sections[i].id);
+  // Catégorie à surligner : la dernière du sommaire atteinte (aucune sur la couverture).
+  const repere = (i) => { for (let k = i; k >= 0; k--) if (auSommaire(k)) return k; return -1; };
+  const voisine = (i, sens) => { for (let k = i + sens; k >= -1 && k < C.sections.length; k += sens) if (k === -1 || auSommaire(k)) return k; return i; };
   let courant = -1, zoomUtilisateur = window.DerZoomDefaut ? DerZoomDefaut() : 1, verrou = 0;
   function etape2() {
-    const titres = C.sections.map((s, i) => ({ i, titre: s.titre }));
+    const titres = C.sections.map((s, i) => ({ i, titre: s.titre })).filter((t) => auSommaire(t.i));
     return `<div class="der-lecteur" id="der-lecteur" role="region" aria-label="Document d'entrée en relation">
       <div class="der-barre">
         <button type="button" id="der-retour">← <span class="txt">Modifier les informations</span></button>
@@ -225,11 +232,10 @@
         <span class="der-zoom"><button type="button" id="der-zoom-moins" aria-label="Réduire">−</button><button type="button" id="der-zoom-val" title="Taille par défaut">75 %</button><button type="button" id="der-zoom-plus" aria-label="Agrandir">+</button></span>
         <button type="button" class="principal" id="der-plein">⛶ <span class="txt" id="der-plein-txt">Plein écran</span></button>
         <button type="button" id="der-nouveau">↺ <span class="txt">Nouveau client</span></button>
-        <select id="der-choix" aria-label="Aller à une catégorie"><option value="-1">Couverture</option>${titres.map((t) => `<option value="${t.i}">${esc(t.titre)}</option>`).join("")}</select>
+        <select id="der-choix" aria-label="Aller à une catégorie"><option value="-1">Catégories…</option>${titres.map((t) => `<option value="${t.i}">${esc(t.titre)}</option>`).join("")}</select>
       </div>
       <div class="der-corps-lecteur">
         <nav class="der-nav" aria-label="Catégories du DER"><ol>
-          <li><button type="button" data-i="-1">Couverture</button></li>
           ${titres.map((t) => `<li><button type="button" data-i="${t.i}">${esc(t.titre)}</button></li>`).join("")}</ol></nav>
         <div class="der-vue" id="der-vue" tabindex="0"><div class="dp-pile" id="dp-pile"></div></div>
       </div></div>`;
@@ -254,12 +260,13 @@
   }
   function marquer(i) {
     courant = i;
-    document.querySelectorAll(".der-nav button").forEach((b) => b.setAttribute("aria-current", Number(b.dataset.i) === i));
-    document.querySelector(`.der-nav button[data-i="${i}"]`)?.scrollIntoView({ block: "nearest" });
+    const r = repere(i);
+    document.querySelectorAll(".der-nav button").forEach((b) => b.setAttribute("aria-current", Number(b.dataset.i) === r));
+    document.querySelector(`.der-nav button[data-i="${r}"]`)?.scrollIntoView({ block: "nearest" });
     const t = document.getElementById("der-titre-courant"); if (t) t.textContent = i < 0 ? "Couverture" : C.sections[i].titre;
-    const ch = document.getElementById("der-choix"); if (ch) ch.value = String(i);
+    const ch = document.getElementById("der-choix"); if (ch) ch.value = String(r);
     document.getElementById("der-prec").disabled = i <= -1;
-    document.getElementById("der-suiv").disabled = i >= C.sections.length - 1;
+    document.getElementById("der-suiv").disabled = voisine(i, 1) === i;
   }
   // La catégorie en cours suit le défilement.
   function suivreDefilement() {
@@ -291,8 +298,8 @@
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && plein) basculerPlein(false); });
   addEventListener("keydown", (ev) => {
     if (!document.getElementById("der-lecteur") || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "")) return;
-    if (ev.key === "ArrowRight") { ev.preventDefault(); aller(courant + 1); }
-    else if (ev.key === "ArrowLeft") { ev.preventDefault(); aller(courant - 1); }
+    if (ev.key === "ArrowRight") { ev.preventDefault(); aller(voisine(courant, 1)); }
+    else if (ev.key === "ArrowLeft") { ev.preventDefault(); aller(voisine(courant, -1)); }
     else if (ev.key === "Escape" && plein) basculerPlein(false);
   });
 
@@ -308,8 +315,8 @@
       new ResizeObserver(() => ajusterZoom()).observe(document.getElementById("der-vue"));
       document.querySelectorAll(".der-nav button").forEach((b) => b.onclick = () => aller(Number(b.dataset.i)));
       document.getElementById("der-choix").onchange = (e) => aller(Number(e.target.value));
-      document.getElementById("der-prec").onclick = () => aller(courant - 1);
-      document.getElementById("der-suiv").onclick = () => aller(courant + 1);
+      document.getElementById("der-prec").onclick = () => aller(voisine(courant, -1));
+      document.getElementById("der-suiv").onclick = () => aller(voisine(courant, 1));
       document.getElementById("der-zoom-moins").onclick = () => { zoomUtilisateur = Math.max(.5, zoomUtilisateur - .25); ajusterZoom(); };
       document.getElementById("der-zoom-plus").onclick = () => { zoomUtilisateur = Math.min(3, zoomUtilisateur + .25); ajusterZoom(); };
       document.getElementById("der-zoom-val").onclick = () => { zoomUtilisateur = DerZoomDefaut(); ajusterZoom(); };
