@@ -82,7 +82,7 @@ const SCHEMA = {
 const GABARITS = `- chapitre : début d'un chapitre. Texte lu : le titre du chapitre puis une courte phrase qui annonce ce qu'on va voir (« Chapitre 2 » est ajouté automatiquement). p : titre (40 car.), sous_titre (50 car.)
 - personnage : un personnage en situation concrète. p : personnage, humeur, decor, nom, bulle (18 car.), puces (2 × 16 car.)
 - chiffre : un chiffre clé de la fiche. p : bandeau (26), valeur (14, exactement comme dans la fiche), libelle (34)
-- liste : 2 ou 3 points. p : titre (28), points (3 × 30 car.)
+- liste : 2 ou 3 points. Texte lu : une phrase d'introduction, puis exactement une phrase par point, dans l'ordre. p : titre (28), points (3 × 30 car.)
 - frise : 2 à 4 étapes. Texte lu : une phrase d'introduction, puis exactement une phrase par étape. p : titre (30), etapes [{titre (26), texte (60)}]
 - tableau : un tableau très simple. Texte lu : une phrase d'introduction, puis exactement une phrase par ligne. p : titre (30), colonnes (2 ou 3, 24 car.), lignes (2 à 4 lignes de cellules de 30 car. max)
 - mythe : idée reçue puis réalité (2 phrases). p : mythe (60), realite (60)
@@ -181,10 +181,12 @@ async function patient(appel, modele) {
     }
   }
 }
+// Débit réel de la voix des cours (mesuré sur les 6 premières vidéos : ≈ 0,78 × l'estimation à 4,45 syllabes/s).
+const DEBIT = 5.7;
 export async function ecrireScript(f, modeles) {
   const duree = dureeCible(f), fin = finCours(f);
-  const finS = (globalThis.VideoApercu.syllabes(fin.texte) + globalThis.VideoApercu.syllabes(`Cours vidéo. ${f.titre}.`)) / 4.45;
-  const mots = Math.round((duree - 3.6 - finS) * 2.68);
+  const finS = (globalThis.VideoApercu.syllabes(fin.texte) + globalThis.VideoApercu.syllabes(`Cours vidéo. ${f.titre}.`)) / DEBIT;
+  const mots = Math.round((duree - 3.6 - finS) * DEBIT * 2.68 / 4.45);
   const source = texteFiche(f), permis = new Set(nombres(source));
   const quiz = (f.quiz || []).filter((q) => Array.isArray(q.choix) && q.choix.length >= 2 && q.choix.length <= 4).map((q, i) => `[${i}] ${q.question}`).join("\n");
   let demande = `FICHE (seule source autorisée) :\n"""\n${source}\n"""\n\nQUIZ (numéro entre crochets) :\n${quiz}\n\nDURÉE VISÉE : ${duree} secondes (≈ ${mots} mots lus).`;
@@ -198,7 +200,7 @@ export async function ecrireScript(f, modeles) {
     }
     if (!r.donnees) throw new Error("IA indisponible (quota atteint ou service saturé)");
     const scenes = nettoyer(r.donnees.scenes, f), inconnus = chiffresInconnus(scenes, permis);
-    const total = [...scenes, fin, { texte: `Cours vidéo. ${f.titre}.` }].reduce((n, s) => n + globalThis.VideoApercu.syllabes(s.texte), 0) / 4.45 + 3.6;
+    const total = [...scenes, fin, { texte: `Cours vidéo. ${f.titre}.` }].reduce((n, s) => n + globalThis.VideoApercu.syllabes(s.texte), 0) / DEBIT + 3.6;
     const ecart = Math.abs(total - duree) / duree;
     console.log(`  script ${essai} : ${scenes.length} scènes, ≈ ${Math.round(total)} s (visé ${duree} s), chiffres hors fiche : ${inconnus.join(", ") || "aucun"}`);
     if (!inconnus.length && (!meilleur || ecart < meilleur.ecart)) meilleur = { scenes, resume: court(r.donnees.resume, 600), ecart, total };
