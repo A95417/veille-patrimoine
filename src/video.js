@@ -6,6 +6,7 @@ import { nettoyerTout, donneesPerso } from "./texte.js";
 // une seule fabrication à la fois, 10 vidéos gardées au plus.
 import { lireEtat, ecrireEtat, generer, sujetsRecents } from "./linkedin.js";
 import { routeLecture } from "./lecture.js";
+import "../public/video-simulations.js";   // simulations chiffrées partagées avec la page (globalThis.VideoSimulations)
 
 const json = (d, s = 200) =>
   new Response(JSON.stringify(nettoyerTout(d)), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
@@ -135,14 +136,8 @@ function nettoyerP(p, type) {
 }
 
 // Calcul d'épargne mensuelle (versements en fin de mois, capitalisation mensuelle) : chiffres « exemple fictif ».
-export function simuler(s) {
-  const nb = (x, d) => (x !== "" && x != null && Number.isFinite(Number(x)) ? Number(x) : d);
-  const m = Math.max(10, Math.min(5000, nb(s.mensuel, 100))), taux = Math.max(0, Math.min(10, nb(s.taux, 4))) / 100;
-  const a1 = Math.max(16, Math.min(80, nb(s.age1, 25))), a2 = Math.max(a1 + 1, Math.min(85, nb(s.age2, 35))), fin = Math.max(a2 + 1, Math.min(90, nb(s.age_fin, 65)));
-  const fv = (mois) => { const i = taux / 12; return i ? m * ((1 + i) ** mois - 1) / i : m * mois; };
-  const A = { versements: m * 12 * (fin - a1), capital: fv(12 * (fin - a1)) }, B = { versements: m * 12 * (fin - a2), capital: fv(12 * (fin - a2)) };
-  return { mensuel: m, taux: taux * 100, age1: a1, age2: a2, age_fin: fin, A, B, ecart: A.capital - B.capital, attente: a2 - a1 };
-}
+// Simulations chiffrées (5 types) : même calcul que la page, dans public/video-simulations.js.
+export const simuler = (s) => globalThis.VideoSimulations.simuler(s || {});
 
 // Chiffres présents dans un texte (« 49 000 € », « 4 % », « 2,44 »).
 // Chiffres d'un texte, avec ce qui suit (unité) : « 49 000 € », « 4,4 % », « 7 ans ». Les milliers ne sont séparés que par une
@@ -479,17 +474,14 @@ async function proposerScenario(env, db, d, coord) {
   const perso = donneesPerso([precision, sujetCourt].join("\n")) || (texteColle ? donneesPerso(libre, false) : null);
   if (perso) throw new Error(`Le texte semble contenir ${perso}. Retirez-le avant de l'envoyer à l'IA (aucune donnée client ne doit être transmise).`);
   const src = await sourceDe(db, d, source), data = src.data;
-  const titreSujet = src.ref?.titre || sujetCourt || (sim ? "Commencer tôt ou attendre : le temps est le meilleur allié" : "");
+  const titreSujet = src.ref?.titre || sujetCourt || (sim ? sim.titre : "");
   // budget de mots calculé avec une fin type (question personnalisée)
   const choixFin = { mode: d.fin_mode, rythme: d.rythme }, plateforme = plateformeDe(d.plateforme, d.format), variete = await consigneVariete(db);
   const finType = fin(coord.cabinet, { question: "Votre épargne travaille-t-elle vraiment pour vous ?", ...choixFin });
   const pose = finType.p.rythme === "pose", focus = source === "fiche" ? court(d.fiche?.focus, 120) : "";
   const mots = cibleMots(duree, finType), [nA, nB] = SCENES_CONSEIL[duree];
   let donnees = "";
-  if (sim) donnees = `SIMULATION (exemple fictif, calculée par le site) : ${sim.mensuel} € par mois, rendement fictif de ${String(sim.taux).replace(".", ",")} % par an.
-- Profil 1 commence à ${sim.age1} ans : à ${sim.age_fin} ans il a versé ${nbFr(sim.A.versements)} € et dispose d'environ ${nbFr(sim.A.capital)} €.
-- Profil 2 commence à ${sim.age2} ans (il attend ${sim.attente} ans) : à ${sim.age_fin} ans il a versé ${nbFr(sim.B.versements)} € et dispose d'environ ${nbFr(sim.B.capital)} €.
-- Écart : environ ${nbFr(sim.ecart)} €. Arrondis permis : au millier le plus proche.`;
+  if (sim) donnees = `SIMULATION « ${sim.nom} » (exemple fictif, calculée par le site ; seuls chiffres autorisés, arrondis au millier permis) :\n${sim.lignes.map((l) => "- " + l).join("\n")}\nLa scène « comparaison » montre « ${sim.gauche.nom} » à gauche et « ${sim.droite.nom} » à droite.`;
   else if (data.length) donnees = "DONNÉES OFFICIELLES (seuls chiffres et dates autorisés, cite la source) :\n" + data.map((x) => "- " + JSON.stringify(x)).join("\n");
   if (src.texte) donnees += src.ref.type === "texte"
     ? `\nSOURCE (texte fourni par le conseiller${src.ref.media ? `, média : ${src.ref.media}` : ""}) — REFORMULE-LE entièrement en scénario oral (ne le recopie pas) : garde les idées et les faits essentiels, choisis l'angle le plus parlant, ajoute une histoire avec des personnages et des décors adaptés. Ne t'appuie que sur ce texte : ses chiffres sont autorisés tels quels, n'ajoute aucun fait absent. Donne un « titre » court et accrocheur à la vidéo (moins de 70 caractères) :\n"""\n${src.texte}\n"""`
@@ -546,8 +538,7 @@ Termine par :
   const calage = await caler(env, db, scenes, duree, finScene, contexte, sim);
   scenes = [...await illustrer(db, calage.scenes, FORMATS.includes(d.format) ? d.format : "9:16"), finScene];
   await memoriser(db, scenes);
-  const permis = autorises([...(sim ? [sim.mensuel, sim.taux, sim.age1, sim.age2, sim.age_fin, sim.attente, sim.A.versements, sim.A.capital, sim.B.versements, sim.B.capital, sim.ecart,
-      sim.A.capital - sim.A.versements, sim.B.capital - sim.B.versements, sim.A.versements - sim.B.versements, ...[.5, 1.5, 2, 3].map((k) => sim.mensuel * k)] : []),
+  const permis = autorises([...(sim ? sim.nombres : []),
     ...(data.length || src.texte ? [new Date().getFullYear(), new Date().getFullYear() + 1] : []),
     ...data.flatMap((x) => [x.valeur, x.precedent, ...nombres(x.date || ""), ...nombres(x.titre || ""), ...nombres(x.detail || "")]),
     ...nombres(src.texte || ""), ...nombres(precision), ...nombres(titreSujet)]);
@@ -574,14 +565,20 @@ function texteSource(ref) {
   return "";
 }
 
+// Colonnes chiffrées d'une simulation (anciennes vidéos : profils « tôt / tard » sans colonnes enregistrées).
+function colonnesSim(sim, p = {}) {
+  const g = sim.gauche || { nom: `Dès ${sim.age1} ans`, valeur: sim.A.capital, verse: sim.A.versements, personnage: "lea" };
+  const d = sim.droite || { nom: `Dès ${sim.age2} ans`, valeur: sim.B.capital, verse: sim.B.versements, personnage: "tom_age" };
+  const col = (c, nom, perso) => ({ nom: nom || c.nom, valeur: Math.round(c.valeur), ...(c.verse != null ? { verse: Math.round(c.verse) } : {}), personnage: perso || c.personnage });
+  return { unite: sim.unite || "€", gauche: col(g, sim.type === "tot" ? p.gauche_nom : null, p.personnage_gauche), droite: col(d, sim.type === "tot" ? p.droite_nom : null, p.personnage_droite),
+    note: sim.note || `Exemple fictif : ${sim.mensuel} €/mois, ${String(sim.taux).replace(".", ",")} %/an, non garanti` };
+}
 // Applique les chiffres calculés aux scènes « comparaison » (jamais ceux de l'IA).
 function avecChiffres(scenes, donnees) {
   const sim = donnees?.simulation;
   return scenes.map((s) => {
     if (s.type !== "comparaison" || !sim) return s;
-    return { ...s, p: { ...s.p, unite: "€", gauche: { nom: s.p.gauche_nom || `Dès ${sim.age1} ans`, valeur: Math.round(sim.A.capital), verse: Math.round(sim.A.versements), personnage: s.p.personnage_gauche || "lea" },
-      droite: { nom: s.p.droite_nom || `Dès ${sim.age2} ans`, valeur: Math.round(sim.B.capital), verse: Math.round(sim.B.versements), personnage: s.p.personnage_droite || "tom_age" },
-      note: `Exemple fictif : ${sim.mensuel} €/mois, ${String(sim.taux).replace(".", ",")} %/an, non garanti` } };
+    return { ...s, p: { ...s.p, ...colonnesSim(sim, s.p) } };
   });
 }
 

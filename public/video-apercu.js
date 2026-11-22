@@ -66,9 +66,11 @@
   function avecChiffres(scenes, sim) {
     return scenes.map((s) => {
       if (s.type !== "comparaison" || !sim) return s;
-      return { ...s, p: { ...s.p, unite: "€", gauche: { nom: s.p?.gauche_nom || `Dès ${sim.age1} ans`, valeur: Math.round(sim.A.capital), verse: Math.round(sim.A.versements), personnage: s.p?.personnage_gauche || "lea" },
-        droite: { nom: s.p?.droite_nom || `Dès ${sim.age2} ans`, valeur: Math.round(sim.B.capital), verse: Math.round(sim.B.versements), personnage: s.p?.personnage_droite || "tom_age" },
-        note: `Exemple fictif : ${sim.mensuel} €/mois, ${String(sim.taux).replace(".", ",")} %/an, non garanti` } };
+      const g = sim.gauche || { nom: `Dès ${sim.age1} ans`, valeur: sim.A.capital, verse: sim.A.versements, personnage: "lea" };
+      const d = sim.droite || { nom: `Dès ${sim.age2} ans`, valeur: sim.B.capital, verse: sim.B.versements, personnage: "tom_age" };
+      const col = (c, nom, perso) => ({ nom: nom || c.nom, valeur: Math.round(c.valeur), ...(c.verse != null ? { verse: Math.round(c.verse) } : {}), personnage: perso || c.personnage });
+      return { ...s, p: { ...s.p, unite: sim.unite || "€", gauche: col(g, s.p?.gauche_nom, s.p?.personnage_gauche), droite: col(d, s.p?.droite_nom, s.p?.personnage_droite),
+        note: sim.note || `Exemple fictif : ${sim.mensuel} €/mois, ${String(sim.taux).replace(".", ",")} %/an, non garanti` } };
     });
   }
 

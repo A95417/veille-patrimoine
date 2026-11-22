@@ -32,7 +32,7 @@
   const RYTHMES = { dynamique: ["Dynamique", "enchaînements rapides"], pose: ["Posé", "plus de respiration, une idée par scène"] };
   const MODES_FIN = { complete: ["Carte du cabinet complète", "question, offre et coordonnées"], courte: ["Fin courte", "logo et coordonnées, environ 2 s"], sans: ["Sans appel commercial", "logo et mentions obligatoires seulement"] };
   const ANGLE_DEFAUT = { fiche: "expliquer", actu: "expliquer", echeance: "reflexes", chiffre: "chiffre", simulation: "deux_profils", libre: "expliquer" };
-  const NOMS_SOURCES = { fiche: "Thème du patrimoine", actu: "Actualité", echeance: "Échéance fiscale", chiffre: "Chiffre de la semaine", simulation: "Commencer tôt ou attendre", libre: "Sujet libre",
+  const NOMS_SOURCES = { fiche: "Thème du patrimoine", actu: "Actualité", echeance: "Échéance fiscale", chiffre: "Chiffre de la semaine", simulation: "Simulation chiffrée", libre: "Sujet libre",
     deux_profils: "Deux profils", chiffre_semaine: "Chiffre de la semaine", mythe: "Mythe ou réalité" };
   const sansAccent = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const LES_FICHES = () => (typeof FICHES !== "undefined" ? FICHES : []);
@@ -90,7 +90,7 @@
   const EXTRAITS = new Set(["sadachbia", "fenrir", "kore", "charon", "zephyr", "laomedeia", "leda", "achird", "puck", "sulafat", "orus", "gacrux"]);
   const LIB_STATUT = { brouillon: "Brouillon", file: "En file d'attente", attente: "Démarrage", en_cours: "En fabrication", pret: "Prête", a_verifier: "Prête · à vérifier", erreur: "Échec", annule: "Annulée" };
   const EN_COURS = ["file", "attente", "en_cours"];
-  const R = { sel: null, onglet: "idees", titreIdee: null, angle: "expliquer", angleManuel: false, angleIA: false, cherche: "", etape: 1, duree: 45, format: "9:16", plateforme: "tiktok", rythme: "dynamique", finMode: "complete", focus: "", voix: "Sadachbia", sim: { mensuel: 100, taux: 4, age1: 25, age2: 35, age_fin: 65 } };
+  const R = { sel: null, onglet: "idees", titreIdee: null, angle: "expliquer", angleManuel: false, angleIA: false, cherche: "", etape: 1, duree: 45, format: "9:16", plateforme: "tiktok", rythme: "dynamique", finMode: "complete", focus: "", voix: "Sadachbia", sim: { type: "tot" } };
   let reglages = null, sources = null, courante = null, suivi = null, chrono = null, audio = null;
 
   const mots = (sc) => (sc || []).reduce((n, s) => n + String(s.texte || "").split(/\s+/).filter((m) => /[\p{L}\d]/u.test(m)).length, 0);
@@ -98,11 +98,6 @@
   const fabrication = (sc) => 75 + dureeEst(sc) * 30 / 22 + 50;   // démarrage du robot + images + son/montage/envoi (secondes)
   const mmss = (s) => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s` : `${s} s`; };
   const nbFr = (n) => Math.round(n).toLocaleString("fr-FR");
-  function simuler(s) {
-    const m = +s.mensuel || 100, i = (+s.taux || 0) / 100 / 12, fv = (mo) => (i ? m * ((1 + i) ** mo - 1) / i : m * mo);
-    const a = fv(12 * (s.age_fin - s.age1)), b = fv(12 * (s.age_fin - s.age2));
-    return { a, b, ecart: a - b, va: m * 12 * (s.age_fin - s.age1), vb: m * 12 * (s.age_fin - s.age2) };
-  }
 
   // ---------------------------------------------------------------- squelette : un parcours en 3 étapes
   const ANGLES_DESC = Object.fromEntries(FAMILLES.flatMap(([, l]) => l.map(([k, , d, ex]) => [k, `${d} <span class="vv-exemple">Exemple : ${ex}</span>`])));
@@ -123,9 +118,9 @@
   };
   const svg = (nom, t = 22) => `<svg width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICO[nom] || ICO.idee}"/></svg>`;
   // Sources de sujet : [clé, icône, nom, description, couleur]
-  const ONGLETS_SUJET = [["idees", "idee", "Idées du moment", "Proposées d'après l'actualité", "#B45309"], ["fiches", "livre", "Thèmes du patrimoine", "PER, donation, SCPI… contenu vérifié", "#1D4ED8"],
+  const ONGLETS_SUJET = [["autre", "crayon", "Mon sujet", "Écrire un sujet ou coller un texte", "#9F1239"], ["idees", "idee", "Idées du moment", "Proposées d'après l'actualité", "#B45309"], ["fiches", "livre", "Thèmes du patrimoine", "PER, donation, SCPI… contenu vérifié", "#1D4ED8"],
     ["actus", "journal", "Actualités", "Les faits marquants résumés", "#6D28D9"], ["chiffres", "calendrier", "Échéances et chiffres", "Calendrier fiscal, taux BCE", "#047857"],
-    ["simulation", "calcul", "Simulation chiffrée", "Commencer tôt ou attendre : 2 profils", "#0F766E"], ["autre", "crayon", "Mon sujet", "Écrire un sujet ou coller un texte", "#9F1239"]];
+    ["simulation", "calcul", "Simulations chiffrées", "5 exemples calculés par le site", "#0F766E"]];
   const EMOJI_SOURCE = { idees: "💡", fiches: "📚", actus: "📰", chiffres: "📅", simulation: "🧮", autre: "✏️" };
   const COULEUR_SOURCE = { idees: "#B45309", fiches: "#1D4ED8", actus: "#6D28D9", chiffres: "#047857", simulation: "#0F766E", autre: "#9F1239" };
   const ICO_THEME = { epargne: "tirelire", immo: "maison", marches: "graphique", fisc: "balance", transmission: "cadeau", regl: "document", economie: "euro", crypto: "fusee" };
@@ -136,7 +131,8 @@
   function monter() {
     $v("vue-video").innerHTML = `
       <section class="vv-form vv-format-post" id="vv-nouvelle">
-        <div class="lp-grille">
+        <div class="vv-barre-apercu"><button type="button" class="bouton bouton-discret vv-bouton-apercu" id="vv-voir-apercu" aria-controls="vv-droite" aria-expanded="false"></button></div>
+        <div class="lp-grille" id="vv-grille">
           <div class="lp-gauche">
             <section class="carte lp-bloc" id="vv-e1">
               <h2 class="lp-titre"><span class="lp-n">1</span>De quoi parle la vidéo ?</h2>
@@ -155,7 +151,7 @@
 
             <section class="carte lp-bloc" id="vv-e2">
               <h2 class="lp-titre"><span class="lp-n">2</span>Comment la raconter ?</h2>
-              <div class="vv-familles">${FAMILLES.map(([fam, l]) => `<div class="vv-famille"><span class="vv-famille-nom">${fam}</span><div class="vv-angles" role="group" aria-label="${fam}">${l.map(([k, n]) => `<button type="button" class="puce" data-angle="${k}">${n}</button>`).join("")}</div></div>`).join("")}</div>
+              <div class="vv-familles">${FAMILLES.map(([fam, l]) => `<div class="vv-famille" style="--fam:${COULEUR_FAMILLE[fam] || "#7A1530"}"><span class="vv-famille-nom">${fam}</span><div class="vv-angles" role="group" aria-label="${fam}">${l.map(([k, n]) => `<button type="button" class="puce" data-angle="${k}">${n}</button>`).join("")}</div></div>`).join("")}</div>
               <p class="vv-angle-desc" id="vv-angle-desc"></p>
               <label class="bloc-lib" for="vv-precision">Précision <span class="doux" id="vv-precision-note">(facultatif)</span></label>
               <input id="vv-precision" maxlength="300" autocomplete="off" placeholder="Ex. : pour les jeunes actifs, ton rassurant…">
@@ -179,7 +175,7 @@
             </section>
             <div id="vv-msg" aria-live="polite"></div>
           </div>
-          <aside class="lp-droite vv-droite" aria-label="Aperçu de votre vidéo">
+          <aside class="lp-droite vv-droite" id="vv-droite" aria-label="Aperçu de votre vidéo">
             <span class="vs-lib">Aperçu vidéo</span>
             <div class="vv-ecran" id="vv-ecran"></div>
             <div id="vv-recap"></div>
@@ -220,6 +216,17 @@
       $v("vv-coller").onclick = async () => { try { const t = await navigator.clipboard.readText(); if (t) { $v("vv-libre-texte").value = t.slice(0, 5000); majEtat(); } } catch { notifier("Collage impossible : utilisez « Coller » dans la zone de texte.", true); } };
     }
     $v("vv-proposer").onclick = proposer;
+    $v("vv-voir-apercu").onclick = () => { let v = !lireApercu(); try { localStorage.setItem("vv-apercu", v ? "1" : "0"); } catch { apercuMemoire = v; } montrerApercu(v); if (v) majRecap(); };
+    montrerApercu(lireApercu());
+  }
+
+  // Aperçu vidéo : caché par défaut, le choix est retenu sur cet appareil.
+  let apercuMemoire = false;
+  const lireApercu = () => { try { const x = localStorage.getItem("vv-apercu"); return x == null ? apercuMemoire : x === "1"; } catch { return apercuMemoire; } };
+  function montrerApercu(v) {
+    const a = $v("vv-droite"), b = $v("vv-voir-apercu"); if (!a || !b) return;
+    apercuMemoire = v; a.hidden = !v; $v("vv-grille").classList.toggle("vv-sans-apercu", !v);
+    b.setAttribute("aria-expanded", v); b.innerHTML = v ? "🙈 Masquer l'aperçu" : "👁 Voir l'aperçu";
   }
 
   function majReglages() {
@@ -239,22 +246,26 @@
     majCompteurs(); majRecap();
   }
 
-  // Réglages de la simulation « commencer tôt ou attendre » (seulement si ce sujet est choisi).
+  // Simulations chiffrées : 5 types, réglages propres à chacun, résultat calculé tout de suite (même calcul que le serveur).
   function majSimulation() {
-    const sim = $v("vv-sim");
-    if (R.sel !== "simulation") { sim.hidden = true; sim.innerHTML = ""; return; }
-    const s = R.sim, r = simuler(s);
-    sim.hidden = false;
-    sim.innerHTML = `<div class="vv-sim-grille">
-      ${[["mensuel", "Épargne par mois (€)", 10, 5000, 10], ["taux", "Rendement fictif (%/an)", 0, 10, .5], ["age1", "Profil 1 commence à", 16, 80, 1], ["age2", "Profil 2 commence à", 17, 85, 1], ["age_fin", "Jusqu'à l'âge de", 20, 90, 1]]
-        .map(([k, l, mi, ma, pas]) => `<label><span>${l}</span><input type="number" inputmode="decimal" data-sim="${k}" value="${s[k]}" min="${mi}" max="${ma}" step="${pas}"></label>`).join("")}</div>
-      <p class="vv-sim-res"><strong>≈ ${nbFr(r.a)} €</strong> contre <strong>≈ ${nbFr(r.b)} €</strong> : <strong>${nbFr(r.ecart)} € d'écart</strong> pour ${nbFr(r.va - r.vb)} € versés en plus. <span class="doux">Calcul du site, exemple fictif, rendement non garanti.</span></p>`;
-    sim.querySelectorAll("[data-sim]").forEach((i) => i.onchange = () => {
+    const z = $v("vv-sim"), VS = window.VideoSimulations;
+    if (R.sel !== "simulation" || !VS) { z.hidden = true; z.innerHTML = ""; return; }
+    const T = VS.TYPES[R.sim.type] || VS.TYPES.tot;
+    T.champs.forEach(([k, , , , , def]) => { if (R.sim[k] == null) R.sim[k] = def; });
+    const r = VS.simuler(R.sim);
+    z.hidden = false;
+    z.innerHTML = `<div class="vv-sim-types" role="group" aria-label="Type de simulation">${Object.entries(VS.TYPES).map(([k, t]) => `<button type="button" class="puce" data-simtype="${k}" aria-pressed="${k === r.type}">${t.nom}</button>`).join("")}</div>
+      <p class="doux petit vv-sim-desc">${T.desc}</p>
+      <div class="vv-sim-grille">${T.champs.map(([k, l, mi, ma, pas, , choix]) => choix
+        ? `<label><span>${l}</span><select data-sim="${k}">${choix.map((c) => `<option value="${c}" ${+R.sim[k] === c ? "selected" : ""}>${c} %</option>`).join("")}</select></label>`
+        : `<label><span>${l}</span><input type="number" inputmode="decimal" data-sim="${k}" value="${R.sim[k]}" min="${mi}" max="${ma}" step="${pas}"></label>`).join("")}</div>
+      <p class="vv-sim-res"><strong>${r.resume}</strong> <span class="doux">Calcul du site, exemple fictif${r.type === "per" ? "" : ", rendement non garanti"}.</span></p>`;
+    z.querySelectorAll("[data-simtype]").forEach((b) => b.onclick = () => { R.sim = { type: b.dataset.simtype }; majSimulation(); majEtat(); });
+    z.querySelectorAll("[data-sim]").forEach((i) => i.onchange = () => {
       const v = parseFloat(String(i.value).replace(",", "."));
-      if (Number.isFinite(v)) R.sim[i.dataset.sim] = Math.max(+i.min, Math.min(+i.max, v));
-      if (R.sim.age2 <= R.sim.age1) R.sim.age2 = R.sim.age1 + 1;
-      if (R.sim.age_fin <= R.sim.age2) R.sim.age_fin = R.sim.age2 + 1;
-      majSimulation();
+      if (Number.isFinite(v)) R.sim[i.dataset.sim] = i.tagName === "SELECT" ? v : Math.max(+i.min, Math.min(+i.max, v));
+      if (R.sim.type === "tot") { if (R.sim.age2 <= R.sim.age1) R.sim.age2 = R.sim.age1 + 1; if (R.sim.age_fin <= R.sim.age2) R.sim.age_fin = R.sim.age2 + 1; }
+      majSimulation(); majEtat();
     });
   }
 
@@ -280,6 +291,8 @@
   }
 
   // ---------------------------------------------------------------- étape 1 : le sujet
+  // « 2026-10 » ou « 2026-10-15 » → « oct. 2026 »
+  function moisAn(d) { const m = String(d).match(/^(\d{4})-(\d{2})/); if (!m) return String(d); return new Date(+m[1], +m[2] - 1, 1).toLocaleDateString("fr-FR", { month: "short", year: "numeric" }); }
   function dateCourte(d) { try { const x = new Date(d); return Number.isNaN(+x) ? d : x.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }); } catch { return d; } }
   const ligne = (v, titre, sous, extra = "") => `<button type="button" class="vv-ligne" data-sujet="${echapper(v)}" aria-pressed="${v === R.sel}"><strong>${echapper(titre)}</strong>${sous ? `<span>${echapper(sous)}</span>` : ""}${extra}</button>`;
   const vide = (t) => `<p class="doux petit vv-vide">${t}</p>`;
@@ -300,21 +313,23 @@
       const ok = (f) => q.every((m) => sansAccent(`${f.titre} ${f.sousTitre || ""} ${THEMES[f.theme] || ""} ${f.recherche || ""}`).includes(m));
       const groupes = Object.entries(THEMES).map(([t, nom]) => [nom, LES_FICHES().filter((f) => f.theme === t && ok(f))]).filter(([, l]) => l.length);
       h = `<input type="search" class="vv-cherche" id="vv-cherche" placeholder="🔍 Rechercher un thème : PER, donation, SCPI…" aria-label="Rechercher un thème" autocomplete="off" value="${echapper(R.cherche)}">
-        <div class="vv-liste vv-themes">${groupes.length ? groupes.map(([nom, l]) => `<div class="vv-groupe"><span class="vv-groupe-nom">${svg(ICO_THEME[Object.keys(THEMES).find((k) => THEMES[k] === nom)] || "livre", 16)} ${nom}</span><div class="vv-grille">${l.map((f) => `<button type="button" class="vv-theme" data-sujet="fiche:${echapper(f.id)}" aria-pressed="${`fiche:${f.id}` === R.sel}"><b>${echapper(f.titre)}</b><small>${echapper(f.sousTitre || "")}</small></button>`).join("")}</div></div>`).join("") : vide("Aucun thème ne correspond.")}</div>`;
+        <div class="vv-liste vv-themes">${groupes.length ? groupes.map(([nom, l]) => `<div class="vv-groupe"><span class="vv-groupe-nom">${svg(ICO_THEME[Object.keys(THEMES).find((k) => THEMES[k] === nom)] || "livre", 15)} ${nom} <span class="vv-compte">${l.length}</span></span><div class="vv-th-grille">${l.map((f) => `<button type="button" class="vv-th" data-sujet="fiche:${echapper(f.id)}" aria-pressed="${`fiche:${f.id}` === R.sel}" title="${echapper(f.titre + (f.sousTitre ? " : " + f.sousTitre : ""))}"><b>${echapper(f.titre)}</b><small>${echapper(f.sousTitre || "")}</small></button>`).join("")}</div></div>`).join("") : vide("Aucun thème ne correspond.")}</div>`;
     } else if (R.onglet === "actus") {
       const a = sources?.actus || [];
-      h = chargement() || (a.length ? `<div class="vv-liste"><div class="vv-grille vv-grille-large">${a.map((x) => `<button type="button" class="vv-theme" data-sujet="actu:${echapper(x.id)}" aria-pressed="${`actu:${x.id}` === R.sel}"><b>${echapper(x.titre)}</b><span class="vv-etiquettes">${x.sources.slice(0, 2).map((n) => `<i>${echapper(n)}</i>`).join("")}${x.date ? `<i>${echapper(dateCourte(x.date))}</i>` : ""}</span></button>`).join("")}</div></div>` : vide("Aucune actualité importante ces derniers jours."));
+      const vus = R.actusTout ? a : a.slice(0, 8);
+      h = chargement() || (a.length ? `<div class="vv-actus">${vus.map((x) => `<button type="button" class="vv-actu" data-sujet="actu:${echapper(x.id)}" aria-pressed="${`actu:${x.id}` === R.sel}"><b>${echapper(x.titre)}</b><small>${[...x.sources.slice(0, 2), x.date ? dateCourte(x.date) : ""].filter(Boolean).map(echapper).join(" · ")}</small></button>`).join("")}</div>
+        ${a.length > 8 ? `<button type="button" class="bouton bouton-discret vv-voir-plus" id="vv-actus-plus">${R.actusTout ? "Voir moins" : `Voir plus (${a.length - 8})`}</button>` : ""}` : vide("Aucune actualité importante ces derniers jours."));
     } else if (R.onglet === "chiffres") {
       const e = sources?.echeances || [], c = sources?.chiffres || [];
       const dans = (d) => { const n = Math.round((new Date(d) - new Date(new Date().toDateString())) / 864e5); return Number.isFinite(n) ? (n <= 0 ? "aujourd'hui" : n === 1 ? "demain" : `dans ${n} jours`) : ""; };
       const jm = (d) => { const x = new Date(d); return Number.isNaN(+x) ? ["", d] : [x.getDate(), x.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "")]; };
       h = chargement() || `<div class="vv-liste">
-        <div class="vv-groupe"><span class="vv-groupe-nom">${svg("calendrier", 16)} Échéances fiscales · impots.gouv.fr</span>${e.length ? `<div class="vv-grille vv-grille-large">${e.map((x) => { const [j, m] = jm(x.date); return `<button type="button" class="vv-echeance" data-sujet="echeance:${echapper(x.ref)}" aria-pressed="${`echeance:${x.ref}` === R.sel}"><span class="vv-date"><b>${j}</b><small>${echapper(m)}</small></span><span><b>${echapper(x.titre)}</b><small>${dans(x.date)}</small></span></button>`; }).join("")}</div>` : vide("Calendrier pas encore disponible.")}</div>
-        <div class="vv-groupe"><span class="vv-groupe-nom">${svg("graphique", 16)} Chiffres de la semaine · BCE</span>${c.length ? `<div class="vv-tuiles">${[`<button type="button" class="vv-tuile vv-tuile-txt" data-sujet="chiffre:" aria-pressed="${R.sel === "chiffre:"}"><b>Vue d'ensemble</b><small>Taux et inflation</small></button>`, ...c.map((x) => `<button type="button" class="vv-tuile" data-sujet="chiffre:${echapper(x.ref)}" aria-pressed="${`chiffre:${x.ref}` === R.sel}"><b>${String(x.valeur).replace(".", ",")} %</b><small>${echapper(x.libelle)}${x.date ? " · " + echapper(x.date) : ""}</small></button>`)].join("")}</div>` : vide("Chiffres pas encore disponibles.")}</div>
+        <div class="vv-groupe"><span class="vv-groupe-nom">${svg("calendrier", 16)} Échéances fiscales · impots.gouv.fr</span>${e.length ? `<div class="vv-echeances">${e.map((x) => { const [j, m] = jm(x.date); return `<button type="button" class="vv-echeance" data-sujet="echeance:${echapper(x.ref)}" aria-pressed="${`echeance:${x.ref}` === R.sel}"><span class="vv-date"><b>${j}</b><small>${echapper(m)}</small></span><span class="vv-ech-titre">${echapper(x.titre)}</span><span class="vv-ech-dans">${dans(x.date)}</span></button>`; }).join("")}</div>` : vide("Calendrier pas encore disponible.")}</div>
+        <div class="vv-groupe"><span class="vv-groupe-nom">${svg("graphique", 16)} Chiffres de la semaine · BCE</span>${c.length ? `<div class="vv-tuiles">${[`<button type="button" class="vv-tuile vv-tuile-txt" data-sujet="chiffre:" aria-pressed="${R.sel === "chiffre:"}"><b>📊</b><span>Vue d'ensemble</span><small>Taux et inflation</small></button>`, ...c.map((x) => `<button type="button" class="vv-tuile" data-sujet="chiffre:${echapper(x.ref)}" aria-pressed="${`chiffre:${x.ref}` === R.sel}"><b>${String(x.valeur).replace(".", ",")} %</b><span>${echapper(x.libelle)}</span>${x.date ? `<small>${echapper(moisAn(x.date))}</small>` : ""}</button>`)].join("")}</div>` : vide("Chiffres pas encore disponibles.")}</div>
       </div>`;
     } else {
       h = `<div class="vv-idees">
-        <button type="button" class="vv-idee" data-sujet="simulation"><strong>👥 Commencer tôt ou attendre</strong><span class="petit doux">Deux profils, une simulation chiffrée par le site (exemple fictif).</span></button>
+        <button type="button" class="vv-idee" data-sujet="simulation"><strong>🧮 Simulations chiffrées</strong><span class="petit doux">5 exemples calculés par le site (exemple fictif) : commencer tôt, frais, inflation, PER…</span></button>
         <button type="button" class="vv-idee" data-sujet="libre"><strong>✏️ Mon sujet ou mon texte</strong><span class="petit doux">Écrivez un sujet, ou collez un texte complet (article en accès libre, note) : l'IA le reformule en scénario.</span></button>
       </div>`;
     }
@@ -326,6 +341,7 @@
       // le titre de l'idée sert de précision (modifiable), seulement si le champ est vide
       if (!sources.simple && !$v("vv-precision").value) { $v("vv-precision").value = R.precisionAuto = i.titre; majEtat(); }
     });
+    const p = $v("vv-actus-plus"); if (p) p.onclick = () => { R.actusTout = !R.actusTout; afficherPanneau(); };
     const c = $v("vv-cherche");
     if (c) c.oninput = () => { R.cherche = c.value; const pos = c.selectionStart; afficherPanneau(); const n = $v("vv-cherche"); n.focus(); n.setSelectionRange(pos, pos); };
   }
@@ -337,7 +353,7 @@
     if (type === "actu") { const a = sources?.actus?.find((x) => x.id === ref); return { ico: "📰", titre: a?.titre || R.titreIdee || "Actualité du moment", source: `Résumé du site (parties gratuites des articles)${a?.sources?.length ? " · source citée : " + a.sources.join(", ") : ""}.` }; }
     if (type === "echeance") { const e = sources?.echeances?.find((x) => x.ref === ref); return { ico: "📅", titre: e ? `${e.titre} (${dateCourte(e.date)})` : "Échéance fiscale", source: "Calendrier officiel (impots.gouv.fr, service-public.gouv.fr)." }; }
     if (type === "chiffre") return { ico: "📈", titre: ref || "Taux et inflation : vue d'ensemble", source: "Derniers chiffres publiés par la BCE (page Marchés)." };
-    if (type === "simulation") return { ico: "👥", titre: "Commencer tôt ou attendre", source: "Chiffres calculés par le site, présentés comme exemple fictif." };
+    if (type === "simulation") return { ico: "🧮", titre: (window.VideoSimulations?.TYPES[R.sim.type] || {}).nom || "Simulation chiffrée", source: "Chiffres calculés par le site, présentés comme exemple fictif." };
     if (type === "libre") return { ico: "✏️", titre: "Mon sujet ou mon texte", source: "Écrivez un sujet ou collez un texte ci-dessous." };
     return null;
   }

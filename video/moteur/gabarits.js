@@ -164,7 +164,7 @@ GAB.comparaison = {
       let s = `<rect x="${cx - 150}" y="${base - H}" width="300" height="${H}" rx="30" fill="${BLANC}" opacity=".06"/>`;
       s += `<rect x="${cx - 150}" y="${base - h}" width="300" height="${h}" rx="30" fill="${coul}"/>`;
       if (hv > 0) s += `<rect x="${cx - 150}" y="${base - hv}" width="300" height="${hv}" rx="30" fill="#000" opacity=".22"/>`;
-      s += txt(cx, base - h - 40, k > .12 ? "≈ " + nb(k > .985 ? Math.round(v / 1000) * 1000 : v * k) + " " + court(p.unite || "€", 4) : "", { size: 62, w: 900, f: BLANC, fam: "Inter Display" });
+      s += txt(cx, base - h - 40, k > .12 ? "≈ " + nb(k > .985 ? (v >= 10000 ? Math.round(v / 1000) * 1000 : Math.round(v / 100) * 100) : v * k) + " " + court(p.unite || "€", 4) : "", { size: 62, w: 900, f: BLANC, fam: "Inter Display" });
       s += txt(cx, 1140, court(X.nom, 22), { size: 40, w: 800, f: BLANC });
       return s;
     };
