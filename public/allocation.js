@@ -381,7 +381,7 @@ async function commentaires(cible, el, aide) {
 }
 
 // ---------------------------------------------------------------- Boîtes de dialogue
-function dialogue(titre, contenu, valider, danger) {
+function dialogue(titre, contenu, valider, danger, apres) {
   return new Promise((ok) => {
     const d = $("dialogue"), f = $("dialogue-form");
     f.innerHTML = `<h2>${titre}</h2>${contenu}<div class="al-boutons"><button type="button" class="bouton bouton-discret" value="non">Annuler</button><button type="submit" class="bouton ${danger ? "danger" : ""}" value="oui">${valider}</button></div>`;
@@ -391,6 +391,7 @@ function dialogue(titre, contenu, valider, danger) {
     f.querySelectorAll("[data-g]").forEach((b) => b.onclick = () => f.querySelectorAll(`[data-g="${b.dataset.g}"]`).forEach((x) => x.setAttribute("aria-pressed", x === b)));
     d.onclose = () => ok(choix);
     d.showModal();
+    if (apres) apres(f);
     f.querySelector("input")?.focus();
   });
 }
@@ -423,9 +424,24 @@ async function ajouterAssureur() {
   if (!v) return;
   try { const r = await appelApi("/api/allocation/assureur", "POST", await corpsAssureur(v)); await charger(); choisir("a", r.id, true); } catch (e) { notifier(e.message, true); }
 }
+// Type de contrat déduit du nom (« PER » → PER, « vie » → assurance-vie), tant que l'utilisateur n'a pas choisi lui-même.
+const typeDuNom = (nom) => /\bPER\b/i.test(nom) ? "per" : /assurance[\s-]*vie|\bvie\b/i.test(nom) ? "av" : null;
+function typeAuto(f) {
+  let manuel = false;
+  f.querySelectorAll('[data-g="type"]').forEach((b) => b.addEventListener("click", () => { manuel = true; }));
+  f.querySelector('input[name="nom"]').addEventListener("input", (e) => {
+    const t = typeDuNom(e.target.value);
+    if (t && !manuel) f.querySelectorAll('[data-g="type"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === t));
+  });
+}
+async function typeCoherent(nom, type) {
+  const t = typeDuNom(nom);
+  if (!t || t === type) return true;
+  return !!(await dialogue("Vérifier le type du contrat", `<p>Le nom « ${echapper(nom)} » évoque ${t === "per" ? "un PER" : "une assurance-vie"}, mais le type choisi est « ${type === "per" ? "PER" : "Assurance-vie"} ». Enregistrer quand même ?</p>`, "Enregistrer quand même"));
+}
 async function ajouterContrat(aid) {
-  const v = await dialogue("Nouveau contrat", champNom("Nom du contrat", "", "Ex. : nom commercial du contrat") + puces("type", "Type de contrat", [["av", "Assurance-vie"], ["per", "PER"]], "av"), "Ajouter");
-  if (!v) return;
+  const v = await dialogue("Nouveau contrat", champNom("Nom du contrat", "", "Ex. : nom commercial du contrat") + puces("type", "Type de contrat", [["av", "Assurance-vie"], ["per", "PER"]], "av"), "Ajouter", false, typeAuto);
+  if (!v || !(await typeCoherent(v.nom, v.type || "av"))) return;
   try { const r = await appelApi("/api/allocation/contrat", "POST", { nom: v.nom, type: v.type || "av", assureur_id: aid }); await charger(); choisir("c", r.id, true); } catch (e) { notifier(e.message, true); }
 }
 async function ajouterPortefeuille(cid) {
@@ -435,8 +451,9 @@ async function ajouterPortefeuille(cid) {
 }
 async function modifier(type, x) {
   const extra = type === "contrat" ? puces("type", "Type de contrat", [["av", "Assurance-vie"], ["per", "PER"]], x.type) : "";
-  const v = await dialogue(type === "contrat" ? "Modifier le contrat" : type === "assureur" ? "Modifier l'assureur" : "Renommer", champNom("Nom", x.nom, "") + extra + (type === "assureur" ? champsLogo(x) : ""), "Enregistrer");
+  const v = await dialogue(type === "contrat" ? "Modifier le contrat" : type === "assureur" ? "Modifier l'assureur" : "Renommer", champNom("Nom", x.nom, "") + extra + (type === "assureur" ? champsLogo(x) : ""), "Enregistrer", false, type === "contrat" ? typeAuto : null);
   if (!v) return;
+  if (type === "contrat" && !(await typeCoherent(v.nom, v.type || x.type))) return;
   let corps = { nom: v.nom };
   if (type === "assureur") try { corps = await corpsAssureur(v, x); } catch (e) { notifier(e.message, true); return; }
   if (type === "contrat") corps.type = v.type || x.type;
