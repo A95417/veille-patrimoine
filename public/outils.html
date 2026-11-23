@@ -18,6 +18,7 @@
   <script src="/fiches-suite.js"></script>
   <script src="/fiches-nouvelles.js"></script>
   <script src="/outils-fiches.js"></script>
+  <script src="/outils-pro.js"></script>
   <style>
     .bo-intro { margin: 0 0 16px; max-width: 760px; }
     .bo-barre { display: grid; gap: 10px; margin-bottom: 18px; }
@@ -50,6 +51,30 @@
     .bo-pied .doux { font-size: .82rem; }
     .bo-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .bo-voisins { margin-top: 26px; }
+
+    /* Outils poussés (outils-pro.js) */
+    .op-groupe { border: 1px solid var(--bord); border-radius: 14px; padding: 4px 14px 12px; margin: 12px 0; }
+    .op-groupe legend { font-weight: 700; font-size: .86rem; padding: 0 6px; color: var(--accent-fonce); }
+    .op-phrase { margin: 0 0 10px; font-size: 1.05rem; line-height: 1.5; }
+    .op-chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 6px 0 12px; }
+    .op-chiffres span { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--carte); font-size: .78rem; color: var(--doux); line-height: 1.3; }
+    .op-chiffres b { font-size: 1.05rem; color: var(--texte); }
+    .op-alerte { margin: 10px 0 0; padding: 8px 12px; border-radius: 10px; background: var(--carte); border-left: 3px solid var(--ko); font-size: .9rem; }
+    .op-detail { margin-top: 12px; background: var(--carte); border-radius: 12px; padding: 8px 12px; font-size: .88rem; }
+    .op-detail summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
+    .op-detail table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    .op-detail td { padding: 5px 0; border-top: 1px solid var(--bord); vertical-align: top; }
+    .op-detail td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; font-variant-numeric: tabular-nums; }
+    .op-detail tr.total td { font-weight: 700; }
+    .op-detail tr.sous td { color: var(--doux); font-size: .84rem; }
+    .op-detail tr.moins td:last-child::before { content: "− "; }
+    .op-sources { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--bord); font-size: .9rem; line-height: 1.5; }
+    .op-sources h3 { font-size: 1rem; margin: 0 0 8px; }
+    .op-sources h4 { font-size: .9rem; margin: 14px 0 4px; }
+    .op-sources ol, .op-sources ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+    .op-sources small a { color: var(--accent-fonce); }
+    .op-sources .doux { font-size: .82rem; margin: 12px 0 0; }
+    @media (max-width: 560px) { .op-detail td:last-child { white-space: normal; } }
     @media (max-width: 640px) {
       .bo-carte { padding: 12px 14px; }
       .bo-ico { width: 38px; height: 38px; font-size: 1.15rem; }
@@ -103,7 +128,7 @@
     const sansAccent = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
     const etat = { cat: "tous", q: "" };
     const ficheDe = (o) => o.fiche ? FICHES.find((f) => f.id === o.fiche[0]) : null;
-    const outilDe = (o) => o.boite ? BOITE_OUTILS.find((b) => b.id === o.boite) : (OUTILS_FICHES[o.fiche[0]] || [])[o.fiche[1]];
+    const outilDe = (o) => OUTILS_PRO[o.id] || (o.boite ? BOITE_OUTILS.find((b) => b.id === o.boite) : (OUTILS_FICHES[o.fiche[0]] || [])[o.fiche[1]]);
     // Seuls les outils réellement présents sont proposés (une fiche retirée ne casse pas la page).
     const DISPO = CATALOGUE.filter((o) => outilDe(o));
 
@@ -148,10 +173,11 @@
         <div class="bo-entete"><span class="bo-ico" aria-hidden="true">${o.ico}</span><div><span class="bo-tag" style="font-size:.75rem;font-weight:700;color:var(--accent-fonce);text-transform:uppercase">${CATEGORIES[o.cat]}</span><h2 class="bo-titre-outil">${echapper(o.nom)}</h2></div></div>
         <section class="carte simu bo-outil th-${fiche?.theme || outil.theme || ""}" id="outil-actif">
           ${outil.intro ? `<p class="doux" style="margin-top:0">${outil.intro}</p>` : ""}${outil.html()}
+          ${outil.bases ? blocSources(outil) : ""}
           <div class="bo-pied">
-            ${outil.source ? `<a href="${outil.source[1]}" target="_blank" rel="noopener noreferrer">Source : ${echapper(outil.source[0])} ↗</a>` : ""}
+            ${outil.source && !outil.bases ? `<a href="${outil.source[1]}" target="_blank" rel="noopener noreferrer">Source : ${echapper(outil.source[0])} ↗</a>` : ""}
             ${fiche ? `<a href="/fiche?id=${fiche.id}">Comprendre : fiche « ${echapper(fiche.titre)} » (sources officielles) →</a>` : ""}
-            <span class="doux">Règles vérifiées le ${VERIFIE_LE}. Estimation pédagogique, à confirmer avant tout conseil.</span>
+            ${outil.bases ? "" : `<span class="doux">Règles vérifiées le ${VERIFIE_LE}. Estimation pédagogique, à confirmer avant tout conseil.</span>`}
           </div>
           <div class="bo-actions"><button type="button" class="bouton bouton-discret" id="copier">🔗 Copier le lien de l'outil</button></div>
         </section>

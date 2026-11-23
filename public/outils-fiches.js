@@ -148,7 +148,7 @@ const OUTILS_FICHES = {
   scpi: [
     {
       titre: "Simulateur : ce qui reste des loyers de SCPI (micro-foncier)",
-      intro: "Parts détenues en direct, immeubles en France, revenus fonciers bruts jusqu'à 15 000 € par an.",
+      intro: "Parts détenues en direct, immeubles en France, revenus fonciers bruts jusqu'à 15 000 € par an. Le micro-foncier suppose de déclarer aussi un bien loué vide détenu en direct (brochure IR 2026) ; sinon le régime réel s'applique.",
       html: () => ctl.curseur("rev", "Revenus fonciers bruts par an", 0, 20000, 250, 6000) +
         ctl.choix("tmi", "Tranche marginale d'imposition", [[0, "0 %"], [.11, "11 %"], [.30, "30 %"], [.41, "41 %"], [.45, "45 %"]], .30) + ctl.resultat(),
       init: (z) => brancher(z, { rev: euros }, (v, r) => {
@@ -311,7 +311,7 @@ const OUTILS_FICHES = {
       titre: "Calculateur : droits sur une vente de parts",
       intro: "Taux publiés par Service-public : 5 % pour une SCI à prépondérance immobilière, sinon 3 % après un abattement de 23 000 € au prorata des parts cédées.",
       html: () => ctl.curseur("px", "Prix de vente des parts", 0, 1000000, 5000, 120000) + ctl.curseur("pc", "Part du capital vendue", 1, 100, 1, 100) +
-        ctl.choix("im", "Plus de 50 % de l'actif en immobilier non affecté à l'exploitation ?", [["1", "Oui"], ["0", "Non"]], "1") + ctl.resultat(),
+        ctl.choix("im", "Société à prépondérance immobilière (cas courant d'une SCI) ?", [["1", "Oui"], ["0", "Non"]], "1") + ctl.resultat(),
       init: (z) => brancher(z, { px: euros, pc: (x) => x + " %" }, (v, r) => {
         const droits = v.im === 1 ? v.px * .05 : Math.max(0, v.px - 23000 * v.pc / 100) * .03;
         r.className = "simu-resultat perte";
