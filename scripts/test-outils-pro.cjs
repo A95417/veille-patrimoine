@@ -1,7 +1,7 @@
 const fs = require("fs"), vm = require("vm"), D = require("path").join(__dirname, "../public/");
 const ctx = { console, module: undefined }; vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(D + "outils-fiches.js", "utf8") + "\n" + fs.readFileSync(D + "outils-pro.js", "utf8") + "\n;globalThis.T={impotRevenu,surtaxePV,cehr,abattSalaire,abattPensions,OUTILS_PRO,baremeProgressif};", ctx);
-const { impotRevenu, surtaxePV, cehr, abattSalaire, abattPensions, OUTILS_PRO } = ctx.T;
+vm.runInContext(fs.readFileSync(D + "outils-fiches.js", "utf8") + "\n" + fs.readFileSync(D + "outils-pro.js", "utf8") + "\n" + fs.readFileSync(D + "outils-pro2.js", "utf8") + "\n;globalThis.T={droitsCumules,usufruitViager,LIENS,impotRevenu,surtaxePV,cehr,abattSalaire,abattPensions,OUTILS_PRO,baremeProgressif};", ctx);
+const { droitsCumules, usufruitViager, LIENS, impotRevenu, surtaxePV, cehr, abattSalaire, abattPensions, OUTILS_PRO } = ctx.T;
 let ok = 0, ko = 0; const eq = (nom, a, b, tol = 0.01) => { if (Math.abs(a - b) <= tol) ok++; else { ko++; console.log("ÉCHEC", nom, a, "≠", b); } };
 // Service-public F31130 : célibataire, RFR 400 000 € → 4 500 €
 eq("CEHR exemple officiel", cehr(400000, false), 4500);
@@ -25,4 +25,11 @@ eq("abatt pensions plafond foyer", abattPensions([40000, 30000]), 4439); eq("aba
 eq("surtaxe 50 000", surtaxePV(50000), 0); eq("surtaxe 55 000", surtaxePV(55000), 850); eq("surtaxe 80 000", surtaxePV(80000), 1600);
 eq("surtaxe 105 000", surtaxePV(105000), 2650); eq("surtaxe 300 000", surtaxePV(300000), 18000);
 eq("surtaxe continuité 60 000", surtaxePV(60000), 1200); eq("surtaxe continuité 260 000", surtaxePV(260000), 15600);
+// Succession / donation
+eq("enfant 300 000 sans donation", droitsCumules(300000, 0, 100000, LIENS.enfant.bareme).droits, 8072*.05 + (12109-8072)*.1 + (15932-12109)*.15 + (200000-15932)*.2);
+eq("rappel 15 ans = calcul global", droitsCumules(100000, 150000, 100000, LIENS.enfant.bareme).droits, droitsCumules(250000, 0, 100000, LIENS.enfant.bareme).droits - droitsCumules(150000, 0, 100000, LIENS.enfant.bareme).droits);
+eq("frère 50 000", droitsCumules(50000, 0, 15932, LIENS.frere.bareme).droits, 24430*.35 + (50000-15932-24430)*.45);
+eq("usufruit 65 ans", usufruitViager(65), .4); eq("usufruit 20 ans", usufruitViager(20), .9); eq("usufruit 21 ans", usufruitViager(21), .8); eq("usufruit 91 ans", usufruitViager(91), .1); eq("usufruit 90 ans", usufruitViager(90), .2);
+// BOFiP : rachat partiel, prime unique 15 245 €, rachat 6 098 € sur 18 294 € → produit 1 016,33 €
+eq("rachat BOFiP", 6098 - 15245 * 6098 / 18294, 1016.33, .01);
 console.log(`${ok} vérifications réussies, ${ko} échec(s)`); process.exit(ko ? 1 : 0);
