@@ -544,15 +544,28 @@ async function chargerEntete(pageActive) {
   // le thème enregistré sur le compte l'emporte (autre appareil, nouvelle connexion)
   if (moi.theme && THEMES_COULEURS[moi.theme] && moi.theme !== themeLocal()) choisirTheme(moi.theme, false);
   if (moi.fiches && COULEURS_FICHES[moi.fiches] && moi.fiches !== couleurFichesLocale()) choisirCouleurFiches(moi.fiches, false);
-  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"], ["/der", "DER"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Outils"], ["/allocation", "Allocation"]];
+  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"], ["/der", "DER"], ["/marches", "Marchés"], ["/outils", "Outils"], ["/allocation", "Allocation"], ["/selection", "Ma sélection"]];
+  const ICO_NAV = {
+    "/": '<path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z"/>',
+    "/brief": '<path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/>',
+    "/apprendre": '<path d="M3 8l9-4 9 4-9 4z"/><path d="M7 10v5c3 2 7 2 10 0v-5"/>',
+    "/linkedin": '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+    "/der": '<path d="M4 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2z"/>',
+    "/marches": '<path d="M4 19h16"/><path d="M5 15l4-5 4 3 6-7"/>',
+    "/outils": '<path d="M4 8h16v11a1 1 0 01-1 1H5a1 1 0 01-1-1z"/><path d="M9 8V5h6v3M4 13h16"/>',
+    "/allocation": '<path d="M12 3a9 9 0 109 9h-9z"/><path d="M15 3.5A9 9 0 0120.5 9H15z"/>',
+    "/selection": '<path d="M7 3h10v18l-5-4-5 4z"/>',
+  };
+  const icoNav = (h) => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO_NAV[h]}</svg>`;
   const nav = liens
-    .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${nom}</a>`)
+    .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""} ${href === "/selection" ? "nav-fin" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${icoNav(href)}<span>${nom}</span>${href === "/selection" ? '<span class="nav-compte" id="nav-compte" hidden></span>' : ""}</a>`)
     .join("");
   document.getElementById("entete").innerHTML = `
     <div class="entete-contenu">
       <a class="logo" href="/" aria-label="Veille Patrimoine, accueil">${LOGO}<span class="logo-texte">Veille Patrimoine</span></a>
       <nav class="nav" aria-label="Menu principal">${nav}</nav>
-      <form class="recherche-entete" action="/recherche" method="get" role="search">
+      <form class="recherche-entete" id="recherche-entete" action="/recherche" method="get" role="search">
+        <button type="button" class="loupe" id="btn-loupe" aria-label="Ouvrir la recherche" aria-expanded="false" aria-controls="recherche-rapide"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="color:var(--doux)"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
         <label class="sr" for="recherche-rapide">Rechercher</label>
         <input id="recherche-rapide" name="q" type="search" placeholder="PER, IFI, LMNP…" autocomplete="off">
@@ -575,6 +588,14 @@ async function chargerEntete(pageActive) {
         </button>
       </div>
     </div>`;
+  // Recherche repliée en loupe sur ordinateur : un clic l'ouvre, Échap ou un champ vide la referme.
+  const fr = document.getElementById("recherche-entete"), champ = document.getElementById("recherche-rapide"), loupe = document.getElementById("btn-loupe");
+  const ouvrir = (v) => { fr.classList.toggle("ouverte", v); loupe.setAttribute("aria-expanded", v); if (v) champ.focus(); };
+  loupe.onclick = () => ouvrir(!fr.classList.contains("ouverte"));
+  champ.addEventListener("keydown", (e) => { if (e.key === "Escape") { champ.value = ""; ouvrir(false); loupe.focus(); } });
+  champ.addEventListener("blur", () => setTimeout(() => { if (!champ.value.trim() && document.activeElement !== loupe) ouvrir(false); }, 150));
+  // Nombre de sujets dans « Ma sélection » (n'empêche pas l'affichage si l'appel échoue).
+  appelApi("/api/favoris").then((r) => { const n = (r.ids || []).length, e = document.getElementById("nav-compte"); if (e && n) { e.textContent = n; e.hidden = false; e.title = `${n} sujet${n > 1 ? "s" : ""} mis de côté`; } }).catch(() => {});
   // Sur téléphone : barre d'onglets fixe en bas de l'écran (les rubriques restent toujours à portée du pouce).
   const ICO = {
     "/": '<path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z"/>',
@@ -584,7 +605,7 @@ async function chargerEntete(pageActive) {
     plus: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
   };
   const principaux = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"]];
-  const autres = [["/der", "DER client"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/allocation", "Allocation"], ["/dossiers", "Textes en discussion"], ["/glossaire", "Glossaire"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
+  const autres = [["/der", "DER client"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/allocation", "Allocation"], ["/dossiers", "Textes en discussion"], ["/glossaire", "Glossaire"], ["/selection", "Ma sélection"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
   const dansPlus = autres.some(([h]) => h === pageActive);
   const svg = (k) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
   document.getElementById("onglets-bas")?.remove();
