@@ -146,6 +146,30 @@
     .al-dialogue p { margin: 0; color: var(--doux); font-size: .9rem; line-height: 1.5; }
     .bouton.danger { background: var(--ko); border-color: var(--ko); color: #fff; }
 
+
+    /* Import de documents */
+    .al-dialogue.al-large { width: min(920px, calc(100vw - 32px)); }
+    .al-depot { display: grid; justify-items: center; gap: 4px; padding: 34px 20px; border: 2px dashed var(--bord-fort); border-radius: 14px; cursor: pointer; text-align: center; font-weight: 400 !important; }
+    .al-depot:hover, .al-depot.survol { border-color: var(--accent); background: var(--accent-doux); }
+    .al-depot-ico { font-size: 1.8rem; }
+    .al-depot span { color: var(--doux); font-size: .85rem; }
+    .al-import-msg { background: var(--fond); border-left: 3px solid var(--accent); padding: 8px 12px; border-radius: 8px; color: var(--texte) !important; }
+    .al-import-src { font-size: .8rem !important; }
+    .al-import-table { max-height: 46vh; overflow: auto; border: 1px solid var(--bord); border-radius: 10px; padding: 4px 8px; }
+    .al-deja { display: block; color: var(--doux); font-size: .72rem; padding-left: 9px; }
+    .al-ia { border: 1px solid var(--bord); border-radius: 12px; padding: 10px 14px; }
+    .al-ia summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+    .al-ia p { margin: 8px 0 !important; }
+    .al-coche { display: flex !important; grid-template-columns: none !important; gap: 8px !important; align-items: flex-start; font-weight: 400 !important; margin-bottom: 8px; }
+    .al-attente { display: grid; justify-items: center; gap: 8px; padding: 30px 0; color: var(--doux); }
+    .al-roue { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--bord); border-top-color: var(--accent); animation: tourne 1s linear infinite; }
+    @keyframes tourne { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .al-roue { animation-duration: 3s; } }
+    .al-liens { display: grid; gap: 6px; }
+    .al-lien { font: inherit; text-align: left; display: grid; gap: 2px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--bord); background: var(--fond); color: var(--texte); text-decoration: none; cursor: pointer; }
+    .al-lien:hover { border-color: var(--accent); }
+    .al-lien b { font-size: .88rem; } .al-lien b::after { content: " ↗"; color: var(--doux); font-weight: 400; }
+    .al-lien span { font-size: .76rem; color: var(--doux); line-height: 1.35; }
     @media (min-width: 761px) and (max-width: 1399px) { .al-gauche, .al-droite { top: 126px; max-height: calc(100vh - 146px); } }
     @media (max-width: 1280px) { .al-grille { grid-template-columns: 270px minmax(0, 1fr) 310px; } }
     @media (max-width: 1080px) {
@@ -189,6 +213,7 @@
     </div>
   </main>
   <dialog class="al-dialogue" id="dialogue"><form method="dialog" id="dialogue-form"></form></dialog>
+  <script src="/allocation-import.js"></script>
   <script src="/allocation.js"></script>
 </body>
 </html>

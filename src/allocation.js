@@ -2,6 +2,8 @@
 // avec les commentaires « Pourquoi ce choix » visibles par tous les utilisateurs du cabinet.
 // Aucune donnée client ici : uniquement l'offre des assureurs et les choix du cabinet.
 
+import { modeles, compterQuota } from "./linkedin.js";
+
 const json = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 const erreur = (m, s = 400) => json({ erreur: m }, s);
 const lire = async (r) => { try { return await r.json(); } catch { return {}; } };
@@ -128,6 +130,19 @@ export async function routeAllocation(request, env, chemin, moi, url) {
     return json({ ok: true });
   }
 
+  // Lecture d'un document d'assureur par l'IA (Gemini), uniquement à la demande et après confirmation
+  // qu'il ne contient aucune donnée client. Le fichier n'est pas conservé.
+  if (chemin === "/api/allocation/lire" && methode === "POST") {
+    if (!env.GEMINI_API_KEY) return erreur("L'IA n'est pas configurée sur le site.", 503);
+    const d = await lire(request);
+    if (d.sans_donnees_client !== true) return erreur("Confirmez d'abord que le document ne contient aucune donnée client.");
+    const types = ["application/pdf", "image/jpeg", "image/png"];
+    if (!types.includes(d.type)) return erreur("Format accepté : PDF, JPG ou PNG.");
+    const b64 = String(d.donnees || "");
+    if (!/^[A-Za-z0-9+/=]+$/.test(b64) || b64.length > 11_000_000) return erreur("Fichier illisible ou trop lourd (8 Mo au plus).");
+    return json(await lireDocument(env, db, b64, d.type));
+  }
+
   // « Pourquoi ce choix » : commentaires partagés.
   if (chemin === "/api/allocation/commentaires" && methode === "GET") {
     const cible = String(url.searchParams.get("cible") || "");
@@ -155,4 +170,45 @@ export async function routeAllocation(request, env, chemin, moi, url) {
     return json({ ok: true });
   }
   return null;
+}
+
+// ---------------------------------------------------------------- Lecture d'un document par Gemini
+const CONSIGNES_LECTURE = `Tu lis un document d'assureur ou de société de gestion (liste de supports, allocation, fiche de contrat).
+Relève uniquement les fonds (unités de compte, OPCVM, ETF, SCPI, fonds en euros) qui y figurent, avec :
+- nom : le nom du fonds tel qu'il est écrit ;
+- isin : le code ISIN exactement tel qu'il est écrit (12 caractères), ou une chaîne vide s'il n'y en a pas ;
+- part : le pourcentage d'allocation s'il est écrit pour ce fonds, sinon null.
+N'invente rien : si une information n'est pas écrite, laisse-la vide. Ne recopie jamais de nom de personne, d'adresse, de numéro de contrat ou de montant personnel.`;
+const SCHEMA_LECTURE = { type: "OBJECT", properties: { fonds: { type: "ARRAY", items: { type: "OBJECT",
+  properties: { nom: { type: "STRING" }, isin: { type: "STRING" }, part: { type: "NUMBER", nullable: true } }, required: ["nom", "isin"] } } }, required: ["fonds"] };
+
+async function lireDocument(env, db, b64, type) {
+  let liste;
+  try { const m = await modeles(env, db); liste = [m.fort, m.lite].filter(Boolean); } catch (e) { return { erreur: "IA indisponible : " + e.message }; }
+  for (const modele of liste) {
+    await compterQuota(db, modele);
+    let r;
+    try {
+      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent`, {
+        method: "POST", signal: AbortSignal.timeout(60000),
+        headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: CONSIGNES_LECTURE }] },
+          contents: [{ role: "user", parts: [{ inline_data: { mime_type: type, data: b64 } }, { text: "Liste les fonds de ce document." }] }],
+          generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: SCHEMA_LECTURE, maxOutputTokens: 8192 },
+        }),
+      });
+    } catch { continue; }
+    if (r.status === 429 || r.status >= 500) continue;
+    if (!r.ok) return { erreur: `L'IA a refusé le document (HTTP ${r.status}).` };
+    const t = (await r.json()).candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+    let d; try { d = JSON.parse(t); } catch { continue; }
+    const fonds = (Array.isArray(d.fonds) ? d.fonds : []).slice(0, 120).map((f) => {
+      const isin = texte(f.isin, 20).toUpperCase().replace(/\s/g, "");
+      const part = Number.isFinite(f.part) && f.part >= 0 && f.part <= 100 ? Math.round(f.part * 100) / 100 : null;
+      return { nom: texte(f.nom, 160), isin, part, isin_ok: !isin || isinValide(isin) };
+    }).filter((f) => f.nom);
+    return { fonds, modele };
+  }
+  return { erreur: "Le quota gratuit de l'IA est atteint pour aujourd'hui, ou le service ne répond pas. Réessayez plus tard." };
 }

@@ -24,6 +24,8 @@ function isinValide(isin) {
   for (let i = 0; i < ch.length; i++) { let n = Number(ch[ch.length - 1 - i]); if (i % 2) { n *= 2; if (n > 9) n -= 9; } s += n; }
   return s % 10 === 0;
 }
+// Recherche par ISIN dans la base GECO de l'AMF (même adresse que celle produite par son formulaire).
+const lienAmf = (isin) => `https://geco.amf-france.org/Bio/res_part.aspx?NomProd=&NumAgr=&CodeISIN=${"+".repeat(120)}${isin}${"+".repeat(63)}&NomSoc=&selectNRJ=0&ClassProd=0&TypeProd=`;
 const sansAccent = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const nb = (x) => Number(x).toLocaleString("fr-FR", { maximumFractionDigits: 2 });
 const date = (iso) => iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
@@ -123,10 +125,19 @@ function rendreCentre() {
       ${pfs.length ? `<div class="al-cartes">${pfs.map((p) => { const l = lignesDe(p.id), tot = l.reduce((s, x) => s + (x.part || 0), 0);
         return `<button type="button" class="al-carte" data-p="${p.id}"><b>${point(p.profil)} ${echapper(p.nom)}</b><small>${PROFILS[p.profil]?.[0] || "Sans profil"} · ${l.length} fonds${tot ? ` · ${nb(tot)} %` : ""}</small>${l.length ? barre(l) : ""}${D.commentaires["p:" + p.id] ? `<small>💬 ${D.commentaires["p:" + p.id]} commentaire${D.commentaires["p:" + p.id] > 1 ? "s" : ""}</small>` : ""}</button>`; }).join("")}</div>`
         : `<p class="al-astuce">Aucun portefeuille dans ce contrat. Créez le premier, par exemple « Prudent » ou « Équilibré », puis ajoutez ses fonds.</p>`}
-      <p style="margin-top:14px"><button type="button" class="bouton" id="ajout">+ Ajouter un portefeuille</button></p></div>`;
+      <p class="al-actions" style="margin-top:14px"><button type="button" class="bouton" id="ajout">+ Ajouter un portefeuille</button><button type="button" class="bouton bouton-discret" id="importer">📄 Créer depuis un document</button></p></div>`;
     brancherFil(z);
     z.querySelectorAll("[data-p]").forEach((b) => b.onclick = () => choisir("p", +b.dataset.p));
     $("ajout").onclick = () => ajouterPortefeuille(c.id);
+    $("importer").onclick = async () => {
+      const r = await ouvrirImport({ creer: true });
+      if (!r) return;
+      try {
+        const n = await appelApi("/api/allocation/portefeuille", "POST", { nom: r.nom, profil: "", contrat_id: c.id });
+        await appelApi(`/api/allocation/portefeuille/${n.id}/lignes`, "PUT", { lignes: r.fonds });
+        await charger(); choisir("p", n.id, true); notifier("Portefeuille créé à partir du document.");
+      } catch (e) { notifier(e.message, true); }
+    };
     $("renommer").onclick = () => modifier("contrat", c);
     $("supprimer").onclick = () => supprimer("contrat", c, `le contrat « ${c.nom} » et ses ${pfs.length} portefeuille(s)`);
     return;
@@ -167,7 +178,7 @@ function rendrePortefeuille(z) {
           <td class="al-bt">${i ? `<button type="button" class="al-icone" data-monter="${i}" title="Monter" aria-label="Monter la ligne">${SVG.haut}</button>` : ""}<button type="button" class="al-icone danger" data-retirer="${i}" title="Retirer" aria-label="Retirer la ligne">${SVG.poubelle}</button></td></tr>`).join("")}
       </tbody></table>${erreurs.some(Boolean) ? `<p class="al-erreur-ligne">Code ISIN invalide : vérifiez les cases en rouge (12 caractères, clé de contrôle).</p>` : ""}`
         : `<p class="al-astuce">Aucun fonds pour l'instant. Ajoutez chaque fonds avec son code ISIN (laissez l'ISIN vide pour un fonds en euros) et sa part en %.</p>`}
-      <div class="al-pied"><button type="button" class="bouton bouton-discret" id="ajout-ligne">+ Ajouter un fonds</button>
+      <div class="al-pied"><span class="al-actions"><button type="button" class="bouton bouton-discret" id="ajout-ligne">+ Ajouter un fonds</button><button type="button" class="bouton bouton-discret" id="importer">📄 Importer un document</button></span>
         ${brouillon.length ? `<span class="al-total ${Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""}">Total : <b>${nb(total)} %</b>${Math.abs(total - 100) < .01 ? " ✓" : total > 100 ? " (dépasse 100 %)" : total ? ` (reste ${nb(100 - total)} %)` : ""}</span>` : ""}</div>
       ${total > 0 ? barre(brouillon.map((l) => ({ ...l, part: Number(String(l.part).replace(",", ".")) || 0 }))) + `<div class="al-legende">${brouillon.map((l, i) => Number(String(l.part).replace(",", ".")) > 0 ? `<span><i style="background:${COULEURS[i % COULEURS.length]}"></i>${echapper(l.nom || "Sans nom")} ${nb(String(l.part).replace(",", "."))} %</span>` : "").join("")}</div>` : ""}
       ${modifie ? `<div class="al-enregistrer" role="status"><span>Modifications non enregistrées</span><button type="button" class="bouton bouton-discret" id="annuler">Annuler</button><button type="button" class="bouton" id="enregistrer">Enregistrer</button></div>` : ""}
@@ -193,6 +204,13 @@ function rendrePortefeuille(z) {
   z.querySelectorAll("[data-retirer]").forEach((b) => b.onclick = () => { brouillon.splice(+b.dataset.retirer, 1); modifie = true; rendreCentre(); });
   z.querySelectorAll("[data-monter]").forEach((b) => b.onclick = () => { const i = +b.dataset.monter; [brouillon[i - 1], brouillon[i]] = [brouillon[i], brouillon[i - 1]]; modifie = true; rendreCentre(); });
   $("ajout-ligne").onclick = () => { brouillon.push({ nom: "", isin: "", part: "" }); modifie = true; rendreCentre(); const t = z.querySelectorAll('[data-champ="nom"]'); t[t.length - 1]?.focus(); };
+  $("importer").onclick = async () => {
+    const r = await ouvrirImport({ existants: brouillon.map((l) => l.isin).filter(Boolean) });
+    if (!r) return;
+    const nouveaux = r.fonds.map((x) => ({ nom: x.nom, isin: x.isin, part: x.part ?? "" }));
+    brouillon = r.remplacer ? nouveaux : [...brouillon.filter((l) => l.nom.trim() || l.isin), ...nouveaux.filter((x) => !x.isin || !brouillon.some((l) => l.isin === x.isin))];
+    modifie = true; rendreCentre(); notifier(`${nouveaux.length} fonds ajouté${nouveaux.length > 1 ? "s" : ""} : vérifiez puis enregistrez.`);
+  };
   if ($("annuler")) $("annuler").onclick = () => { brouillon = lignesDe(p.id).map((l) => ({ nom: l.nom, isin: l.isin || "", part: l.part ?? "" })); modifie = false; rendreCentre(); };
   if ($("enregistrer")) $("enregistrer").onclick = enregistrerLignes;
   commentaires("p:" + p.id, $("com-p"), "Expliquez le choix de ce portefeuille : objectif, horizon, contexte de marché, points de vigilance…");
@@ -227,10 +245,17 @@ function rendreDroite() {
         <div class="al-zone"><div class="al-titre-panneau">Utilisé dans ${usages.length} portefeuille${usages.length > 1 ? "s" : ""}</div>
           ${usages.length ? `<ul class="al-utilise">${usages.map((l) => { const p = portefeuille(l.portefeuille_id), c = contrat(p.contrat_id), a = assureur(c.assureur_id);
             return `<li><button type="button" data-p="${p.id}"><span>${echapper(a.nom)} › ${echapper(c.nom)} › <b>${echapper(p.nom)}</b></span><small style="white-space:nowrap">${l.part != null ? nb(l.part) + " %" : ""}</small></button></li>`; }).join("")}</ul>` : `<p class="al-astuce">Pas encore enregistré dans un portefeuille.</p>`}</div>
+        <div class="al-zone"><div class="al-titre-panneau">Fiches et performances</div>
+          <div class="al-liens">
+            <a class="al-lien" href="${lienAmf(sel.f)}" target="_blank" rel="noopener noreferrer"><b>Base officielle de l'AMF (GECO)</b><span>Documents réglementaires et valeurs liquidatives, si le fonds y est enregistré</span></a>
+            <button type="button" class="al-lien" data-ext="https://www.quantalys.com/Recherche"><b>Quantalys</b><span>Performances, volatilité, notation : l'ISIN est copié, collez-le dans la recherche</span></button>
+            <button type="button" class="al-lien" data-ext="https://global.morningstar.com/fr/fonds"><b>Morningstar</b><span>Performances et notation : l'ISIN est copié, collez-le dans la recherche</span></button>
+          </div><p class="al-astuce" style="margin:8px 0 0;font-size:.78rem">Sites externes gratuits ; le site ne recopie aucune performance.</p></div>
         <div class="al-zone"><div class="al-titre-panneau">Notre avis sur ce fonds</div><div id="com-f"></div></div>
       </div>`;
     $("fermer-f").onclick = () => { sel.f = null; synchroniserUrl(); rendreDroite(); $("centre").querySelectorAll(".al-actif").forEach((x) => x.classList.remove("al-actif")); };
     $("copier-isin").onclick = () => copier(sel.f);
+    z.querySelectorAll("[data-ext]").forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(sel.f); notifier(`ISIN ${sel.f} copié : collez-le dans la recherche.`); } catch {} window.open(b.dataset.ext, "_blank", "noopener"); });
     z.querySelectorAll("[data-p]").forEach((b) => b.onclick = () => choisir("p", +b.dataset.p));
     commentaires("f:" + sel.f, $("com-f"), "Pourquoi ce fonds : gestion, frais, régularité, rôle dans le portefeuille…");
     return;

@@ -58,7 +58,7 @@ export const ecrireEtat = (db, cle, valeur) =>
   db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES (?, ?, ?)").bind(cle, JSON.stringify(valeur), new Date().toISOString()).run();
 
 // Compteur partagé avec le robot (même clé que /api/robot/ia/quota), pour ne pas dépasser l'offre gratuite.
-async function compterQuota(db, modele) {
+export async function compterQuota(db, modele) {
   const jour = jourGoogle();
   const lu = await lireEtat(db, "ia_quota");
   const q = lu?.valeur?.jour === jour ? lu.valeur : { jour, compteurs: {} };
@@ -68,7 +68,7 @@ async function compterQuota(db, modele) {
 }
 
 // Modèles disponibles avec la clé (liste mise en cache 24 h) : Flash pour la qualité, Flash-Lite en relais.
-async function modeles(env, db) {
+export async function modeles(env, db) {
   const cache = await lireEtat(db, "linkedin_modeles");
   if (cache && Date.now() - new Date(cache.maj_le) < 86400e3 && cache.valeur.lite) return cache.valeur;
   const r = await fetch(`${API}/models?pageSize=200`, { headers: { "x-goog-api-key": env.GEMINI_API_KEY } });
