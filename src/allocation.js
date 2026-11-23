@@ -131,7 +131,7 @@ export async function routeAllocation(request, env, chemin, moi, url) {
       if (isin && !/^[A-Z0-9]{2,20}$/.test(isin)) return erreur(`Ligne ${i + 1} : le code ISIN « ${isin} » ne doit contenir que des lettres et des chiffres.`);
       if (part !== null && (!Number.isFinite(part) || part < 0 || part > 100)) return erreur(`Ligne ${i + 1} : le poids doit être compris entre 0 et 100 %.`);
       const sfdr = l.sfdr === "" || l.sfdr == null ? null : Number(l.sfdr), risque = l.risque === "" || l.risque == null ? null : Number(l.risque);
-      if (sfdr !== null && ![6, 8, 9].includes(sfdr)) return erreur(`Ligne ${i + 1} : classement SFDR invalide (article 6, 8 ou 9).`);
+      if (sfdr !== null && ![0, 6, 8, 9].includes(sfdr)) return erreur(`Ligne ${i + 1} : classement SFDR invalide (0, 6, 8 ou 9).`);
       if (risque !== null && !(Number.isInteger(risque) && risque >= 1 && risque <= 7)) return erreur(`Ligne ${i + 1} : le risque doit être compris entre 1 et 7.`);
       lignes.push([nom, isin || null, part === null ? null : Math.round(part * 100) / 100, sfdr, risque]);
     }
@@ -194,7 +194,7 @@ Relève uniquement les fonds (unités de compte, OPCVM, ETF, SCPI, fonds en euro
 - nom : le nom du fonds tel qu'il est écrit ;
 - isin : le code ISIN exactement tel qu'il est écrit (12 caractères), ou une chaîne vide s'il n'y en a pas ;
 - part : le pourcentage d'allocation (poids) s'il est écrit pour ce fonds, sinon null ;
-- sfdr : 6, 8 ou 9 si le classement SFDR (article 6, 8 ou 9) est écrit pour ce fonds, sinon null ;
+- sfdr : 6, 8 ou 9 si le classement SFDR (article 6, 8 ou 9) est écrit pour ce fonds, 0 si le document indique 0 ou « non concerné », sinon null ;
 - risque : l'indicateur de risque SRI (1 à 7) s'il est écrit pour ce fonds, sinon null.
 N'invente rien : si une information n'est pas écrite, laisse-la vide. Ne recopie jamais de nom de personne, d'adresse, de numéro de contrat ou de montant personnel.`;
 const SCHEMA_LECTURE = { type: "OBJECT", properties: { fonds: { type: "ARRAY", items: { type: "OBJECT",
@@ -224,7 +224,7 @@ async function lireDocument(env, db, b64, type) {
     const fonds = (Array.isArray(d.fonds) ? d.fonds : []).slice(0, 120).map((f) => {
       const isin = texte(f.isin, 20).toUpperCase().replace(/\s/g, "");
       const part = Number.isFinite(f.part) && f.part >= 0 && f.part <= 100 ? Math.round(f.part * 100) / 100 : null;
-      const sfdr = [6, 8, 9].includes(f.sfdr) ? f.sfdr : null, risque = Number.isInteger(f.risque) && f.risque >= 1 && f.risque <= 7 ? f.risque : null;
+      const sfdr = [0, 6, 8, 9].includes(f.sfdr) ? f.sfdr : null, risque = Number.isInteger(f.risque) && f.risque >= 1 && f.risque <= 7 ? f.risque : null;
       return { nom: texte(f.nom, 160), isin, part, sfdr, risque, isin_ok: !isin || isinValide(isin) };
     }).filter((f) => f.nom);
     return { fonds, modele };

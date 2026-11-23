@@ -244,6 +244,50 @@
     .al-repart .al-legende { gap: 4px 16px; }
     .al-repart .al-legende b { color: var(--texte); font-weight: 600; margin-left: 2px; }
     @media (max-width: 1280px) { .al-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+    /* Tableau sobre (lecture), sur le modèle des documents du cabinet */
+    .al-sobre { --bx: #5a0b10; width: 100%; border-collapse: separate; border-spacing: 0 2px; font-size: .86rem; table-layout: fixed; }
+    .al-sobre thead th { background: var(--bx); color: #fff; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; text-align: center; padding: 9px 8px; border-left: 6px solid var(--carte); background-clip: padding-box; }
+    .al-sobre thead th:first-child { border-left: 0; border-radius: 6px 6px 0 0; }
+    .al-sobre thead th:not(:first-child) { border-radius: 6px 6px 0 0; }
+    .al-sobre td { background: #f4f4f5; padding: 6px 10px; color: var(--texte); }
+    .al-sobre td + td.as-num, .al-sobre td.as-poids { border-left: 6px solid var(--carte); background-clip: padding-box; }
+    .al-sobre .as-code { width: 150px; background: #e9e9eb; font-weight: 700; text-align: center; font-size: .8rem; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .al-sobre .as-lib { overflow-wrap: anywhere; line-height: 1.3; }
+    .al-sobre .as-code-mob { display: none; }
+    .al-sobre .as-num { width: 86px; text-align: center; font-variant-numeric: tabular-nums; }
+    .al-sobre .as-poids { width: 96px; text-align: right; font-variant-numeric: tabular-nums; }
+    .al-sobre th.as-num, .al-sobre th.as-poids { text-align: center; }
+    .al-sobre tr.al-lect { cursor: pointer; }
+    .al-sobre tr.al-lect:hover td { background: #ececee; }
+    .al-sobre tr.al-lect:hover td.as-code { background: #e2e2e5; }
+    .al-sobre tr.al-actif td { background: #f3e6e8 !important; }
+    .al-sobre tr.al-actif td.as-code { background: #ead2d6 !important; color: var(--bx); }
+    .al-sobre .al-alerte-isin { vertical-align: 1px; margin-left: 2px; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .al-sobre td { background: #1f2430; } :root:not([data-theme="light"]) .al-sobre .as-code { background: #262c3a; } :root:not([data-theme="light"]) .al-sobre { --bx: #7a1a24; } :root:not([data-theme="light"]) .al-sobre tr.al-lect:hover td { background: #262c3a; } :root:not([data-theme="light"]) .al-sobre tr.al-actif td { background: #3a1d24 !important; } }
+    :root[data-theme="dark"] .al-sobre td { background: #1f2430; } :root[data-theme="dark"] .al-sobre .as-code { background: #262c3a; } :root[data-theme="dark"] .al-sobre { --bx: #7a1a24; } :root[data-theme="dark"] .al-sobre tr.al-actif td { background: #3a1d24 !important; }
+    /* Synthèse sobre */
+    .al-kpi { background: #f4f4f5; border-color: transparent; }
+    .al-kpi span { text-transform: uppercase; letter-spacing: .04em; font-size: .68rem; }
+    .al-kpi b { color: var(--texte) !important; }
+    .al-kpi.ko b { color: var(--ko) !important; }
+    .al-repart { border-color: transparent; background: #f4f4f5; }
+    .al-repart-titre { text-transform: uppercase; letter-spacing: .04em; font-size: .68rem; color: #5a0b10; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .al-kpi, :root:not([data-theme="light"]) .al-repart { background: #1f2430; } :root:not([data-theme="light"]) .al-repart-titre { color: var(--texte); } }
+    :root[data-theme="dark"] .al-kpi, :root[data-theme="dark"] .al-repart { background: #1f2430; } :root[data-theme="dark"] .al-repart-titre { color: var(--texte); }
+    @media (max-width: 760px) {
+      .al-sobre { table-layout: auto; font-size: .8rem; }
+      .al-sobre .as-code { width: 0; max-width: 0; padding: 0; font-size: 0; overflow: hidden; }
+      .al-sobre .as-code * { display: none; }
+      .al-sobre .as-th-code { text-align: left; }
+      .al-sobre .as-lib { white-space: normal; }
+      .al-sobre .as-code-mob { display: block; font-size: .68rem; font-weight: 700; color: var(--doux); margin-top: 2px; }
+      .al-sobre .as-poids { white-space: nowrap; }
+      .al-sobre .as-num { width: 44px; padding: 6px 4px; }
+      .al-sobre .as-poids { width: 64px; padding: 6px 6px; }
+      .al-sobre thead th { font-size: .62rem; padding: 8px 4px; border-left-width: 3px; }
+      .al-sobre td + td.as-num, .al-sobre td.as-poids { border-left-width: 3px; }
+    }
     /* Import de documents */
     .al-dialogue.al-large { width: min(920px, calc(100vw - 32px)); }
     .al-depot { display: grid; justify-items: center; gap: 4px; padding: 34px 20px; border: 2px dashed var(--bord-fort); border-radius: 14px; cursor: pointer; text-align: center; font-weight: 400 !important; }

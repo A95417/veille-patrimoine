@@ -110,7 +110,7 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
           ${F.map((x, i) => `<tr data-i="${i}"><td style="width:28px"><input type="checkbox" data-k="garder" ${x.garder ? "checked" : ""} aria-label="Garder ce fonds" style="width:auto"></td>
             <td><input data-k="nom" value="${echapper(x.nom)}" placeholder="Nom du fonds à compléter">${deja(x.isin) ? `<small class="al-deja">déjà dans le portefeuille</small>` : ""}</td>
             <td class="al-isin"><span class="al-isin-saisie"><input data-k="isin" value="${echapper(x.isin)}" maxlength="20" placeholder="${/fonds\s*(en\s*)?euros?/i.test(x.nom) ? "Fonds en euros" : ""}">${x.isin && !isinValide(x.isin) ? `<span class="al-alerte-isin" title="Code ISIN non confirmé : à vérifier"></span>` : ""}</span></td>
-            <td style="width:88px"><select data-k="sfdr"><option value="">—</option>${[6, 8, 9].map((a) => `<option value="${a}" ${x.sfdr === a ? "selected" : ""}>Art. ${a}</option>`).join("")}</select></td>
+            <td style="width:88px"><select data-k="sfdr"><option value="">—</option>${[0, 6, 8, 9].map((a) => `<option value="${a}" ${x.sfdr === a ? "selected" : ""}>${a ? "Art. " + a : "0"}</option>`).join("")}</select></td>
             <td style="width:70px"><select data-k="risque"><option value="">—</option>${[1, 2, 3, 4, 5, 6, 7].map((a) => `<option value="${a}" ${x.risque === a ? "selected" : ""}>${a}/7</option>`).join("")}</select></td>
             <td class="al-part"><input data-k="part" value="${x.part == null ? "" : String(x.part).replace(".", ",")}" placeholder="—"></td></tr>`).join("")}
         </tbody></table></div>` : ""}
@@ -126,7 +126,7 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
         const x = F[+inp.closest("tr").dataset.i], k = inp.dataset.k;
         if (k === "garder") x.garder = inp.checked;
         else if (k === "isin") { x.isin = inp.value.toUpperCase().replace(/\s/g, ""); inp.value = x.isin; const pt = inp.parentElement.querySelector(".al-alerte-isin"), faux = !!x.isin && !isinValide(x.isin); if (faux && !pt) inp.insertAdjacentHTML("afterend", `<span class="al-alerte-isin" title="Code ISIN non confirmé : à vérifier"></span>`); if (!faux && pt) pt.remove(); }
-        else if (k === "sfdr" || k === "risque") x[k] = inp.value ? Number(inp.value) : null;
+        else if (k === "sfdr" || k === "risque") x[k] = inp.value !== "" ? Number(inp.value) : null;
         else if (k === "part") x.part = inp.value.trim() === "" ? null : Number(inp.value.replace(",", "."));
         else x.nom = inp.value;
         const b = document.getElementById("imp-valider"); if (b && !creer) b.textContent = `Ajouter ${F.filter((y) => y.garder).length} fonds`;

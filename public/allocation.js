@@ -38,9 +38,10 @@ const portefeuillesDe = (cid) => D.portefeuilles.filter((p) => p.contrat_id === 
 const lignesDe = (pid) => D.lignes.filter((l) => l.portefeuille_id === pid);
 const typeBadge = (t) => `<span class="al-type ${t}">${t === "per" ? "PER" : "AV"}</span>`;
 const versBrouillon = (l) => ({ nom: l.nom, isin: l.isin || "", part: l.part ?? "", sfdr: l.sfdr ?? "", risque: l.risque ?? "" });
-const SFDR = { 6: "Art. 6", 8: "Art. 8", 9: "Art. 9" };
+const SFDR = { 0: "Non concerné", 6: "Art. 6", 8: "Art. 8", 9: "Art. 9" };
 const COUL_RISQUE = ["#2f8f5b", "#5fa24a", "#9db53a", "#d8b528", "#e08a2a", "#d6582b", "#b9302a"];
-const pastilleSfdr = (v) => v ? `<span class="al-sfdr s${v}">${SFDR[v]}</span>` : "";
+const aSfdr = (v) => v !== "" && v != null;
+const pastilleSfdr = (v) => aSfdr(v) ? `<span class="al-sfdr s${v}">${SFDR[v]}</span>` : "";
 const pastilleRisque = (v) => v ? `<span class="al-risque-p" style="background:${COUL_RISQUE[v - 1]}">${v}/7</span>` : "";
 function risqueMoyen(lignes) {
   let poids = 0, somme = 0, total = 0;
@@ -181,47 +182,50 @@ function rendreCentre() {
 
 const pc = (l) => Number(String(l.part).replace(",", ".")) || 0;
 const estFondsEuros = (l) => !l.isin && /fonds\s*(en\s*)?euros?/i.test(l.nom || "");
-const isinNonConfirme = (isin) => !!isin && !isinValide(isin);
+// Pastille rouge seulement pour un code au format ISIN (pays émetteur connu) dont la clé est fausse ; un code interne (SUR…, BSC…) n'est pas signalé.
+const PAYS_ISIN = /^(FR|LU|IE|DE|BE|NL|GB|US|CH|IT|ES|AT|FI|SE|DK|NO|JE|GG|KY|PT|XS|EU|CA|JP|AU|HK|SG|LI|MC|BM|VG|IM|GR|PL|CZ|HU)/;
+const isinNonConfirme = (isin) => !!isin && /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin) && PAYS_ISIN.test(isin) && !isinValide(isin);
 const pastilleRouge = `<span class="al-alerte-isin" title="Code ISIN non confirmé : à vérifier" aria-label="Code ISIN non confirmé : à vérifier"></span>`;
 function jauge(n) {
   return n ? `<span class="al-jauge" title="Risque ${n} sur 7" aria-label="Risque ${n} sur 7">${[1, 2, 3, 4, 5, 6, 7].map((k) => `<i style="${k <= n ? `background:${COUL_RISQUE[n - 1]}` : ""}"></i>`).join("")}<b style="color:${COUL_RISQUE[n - 1]}">${n}</b></span>` : `<span class="al-vide">—</span>`;
 }
 function synthese(lignes) {
   const total = lignes.reduce((s, l) => s + pc(l), 0), rm = risqueMoyen(lignes);
-  const parSfdr = { 6: 0, 8: 0, 9: 0, n: 0 }, parRisque = [0, 0, 0, 0, 0, 0, 0, 0];
-  for (const l of lignes) { const w = pc(l); parSfdr[l.sfdr || "n"] += w; parRisque[Number(l.risque) || 0] += w; }
+  const parSfdr = { 0: 0, 6: 0, 8: 0, 9: 0, n: 0 }, parRisque = [0, 0, 0, 0, 0, 0, 0, 0];
+  for (const l of lignes) { const w = pc(l); parSfdr[aSfdr(l.sfdr) ? Number(l.sfdr) : "n"] += w; parRisque[Number(l.risque) || 0] += w; }
+  const BX = ["#efe3e5", "#dcc0c5", "#c39aa1", "#a6707a", "#874553", "#6b2232", "#4f0c16"];
   const durable = parSfdr[8] + parSfdr[9];
   const seg = (w, coul, lib) => w > 0 ? `<span style="width:${w / Math.max(total, 1) * 100}%;background:${coul}" title="${lib} : ${nb(w)} %"></span>` : "";
   const leg = (w, coul, lib) => w > 0 ? `<span><i style="background:${coul}"></i>${lib} <b>${nb(Math.round(w * 100) / 100)} %</b></span>` : "";
   return `<div class="al-synthese">
     <div class="al-kpis">
-      <div class="al-kpi ${Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""}"><span>Poids total</span><b>${nb(total)} %${Math.abs(total - 100) < .01 ? " ✓" : ""}</b><small>${Math.abs(total - 100) < .01 ? "Portefeuille complet" : total > 100 ? "Dépasse 100 %" : `Reste ${nb(Math.round((100 - total) * 100) / 100)} %`}</small></div>
-      <div class="al-kpi"><span>Risque moyen pondéré</span><b ${rm ? `style="color:${COUL_RISQUE[Math.round(rm.valeur) - 1]}"` : ""}>${rm ? nb(Math.round(rm.valeur * 10) / 10) + " / 7" : "—"}</b><small>${rm ? (rm.couvert < .999 ? `Sur ${nb(Math.round(rm.couvert * 1000) / 10)} % renseignés` : "Repère indicatif") : "Risques à renseigner"}</small></div>
+      <div class="al-kpi ${total > 100.005 ? "ko" : ""}"><span>Poids total</span><b>${nb(total)} %${Math.abs(total - 100) < .01 ? " ✓" : ""}</b><small>${Math.abs(total - 100) < .01 ? "Portefeuille complet" : total > 100 ? "Dépasse 100 %" : `Reste ${nb(Math.round((100 - total) * 100) / 100)} %`}</small></div>
+      <div class="al-kpi"><span>Risque moyen pondéré</span><b>${rm ? nb(Math.round(rm.valeur * 10) / 10) + " / 7" : "—"}</b><small>${rm ? (rm.couvert < .999 ? `Sur ${nb(Math.round(rm.couvert * 1000) / 10)} % renseignés` : "Repère indicatif") : "Risques à renseigner"}</small></div>
       <div class="al-kpi"><span>Part durable</span><b>${total ? nb(Math.round(durable / total * 1000) / 10) + " %" : "—"}</b><small>Articles 8 et 9 (SFDR)</small></div>
       <div class="al-kpi"><span>Nombre de fonds</span><b>${lignes.length}</b><small>${lignes.filter((l) => isinNonConfirme(l.isin)).length ? `${lignes.filter((l) => isinNonConfirme(l.isin)).length} ISIN à vérifier` : "Lignes du portefeuille"}</small></div>
     </div>
-    ${total > 0 ? `<div class="al-repart"><div class="al-repart-titre">Classement SFDR</div><div class="al-barre">${seg(parSfdr[9], "#1f6b3a", "Article 9")}${seg(parSfdr[8], "#5fb37a", "Article 8")}${seg(parSfdr[6], "#9aa3b5", "Article 6")}${seg(parSfdr.n, "var(--bord-fort)", "Non renseigné")}</div>
-      <div class="al-legende">${leg(parSfdr[9], "#1f6b3a", "Article 9")}${leg(parSfdr[8], "#5fb37a", "Article 8")}${leg(parSfdr[6], "#9aa3b5", "Article 6")}${leg(parSfdr.n, "var(--bord-fort)", "Non renseigné")}</div></div>
-    <div class="al-repart"><div class="al-repart-titre">Niveau de risque (SRI)</div><div class="al-barre">${[1, 2, 3, 4, 5, 6, 7].map((n) => seg(parRisque[n], COUL_RISQUE[n - 1], `Risque ${n}`)).join("")}${seg(parRisque[0], "var(--bord-fort)", "Non renseigné")}</div>
-      <div class="al-legende">${[1, 2, 3, 4, 5, 6, 7].map((n) => leg(parRisque[n], COUL_RISQUE[n - 1], `${n}/7`)).join("")}${leg(parRisque[0], "var(--bord-fort)", "Non renseigné")}</div></div>` : ""}
+    ${total > 0 ? `<div class="al-repart"><div class="al-repart-titre">Classement SFDR</div><div class="al-barre">${seg(parSfdr[9], BX[6], "Article 9")}${seg(parSfdr[8], BX[4], "Article 8")}${seg(parSfdr[6], BX[2], "Article 6")}${seg(parSfdr[0], BX[0], "Non concerné")}${seg(parSfdr.n, "var(--bord-fort)", "Non renseigné")}</div>
+      <div class="al-legende">${leg(parSfdr[9], BX[6], "Article 9")}${leg(parSfdr[8], BX[4], "Article 8")}${leg(parSfdr[6], BX[2], "Article 6")}${leg(parSfdr[0], BX[0], "Non concerné")}${leg(parSfdr.n, "var(--bord-fort)", "Non renseigné")}</div></div>
+    <div class="al-repart"><div class="al-repart-titre">Niveau de risque (SRI)</div><div class="al-barre">${[1, 2, 3, 4, 5, 6, 7].map((n) => seg(parRisque[n], BX[n - 1], `Risque ${n}`)).join("")}${seg(parRisque[0], "var(--bord-fort)", "Non renseigné")}</div>
+      <div class="al-legende">${[1, 2, 3, 4, 5, 6, 7].map((n) => leg(parRisque[n], BX[n - 1], `${n}/7`)).join("")}${leg(parRisque[0], "var(--bord-fort)", "Non renseigné")}</div></div>` : ""}
   </div>`;
 }
 
 function rendrePortefeuille(z) {
   const p = portefeuille(sel.p), c = contrat(p.contrat_id);
   const max = Math.max(1, ...brouillon.map(pc));
+  const poids = (l) => pc(l) ? pc(l).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " %" : "—";
   const ligneLecture = (l, i) => `<tr data-ligne="${i}" class="al-lect ${sel.f && l.isin === sel.f ? "al-actif" : ""}" ${l.isin ? `tabindex="0"` : ""}>
-      <td class="al-c-num"><i style="background:${COULEURS[i % COULEURS.length]}"></i>${i + 1}</td>
-      <td class="al-c-fonds"><div class="al-f-nom">${echapper(l.nom || "Sans nom")}</div>
-        <div class="al-f-isin">${estFondsEuros(l) ? `<span class="al-euros">Fonds en euros</span>` : l.isin ? `${echapper(l.isin)}${isinNonConfirme(l.isin) ? pastilleRouge : ""}` : `<span class="al-vide">Sans code ISIN</span>`}</div></td>
-      <td class="al-c-sfdr">${l.sfdr ? pastilleSfdr(l.sfdr) : `<span class="al-vide">—</span>`}</td>
-      <td class="al-c-risque">${jauge(Number(l.risque))}</td>
-      <td class="al-c-poids">${pc(l) ? `<b>${nb(pc(l))} %</b><span class="al-mini"><i style="width:${pc(l) / max * 100}%;background:${COULEURS[i % COULEURS.length]}"></i></span>` : `<span class="al-vide">—</span>`}</td></tr>`;
+      <td class="as-code">${l.isin ? `${echapper(l.isin)}${isinNonConfirme(l.isin) ? " " + pastilleRouge : ""}` : estFondsEuros(l) ? "Fonds euros" : "—"}</td>
+      <td class="as-lib">${echapper(l.nom || "Sans nom")}<small class="as-code-mob">${echapper(l.isin || "")}</small></td>
+      <td class="as-num">${aSfdr(l.sfdr) ? l.sfdr : "—"}</td>
+      <td class="as-num">${l.risque || "—"}</td>
+      <td class="as-poids">${poids(l)}</td></tr>`;
   const ligneEdition = (l, i) => `<tr data-ligne="${i}" class="al-edit">
       <td class="al-c-num"><i style="background:${COULEURS[i % COULEURS.length]}"></i>${i + 1}</td>
       <td class="al-c-fonds"><input data-champ="nom" value="${echapper(l.nom)}" placeholder="Nom du fonds" aria-label="Nom du fonds, ligne ${i + 1}">
         <span class="al-isin-saisie"><input data-champ="isin" value="${echapper(l.isin)}" placeholder="${estFondsEuros(l) ? "Pas d'ISIN (fonds en euros)" : "Code ISIN"}" maxlength="20" aria-label="Code ISIN, ligne ${i + 1}">${isinNonConfirme(l.isin) ? pastilleRouge : ""}</span></td>
-      <td class="al-c-sfdr"><select data-champ="sfdr" class="s${l.sfdr || 0}" aria-label="Classement SFDR, ligne ${i + 1}"><option value="">—</option>${[6, 8, 9].map((a) => `<option value="${a}" ${String(l.sfdr) === String(a) ? "selected" : ""}>Art. ${a}</option>`).join("")}</select></td>
+      <td class="al-c-sfdr"><select data-champ="sfdr" class="s${l.sfdr || 0}" aria-label="Classement SFDR, ligne ${i + 1}"><option value="">—</option>${[0, 6, 8, 9].map((a) => `<option value="${a}" ${aSfdr(l.sfdr) && String(l.sfdr) === String(a) ? "selected" : ""}>${a ? "Art. " + a : "0 (non concerné)"}</option>`).join("")}</select></td>
       <td class="al-c-risque"><span class="al-echelle" role="group" aria-label="Risque de 1 à 7, ligne ${i + 1}">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<button type="button" data-risque="${n}" aria-pressed="${Number(l.risque) === n}" style="--c:${COUL_RISQUE[n - 1]}" title="Risque ${n} sur 7">${n}</button>`).join("")}</span></td>
       <td class="al-c-poids"><span class="al-poids-saisie"><input data-champ="part" value="${echapper(String(l.part).replace(".", ","))}" placeholder="—" inputmode="decimal" aria-label="Poids en %, ligne ${i + 1}"><span>%</span></span></td>
       <td class="al-c-bt">${i ? `<button type="button" class="al-icone" data-monter="${i}" title="Monter" aria-label="Monter la ligne">${SVG.haut}</button>` : `<span class="al-icone"></span>`}<button type="button" class="al-icone danger" data-retirer="${i}" title="Retirer" aria-label="Retirer la ligne">${SVG.poubelle}</button></td></tr>`;
@@ -232,8 +236,9 @@ function rendrePortefeuille(z) {
     <div class="al-section">
       <div class="al-barre-outils"><h3>Fonds du portefeuille <small>${brouillon.length} fonds</small></h3>
         <span class="al-actions">${edition ? `<button type="button" class="bouton bouton-discret" id="ajout-ligne">+ Ajouter un fonds</button>` : brouillon.length ? `<button type="button" class="bouton bouton-discret" id="editer">${SVG.crayon} Modifier les fonds</button>` : ""}<button type="button" class="bouton bouton-discret" id="importer">📄 Importer un document</button></span></div>
-      ${brouillon.length ? `<div class="al-tf-cadre"><table class="al-tf ${edition ? "edition" : ""}"><thead><tr><th class="al-c-num">#</th><th>Fonds</th><th class="al-c-sfdr">SFDR</th><th class="al-c-risque">Risque</th><th class="al-c-poids">Poids</th>${edition ? `<th class="al-c-bt"></th>` : ""}</tr></thead>
-        <tbody>${brouillon.map(edition ? ligneEdition : ligneLecture).join("")}</tbody></table></div>
+      ${brouillon.length ? (edition ? `<div class="al-tf-cadre"><table class="al-tf edition"><thead><tr><th class="al-c-num">#</th><th>Fonds</th><th class="al-c-sfdr">SFDR</th><th class="al-c-risque">Risque</th><th class="al-c-poids">Poids</th><th class="al-c-bt"></th></tr></thead>
+        <tbody>${brouillon.map(ligneEdition).join("")}</tbody></table></div>`
+        : `<table class="al-sobre"><thead><tr><th colspan="2" class="as-th-code">Code et libellé</th><th class="as-num">SFDR</th><th class="as-num">Risque</th><th class="as-poids">Poids</th></tr></thead><tbody>${brouillon.map(ligneLecture).join("")}</tbody></table>`) + `
         ${nbAlerte ? `<p class="al-note-isin">${pastilleRouge} ${nbAlerte} code${nbAlerte > 1 ? "s" : ""} ISIN non confirmé${nbAlerte > 1 ? "s" : ""} (clé de contrôle incorrecte) : à vérifier sur le document du fonds.</p>` : ""}`
         : `<div class="al-vide-tableau"><p>Aucun fonds pour l'instant.</p><p class="al-astuce">Importez le document de l'assureur, ou ajoutez les fonds un par un avec leur code ISIN, leur classement SFDR, leur risque (1 à 7) et leur poids.</p>${edition ? "" : `<button type="button" class="bouton" id="premier">+ Ajouter un fonds</button>`}</div>`}
       ${edition ? `<div class="al-enregistrer" role="status"><span>${modifie ? "Modifications non enregistrées" : "Mode édition"}</span><button type="button" class="bouton bouton-discret" id="annuler">Annuler</button><button type="button" class="bouton" id="enregistrer">Enregistrer</button></div>` : ""}
@@ -293,9 +298,9 @@ function majTotal() {
   if (t) { t.className = "al-total " + (Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""); t.innerHTML = `Poids total : <b>${nb(total)} %</b>${Math.abs(total - 100) < .01 ? " ✓" : total > 100 ? " (dépasse 100 %)" : total ? ` (reste ${nb(100 - total)} %)` : ""}`; }
 }
 async function enregistrerLignes() {
-  const lignes = brouillon.filter((l) => l.nom.trim() || l.isin.trim() || String(l.part).trim() || l.sfdr || l.risque);
+  const lignes = brouillon.filter((l) => l.nom.trim() || l.isin.trim() || String(l.part).trim() || aSfdr(l.sfdr) || l.risque);
   try {
-    await appelApi(`/api/allocation/portefeuille/${sel.p}/lignes`, "PUT", { lignes: lignes.map((l) => ({ nom: l.nom, isin: l.isin, part: String(l.part).trim() === "" ? null : String(l.part).replace(",", "."), sfdr: l.sfdr || null, risque: l.risque || null })) });
+    await appelApi(`/api/allocation/portefeuille/${sel.p}/lignes`, "PUT", { lignes: lignes.map((l) => ({ nom: l.nom, isin: l.isin, part: String(l.part).trim() === "" ? null : String(l.part).replace(",", "."), sfdr: aSfdr(l.sfdr) ? Number(l.sfdr) : null, risque: l.risque || null })) });
     modifie = false; edition = false; await charger(); notifier("Portefeuille enregistré.");
     brouillon = lignesDe(sel.p).map(versBrouillon); rendre();
   } catch (e) { notifier(e.message, true); }
@@ -305,7 +310,7 @@ async function enregistrerLignes() {
 function htmlFonds() {
   const usages = D.lignes.filter((l) => l.isin === sel.f), nom = usages[0]?.nom || brouillon?.find((l) => l.isin === sel.f)?.nom || "Fonds";
   return `<div class="al-zone"><div class="al-titre-panneau"><span>Fonds sélectionné</span><button type="button" class="al-icone" id="fermer-f" aria-label="Fermer">✕</button></div>
-      <h3 class="al-fonds-nom">${echapper(nom)}</h3>${(() => { const ref = usages.find((l) => l.sfdr || l.risque) || brouillon?.find((l) => l.isin === sel.f); return ref && (ref.sfdr || ref.risque) ? `<div class="al-puces-fonds">${pastilleSfdr(ref.sfdr)}${pastilleRisque(ref.risque)}</div>` : ""; })()}<div class="al-isin-ligne">${sel.f}<button type="button" class="al-icone" id="copier-isin" title="Copier l'ISIN" aria-label="Copier l'ISIN">${SVG.copier}</button></div></div>
+      <h3 class="al-fonds-nom">${echapper(nom)}</h3>${(() => { const ref = usages.find((l) => aSfdr(l.sfdr) || l.risque) || brouillon?.find((l) => l.isin === sel.f); return ref && (aSfdr(ref.sfdr) || ref.risque) ? `<div class="al-puces-fonds">${pastilleSfdr(ref.sfdr)}${pastilleRisque(ref.risque)}</div>` : ""; })()}<div class="al-isin-ligne">${sel.f}<button type="button" class="al-icone" id="copier-isin" title="Copier l'ISIN" aria-label="Copier l'ISIN">${SVG.copier}</button></div></div>
     <div class="al-zone"><div class="al-titre-panneau">Utilisé dans ${usages.length} portefeuille${usages.length > 1 ? "s" : ""}</div>
       ${usages.length ? `<ul class="al-utilise">${usages.map((l) => { const p = portefeuille(l.portefeuille_id), c = contrat(p.contrat_id), a = assureur(c.assureur_id);
         return `<li><button type="button" data-p="${p.id}"><span>${echapper(a.nom)} › ${echapper(c.nom)} › <b>${echapper(p.nom)}</b></span><small style="white-space:nowrap">${l.part != null ? nb(l.part) + " %" : ""}</small></button></li>`; }).join("")}</ul>` : `<p class="al-astuce">Pas encore enregistré dans un portefeuille.</p>`}</div>
