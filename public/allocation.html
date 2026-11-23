@@ -288,6 +288,24 @@
       .al-sobre thead th { font-size: .62rem; padding: 8px 4px; border-left-width: 3px; }
       .al-sobre td + td.as-num, .al-sobre td.as-poids { border-left-width: 3px; }
     }
+
+    /* Panneau de droite repliable */
+    .al-grille.al-sans-droite { grid-template-columns: 270px minmax(0, 1fr) 46px; }
+    .al-onglets { grid-template-columns: 1fr 1fr auto !important; align-items: center; }
+    .al-fermer-panneau { margin: 0 6px; }
+    .al-onglets button[role=tab] { white-space: nowrap; font-size: .84rem; padding: 13px 6px; }
+    .al-titre-panneau .al-fermer-panneau { margin: -6px -6px -6px auto; }
+    .al-droite.al-rail { padding: 0; overflow: visible; }
+    .al-rail-bouton { font: inherit; width: 100%; min-height: 220px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 14px 0; border: 0; background: none; color: var(--accent-fonce); cursor: pointer; border-radius: 16px; }
+    .al-rail-bouton:hover { background: var(--accent-doux); }
+    .al-rail-bouton b { font-size: .72rem; }
+    .al-rail-texte { writing-mode: vertical-rl; transform: rotate(180deg); font-size: .8rem; font-weight: 600; color: var(--doux); letter-spacing: .02em; }
+    @media (max-width: 1080px) {
+      .al-grille.al-sans-droite { grid-template-columns: 260px minmax(0, 1fr); }
+      .al-rail-bouton { min-height: 0; flex-direction: row; justify-content: center; padding: 12px; }
+      .al-rail-texte { writing-mode: horizontal-tb; transform: none; }
+    }
+    @media (max-width: 760px) { .al-grille.al-sans-droite { grid-template-columns: minmax(0, 1fr); } }
     /* Import de documents */
     .al-dialogue.al-large { width: min(920px, calc(100vw - 32px)); }
     .al-depot { display: grid; justify-items: center; gap: 4px; padding: 34px 20px; border: 2px dashed var(--bord-fort); border-radius: 14px; cursor: pointer; text-align: center; font-weight: 400 !important; }

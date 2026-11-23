@@ -257,7 +257,7 @@ function rendrePortefeuille(z) {
     if (!v) return;
     try { await appelApi(`/api/allocation/portefeuille/${p.id}`, "PUT", { nom: p.nom, profil: v.profil.trim() }); p.profil = v.profil.trim() || null; rendreArbre(); rendreCentre(); } catch (e) { notifier(e.message, true); }
   };
-  const choisirFonds = (isin) => { if (!/^[A-Z0-9]{12}$/.test(isin || "")) return; sel.f = isin; ongletDroite = "fonds"; synchroniserUrl(); rendreDroite(); z.querySelectorAll("[data-ligne]").forEach((tr) => tr.classList.toggle("al-actif", brouillon[+tr.dataset.ligne].isin === isin)); };
+  const choisirFonds = (isin) => { if (!/^[A-Z0-9]{12}$/.test(isin || "")) return; sel.f = isin; ongletDroite = "fonds"; if (panneauFerme) { panneauFerme = false; try { localStorage.setItem("al-panneau", "ouvert"); } catch {} } synchroniserUrl(); rendreDroite(); z.querySelectorAll("[data-ligne]").forEach((tr) => tr.classList.toggle("al-actif", brouillon[+tr.dataset.ligne].isin === isin)); };
   z.querySelectorAll("tr.al-lect").forEach((tr) => { const go = () => choisirFonds(brouillon[+tr.dataset.ligne].isin); tr.onclick = go; tr.onkeydown = (e) => { if (e.key === "Enter") go(); }; });
   z.querySelectorAll("[data-ligne] input[data-champ]").forEach((inp) => {
     inp.oninput = () => {
@@ -336,24 +336,45 @@ function htmlTop() {
   return `<div class="al-zone"><p class="al-astuce" style="margin:0">Cliquez sur un fonds pour voir où il est utilisé, ses fiches et l'avis des conseillers.</p></div>
     ${top.length ? `<div class="al-zone"><div class="al-titre-panneau">Fonds les plus utilisés au cabinet</div><ul class="al-top">${top.map(([isin, x]) => `<li><button type="button" data-f="${isin}"><span>${echapper(x.nom)}</span><span class="doux petit">${x.n}×</span><small>${isin}</small></button></li>`).join("")}</ul></div>` : ""}`;
 }
+// Panneau de droite repliable : le choix est gardé sur cet appareil.
+let panneauFerme = (() => { try { return localStorage.getItem("al-panneau") === "ferme"; } catch { return false; } })();
+function basculerPanneau(fermer) {
+  panneauFerme = fermer;
+  try { localStorage.setItem("al-panneau", fermer ? "ferme" : "ouvert"); } catch {}
+  rendreDroite();
+}
+const FLECHE_FERMER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 6l6 6-6 6M5 6l6 6-6 6"/></svg>';
 function rendreDroite() {
   const z = $("droite");
+  document.querySelector(".al-grille").classList.toggle("al-sans-droite", panneauFerme);
+  z.classList.toggle("al-rail", panneauFerme);
+  if (panneauFerme) {
+    const n = sel.p ? D.commentaires["p:" + sel.p] || 0 : 0;
+    z.innerHTML = `<button type="button" class="al-rail-bouton" id="ouvrir-panneau" title="Afficher le panneau" aria-label="Afficher le panneau Pourquoi ce choix et Fonds" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6"/></svg>
+      <span>💬${n ? ` <b>${n}</b>` : ""}</span><span class="al-rail-texte">Pourquoi ce choix · Fonds</span></button>`;
+    $("ouvrir-panneau").onclick = () => basculerPanneau(false);
+    return;
+  }
+  const boutonFermer = `<button type="button" class="al-icone al-fermer-panneau" id="fermer-panneau" title="Masquer le panneau" aria-label="Masquer le panneau" aria-expanded="true">${FLECHE_FERMER}</button>`;
   const brancherTop = () => z.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { sel.f = b.dataset.f; ongletDroite = "fonds"; synchroniserUrl(); rendreDroite(); });
   if (sel.p) {
     const n = D.commentaires["p:" + sel.p] || 0;
     z.innerHTML = `<div class="al-onglets" role="tablist">
         <button type="button" role="tab" aria-selected="${ongletDroite === "pourquoi"}" data-onglet="pourquoi">💬 Pourquoi ce choix${n ? ` <span class="al-badge">${n}</span>` : ""}</button>
-        <button type="button" role="tab" aria-selected="${ongletDroite === "fonds"}" data-onglet="fonds">📈 Fonds</button></div>
+        <button type="button" role="tab" aria-selected="${ongletDroite === "fonds"}" data-onglet="fonds">📈 Fonds</button>${boutonFermer}</div>
       <div class="al-defile" role="tabpanel">${ongletDroite === "pourquoi"
         ? `<div class="al-zone"><p class="al-astuce" style="margin:0 0 10px">Les raisons de ce portefeuille, visibles par tous les conseillers.</p><div id="com-p"></div></div>`
         : sel.f ? htmlFonds() : htmlTop()}</div>`;
     z.querySelectorAll("[data-onglet]").forEach((b) => b.onclick = () => { ongletDroite = b.dataset.onglet; rendreDroite(); });
+    $("fermer-panneau").onclick = () => basculerPanneau(true);
     if (ongletDroite === "pourquoi") commentaires("p:" + sel.p, $("com-p"), "Expliquez le choix de ce portefeuille : objectif, horizon, contexte de marché, points de vigilance…");
     else if (sel.f) brancherFonds(z); else brancherTop();
     return;
   }
   if (sel.f) { z.innerHTML = `<div class="al-defile">${htmlFonds()}</div>`; brancherFonds(z); return; }
-  z.innerHTML = `<div class="al-zone" style="padding-bottom:0"><div class="al-titre-panneau">Détail d'un fonds</div></div><div class="al-defile">${htmlTop()}</div>`;
+  z.innerHTML = `<div class="al-zone" style="padding-bottom:0"><div class="al-titre-panneau">Détail d'un fonds ${boutonFermer}</div></div><div class="al-defile">${htmlTop()}</div>`;
+  $("fermer-panneau").onclick = () => basculerPanneau(true);
   brancherTop();
 }
 
