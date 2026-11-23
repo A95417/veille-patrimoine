@@ -1,4 +1,4 @@
-const fs = require("fs"), vm = require("vm"), D = "/home/claude/depot/public/";
+const fs = require("fs"), vm = require("vm"), D = require("path").join(__dirname, "../public/");
 const ctx = { console, module: undefined }; vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(D + "outils-fiches.js", "utf8") + "\n" + fs.readFileSync(D + "outils-pro.js", "utf8") + "\n;globalThis.T={impotRevenu,surtaxePV,cehr,abattSalaire,abattPensions,OUTILS_PRO,baremeProgressif};", ctx);
 const { impotRevenu, surtaxePV, cehr, abattSalaire, abattPensions, OUTILS_PRO } = ctx.T;
