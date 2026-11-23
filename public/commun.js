@@ -544,13 +544,13 @@ async function chargerEntete(pageActive) {
   // le thème enregistré sur le compte l'emporte (autre appareil, nouvelle connexion)
   if (moi.theme && THEMES_COULEURS[moi.theme] && moi.theme !== themeLocal()) choisirTheme(moi.theme, false);
   if (moi.fiches && COULEURS_FICHES[moi.fiches] && moi.fiches !== couleurFichesLocale()) choisirCouleurFiches(moi.fiches, false);
-  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"], ["/der", "DER"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Outils"]];
+  const liens = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"], ["/der", "DER"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Outils"], ["/allocation", "Allocation"]];
   const nav = liens
     .map(([href, nom]) => `<a href="${href}" class="${href === pageActive ? "actif" : ""}" ${href === pageActive ? 'aria-current="page"' : ""}>${nom}</a>`)
     .join("");
   document.getElementById("entete").innerHTML = `
     <div class="entete-contenu">
-      <a class="logo" href="/">${LOGO}Veille Patrimoine</a>
+      <a class="logo" href="/" aria-label="Veille Patrimoine, accueil">${LOGO}<span class="logo-texte">Veille Patrimoine</span></a>
       <nav class="nav" aria-label="Menu principal">${nav}</nav>
       <form class="recherche-entete" action="/recherche" method="get" role="search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="color:var(--doux)"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
@@ -584,7 +584,7 @@ async function chargerEntete(pageActive) {
     plus: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
   };
   const principaux = [["/", "Aujourd'hui"], ["/brief", "Brief"], ["/apprendre", "Apprendre"], ["/linkedin", "Création Post"]];
-  const autres = [["/der", "DER client"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/dossiers", "Textes en discussion"], ["/glossaire", "Glossaire"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
+  const autres = [["/der", "DER client"], ["/selection", "Ma sélection"], ["/marches", "Marchés"], ["/outils", "Boîte à outils"], ["/allocation", "Allocation"], ["/dossiers", "Textes en discussion"], ["/glossaire", "Glossaire"], ["/compte", "Mon compte"], ...(moi.role === "admin" ? [["/admin", "Admin"]] : [])];
   const dansPlus = autres.some(([h]) => h === pageActive);
   const svg = (k) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
   document.getElementById("onglets-bas")?.remove();

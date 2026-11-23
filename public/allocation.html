@@ -1,0 +1,194 @@
+<!doctype html>
+<!-- version 1.0 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Allocation · Veille Patrimoine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#3a49d6">
+  <script src="/commun.js"></script>
+  <style>
+    .al-tete { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .al-tete h1 { margin: 0; }
+    .al-tete p { margin: 4px 0 0; color: var(--doux); font-size: .92rem; max-width: 70ch; }
+    .al-chiffres { display: flex; gap: 8px; flex-wrap: wrap; }
+    .al-chiffres span { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 6px 12px; font-size: .82rem; color: var(--doux); }
+    .al-chiffres b { color: var(--texte); font-size: .95rem; margin-right: 4px; }
+
+    .al-grille { display: grid; grid-template-columns: 300px minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .al-panneau { background: var(--carte); border: 1px solid var(--bord); border-radius: 16px; min-width: 0; }
+    .al-gauche, .al-droite { position: sticky; top: 84px; max-height: calc(100vh - 104px); display: flex; flex-direction: column; overflow: hidden; }
+    .al-zone { padding: 14px 16px; }
+    .al-zone + .al-zone { border-top: 1px solid var(--bord); }
+    .al-defile { overflow-y: auto; flex: 1; min-height: 0; }
+    .al-titre-panneau { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; font-size: .78rem; font-weight: 700; color: var(--doux); text-transform: none; }
+    .al-cherche { width: 100%; box-sizing: border-box; font: inherit; font-size: .9rem; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--fond); color: var(--texte); }
+
+    /* Arborescence */
+    .al-arbre { list-style: none; margin: 0; padding: 6px 8px 10px; }
+    .al-arbre ul { list-style: none; margin: 0; padding: 0 0 0 14px; }
+    .al-noeud { display: flex; align-items: center; gap: 6px; width: 100%; box-sizing: border-box; font: inherit; font-size: .9rem; text-align: left; color: var(--texte);
+      background: none; border: 0; border-radius: 9px; padding: 7px 8px; cursor: pointer; min-height: 34px; }
+    .al-noeud:hover { background: var(--fond); }
+    .al-noeud[aria-current="true"] { background: var(--accent-doux); color: var(--accent-fonce); font-weight: 600; }
+    .al-noeud .al-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .al-noeud small { color: var(--doux); font-size: .74rem; font-weight: 500; }
+    .al-chevron { width: 14px; flex: none; color: var(--doux); transition: transform .15s; }
+    .al-ouvert > .al-noeud .al-chevron { transform: rotate(90deg); }
+    .al-assureur > .al-noeud { font-weight: 600; }
+    .al-type { flex: none; font-size: .66rem; font-weight: 700; letter-spacing: .02em; padding: 2px 6px; border-radius: 6px; background: var(--fond); color: var(--doux); border: 1px solid var(--bord); }
+    .al-type.per { color: #7a4a00; background: #fff3dc; border-color: #f3dcae; }
+    .al-type.av { color: var(--accent-fonce); background: var(--accent-doux); border-color: transparent; }
+    .al-point { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--bord-fort); }
+    .al-ajout { font: inherit; font-size: .82rem; color: var(--accent-fonce); background: none; border: 0; padding: 5px 8px; cursor: pointer; border-radius: 8px; }
+    .al-ajout:hover { background: var(--accent-doux); }
+    .al-vide-arbre { padding: 18px 16px; color: var(--doux); font-size: .9rem; line-height: 1.5; }
+
+    /* Centre */
+    .al-centre { padding: 20px 22px 22px; min-height: 60vh; }
+    .al-fil { font-size: .82rem; color: var(--doux); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+    .al-fil button { font: inherit; color: var(--accent-fonce); background: none; border: 0; padding: 0; cursor: pointer; }
+    .al-entete { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .al-entete h2 { margin: 0; font-size: 1.45rem; line-height: 1.2; }
+    .al-meta { font-size: .78rem; color: var(--doux); margin-top: 4px; }
+    .al-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .al-actions .bouton { font-size: .84rem; padding: 7px 12px; min-height: 0; }
+    .al-profils { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 4px; }
+    .al-profils .puce { min-height: 32px; padding: 4px 12px; font-size: .82rem; }
+    .al-section { margin-top: 22px; }
+    .al-section h3 { font-size: 1rem; margin: 0 0 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .al-section h3 small { font-weight: 500; color: var(--doux); font-size: .8rem; }
+
+    .al-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .9rem; }
+    .al-table th { text-align: left; font-size: .74rem; font-weight: 600; color: var(--doux); padding: 0 8px 6px; border-bottom: 1px solid var(--bord); }
+    .al-table td { padding: 5px 6px; border-bottom: 1px solid var(--bord); vertical-align: middle; }
+    .al-table tr.al-actif td { background: var(--accent-doux); }
+    .al-table input { width: 100%; box-sizing: border-box; font: inherit; font-size: .88rem; padding: 7px 9px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--texte); }
+    .al-table input:hover { border-color: var(--bord); }
+    .al-table input:focus { border-color: var(--accent); background: var(--carte); outline: none; }
+    .al-table input.al-faux { border-color: var(--ko); background: var(--ko-doux); }
+    .al-table .al-isin input { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .84rem; letter-spacing: .02em; }
+    .al-table .al-part { width: 92px; }
+    .al-table .al-part input { text-align: right; }
+    .al-table .al-coul { width: 10px; padding: 0 0 0 8px; }
+    .al-table .al-coul i { display: block; width: 10px; height: 10px; border-radius: 3px; }
+    .al-table .al-bt { width: 76px; text-align: right; white-space: nowrap; }
+    .al-icone { font: inherit; width: 30px; height: 30px; border-radius: 8px; border: 0; background: none; color: var(--doux); cursor: pointer; display: inline-grid; place-items: center; }
+    .al-icone:hover { background: var(--fond); color: var(--texte); }
+    .al-icone.danger:hover { color: var(--ko); background: var(--ko-doux); }
+    .al-pied { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    .al-total { font-size: .88rem; color: var(--doux); }
+    .al-total b { color: var(--texte); }
+    .al-total.ok b { color: var(--ok); } .al-total.ko b { color: var(--ko); }
+    .al-erreur-ligne { color: var(--ko); font-size: .8rem; margin: 6px 0 0; }
+    .al-barre { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--fond); margin: 14px 0 8px; }
+    .al-barre span { display: block; height: 100%; transition: width .3s; }
+    .al-legende { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .78rem; color: var(--doux); }
+    .al-legende i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+    .al-enregistrer { position: sticky; bottom: 12px; display: flex; justify-content: flex-end; gap: 8px; align-items: center; margin-top: 14px; padding: 10px 12px;
+      border-radius: 12px; background: var(--encre); color: var(--encre-texte); box-shadow: 0 10px 30px -12px rgba(0,0,0,.45); }
+    .al-enregistrer span { margin-right: auto; font-size: .88rem; }
+    .al-enregistrer .bouton-discret { background: transparent; color: var(--encre-texte); border-color: rgba(255,255,255,.3); }
+
+    .al-cartes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+    .al-carte { font: inherit; text-align: left; color: var(--texte); background: var(--fond); border: 1px solid var(--bord); border-radius: 14px; padding: 14px; cursor: pointer; display: grid; gap: 6px; }
+    .al-carte:hover { border-color: var(--accent); }
+    .al-carte b { font-size: .98rem; }
+    .al-carte small { color: var(--doux); font-size: .8rem; }
+    .al-carte .al-barre { margin: 4px 0 0; height: 8px; }
+    .al-accueil { max-width: 560px; margin: 8vh auto 0; text-align: center; }
+    .al-accueil h2 { font-size: 1.3rem; margin: 10px 0 6px; }
+    .al-accueil p { color: var(--doux); line-height: 1.55; }
+
+    /* Commentaires */
+    .al-fil-com { display: grid; gap: 10px; }
+    .al-com { border: 1px solid var(--bord); border-radius: 12px; padding: 10px 12px; background: var(--fond); }
+    .al-com header { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--doux); margin-bottom: 4px; }
+    .al-com header b { color: var(--texte); font-size: .85rem; }
+    .al-com header .al-icone { width: 26px; height: 26px; margin-left: auto; }
+    .al-com header .al-icone + .al-icone { margin-left: 0; }
+    .al-qui { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; min-width: 0; }
+    .al-com p { margin: 0; white-space: pre-wrap; font-size: .9rem; line-height: 1.5; }
+    .al-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-texte); display: grid; place-items: center; font-size: .7rem; font-weight: 700; flex: none; }
+    .al-ecrire { display: grid; gap: 8px; margin-top: 10px; }
+    .al-ecrire textarea { width: 100%; box-sizing: border-box; min-height: 74px; resize: vertical; font: inherit; font-size: .9rem; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); }
+    .al-ecrire div { display: flex; justify-content: flex-end; gap: 8px; }
+    .al-ecrire .bouton { font-size: .85rem; padding: 7px 14px; min-height: 0; }
+
+    /* Panneau du fonds */
+    .al-fonds-nom { font-size: 1.05rem; margin: 0 0 4px; line-height: 1.3; }
+    .al-isin-ligne { display: flex; align-items: center; gap: 6px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .85rem; color: var(--doux); }
+    .al-utilise { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+    .al-utilise button { font: inherit; font-size: .85rem; width: 100%; text-align: left; display: flex; justify-content: space-between; gap: 8px; color: var(--texte); background: var(--fond); border: 1px solid var(--bord); border-radius: 9px; padding: 7px 10px; cursor: pointer; }
+    .al-utilise button:hover { border-color: var(--accent); }
+    .al-utilise small { color: var(--doux); }
+    .al-astuce { color: var(--doux); font-size: .86rem; line-height: 1.5; }
+    .al-top { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .al-top button { font: inherit; font-size: .85rem; width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; color: var(--texte); background: none; border: 0; border-radius: 8px; padding: 7px 8px; cursor: pointer; }
+    .al-top button:hover { background: var(--fond); }
+    .al-top small { color: var(--doux); font-family: ui-monospace, Menlo, monospace; font-size: .74rem; }
+
+    /* Boîte de dialogue */
+    .al-dialogue { border: 0; border-radius: 16px; padding: 0; width: min(440px, calc(100vw - 32px)); background: var(--carte); color: var(--texte); box-shadow: 0 30px 80px -20px rgba(0,0,0,.5); }
+    .al-dialogue::backdrop { background: rgba(15,19,28,.45); }
+    .al-dialogue form { padding: 20px; display: grid; gap: 12px; }
+    .al-dialogue h2 { margin: 0; font-size: 1.15rem; }
+    .al-dialogue label { font-size: .85rem; font-weight: 600; display: grid; gap: 6px; }
+    .al-dialogue input[type=text] { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bord-fort); background: var(--carte); color: var(--texte); }
+    .al-dialogue .al-boutons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .al-dialogue p { margin: 0; color: var(--doux); font-size: .9rem; line-height: 1.5; }
+    .bouton.danger { background: var(--ko); border-color: var(--ko); color: #fff; }
+
+    @media (min-width: 761px) and (max-width: 1399px) { .al-gauche, .al-droite { top: 126px; max-height: calc(100vh - 146px); } }
+    @media (max-width: 1280px) { .al-grille { grid-template-columns: 270px minmax(0, 1fr) 310px; } }
+    @media (max-width: 1080px) {
+      .al-grille { grid-template-columns: 260px minmax(0, 1fr); }
+      .al-droite { grid-column: 1 / -1; position: static; max-height: none; }
+    }
+    @media (max-width: 760px) {
+      .al-grille { grid-template-columns: minmax(0, 1fr); }
+      .al-gauche { position: static; max-height: 46vh; }
+      .al-centre { padding: 16px 14px; }
+      .al-table .al-coul { display: none; }
+      .al-table thead { display: none; }
+      .al-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) 76px auto; gap: 2px 4px; padding: 6px 0; border-bottom: 1px solid var(--bord); }
+      .al-table td { border: 0; padding: 0; }
+      .al-table td:nth-child(2) { grid-column: 1 / -1; }
+      .al-table td:nth-child(2) input { font-weight: 600; }
+      .al-table .al-part, .al-table .al-bt { width: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="entete" id="entete"></header>
+  <main class="page">
+    <div class="al-tete">
+      <div>
+        <h1>Allocation</h1>
+        <p>Les assureurs partenaires, leurs contrats et les portefeuilles que le cabinet y recommande, avec les raisons de chaque choix. Ces informations sont partagées entre les conseillers du cabinet.</p>
+      </div>
+      <div class="al-chiffres" id="chiffres"></div>
+    </div>
+    <div class="al-grille">
+      <aside class="al-panneau al-gauche" aria-label="Assureurs et contrats">
+        <div class="al-zone">
+          <input class="al-cherche" id="cherche" type="search" placeholder="Assureur, contrat, fonds ou ISIN…" aria-label="Rechercher" autocomplete="off">
+        </div>
+        <div class="al-defile"><ul class="al-arbre" id="arbre" role="tree"></ul></div>
+        <div class="al-zone"><button type="button" class="bouton" id="ajout-assureur" style="width:100%">+ Ajouter un assureur</button></div>
+      </aside>
+      <section class="al-panneau al-centre" id="centre" aria-live="polite"></section>
+      <aside class="al-panneau al-droite" id="droite" aria-label="Détail du fonds"></aside>
+    </div>
+  </main>
+  <dialog class="al-dialogue" id="dialogue"><form method="dialog" id="dialogue-form"></form></dialog>
+  <script src="/allocation.js"></script>
+</body>
+</html>

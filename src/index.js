@@ -13,6 +13,7 @@ import { routeLinkedin } from "./linkedin.js";
 import { routeVideo, entretenirVideos } from "./video.js";
 import { routeCours } from "./cours.js";
 import { routeDer } from "./der.js";
+import { routeAllocation } from "./allocation.js";
 import { routeNotifications } from "./notifications.js";
 import { normaliser, identifiantValide, decouperNom, proposerIdentifiant, identifiantLibre, assurerIdentifiants } from "./identifiants.js";
 
@@ -189,6 +190,12 @@ async function api(request, env, url) {
   // DER : document d'entrée en relation (voir der.js ; aucune donnée client ne passe par le serveur).
   if (chemin.startsWith("/api/der")) {
     const r = await routeDer(request, env, chemin, moi);
+    if (r) return r;
+  }
+
+  // Allocation : assureurs, contrats, portefeuilles types et « Pourquoi ce choix » (voir allocation.js).
+  if (chemin.startsWith("/api/allocation")) {
+    const r = await routeAllocation(request, env, chemin, moi, url);
     if (r) return r;
   }
 
