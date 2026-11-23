@@ -124,10 +124,11 @@ export async function routeAllocation(request, env, chemin, moi, url) {
     if (!Array.isArray(d.lignes) || d.lignes.length > 80) return erreur("Liste de fonds invalide (80 au plus).");
     const lignes = [];
     for (const [i, l] of d.lignes.entries()) {
-      const nom = texte(l.nom, 160), isin = texte(l.isin, 12).toUpperCase();
+      const nom = texte(l.nom, 160), isin = texte(l.isin, 20).toUpperCase().replace(/\s/g, "");
       const part = l.part === "" || l.part == null ? null : Number(String(l.part).replace(",", "."));
       if (!nom) return erreur(`Ligne ${i + 1} : le nom du fonds est obligatoire.`);
-      if (isin && !isinValide(isin)) return erreur(`Ligne ${i + 1} : le code ISIN « ${isin} » n'est pas valide.`);
+      // Un code non confirmé (clé de contrôle fausse, lecture imparfaite) est accepté : la page le signale par une pastille rouge.
+      if (isin && !/^[A-Z0-9]{2,20}$/.test(isin)) return erreur(`Ligne ${i + 1} : le code ISIN « ${isin} » ne doit contenir que des lettres et des chiffres.`);
       if (part !== null && (!Number.isFinite(part) || part < 0 || part > 100)) return erreur(`Ligne ${i + 1} : le poids doit être compris entre 0 et 100 %.`);
       const sfdr = l.sfdr === "" || l.sfdr == null ? null : Number(l.sfdr), risque = l.risque === "" || l.risque == null ? null : Number(l.risque);
       if (sfdr !== null && ![6, 8, 9].includes(sfdr)) return erreur(`Ligne ${i + 1} : classement SFDR invalide (article 6, 8 ou 9).`);

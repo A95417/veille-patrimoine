@@ -44,12 +44,13 @@ function extraireFonds(lignes) {
   lignes.forEach((l, i) => {
     for (const m of l.matchAll(RE_ISIN)) {
       const isin = m[1];
-      if (!isinValide(isin) || vus.has(isin)) continue;
+      // Clé de contrôle fausse : on garde la ligne (signalée) si le préfixe est un pays émetteur courant.
+      if (vus.has(isin) || (!isinValide(isin) && !/^(FR|LU|IE|DE|BE|NL|GB|US|CH|IT|ES|AT|FI|SE|DK|NO|JE|GG|KY|PT)/.test(isin))) continue;
       vus.add(isin);
       let nom = nettoyerNom(l);
       if (!assezLong(nom)) nom = nettoyerNom(lignes[i - 1] || "") || nettoyerNom(lignes[i + 1] || "");
       const p = l.match(RE_PART), part = p && Number(p[1].replace(",", ".")) <= 100 ? Number(p[1].replace(",", ".")) : null;
-      fonds.push({ nom: assezLong(nom) ? nom : "", isin, part, sfdr: sfdrDe(l), risque: risqueDe(l), isin_ok: true, garder: true });
+      fonds.push({ nom: assezLong(nom) ? nom : "", isin, part, sfdr: sfdrDe(l), risque: risqueDe(l), isin_ok: isinValide(isin), garder: true });
     }
     if (/fonds\s+(en\s+)?euros?\b/i.test(l) && !/\b[A-Z]{2}[A-Z0-9]{9}[0-9]\b/.test(l) && !fonds.some((f) => !f.isin)) {
       const p = l.match(RE_PART);
@@ -108,7 +109,7 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
         ${F.length ? `<div class="al-import-table"><table class="al-table"><thead><tr><th></th><th>Fonds</th><th>Code ISIN</th><th>SFDR</th><th>Risque</th><th class="al-part" style="text-align:right">Poids</th></tr></thead><tbody>
           ${F.map((x, i) => `<tr data-i="${i}"><td style="width:28px"><input type="checkbox" data-k="garder" ${x.garder ? "checked" : ""} aria-label="Garder ce fonds" style="width:auto"></td>
             <td><input data-k="nom" value="${echapper(x.nom)}" placeholder="Nom du fonds à compléter">${deja(x.isin) ? `<small class="al-deja">déjà dans le portefeuille</small>` : ""}</td>
-            <td class="al-isin"><input data-k="isin" value="${echapper(x.isin)}" maxlength="12" class="${x.isin && !isinValide(x.isin) ? "al-faux" : ""}"></td>
+            <td class="al-isin"><span class="al-isin-saisie"><input data-k="isin" value="${echapper(x.isin)}" maxlength="20" placeholder="${/fonds\s*(en\s*)?euros?/i.test(x.nom) ? "Fonds en euros" : ""}">${x.isin && !isinValide(x.isin) ? `<span class="al-alerte-isin" title="Code ISIN non confirmé : à vérifier"></span>` : ""}</span></td>
             <td style="width:88px"><select data-k="sfdr"><option value="">—</option>${[6, 8, 9].map((a) => `<option value="${a}" ${x.sfdr === a ? "selected" : ""}>Art. ${a}</option>`).join("")}</select></td>
             <td style="width:70px"><select data-k="risque"><option value="">—</option>${[1, 2, 3, 4, 5, 6, 7].map((a) => `<option value="${a}" ${x.risque === a ? "selected" : ""}>${a}/7</option>`).join("")}</select></td>
             <td class="al-part"><input data-k="part" value="${x.part == null ? "" : String(x.part).replace(".", ",")}" placeholder="—"></td></tr>`).join("")}
@@ -124,7 +125,7 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
       f.querySelectorAll("tr[data-i] input, tr[data-i] select").forEach((inp) => inp.oninput = inp.onchange = () => {
         const x = F[+inp.closest("tr").dataset.i], k = inp.dataset.k;
         if (k === "garder") x.garder = inp.checked;
-        else if (k === "isin") { x.isin = inp.value.toUpperCase().replace(/\s/g, ""); inp.value = x.isin; inp.classList.toggle("al-faux", !!x.isin && x.isin.length >= 12 && !isinValide(x.isin)); }
+        else if (k === "isin") { x.isin = inp.value.toUpperCase().replace(/\s/g, ""); inp.value = x.isin; const pt = inp.parentElement.querySelector(".al-alerte-isin"), faux = !!x.isin && !isinValide(x.isin); if (faux && !pt) inp.insertAdjacentHTML("afterend", `<span class="al-alerte-isin" title="Code ISIN non confirmé : à vérifier"></span>`); if (!faux && pt) pt.remove(); }
         else if (k === "sfdr" || k === "risque") x[k] = inp.value ? Number(inp.value) : null;
         else if (k === "part") x.part = inp.value.trim() === "" ? null : Number(inp.value.replace(",", "."));
         else x.nom = inp.value;
@@ -138,8 +139,8 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
         try {
           const r = await appelApi("/api/allocation/lire", "POST", { type: IMPORT.fichier.type || "application/pdf", donnees: await enBase64(IMPORT.fichier), sans_donnees_client: true });
           if (r.erreur) return revue(echapper(r.erreur));
-          IMPORT.fonds = r.fonds.map((x) => ({ ...x, garder: x.isin_ok && !!x.nom })); IMPORT.source = "lecture par l'IA, à vérifier";
-          revue(IMPORT.fonds.length ? (IMPORT.fonds.some((x) => !x.isin_ok) ? "Certains codes ISIN lus par l'IA sont invalides (en rouge) : corrigez-les ou décochez la ligne." : "") : "L'IA n'a trouvé aucun fonds dans ce document.");
+          IMPORT.fonds = r.fonds.map((x) => ({ ...x, garder: !!x.nom })); IMPORT.source = "lecture par l'IA, à vérifier";
+          revue(IMPORT.fonds.length ? (IMPORT.fonds.some((x) => !x.isin_ok) ? "Certains codes ISIN n'ont pas pu être confirmés (pastille rouge) : vous pouvez les ajouter quand même et les vérifier ensuite." : "") : "L'IA n'a trouvé aucun fonds dans ce document.");
         } catch (e) { revue(echapper(e.message)); }
       };
       document.getElementById("imp-autre").onclick = () => accueil();
@@ -147,9 +148,8 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
       const v = document.getElementById("imp-valider");
       if (v) v.onclick = () => {
         const garde = F.filter((x) => x.garder);
-        const faux = garde.find((x) => x.isin && !isinValide(x.isin)), sansNom = garde.find((x) => !x.nom.trim());
+        const sansNom = garde.find((x) => !x.nom.trim());
         if (!garde.length) return revue("Cochez au moins un fonds.");
-        if (faux) return revue(`Le code ISIN « ${echapper(faux.isin)} » n'est pas valide : corrigez-le ou décochez la ligne.`);
         if (sansNom) return revue("Complétez le nom de chaque fonds coché.");
         const nom = document.getElementById("imp-nom")?.value.trim();
         if (creer && !nom) return revue("Indiquez le nom du portefeuille à créer.");

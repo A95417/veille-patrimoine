@@ -14,7 +14,7 @@ const SVG = {
 let D = { assureurs: [], contrats: [], portefeuilles: [], lignes: [], commentaires: {} };
 const sel = { a: null, c: null, p: null, f: null };   // assureur, contrat, portefeuille, fonds (ISIN)
 const ouverts = new Set();
-let brouillon = null, modifie = false, recherche = "", ongletDroite = "pourquoi";
+let brouillon = null, modifie = false, edition = false, recherche = "", ongletDroite = "pourquoi";
 
 // ---------------------------------------------------------------- Outils
 function isinValide(isin) {
@@ -73,7 +73,7 @@ function synchroniserUrl() {
 }
 async function choisir(type, id, sansConfirmer) {
   if (modifie && !sansConfirmer && !(await confirmer("Modifications non enregistrées", "Les fonds de ce portefeuille ont été modifiés. Quitter sans enregistrer ?", "Quitter sans enregistrer"))) return;
-  modifie = false; brouillon = null;
+  modifie = false; edition = false; brouillon = null;
   sel.a = sel.c = sel.p = null;
   if (type === "p") { const p = portefeuille(id); if (p) { sel.p = id; sel.c = p.contrat_id; sel.a = contrat(p.contrat_id)?.assureur_id; } }
   if (type === "c") { const c = contrat(id); if (c) { sel.c = id; sel.a = c.assureur_id; } }
@@ -179,30 +179,65 @@ function rendreCentre() {
   if ($("ajout")) $("ajout").onclick = ajouterAssureur;
 }
 
+const pc = (l) => Number(String(l.part).replace(",", ".")) || 0;
+const estFondsEuros = (l) => !l.isin && /fonds\s*(en\s*)?euros?/i.test(l.nom || "");
+const isinNonConfirme = (isin) => !!isin && !isinValide(isin);
+const pastilleRouge = `<span class="al-alerte-isin" title="Code ISIN non confirmé : à vérifier" aria-label="Code ISIN non confirmé : à vérifier"></span>`;
+function jauge(n) {
+  return n ? `<span class="al-jauge" title="Risque ${n} sur 7" aria-label="Risque ${n} sur 7">${[1, 2, 3, 4, 5, 6, 7].map((k) => `<i style="${k <= n ? `background:${COUL_RISQUE[n - 1]}` : ""}"></i>`).join("")}<b style="color:${COUL_RISQUE[n - 1]}">${n}</b></span>` : `<span class="al-vide">—</span>`;
+}
+function synthese(lignes) {
+  const total = lignes.reduce((s, l) => s + pc(l), 0), rm = risqueMoyen(lignes);
+  const parSfdr = { 6: 0, 8: 0, 9: 0, n: 0 }, parRisque = [0, 0, 0, 0, 0, 0, 0, 0];
+  for (const l of lignes) { const w = pc(l); parSfdr[l.sfdr || "n"] += w; parRisque[Number(l.risque) || 0] += w; }
+  const durable = parSfdr[8] + parSfdr[9];
+  const seg = (w, coul, lib) => w > 0 ? `<span style="width:${w / Math.max(total, 1) * 100}%;background:${coul}" title="${lib} : ${nb(w)} %"></span>` : "";
+  const leg = (w, coul, lib) => w > 0 ? `<span><i style="background:${coul}"></i>${lib} <b>${nb(Math.round(w * 100) / 100)} %</b></span>` : "";
+  return `<div class="al-synthese">
+    <div class="al-kpis">
+      <div class="al-kpi ${Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""}"><span>Poids total</span><b>${nb(total)} %${Math.abs(total - 100) < .01 ? " ✓" : ""}</b><small>${Math.abs(total - 100) < .01 ? "Portefeuille complet" : total > 100 ? "Dépasse 100 %" : `Reste ${nb(Math.round((100 - total) * 100) / 100)} %`}</small></div>
+      <div class="al-kpi"><span>Risque moyen pondéré</span><b ${rm ? `style="color:${COUL_RISQUE[Math.round(rm.valeur) - 1]}"` : ""}>${rm ? nb(Math.round(rm.valeur * 10) / 10) + " / 7" : "—"}</b><small>${rm ? (rm.couvert < .999 ? `Sur ${nb(Math.round(rm.couvert * 1000) / 10)} % renseignés` : "Repère indicatif") : "Risques à renseigner"}</small></div>
+      <div class="al-kpi"><span>Part durable</span><b>${total ? nb(Math.round(durable / total * 1000) / 10) + " %" : "—"}</b><small>Articles 8 et 9 (SFDR)</small></div>
+      <div class="al-kpi"><span>Nombre de fonds</span><b>${lignes.length}</b><small>${lignes.filter((l) => isinNonConfirme(l.isin)).length ? `${lignes.filter((l) => isinNonConfirme(l.isin)).length} ISIN à vérifier` : "Lignes du portefeuille"}</small></div>
+    </div>
+    ${total > 0 ? `<div class="al-repart"><div class="al-repart-titre">Classement SFDR</div><div class="al-barre">${seg(parSfdr[9], "#1f6b3a", "Article 9")}${seg(parSfdr[8], "#5fb37a", "Article 8")}${seg(parSfdr[6], "#9aa3b5", "Article 6")}${seg(parSfdr.n, "var(--bord-fort)", "Non renseigné")}</div>
+      <div class="al-legende">${leg(parSfdr[9], "#1f6b3a", "Article 9")}${leg(parSfdr[8], "#5fb37a", "Article 8")}${leg(parSfdr[6], "#9aa3b5", "Article 6")}${leg(parSfdr.n, "var(--bord-fort)", "Non renseigné")}</div></div>
+    <div class="al-repart"><div class="al-repart-titre">Niveau de risque (SRI)</div><div class="al-barre">${[1, 2, 3, 4, 5, 6, 7].map((n) => seg(parRisque[n], COUL_RISQUE[n - 1], `Risque ${n}`)).join("")}${seg(parRisque[0], "var(--bord-fort)", "Non renseigné")}</div>
+      <div class="al-legende">${[1, 2, 3, 4, 5, 6, 7].map((n) => leg(parRisque[n], COUL_RISQUE[n - 1], `${n}/7`)).join("")}${leg(parRisque[0], "var(--bord-fort)", "Non renseigné")}</div></div>` : ""}
+  </div>`;
+}
+
 function rendrePortefeuille(z) {
   const p = portefeuille(sel.p), c = contrat(p.contrat_id);
-  const total = brouillon.reduce((s, l) => s + (Number(String(l.part).replace(",", ".")) || 0), 0);
-  const erreurs = brouillon.map((l) => { const i = l.isin.trim().toUpperCase(); return i && !isinValide(i); });
+  const max = Math.max(1, ...brouillon.map(pc));
+  const ligneLecture = (l, i) => `<tr data-ligne="${i}" class="al-lect ${sel.f && l.isin === sel.f ? "al-actif" : ""}" ${l.isin ? `tabindex="0"` : ""}>
+      <td class="al-c-num"><i style="background:${COULEURS[i % COULEURS.length]}"></i>${i + 1}</td>
+      <td class="al-c-fonds"><div class="al-f-nom">${echapper(l.nom || "Sans nom")}</div>
+        <div class="al-f-isin">${estFondsEuros(l) ? `<span class="al-euros">Fonds en euros</span>` : l.isin ? `${echapper(l.isin)}${isinNonConfirme(l.isin) ? pastilleRouge : ""}` : `<span class="al-vide">Sans code ISIN</span>`}</div></td>
+      <td class="al-c-sfdr">${l.sfdr ? pastilleSfdr(l.sfdr) : `<span class="al-vide">—</span>`}</td>
+      <td class="al-c-risque">${jauge(Number(l.risque))}</td>
+      <td class="al-c-poids">${pc(l) ? `<b>${nb(pc(l))} %</b><span class="al-mini"><i style="width:${pc(l) / max * 100}%;background:${COULEURS[i % COULEURS.length]}"></i></span>` : `<span class="al-vide">—</span>`}</td></tr>`;
+  const ligneEdition = (l, i) => `<tr data-ligne="${i}" class="al-edit">
+      <td class="al-c-num"><i style="background:${COULEURS[i % COULEURS.length]}"></i>${i + 1}</td>
+      <td class="al-c-fonds"><input data-champ="nom" value="${echapper(l.nom)}" placeholder="Nom du fonds" aria-label="Nom du fonds, ligne ${i + 1}">
+        <span class="al-isin-saisie"><input data-champ="isin" value="${echapper(l.isin)}" placeholder="${estFondsEuros(l) ? "Pas d'ISIN (fonds en euros)" : "Code ISIN"}" maxlength="20" aria-label="Code ISIN, ligne ${i + 1}">${isinNonConfirme(l.isin) ? pastilleRouge : ""}</span></td>
+      <td class="al-c-sfdr"><select data-champ="sfdr" class="s${l.sfdr || 0}" aria-label="Classement SFDR, ligne ${i + 1}"><option value="">—</option>${[6, 8, 9].map((a) => `<option value="${a}" ${String(l.sfdr) === String(a) ? "selected" : ""}>Art. ${a}</option>`).join("")}</select></td>
+      <td class="al-c-risque"><span class="al-echelle" role="group" aria-label="Risque de 1 à 7, ligne ${i + 1}">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<button type="button" data-risque="${n}" aria-pressed="${Number(l.risque) === n}" style="--c:${COUL_RISQUE[n - 1]}" title="Risque ${n} sur 7">${n}</button>`).join("")}</span></td>
+      <td class="al-c-poids"><span class="al-poids-saisie"><input data-champ="part" value="${echapper(String(l.part).replace(".", ","))}" placeholder="—" inputmode="decimal" aria-label="Poids en %, ligne ${i + 1}"><span>%</span></span></td>
+      <td class="al-c-bt">${i ? `<button type="button" class="al-icone" data-monter="${i}" title="Monter" aria-label="Monter la ligne">${SVG.haut}</button>` : `<span class="al-icone"></span>`}<button type="button" class="al-icone danger" data-retirer="${i}" title="Retirer" aria-label="Retirer la ligne">${SVG.poubelle}</button></td></tr>`;
+  const nbAlerte = brouillon.filter((l) => isinNonConfirme(l.isin)).length;
   z.innerHTML = fil() + `<div class="al-entete"><div><h2>${point(p.profil)} ${echapper(p.nom)}</h2><div class="al-meta">${typeBadge(c.type)} ${echapper(c.nom)}</div>${meta(p)}</div>
       <div class="al-actions"><button type="button" class="bouton bouton-discret" id="renommer">${SVG.crayon} Renommer</button><button type="button" class="bouton bouton-discret" id="supprimer">${SVG.poubelle} Supprimer</button></div></div>
     <div class="al-profils" role="group" aria-label="Profil">${Object.entries(PROFILS).map(([k, [l]]) => `<button type="button" class="puce" data-profil="${k}" aria-pressed="${p.profil === k}">${l}</button>`).join("")}<button type="button" class="puce" id="profil-libre" aria-pressed="${!!p.profil && !PROFILS[p.profil]}">✏️ ${p.profil && !PROFILS[p.profil] ? echapper(p.profil) : "Autre…"}</button></div>
-    <div class="al-section"><h3>Fonds du portefeuille <small>${brouillon.length} ligne${brouillon.length > 1 ? "s" : ""}</small></h3>
-      ${brouillon.length ? `<table class="al-table"><thead><tr><th class="al-coul"></th><th>Fonds</th><th>Code ISIN</th><th class="al-sfdr-col">SFDR</th><th class="al-risque-col">Risque</th><th class="al-part" style="text-align:right">Poids</th><th class="al-bt"></th></tr></thead><tbody>
-        ${brouillon.map((l, i) => `<tr class="${sel.f && l.isin.toUpperCase() === sel.f ? "al-actif" : ""}" data-ligne="${i}">
-          <td class="al-coul"><i style="background:${Number(String(l.part).replace(",", ".")) > 0 ? COULEURS[i % COULEURS.length] : "var(--bord)"}"></i></td>
-          <td><input data-champ="nom" value="${echapper(l.nom)}" title="${echapper(l.nom)}" placeholder="Nom du fonds" aria-label="Nom du fonds, ligne ${i + 1}"></td>
-          <td class="al-isin"><input data-champ="isin" value="${echapper(l.isin)}" placeholder="Facultatif" maxlength="12" class="${erreurs[i] ? "al-faux" : ""}" aria-label="Code ISIN, ligne ${i + 1}" ${erreurs[i] ? 'aria-invalid="true"' : ""}></td>
-          <td class="al-sfdr-col"><select data-champ="sfdr" class="s${l.sfdr || 0}" aria-label="Classement SFDR, ligne ${i + 1}"><option value="">—</option>${[6, 8, 9].map((a) => `<option value="${a}" ${String(l.sfdr) === String(a) ? "selected" : ""}>Art. ${a}</option>`).join("")}</select></td>
-          <td class="al-risque-col"><span class="al-echelle" role="group" aria-label="Risque de 1 à 7, ligne ${i + 1}">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<button type="button" data-risque="${n}" aria-pressed="${Number(l.risque) === n}" style="--c:${COUL_RISQUE[n - 1]}" title="Risque ${n} sur 7">${n}</button>`).join("")}</span></td>
-          <td class="al-part"><input data-champ="part" value="${echapper(String(l.part).replace(".", ","))}" placeholder="—" inputmode="decimal" aria-label="Poids en %, ligne ${i + 1}"></td>
-          <td class="al-bt">${i ? `<button type="button" class="al-icone" data-monter="${i}" title="Monter" aria-label="Monter la ligne">${SVG.haut}</button>` : ""}<button type="button" class="al-icone danger" data-retirer="${i}" title="Retirer" aria-label="Retirer la ligne">${SVG.poubelle}</button></td></tr>`).join("")}
-      </tbody></table>${erreurs.some(Boolean) ? `<p class="al-erreur-ligne">Code ISIN invalide : vérifiez les cases en rouge (12 caractères, clé de contrôle).</p>` : ""}`
-        : `<p class="al-astuce">Aucun fonds pour l'instant. Ajoutez chaque fonds avec son code ISIN (laissez l'ISIN vide pour un fonds en euros), son classement SFDR, son risque (1 à 7) et son poids en %.</p>`}
-      <div class="al-pied"><span class="al-actions"><button type="button" class="bouton bouton-discret" id="ajout-ligne">+ Ajouter un fonds</button><button type="button" class="bouton bouton-discret" id="importer">📄 Importer un document</button></span>
-        ${brouillon.length ? `<span class="al-total ${Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""}">Poids total : <b>${nb(total)} %</b>${Math.abs(total - 100) < .01 ? " ✓" : total > 100 ? " (dépasse 100 %)" : total ? ` (reste ${nb(100 - total)} %)` : ""}</span>` : ""}</div>
-      ${(() => { const rm = risqueMoyen(brouillon); return rm ? `<p class="al-risque-moyen">Risque moyen pondéré : <b style="color:${COUL_RISQUE[Math.round(rm.valeur) - 1]}">${nb(Math.round(rm.valeur * 10) / 10)} / 7</b>${rm.couvert < .999 ? ` · calculé sur ${nb(Math.round(rm.couvert * 1000) / 10)} % du portefeuille (risque renseigné)` : ""} · repère indicatif, pas un indicateur officiel</p>` : ""; })()}
-      ${total > 0 ? barre(brouillon.map((l) => ({ ...l, part: Number(String(l.part).replace(",", ".")) || 0 }))) + `<div class="al-legende">${brouillon.map((l, i) => Number(String(l.part).replace(",", ".")) > 0 ? `<span><i style="background:${COULEURS[i % COULEURS.length]}"></i>${echapper(l.nom || "Sans nom")} ${nb(String(l.part).replace(",", "."))} %</span>` : "").join("")}</div>` : ""}
-      ${modifie ? `<div class="al-enregistrer" role="status"><span>Modifications non enregistrées</span><button type="button" class="bouton bouton-discret" id="annuler">Annuler</button><button type="button" class="bouton" id="enregistrer">Enregistrer</button></div>` : ""}
+    <div class="al-section">
+      <div class="al-barre-outils"><h3>Fonds du portefeuille <small>${brouillon.length} fonds</small></h3>
+        <span class="al-actions">${edition ? `<button type="button" class="bouton bouton-discret" id="ajout-ligne">+ Ajouter un fonds</button>` : brouillon.length ? `<button type="button" class="bouton bouton-discret" id="editer">${SVG.crayon} Modifier les fonds</button>` : ""}<button type="button" class="bouton bouton-discret" id="importer">📄 Importer un document</button></span></div>
+      ${brouillon.length ? `<div class="al-tf-cadre"><table class="al-tf ${edition ? "edition" : ""}"><thead><tr><th class="al-c-num">#</th><th>Fonds</th><th class="al-c-sfdr">SFDR</th><th class="al-c-risque">Risque</th><th class="al-c-poids">Poids</th>${edition ? `<th class="al-c-bt"></th>` : ""}</tr></thead>
+        <tbody>${brouillon.map(edition ? ligneEdition : ligneLecture).join("")}</tbody></table></div>
+        ${nbAlerte ? `<p class="al-note-isin">${pastilleRouge} ${nbAlerte} code${nbAlerte > 1 ? "s" : ""} ISIN non confirmé${nbAlerte > 1 ? "s" : ""} (clé de contrôle incorrecte) : à vérifier sur le document du fonds.</p>` : ""}`
+        : `<div class="al-vide-tableau"><p>Aucun fonds pour l'instant.</p><p class="al-astuce">Importez le document de l'assureur, ou ajoutez les fonds un par un avec leur code ISIN, leur classement SFDR, leur risque (1 à 7) et leur poids.</p>${edition ? "" : `<button type="button" class="bouton" id="premier">+ Ajouter un fonds</button>`}</div>`}
+      ${edition ? `<div class="al-enregistrer" role="status"><span>${modifie ? "Modifications non enregistrées" : "Mode édition"}</span><button type="button" class="bouton bouton-discret" id="annuler">Annuler</button><button type="button" class="bouton" id="enregistrer">Enregistrer</button></div>` : ""}
+      ${brouillon.length ? synthese(brouillon) : ""}
     </div>`;
   brancherFil(z);
   $("renommer").onclick = () => modifier("portefeuille", p);
@@ -217,29 +252,34 @@ function rendrePortefeuille(z) {
     if (!v) return;
     try { await appelApi(`/api/allocation/portefeuille/${p.id}`, "PUT", { nom: p.nom, profil: v.profil.trim() }); p.profil = v.profil.trim() || null; rendreArbre(); rendreCentre(); } catch (e) { notifier(e.message, true); }
   };
+  const choisirFonds = (isin) => { if (!/^[A-Z0-9]{12}$/.test(isin || "")) return; sel.f = isin; ongletDroite = "fonds"; synchroniserUrl(); rendreDroite(); z.querySelectorAll("[data-ligne]").forEach((tr) => tr.classList.toggle("al-actif", brouillon[+tr.dataset.ligne].isin === isin)); };
+  z.querySelectorAll("tr.al-lect").forEach((tr) => { const go = () => choisirFonds(brouillon[+tr.dataset.ligne].isin); tr.onclick = go; tr.onkeydown = (e) => { if (e.key === "Enter") go(); }; });
   z.querySelectorAll("[data-ligne] input[data-champ]").forEach((inp) => {
     inp.oninput = () => {
       const i = +inp.closest("tr").dataset.ligne, champ = inp.dataset.champ;
       brouillon[i][champ] = champ === "isin" ? inp.value.toUpperCase().replace(/\s/g, "") : inp.value;
-      if (champ === "isin") { inp.value = brouillon[i].isin; const faux = brouillon[i].isin && brouillon[i].isin.length >= 12 && !isinValide(brouillon[i].isin); inp.classList.toggle("al-faux", faux); }
-      if (!modifie) { modifie = true; rendreCentreEnGardantFocus(inp); }
-      else if (champ === "part") majTotal();
+      if (champ === "isin") inp.value = brouillon[i].isin;
+      if (!modifie) { modifie = true; z.querySelector(".al-enregistrer span").textContent = "Modifications non enregistrées"; }
     };
-    inp.onfocus = () => { const isin = brouillon[+inp.closest("tr").dataset.ligne].isin; if (isin && isinValide(isin) && (sel.f !== isin || ongletDroite !== "fonds")) { sel.f = isin; ongletDroite = "fonds"; synchroniserUrl(); rendreDroite(); z.querySelectorAll("[data-ligne]").forEach((tr) => tr.classList.toggle("al-actif", brouillon[+tr.dataset.ligne].isin === isin)); } };
+    inp.onchange = () => rendreCentreEnGardantFocus(null);   // pastilles, synthèse et totaux mis à jour en quittant la case
+    inp.onfocus = () => choisirFonds(brouillon[+inp.closest("tr").dataset.ligne].isin);
   });
-  z.querySelectorAll('select[data-champ="sfdr"]').forEach((sel_) => sel_.onchange = () => { brouillon[+sel_.closest("tr").dataset.ligne].sfdr = sel_.value; modifie = true; rendreCentreEnGardantFocus(null); });
+  z.querySelectorAll('select[data-champ="sfdr"]').forEach((s_) => s_.onchange = () => { brouillon[+s_.closest("tr").dataset.ligne].sfdr = s_.value; modifie = true; rendreCentreEnGardantFocus(null); });
   z.querySelectorAll("[data-risque]").forEach((b) => b.onclick = () => { const l = brouillon[+b.closest("tr").dataset.ligne], n = +b.dataset.risque; l.risque = Number(l.risque) === n ? "" : n; modifie = true; rendreCentreEnGardantFocus(null); });
   z.querySelectorAll("[data-retirer]").forEach((b) => b.onclick = () => { brouillon.splice(+b.dataset.retirer, 1); modifie = true; rendreCentre(); });
   z.querySelectorAll("[data-monter]").forEach((b) => b.onclick = () => { const i = +b.dataset.monter; [brouillon[i - 1], brouillon[i]] = [brouillon[i], brouillon[i - 1]]; modifie = true; rendreCentre(); });
-  $("ajout-ligne").onclick = () => { brouillon.push({ nom: "", isin: "", part: "" }); modifie = true; rendreCentre(); const t = z.querySelectorAll('[data-champ="nom"]'); t[t.length - 1]?.focus(); };
+  const ajouter = () => { edition = true; brouillon.push({ nom: "", isin: "", part: "", sfdr: "", risque: "" }); modifie = true; rendreCentre(); const t = z.querySelectorAll('[data-champ="nom"]'); t[t.length - 1]?.focus(); };
+  if ($("ajout-ligne")) $("ajout-ligne").onclick = ajouter;
+  if ($("premier")) $("premier").onclick = ajouter;
+  if ($("editer")) $("editer").onclick = () => { edition = true; rendreCentre(); };
   $("importer").onclick = async () => {
     const r = await ouvrirImport({ existants: brouillon.map((l) => l.isin).filter(Boolean) });
     if (!r) return;
     const nouveaux = r.fonds.map((x) => ({ nom: x.nom, isin: x.isin, part: x.part ?? "", sfdr: x.sfdr ?? "", risque: x.risque ?? "" }));
     brouillon = r.remplacer ? nouveaux : [...brouillon.filter((l) => l.nom.trim() || l.isin), ...nouveaux.filter((x) => !x.isin || !brouillon.some((l) => l.isin === x.isin))];
-    modifie = true; rendreCentre(); notifier(`${nouveaux.length} fonds ajouté${nouveaux.length > 1 ? "s" : ""} : vérifiez puis enregistrez.`);
+    edition = true; modifie = true; rendreCentre(); notifier(`${nouveaux.length} fonds ajouté${nouveaux.length > 1 ? "s" : ""} : vérifiez puis enregistrez.`);
   };
-  if ($("annuler")) $("annuler").onclick = () => { brouillon = lignesDe(p.id).map(versBrouillon); modifie = false; rendreCentre(); };
+  if ($("annuler")) $("annuler").onclick = () => { brouillon = lignesDe(p.id).map(versBrouillon); modifie = false; edition = false; rendreCentre(); };
   if ($("enregistrer")) $("enregistrer").onclick = enregistrerLignes;
 }
 // Ré-affiche le centre (barre « Enregistrer », totaux) sans perdre la saisie en cours.
@@ -256,7 +296,7 @@ async function enregistrerLignes() {
   const lignes = brouillon.filter((l) => l.nom.trim() || l.isin.trim() || String(l.part).trim() || l.sfdr || l.risque);
   try {
     await appelApi(`/api/allocation/portefeuille/${sel.p}/lignes`, "PUT", { lignes: lignes.map((l) => ({ nom: l.nom, isin: l.isin, part: String(l.part).trim() === "" ? null : String(l.part).replace(",", "."), sfdr: l.sfdr || null, risque: l.risque || null })) });
-    modifie = false; await charger(); notifier("Portefeuille enregistré.");
+    modifie = false; edition = false; await charger(); notifier("Portefeuille enregistré.");
     brouillon = lignesDe(sel.p).map(versBrouillon); rendre();
   } catch (e) { notifier(e.message, true); }
 }
