@@ -37,6 +37,16 @@ const contratsDe = (aid) => D.contrats.filter((c) => c.assureur_id === aid);
 const portefeuillesDe = (cid) => D.portefeuilles.filter((p) => p.contrat_id === cid);
 const lignesDe = (pid) => D.lignes.filter((l) => l.portefeuille_id === pid);
 const typeBadge = (t) => `<span class="al-type ${t}">${t === "per" ? "PER" : "AV"}</span>`;
+const versBrouillon = (l) => ({ nom: l.nom, isin: l.isin || "", part: l.part ?? "", sfdr: l.sfdr ?? "", risque: l.risque ?? "" });
+const SFDR = { 6: "Art. 6", 8: "Art. 8", 9: "Art. 9" };
+const COUL_RISQUE = ["#2f8f5b", "#5fa24a", "#9db53a", "#d8b528", "#e08a2a", "#d6582b", "#b9302a"];
+const pastilleSfdr = (v) => v ? `<span class="al-sfdr s${v}">${SFDR[v]}</span>` : "";
+const pastilleRisque = (v) => v ? `<span class="al-risque-p" style="background:${COUL_RISQUE[v - 1]}">${v}/7</span>` : "";
+function risqueMoyen(lignes) {
+  let poids = 0, somme = 0, total = 0;
+  for (const l of lignes) { const w = Number(String(l.part).replace(",", ".")) || 0; total += w; if (l.risque && w > 0) { poids += w; somme += w * l.risque; } }
+  return poids ? { valeur: somme / poids, couvert: total ? poids / total : 0 } : null;
+}
 const profilNom = (profil) => PROFILS[profil]?.[0] || profil || "Sans profil";
 const point = (profil) => `<span class="al-point" style="${PROFILS[profil] ? `background:${PROFILS[profil][1]}` : profil ? "background:var(--doux)" : ""}" title="${echapper(profilNom(profil))}"></span>`;
 // Logo de l'assureur : image déposée, sinon icône de son site, sinon initiales.
@@ -71,7 +81,7 @@ async function choisir(type, id, sansConfirmer) {
   if (sel.a) ouverts.add("a" + sel.a);
   if (sel.c) ouverts.add("c" + sel.c);
   if (type === "p") ongletDroite = sel.f && lignesDe(sel.p).some((l) => l.isin === sel.f) ? ongletDroite : "pourquoi";
-  if (sel.p) brouillon = lignesDe(sel.p).map((l) => ({ nom: l.nom, isin: l.isin || "", part: l.part ?? "" }));
+  if (sel.p) brouillon = lignesDe(sel.p).map(versBrouillon);
   synchroniserUrl(); rendre();
 }
 function rendre() { rendreArbre(); rendreCentre(); rendreDroite(); }
@@ -177,17 +187,20 @@ function rendrePortefeuille(z) {
       <div class="al-actions"><button type="button" class="bouton bouton-discret" id="renommer">${SVG.crayon} Renommer</button><button type="button" class="bouton bouton-discret" id="supprimer">${SVG.poubelle} Supprimer</button></div></div>
     <div class="al-profils" role="group" aria-label="Profil">${Object.entries(PROFILS).map(([k, [l]]) => `<button type="button" class="puce" data-profil="${k}" aria-pressed="${p.profil === k}">${l}</button>`).join("")}<button type="button" class="puce" id="profil-libre" aria-pressed="${!!p.profil && !PROFILS[p.profil]}">✏️ ${p.profil && !PROFILS[p.profil] ? echapper(p.profil) : "Autre…"}</button></div>
     <div class="al-section"><h3>Fonds du portefeuille <small>${brouillon.length} ligne${brouillon.length > 1 ? "s" : ""}</small></h3>
-      ${brouillon.length ? `<table class="al-table"><thead><tr><th class="al-coul"></th><th>Fonds</th><th>Code ISIN</th><th class="al-part" style="text-align:right">Part</th><th class="al-bt"></th></tr></thead><tbody>
+      ${brouillon.length ? `<table class="al-table"><thead><tr><th class="al-coul"></th><th>Fonds</th><th>Code ISIN</th><th class="al-sfdr-col">SFDR</th><th class="al-risque-col">Risque</th><th class="al-part" style="text-align:right">Poids</th><th class="al-bt"></th></tr></thead><tbody>
         ${brouillon.map((l, i) => `<tr class="${sel.f && l.isin.toUpperCase() === sel.f ? "al-actif" : ""}" data-ligne="${i}">
           <td class="al-coul"><i style="background:${Number(String(l.part).replace(",", ".")) > 0 ? COULEURS[i % COULEURS.length] : "var(--bord)"}"></i></td>
-          <td><input data-champ="nom" value="${echapper(l.nom)}" placeholder="Nom du fonds" aria-label="Nom du fonds, ligne ${i + 1}"></td>
+          <td><input data-champ="nom" value="${echapper(l.nom)}" title="${echapper(l.nom)}" placeholder="Nom du fonds" aria-label="Nom du fonds, ligne ${i + 1}"></td>
           <td class="al-isin"><input data-champ="isin" value="${echapper(l.isin)}" placeholder="Facultatif" maxlength="12" class="${erreurs[i] ? "al-faux" : ""}" aria-label="Code ISIN, ligne ${i + 1}" ${erreurs[i] ? 'aria-invalid="true"' : ""}></td>
-          <td class="al-part"><input data-champ="part" value="${echapper(String(l.part).replace(".", ","))}" placeholder="—" inputmode="decimal" aria-label="Part en %, ligne ${i + 1}"></td>
+          <td class="al-sfdr-col"><select data-champ="sfdr" class="s${l.sfdr || 0}" aria-label="Classement SFDR, ligne ${i + 1}"><option value="">—</option>${[6, 8, 9].map((a) => `<option value="${a}" ${String(l.sfdr) === String(a) ? "selected" : ""}>Art. ${a}</option>`).join("")}</select></td>
+          <td class="al-risque-col"><span class="al-echelle" role="group" aria-label="Risque de 1 à 7, ligne ${i + 1}">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<button type="button" data-risque="${n}" aria-pressed="${Number(l.risque) === n}" style="--c:${COUL_RISQUE[n - 1]}" title="Risque ${n} sur 7">${n}</button>`).join("")}</span></td>
+          <td class="al-part"><input data-champ="part" value="${echapper(String(l.part).replace(".", ","))}" placeholder="—" inputmode="decimal" aria-label="Poids en %, ligne ${i + 1}"></td>
           <td class="al-bt">${i ? `<button type="button" class="al-icone" data-monter="${i}" title="Monter" aria-label="Monter la ligne">${SVG.haut}</button>` : ""}<button type="button" class="al-icone danger" data-retirer="${i}" title="Retirer" aria-label="Retirer la ligne">${SVG.poubelle}</button></td></tr>`).join("")}
       </tbody></table>${erreurs.some(Boolean) ? `<p class="al-erreur-ligne">Code ISIN invalide : vérifiez les cases en rouge (12 caractères, clé de contrôle).</p>` : ""}`
-        : `<p class="al-astuce">Aucun fonds pour l'instant. Ajoutez chaque fonds avec son code ISIN (laissez l'ISIN vide pour un fonds en euros) et sa part en %.</p>`}
+        : `<p class="al-astuce">Aucun fonds pour l'instant. Ajoutez chaque fonds avec son code ISIN (laissez l'ISIN vide pour un fonds en euros), son classement SFDR, son risque (1 à 7) et son poids en %.</p>`}
       <div class="al-pied"><span class="al-actions"><button type="button" class="bouton bouton-discret" id="ajout-ligne">+ Ajouter un fonds</button><button type="button" class="bouton bouton-discret" id="importer">📄 Importer un document</button></span>
-        ${brouillon.length ? `<span class="al-total ${Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""}">Total : <b>${nb(total)} %</b>${Math.abs(total - 100) < .01 ? " ✓" : total > 100 ? " (dépasse 100 %)" : total ? ` (reste ${nb(100 - total)} %)` : ""}</span>` : ""}</div>
+        ${brouillon.length ? `<span class="al-total ${Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""}">Poids total : <b>${nb(total)} %</b>${Math.abs(total - 100) < .01 ? " ✓" : total > 100 ? " (dépasse 100 %)" : total ? ` (reste ${nb(100 - total)} %)` : ""}</span>` : ""}</div>
+      ${(() => { const rm = risqueMoyen(brouillon); return rm ? `<p class="al-risque-moyen">Risque moyen pondéré : <b style="color:${COUL_RISQUE[Math.round(rm.valeur) - 1]}">${nb(Math.round(rm.valeur * 10) / 10)} / 7</b>${rm.couvert < .999 ? ` · calculé sur ${nb(Math.round(rm.couvert * 1000) / 10)} % du portefeuille (risque renseigné)` : ""} · repère indicatif, pas un indicateur officiel</p>` : ""; })()}
       ${total > 0 ? barre(brouillon.map((l) => ({ ...l, part: Number(String(l.part).replace(",", ".")) || 0 }))) + `<div class="al-legende">${brouillon.map((l, i) => Number(String(l.part).replace(",", ".")) > 0 ? `<span><i style="background:${COULEURS[i % COULEURS.length]}"></i>${echapper(l.nom || "Sans nom")} ${nb(String(l.part).replace(",", "."))} %</span>` : "").join("")}</div>` : ""}
       ${modifie ? `<div class="al-enregistrer" role="status"><span>Modifications non enregistrées</span><button type="button" class="bouton bouton-discret" id="annuler">Annuler</button><button type="button" class="bouton" id="enregistrer">Enregistrer</button></div>` : ""}
     </div>`;
@@ -204,7 +217,7 @@ function rendrePortefeuille(z) {
     if (!v) return;
     try { await appelApi(`/api/allocation/portefeuille/${p.id}`, "PUT", { nom: p.nom, profil: v.profil.trim() }); p.profil = v.profil.trim() || null; rendreArbre(); rendreCentre(); } catch (e) { notifier(e.message, true); }
   };
-  z.querySelectorAll("[data-ligne] input").forEach((inp) => {
+  z.querySelectorAll("[data-ligne] input[data-champ]").forEach((inp) => {
     inp.oninput = () => {
       const i = +inp.closest("tr").dataset.ligne, champ = inp.dataset.champ;
       brouillon[i][champ] = champ === "isin" ? inp.value.toUpperCase().replace(/\s/g, "") : inp.value;
@@ -214,17 +227,19 @@ function rendrePortefeuille(z) {
     };
     inp.onfocus = () => { const isin = brouillon[+inp.closest("tr").dataset.ligne].isin; if (isin && isinValide(isin) && (sel.f !== isin || ongletDroite !== "fonds")) { sel.f = isin; ongletDroite = "fonds"; synchroniserUrl(); rendreDroite(); z.querySelectorAll("[data-ligne]").forEach((tr) => tr.classList.toggle("al-actif", brouillon[+tr.dataset.ligne].isin === isin)); } };
   });
+  z.querySelectorAll('select[data-champ="sfdr"]').forEach((sel_) => sel_.onchange = () => { brouillon[+sel_.closest("tr").dataset.ligne].sfdr = sel_.value; modifie = true; rendreCentreEnGardantFocus(null); });
+  z.querySelectorAll("[data-risque]").forEach((b) => b.onclick = () => { const l = brouillon[+b.closest("tr").dataset.ligne], n = +b.dataset.risque; l.risque = Number(l.risque) === n ? "" : n; modifie = true; rendreCentreEnGardantFocus(null); });
   z.querySelectorAll("[data-retirer]").forEach((b) => b.onclick = () => { brouillon.splice(+b.dataset.retirer, 1); modifie = true; rendreCentre(); });
   z.querySelectorAll("[data-monter]").forEach((b) => b.onclick = () => { const i = +b.dataset.monter; [brouillon[i - 1], brouillon[i]] = [brouillon[i], brouillon[i - 1]]; modifie = true; rendreCentre(); });
   $("ajout-ligne").onclick = () => { brouillon.push({ nom: "", isin: "", part: "" }); modifie = true; rendreCentre(); const t = z.querySelectorAll('[data-champ="nom"]'); t[t.length - 1]?.focus(); };
   $("importer").onclick = async () => {
     const r = await ouvrirImport({ existants: brouillon.map((l) => l.isin).filter(Boolean) });
     if (!r) return;
-    const nouveaux = r.fonds.map((x) => ({ nom: x.nom, isin: x.isin, part: x.part ?? "" }));
+    const nouveaux = r.fonds.map((x) => ({ nom: x.nom, isin: x.isin, part: x.part ?? "", sfdr: x.sfdr ?? "", risque: x.risque ?? "" }));
     brouillon = r.remplacer ? nouveaux : [...brouillon.filter((l) => l.nom.trim() || l.isin), ...nouveaux.filter((x) => !x.isin || !brouillon.some((l) => l.isin === x.isin))];
     modifie = true; rendreCentre(); notifier(`${nouveaux.length} fonds ajouté${nouveaux.length > 1 ? "s" : ""} : vérifiez puis enregistrez.`);
   };
-  if ($("annuler")) $("annuler").onclick = () => { brouillon = lignesDe(p.id).map((l) => ({ nom: l.nom, isin: l.isin || "", part: l.part ?? "" })); modifie = false; rendreCentre(); };
+  if ($("annuler")) $("annuler").onclick = () => { brouillon = lignesDe(p.id).map(versBrouillon); modifie = false; rendreCentre(); };
   if ($("enregistrer")) $("enregistrer").onclick = enregistrerLignes;
 }
 // Ré-affiche le centre (barre « Enregistrer », totaux) sans perdre la saisie en cours.
@@ -235,14 +250,14 @@ function rendreCentreEnGardantFocus(inp) {
 }
 function majTotal() {
   const total = brouillon.reduce((s, l) => s + (Number(String(l.part).replace(",", ".")) || 0), 0), t = $("centre").querySelector(".al-total");
-  if (t) { t.className = "al-total " + (Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""); t.innerHTML = `Total : <b>${nb(total)} %</b>${Math.abs(total - 100) < .01 ? " ✓" : total > 100 ? " (dépasse 100 %)" : total ? ` (reste ${nb(100 - total)} %)` : ""}`; }
+  if (t) { t.className = "al-total " + (Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""); t.innerHTML = `Poids total : <b>${nb(total)} %</b>${Math.abs(total - 100) < .01 ? " ✓" : total > 100 ? " (dépasse 100 %)" : total ? ` (reste ${nb(100 - total)} %)` : ""}`; }
 }
 async function enregistrerLignes() {
-  const lignes = brouillon.filter((l) => l.nom.trim() || l.isin.trim() || String(l.part).trim());
+  const lignes = brouillon.filter((l) => l.nom.trim() || l.isin.trim() || String(l.part).trim() || l.sfdr || l.risque);
   try {
-    await appelApi(`/api/allocation/portefeuille/${sel.p}/lignes`, "PUT", { lignes: lignes.map((l) => ({ nom: l.nom, isin: l.isin, part: String(l.part).trim() === "" ? null : String(l.part).replace(",", ".") })) });
+    await appelApi(`/api/allocation/portefeuille/${sel.p}/lignes`, "PUT", { lignes: lignes.map((l) => ({ nom: l.nom, isin: l.isin, part: String(l.part).trim() === "" ? null : String(l.part).replace(",", "."), sfdr: l.sfdr || null, risque: l.risque || null })) });
     modifie = false; await charger(); notifier("Portefeuille enregistré.");
-    brouillon = lignesDe(sel.p).map((l) => ({ nom: l.nom, isin: l.isin || "", part: l.part ?? "" })); rendre();
+    brouillon = lignesDe(sel.p).map(versBrouillon); rendre();
   } catch (e) { notifier(e.message, true); }
 }
 
@@ -250,7 +265,7 @@ async function enregistrerLignes() {
 function htmlFonds() {
   const usages = D.lignes.filter((l) => l.isin === sel.f), nom = usages[0]?.nom || brouillon?.find((l) => l.isin === sel.f)?.nom || "Fonds";
   return `<div class="al-zone"><div class="al-titre-panneau"><span>Fonds sélectionné</span><button type="button" class="al-icone" id="fermer-f" aria-label="Fermer">✕</button></div>
-      <h3 class="al-fonds-nom">${echapper(nom)}</h3><div class="al-isin-ligne">${sel.f}<button type="button" class="al-icone" id="copier-isin" title="Copier l'ISIN" aria-label="Copier l'ISIN">${SVG.copier}</button></div></div>
+      <h3 class="al-fonds-nom">${echapper(nom)}</h3>${(() => { const ref = usages.find((l) => l.sfdr || l.risque) || brouillon?.find((l) => l.isin === sel.f); return ref && (ref.sfdr || ref.risque) ? `<div class="al-puces-fonds">${pastilleSfdr(ref.sfdr)}${pastilleRisque(ref.risque)}</div>` : ""; })()}<div class="al-isin-ligne">${sel.f}<button type="button" class="al-icone" id="copier-isin" title="Copier l'ISIN" aria-label="Copier l'ISIN">${SVG.copier}</button></div></div>
     <div class="al-zone"><div class="al-titre-panneau">Utilisé dans ${usages.length} portefeuille${usages.length > 1 ? "s" : ""}</div>
       ${usages.length ? `<ul class="al-utilise">${usages.map((l) => { const p = portefeuille(l.portefeuille_id), c = contrat(p.contrat_id), a = assureur(c.assureur_id);
         return `<li><button type="button" data-p="${p.id}"><span>${echapper(a.nom)} › ${echapper(c.nom)} › <b>${echapper(p.nom)}</b></span><small style="white-space:nowrap">${l.part != null ? nb(l.part) + " %" : ""}</small></button></li>`; }).join("")}</ul>` : `<p class="al-astuce">Pas encore enregistré dans un portefeuille.</p>`}</div>

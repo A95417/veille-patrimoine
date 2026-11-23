@@ -22,7 +22,7 @@
     .al-chiffres span { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 6px 12px; font-size: .82rem; color: var(--doux); }
     .al-chiffres b { color: var(--texte); font-size: .95rem; margin-right: 4px; }
 
-    .al-grille { display: grid; grid-template-columns: 300px minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .al-grille { display: grid; grid-template-columns: 270px minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
     .al-panneau { background: var(--carte); border: 1px solid var(--bord); border-radius: 16px; min-width: 0; }
     .al-gauche, .al-droite { position: sticky; top: 84px; max-height: calc(100vh - 104px); display: flex; flex-direction: column; overflow: hidden; }
     .al-zone { padding: 14px 16px; }
@@ -75,11 +75,11 @@
     .al-table input:focus { border-color: var(--accent); background: var(--carte); outline: none; }
     .al-table input.al-faux { border-color: var(--ko); background: var(--ko-doux); }
     .al-table .al-isin input { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .84rem; letter-spacing: .02em; }
-    .al-table .al-part { width: 92px; }
+    .al-table .al-part { width: 64px; }
     .al-table .al-part input { text-align: right; }
     .al-table .al-coul { width: 10px; padding: 0 0 0 8px; }
     .al-table .al-coul i { display: block; width: 10px; height: 10px; border-radius: 3px; }
-    .al-table .al-bt { width: 76px; text-align: right; white-space: nowrap; }
+    .al-table .al-bt { width: 66px; text-align: right; white-space: nowrap; }
     .al-icone { font: inherit; width: 30px; height: 30px; border-radius: 8px; border: 0; background: none; color: var(--doux); cursor: pointer; display: inline-grid; place-items: center; }
     .al-icone:hover { background: var(--fond); color: var(--texte); }
     .al-icone.danger:hover { color: var(--ko); background: var(--ko-doux); }
@@ -161,6 +161,28 @@
     .al-onglets button[aria-selected="true"] { color: var(--accent-fonce); border-bottom-color: var(--accent); }
     .al-onglets button:hover { color: var(--texte); }
     .al-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--accent-texte); font-size: .7rem; margin-left: 4px; }
+
+    /* SFDR, risque, poids */
+    .al-centre .al-table { table-layout: fixed; }
+    .al-table .al-coul { width: 18px; }
+    .al-table .al-isin { width: 122px; }
+    .al-table th:nth-child(3) { width: 122px; }
+    .al-table .al-sfdr-col { width: 78px; }
+    .al-table .al-risque-col { width: 112px; }
+    .al-echelle button { width: 14px !important; }
+    .al-table .al-isin input { font-size: .8rem; padding: 7px 4px; letter-spacing: 0; }
+    .al-table select { font: inherit; font-size: .8rem; padding: 5px 4px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--texte); width: 100%; cursor: pointer; }
+    .al-table select:hover { border-color: var(--bord); }
+    .al-table select.s6 { background: #eef0f3; color: #4b5563; } .al-table select.s8 { background: #e3f4e8; color: #1f6b3a; } .al-table select.s9 { background: #1f6b3a; color: #fff; }
+    .al-echelle { display: inline-flex; gap: 2px; }
+    .al-echelle button { font: inherit; font-size: .68rem; font-weight: 700; width: 16px; height: 22px; padding: 0; border-radius: 4px; border: 1px solid var(--bord); background: var(--carte); color: var(--doux); cursor: pointer; }
+    .al-echelle button:hover { border-color: var(--c); color: var(--c); }
+    .al-echelle button[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #fff; }
+    .al-risque-moyen { margin: 8px 0 0; font-size: .82rem; color: var(--doux); }
+    .al-sfdr, .al-risque-p { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-right: 6px; }
+    .al-sfdr.s6 { background: #eef0f3; color: #4b5563; } .al-sfdr.s8 { background: #e3f4e8; color: #1f6b3a; } .al-sfdr.s9 { background: #1f6b3a; color: #fff; }
+    .al-risque-p { color: #fff; }
+    .al-puces-fonds { margin: 2px 0 6px; }
     /* Import de documents */
     .al-dialogue.al-large { width: min(920px, calc(100vw - 32px)); }
     .al-depot { display: grid; justify-items: center; gap: 4px; padding: 34px 20px; border: 2px dashed var(--bord-fort); border-radius: 14px; cursor: pointer; text-align: center; font-weight: 400 !important; }
@@ -196,7 +218,13 @@
       .al-centre { padding: 16px 14px; }
       .al-table .al-coul { display: none; }
       .al-table thead { display: none; }
-      .al-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) 76px auto; gap: 2px 4px; padding: 6px 0; border-bottom: 1px solid var(--bord); }
+      .al-centre .al-table { table-layout: auto; }
+      .al-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; padding: 6px 0; border-bottom: 1px solid var(--bord); align-items: center; }
+      .al-table .al-sfdr-col, .al-table .al-risque-col, .al-table .al-isin { width: auto; }
+      .al-table .al-sfdr-col select { width: 96px; }
+      .al-table td.al-risque-col { grid-column: 1 / -1; }
+      .al-table td.al-part { display: flex; align-items: center; gap: 4px; width: 110px; } .al-table td.al-part::before { content: "Poids"; font-size: .75rem; color: var(--doux); } .al-table td.al-part::after { content: "%"; color: var(--doux); }
+      .al-echelle button { width: 26px !important; height: 26px; }
       .al-table td { border: 0; padding: 0; }
       .al-table td:nth-child(2) { grid-column: 1 / -1; }
       .al-table td:nth-child(2) input { font-weight: 600; }

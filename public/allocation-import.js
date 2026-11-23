@@ -31,11 +31,14 @@ async function lignesPdf(fichier) {
 const RE_ISIN = /\b([A-Z]{2}[A-Z0-9]{9}[0-9])\b/g;
 const RE_PART = /(\d{1,3}(?:[.,]\d{1,2})?)\s?%/;
 function nettoyerNom(t) {
-  return t.replace(RE_ISIN, " ").replace(/\d{1,3}(?:[.,]\d{1,2})?\s?%/g, " ").replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, " ")
+  return t.replace(/\b(?:article|art\.?|sfdr)\s*[689]\b/gi, " ").replace(/\b(?:sri|srri|risque)\s*:?\s*[1-7]\b/gi, " ").replace(/\b[1-7]\s*\/\s*7\b/g, " ").replace(RE_ISIN, " ").replace(/\d{1,3}(?:[.,]\d{1,2})?\s?%/g, " ").replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, " ")
     .replace(/(^|\s)[-+]?\d[\d\s.,]*(€|EUR)?(?=\s|$)/g, " ").replace(/\s*\|\s*/g, " ").replace(/[•·;:]+/g, " ")
     .replace(/\s{2,}/g, " ").replace(/^[\s\-–—,.]+|[\s\-–—,.]+$/g, "").slice(0, 160);
 }
 const assezLong = (t) => (t.match(/[A-Za-zÀ-ÿ]/g) || []).length >= 4;
+// SFDR et risque (SRI) seulement s'ils figurent sur la ligne du fonds.
+function sfdrDe(l) { const m = l.match(/\b(?:article|art\.?|sfdr)\s*([689])\b/i); return m ? Number(m[1]) : null; }
+function risqueDe(l) { const m = l.match(/\b(?:sri|risque|srri)\s*:?\s*([1-7])\b/i) || l.match(/\b([1-7])\s*\/\s*7\b/); return m ? Number(m[1]) : null; }
 function extraireFonds(lignes) {
   const vus = new Set(), fonds = [];
   lignes.forEach((l, i) => {
@@ -46,11 +49,11 @@ function extraireFonds(lignes) {
       let nom = nettoyerNom(l);
       if (!assezLong(nom)) nom = nettoyerNom(lignes[i - 1] || "") || nettoyerNom(lignes[i + 1] || "");
       const p = l.match(RE_PART), part = p && Number(p[1].replace(",", ".")) <= 100 ? Number(p[1].replace(",", ".")) : null;
-      fonds.push({ nom: assezLong(nom) ? nom : "", isin, part, isin_ok: true, garder: true });
+      fonds.push({ nom: assezLong(nom) ? nom : "", isin, part, sfdr: sfdrDe(l), risque: risqueDe(l), isin_ok: true, garder: true });
     }
     if (/fonds\s+(en\s+)?euros?\b/i.test(l) && !/\b[A-Z]{2}[A-Z0-9]{9}[0-9]\b/.test(l) && !fonds.some((f) => !f.isin)) {
       const p = l.match(RE_PART);
-      fonds.push({ nom: nettoyerNom(l) || "Fonds en euros", isin: "", part: p ? Number(p[1].replace(",", ".")) : null, isin_ok: true, garder: true });
+      fonds.push({ nom: nettoyerNom(l) || "Fonds en euros", isin: "", part: p ? Number(p[1].replace(",", ".")) : null, sfdr: sfdrDe(l), risque: risqueDe(l), isin_ok: true, garder: true });
     }
     RE_ISIN.lastIndex = 0;
   });
@@ -102,10 +105,12 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
       etape(`<h2>${F.length ? `${F.length} fonds trouvé${F.length > 1 ? "s" : ""}` : "Aucun fonds reconnu"}</h2>
         <p class="al-import-src">${echapper(IMPORT.fichier.name)}${IMPORT.source ? ` · ${IMPORT.source}` : ""}</p>
         ${message ? `<p class="al-import-msg">${message}</p>` : ""}
-        ${F.length ? `<div class="al-import-table"><table class="al-table"><thead><tr><th></th><th>Fonds</th><th>Code ISIN</th><th class="al-part" style="text-align:right">Part</th></tr></thead><tbody>
+        ${F.length ? `<div class="al-import-table"><table class="al-table"><thead><tr><th></th><th>Fonds</th><th>Code ISIN</th><th>SFDR</th><th>Risque</th><th class="al-part" style="text-align:right">Poids</th></tr></thead><tbody>
           ${F.map((x, i) => `<tr data-i="${i}"><td style="width:28px"><input type="checkbox" data-k="garder" ${x.garder ? "checked" : ""} aria-label="Garder ce fonds" style="width:auto"></td>
             <td><input data-k="nom" value="${echapper(x.nom)}" placeholder="Nom du fonds à compléter">${deja(x.isin) ? `<small class="al-deja">déjà dans le portefeuille</small>` : ""}</td>
             <td class="al-isin"><input data-k="isin" value="${echapper(x.isin)}" maxlength="12" class="${x.isin && !isinValide(x.isin) ? "al-faux" : ""}"></td>
+            <td style="width:88px"><select data-k="sfdr"><option value="">—</option>${[6, 8, 9].map((a) => `<option value="${a}" ${x.sfdr === a ? "selected" : ""}>Art. ${a}</option>`).join("")}</select></td>
+            <td style="width:70px"><select data-k="risque"><option value="">—</option>${[1, 2, 3, 4, 5, 6, 7].map((a) => `<option value="${a}" ${x.risque === a ? "selected" : ""}>${a}/7</option>`).join("")}</select></td>
             <td class="al-part"><input data-k="part" value="${x.part == null ? "" : String(x.part).replace(".", ",")}" placeholder="—"></td></tr>`).join("")}
         </tbody></table></div>` : ""}
         <details class="al-ia" ${F.length ? "" : "open"}><summary>🤖 Lire avec l'IA (Gemini) ${F.length ? "si la lecture est incomplète" : ""}</summary>
@@ -116,10 +121,11 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
         ${!creer && F.length ? `<div class="al-profils" style="margin:0"><button type="button" class="puce" data-g="mode" data-v="ajouter" aria-pressed="true">Ajouter aux fonds actuels</button><button type="button" class="puce" data-g="mode" data-v="remplacer" aria-pressed="false">Remplacer les fonds actuels</button></div>` : ""}
         <div class="al-boutons"><button type="button" class="bouton bouton-discret" id="imp-autre">Autre fichier</button>
           ${F.length ? `<button type="button" class="bouton" id="imp-valider">${creer ? "Créer le portefeuille" : `Ajouter ${nbOk} fonds`}</button>` : `<button type="button" class="bouton bouton-discret" id="imp-fermer">Fermer</button>`}</div>`);
-      f.querySelectorAll("tr[data-i] input").forEach((inp) => inp.oninput = inp.onchange = () => {
+      f.querySelectorAll("tr[data-i] input, tr[data-i] select").forEach((inp) => inp.oninput = inp.onchange = () => {
         const x = F[+inp.closest("tr").dataset.i], k = inp.dataset.k;
         if (k === "garder") x.garder = inp.checked;
         else if (k === "isin") { x.isin = inp.value.toUpperCase().replace(/\s/g, ""); inp.value = x.isin; inp.classList.toggle("al-faux", !!x.isin && x.isin.length >= 12 && !isinValide(x.isin)); }
+        else if (k === "sfdr" || k === "risque") x[k] = inp.value ? Number(inp.value) : null;
         else if (k === "part") x.part = inp.value.trim() === "" ? null : Number(inp.value.replace(",", "."));
         else x.nom = inp.value;
         const b = document.getElementById("imp-valider"); if (b && !creer) b.textContent = `Ajouter ${F.filter((y) => y.garder).length} fonds`;
@@ -147,7 +153,7 @@ function ouvrirImport({ existants = [], creer = false } = {}) {
         if (sansNom) return revue("Complétez le nom de chaque fonds coché.");
         const nom = document.getElementById("imp-nom")?.value.trim();
         if (creer && !nom) return revue("Indiquez le nom du portefeuille à créer.");
-        resultat = { fonds: garde.map((x) => ({ nom: x.nom.trim(), isin: x.isin, part: x.part })), remplacer: f.querySelector('[data-v="remplacer"]')?.getAttribute("aria-pressed") === "true", nom };
+        resultat = { fonds: garde.map((x) => ({ nom: x.nom.trim(), isin: x.isin, part: x.part, sfdr: x.sfdr ?? null, risque: x.risque ?? null })), remplacer: f.querySelector('[data-v="remplacer"]')?.getAttribute("aria-pressed") === "true", nom };
         d.close();
       };
     }

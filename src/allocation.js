@@ -29,7 +29,7 @@ async function arbre(db) {
     db.prepare("SELECT id, nom, site, logo, maj_par, maj_le FROM alloc_assureurs ORDER BY nom COLLATE NOCASE").all(),
     db.prepare("SELECT id, assureur_id, nom, type, maj_par, maj_le FROM alloc_contrats ORDER BY nom COLLATE NOCASE").all(),
     db.prepare("SELECT id, contrat_id, nom, profil, maj_par, maj_le FROM alloc_portefeuilles ORDER BY nom COLLATE NOCASE").all(),
-    db.prepare("SELECT id, portefeuille_id, ordre, nom, isin, part FROM alloc_lignes ORDER BY portefeuille_id, ordre").all(),
+    db.prepare("SELECT id, portefeuille_id, ordre, nom, isin, part, sfdr, risque FROM alloc_lignes ORDER BY portefeuille_id, ordre").all(),
     db.prepare("SELECT cible, COUNT(*) AS n FROM alloc_commentaires GROUP BY cible").all(),
   ]);
   return { assureurs: a.results, contrats: c.results, portefeuilles: p.results, lignes: l.results,
@@ -128,15 +128,18 @@ export async function routeAllocation(request, env, chemin, moi, url) {
       const part = l.part === "" || l.part == null ? null : Number(String(l.part).replace(",", "."));
       if (!nom) return erreur(`Ligne ${i + 1} : le nom du fonds est obligatoire.`);
       if (isin && !isinValide(isin)) return erreur(`Ligne ${i + 1} : le code ISIN « ${isin} » n'est pas valide.`);
-      if (part !== null && (!Number.isFinite(part) || part < 0 || part > 100)) return erreur(`Ligne ${i + 1} : la part doit être comprise entre 0 et 100 %.`);
-      lignes.push([nom, isin || null, part === null ? null : Math.round(part * 100) / 100]);
+      if (part !== null && (!Number.isFinite(part) || part < 0 || part > 100)) return erreur(`Ligne ${i + 1} : le poids doit être compris entre 0 et 100 %.`);
+      const sfdr = l.sfdr === "" || l.sfdr == null ? null : Number(l.sfdr), risque = l.risque === "" || l.risque == null ? null : Number(l.risque);
+      if (sfdr !== null && ![6, 8, 9].includes(sfdr)) return erreur(`Ligne ${i + 1} : classement SFDR invalide (article 6, 8 ou 9).`);
+      if (risque !== null && !(Number.isInteger(risque) && risque >= 1 && risque <= 7)) return erreur(`Ligne ${i + 1} : le risque doit être compris entre 1 et 7.`);
+      lignes.push([nom, isin || null, part === null ? null : Math.round(part * 100) / 100, sfdr, risque]);
     }
     const total = lignes.reduce((s, l) => s + (l[2] || 0), 0);
-    if (total > 100.005) return erreur(`Le total des parts dépasse 100 % (${String(Math.round(total * 100) / 100).replace(".", ",")} %).`);
+    if (total > 100.005) return erreur(`Le total des poids dépasse 100 % (${String(Math.round(total * 100) / 100).replace(".", ",")} %).`);
     const t = maintenant();
     await db.batch([
       db.prepare("DELETE FROM alloc_lignes WHERE portefeuille_id = ?").bind(id),
-      ...lignes.map((l, i) => db.prepare("INSERT INTO alloc_lignes (portefeuille_id, ordre, nom, isin, part) VALUES (?, ?, ?, ?, ?)").bind(id, i, ...l)),
+      ...lignes.map((l, i) => db.prepare("INSERT INTO alloc_lignes (portefeuille_id, ordre, nom, isin, part, sfdr, risque) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(id, i, ...l)),
       db.prepare("UPDATE alloc_portefeuilles SET maj_par = ?, maj_le = ? WHERE id = ?").bind(qui, t, id),
     ]);
     return json({ ok: true });
@@ -189,10 +192,12 @@ const CONSIGNES_LECTURE = `Tu lis un document d'assureur ou de société de gest
 Relève uniquement les fonds (unités de compte, OPCVM, ETF, SCPI, fonds en euros) qui y figurent, avec :
 - nom : le nom du fonds tel qu'il est écrit ;
 - isin : le code ISIN exactement tel qu'il est écrit (12 caractères), ou une chaîne vide s'il n'y en a pas ;
-- part : le pourcentage d'allocation s'il est écrit pour ce fonds, sinon null.
+- part : le pourcentage d'allocation (poids) s'il est écrit pour ce fonds, sinon null ;
+- sfdr : 6, 8 ou 9 si le classement SFDR (article 6, 8 ou 9) est écrit pour ce fonds, sinon null ;
+- risque : l'indicateur de risque SRI (1 à 7) s'il est écrit pour ce fonds, sinon null.
 N'invente rien : si une information n'est pas écrite, laisse-la vide. Ne recopie jamais de nom de personne, d'adresse, de numéro de contrat ou de montant personnel.`;
 const SCHEMA_LECTURE = { type: "OBJECT", properties: { fonds: { type: "ARRAY", items: { type: "OBJECT",
-  properties: { nom: { type: "STRING" }, isin: { type: "STRING" }, part: { type: "NUMBER", nullable: true } }, required: ["nom", "isin"] } } }, required: ["fonds"] };
+  properties: { nom: { type: "STRING" }, isin: { type: "STRING" }, part: { type: "NUMBER", nullable: true }, sfdr: { type: "INTEGER", nullable: true }, risque: { type: "INTEGER", nullable: true } }, required: ["nom", "isin"] } } }, required: ["fonds"] };
 
 async function lireDocument(env, db, b64, type) {
   let liste;
@@ -218,7 +223,8 @@ async function lireDocument(env, db, b64, type) {
     const fonds = (Array.isArray(d.fonds) ? d.fonds : []).slice(0, 120).map((f) => {
       const isin = texte(f.isin, 20).toUpperCase().replace(/\s/g, "");
       const part = Number.isFinite(f.part) && f.part >= 0 && f.part <= 100 ? Math.round(f.part * 100) / 100 : null;
-      return { nom: texte(f.nom, 160), isin, part, isin_ok: !isin || isinValide(isin) };
+      const sfdr = [6, 8, 9].includes(f.sfdr) ? f.sfdr : null, risque = Number.isInteger(f.risque) && f.risque >= 1 && f.risque <= 7 ? f.risque : null;
+      return { nom: texte(f.nom, 160), isin, part, sfdr, risque, isin_ok: !isin || isinValide(isin) };
     }).filter((f) => f.nom);
     return { fonds, modele };
   }
