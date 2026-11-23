@@ -14,7 +14,7 @@ const SVG = {
 let D = { assureurs: [], contrats: [], portefeuilles: [], lignes: [], commentaires: {} };
 const sel = { a: null, c: null, p: null, f: null };   // assureur, contrat, portefeuille, fonds (ISIN)
 const ouverts = new Set();
-let brouillon = null, modifie = false, recherche = "";
+let brouillon = null, modifie = false, recherche = "", ongletDroite = "pourquoi";
 
 // ---------------------------------------------------------------- Outils
 function isinValide(isin) {
@@ -37,7 +37,14 @@ const contratsDe = (aid) => D.contrats.filter((c) => c.assureur_id === aid);
 const portefeuillesDe = (cid) => D.portefeuilles.filter((p) => p.contrat_id === cid);
 const lignesDe = (pid) => D.lignes.filter((l) => l.portefeuille_id === pid);
 const typeBadge = (t) => `<span class="al-type ${t}">${t === "per" ? "PER" : "AV"}</span>`;
-const point = (profil) => `<span class="al-point" style="${PROFILS[profil] ? `background:${PROFILS[profil][1]}` : ""}" title="${PROFILS[profil]?.[0] || "Sans profil"}"></span>`;
+const profilNom = (profil) => PROFILS[profil]?.[0] || profil || "Sans profil";
+const point = (profil) => `<span class="al-point" style="${PROFILS[profil] ? `background:${PROFILS[profil][1]}` : profil ? "background:var(--doux)" : ""}" title="${echapper(profilNom(profil))}"></span>`;
+// Logo de l'assureur : image déposée, sinon icône de son site, sinon initiales.
+const initialesLogo = (a) => `<span class="al-logo al-logo-txt" aria-hidden="true">${echapper(initiales(a.nom))}</span>`;
+const logo = (a, grand) => a.logo ? `<img class="al-logo${grand ? " grand" : ""}" src="${a.logo}" alt="" data-nom="${echapper(a.nom)}">`
+  : a.site ? `<img class="al-logo${grand ? " grand" : ""}" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(a.site)}&sz=64" alt="" data-nom="${echapper(a.nom)}" referrerpolicy="no-referrer">`
+  : initialesLogo(a).replace("al-logo al-logo-txt", `al-logo al-logo-txt${grand ? " grand" : ""}`);
+addEventListener("error", (e) => { const i = e.target; if (i instanceof HTMLImageElement && i.classList.contains("al-logo")) i.outerHTML = initialesLogo({ nom: i.dataset.nom }).replace("al-logo al-logo-txt", "al-logo al-logo-txt" + (i.classList.contains("grand") ? " grand" : "")); }, true);
 function barre(lignes) {
   const tot = lignes.reduce((s, l) => s + (Number(l.part) || 0), 0);
   return `<div class="al-barre" role="img" aria-label="Répartition">${lignes.map((l, i) => Number(l.part) > 0 ? `<span style="width:${l.part}%;background:${COULEURS[i % COULEURS.length]}" title="${echapper(l.nom)} : ${nb(l.part)} %"></span>` : "").join("")}${tot < 100 ? `<span style="width:${100 - tot}%"></span>` : ""}</div>`;
@@ -63,6 +70,7 @@ async function choisir(type, id, sansConfirmer) {
   if (type === "a" && assureur(id)) sel.a = id;
   if (sel.a) ouverts.add("a" + sel.a);
   if (sel.c) ouverts.add("c" + sel.c);
+  if (type === "p") ongletDroite = sel.f && lignesDe(sel.p).some((l) => l.isin === sel.f) ? ongletDroite : "pourquoi";
   if (sel.p) brouillon = lignesDe(sel.p).map((l) => ({ nom: l.nom, isin: l.isin || "", part: l.part ?? "" }));
   synchroniserUrl(); rendre();
 }
@@ -84,7 +92,7 @@ function rendreArbre() {
   $("arbre").innerHTML = liste.map((a) => {
     const ouvert = q || ouverts.has("a" + a.id), cts = contratsDe(a.id).filter((c) => !q || correspond(a.nom) || ctOk(c));
     return `<li class="al-assureur ${ouvert ? "al-ouvert" : ""}" role="treeitem" aria-expanded="${!!ouvert}">
-      <button type="button" class="al-noeud" data-a="${a.id}" aria-current="${sel.a === a.id && !sel.c}">${SVG.chevron}<span class="al-nom">${echapper(a.nom)}</span><small>${contratsDe(a.id).length}</small></button>
+      <button type="button" class="al-noeud" data-a="${a.id}" aria-current="${sel.a === a.id && !sel.c}">${SVG.chevron}${logo(a)}<span class="al-nom">${echapper(a.nom)}</span><small>${contratsDe(a.id).length}</small></button>
       ${ouvert ? `<ul role="group">${cts.map((c) => {
         const co = q || ouverts.has("c" + c.id), pfs = portefeuillesDe(c.id).filter((p) => !q || correspond(c.nom) || correspond(a.nom) || pfOk(p));
         return `<li class="${co ? "al-ouvert" : ""}" role="treeitem" aria-expanded="${!!co}">
@@ -104,7 +112,7 @@ function rendreArbre() {
 function fil() {
   const a = assureur(sel.a), c = contrat(sel.c);
   const morceaux = [];
-  if (a) morceaux.push(`<button type="button" data-aller-a="${a.id}">${echapper(a.nom)}</button>`);
+  if (a) morceaux.push(`<button type="button" data-aller-a="${a.id}">${logo(a)} ${echapper(a.nom)}</button>`);
   if (c && sel.p) morceaux.push(`<button type="button" data-aller-c="${c.id}">${echapper(c.nom)}</button>`);
   return morceaux.length ? `<nav class="al-fil" aria-label="Fil d'Ariane">${morceaux.join("<span>›</span>")}</nav>` : "";
 }
@@ -123,7 +131,7 @@ function rendreCentre() {
       <div class="al-actions"><button type="button" class="bouton bouton-discret" id="renommer">${SVG.crayon} Modifier</button><button type="button" class="bouton bouton-discret" id="supprimer">${SVG.poubelle} Supprimer</button></div></div>
       <div class="al-section"><h3>Portefeuilles proposés dans ce contrat</h3>
       ${pfs.length ? `<div class="al-cartes">${pfs.map((p) => { const l = lignesDe(p.id), tot = l.reduce((s, x) => s + (x.part || 0), 0);
-        return `<button type="button" class="al-carte" data-p="${p.id}"><b>${point(p.profil)} ${echapper(p.nom)}</b><small>${PROFILS[p.profil]?.[0] || "Sans profil"} · ${l.length} fonds${tot ? ` · ${nb(tot)} %` : ""}</small>${l.length ? barre(l) : ""}${D.commentaires["p:" + p.id] ? `<small>💬 ${D.commentaires["p:" + p.id]} commentaire${D.commentaires["p:" + p.id] > 1 ? "s" : ""}</small>` : ""}</button>`; }).join("")}</div>`
+        return `<button type="button" class="al-carte" data-p="${p.id}"><b>${point(p.profil)} ${echapper(p.nom)}</b><small>${echapper(profilNom(p.profil))} · ${l.length} fonds${tot ? ` · ${nb(tot)} %` : ""}</small>${l.length ? barre(l) : ""}${D.commentaires["p:" + p.id] ? `<small>💬 ${D.commentaires["p:" + p.id]} commentaire${D.commentaires["p:" + p.id] > 1 ? "s" : ""}</small>` : ""}</button>`; }).join("")}</div>`
         : `<p class="al-astuce">Aucun portefeuille dans ce contrat. Créez le premier, par exemple « Prudent » ou « Équilibré », puis ajoutez ses fonds.</p>`}
       <p class="al-actions" style="margin-top:14px"><button type="button" class="bouton" id="ajout">+ Ajouter un portefeuille</button><button type="button" class="bouton bouton-discret" id="importer">📄 Créer depuis un document</button></p></div>`;
     brancherFil(z);
@@ -144,8 +152,8 @@ function rendreCentre() {
   }
   if (sel.a) {
     const a = assureur(sel.a), cts = contratsDe(a.id);
-    z.innerHTML = `<div class="al-entete"><div><h2>${echapper(a.nom)}</h2><div class="al-meta">${cts.length} contrat${cts.length > 1 ? "s" : ""}</div>${meta(a)}</div>
-      <div class="al-actions"><button type="button" class="bouton bouton-discret" id="renommer">${SVG.crayon} Renommer</button><button type="button" class="bouton bouton-discret" id="supprimer">${SVG.poubelle} Supprimer</button></div></div>
+    z.innerHTML = `<div class="al-entete"><div class="al-titre-logo">${logo(a, true)}<div><h2>${echapper(a.nom)}</h2><div class="al-meta">${a.site ? `<a href="https://${echapper(a.site)}" target="_blank" rel="noopener noreferrer">${echapper(a.site)} ↗</a> · ` : ""}${cts.length} contrat${cts.length > 1 ? "s" : ""}</div>${meta(a)}</div></div>
+      <div class="al-actions"><button type="button" class="bouton bouton-discret" id="renommer">${SVG.crayon} Modifier</button><button type="button" class="bouton bouton-discret" id="supprimer">${SVG.poubelle} Supprimer</button></div></div>
       <div class="al-section"><h3>Contrats</h3>
       ${cts.length ? `<div class="al-cartes">${cts.map((c) => `<button type="button" class="al-carte" data-c="${c.id}"><b>${typeBadge(c.type)} ${echapper(c.nom)}</b><small>${TYPES[c.type]} · ${portefeuillesDe(c.id).length} portefeuille${portefeuillesDe(c.id).length > 1 ? "s" : ""}</small></button>`).join("")}</div>`
         : `<p class="al-astuce">Aucun contrat pour cet assureur. Ajoutez ses contrats d'assurance-vie et de PER.</p>`}
@@ -167,7 +175,7 @@ function rendrePortefeuille(z) {
   const erreurs = brouillon.map((l) => { const i = l.isin.trim().toUpperCase(); return i && !isinValide(i); });
   z.innerHTML = fil() + `<div class="al-entete"><div><h2>${point(p.profil)} ${echapper(p.nom)}</h2><div class="al-meta">${typeBadge(c.type)} ${echapper(c.nom)}</div>${meta(p)}</div>
       <div class="al-actions"><button type="button" class="bouton bouton-discret" id="renommer">${SVG.crayon} Renommer</button><button type="button" class="bouton bouton-discret" id="supprimer">${SVG.poubelle} Supprimer</button></div></div>
-    <div class="al-profils" role="group" aria-label="Profil">${Object.entries(PROFILS).map(([k, [l]]) => `<button type="button" class="puce" data-profil="${k}" aria-pressed="${p.profil === k}">${l}</button>`).join("")}</div>
+    <div class="al-profils" role="group" aria-label="Profil">${Object.entries(PROFILS).map(([k, [l]]) => `<button type="button" class="puce" data-profil="${k}" aria-pressed="${p.profil === k}">${l}</button>`).join("")}<button type="button" class="puce" id="profil-libre" aria-pressed="${!!p.profil && !PROFILS[p.profil]}">✏️ ${p.profil && !PROFILS[p.profil] ? echapper(p.profil) : "Autre…"}</button></div>
     <div class="al-section"><h3>Fonds du portefeuille <small>${brouillon.length} ligne${brouillon.length > 1 ? "s" : ""}</small></h3>
       ${brouillon.length ? `<table class="al-table"><thead><tr><th class="al-coul"></th><th>Fonds</th><th>Code ISIN</th><th class="al-part" style="text-align:right">Part</th><th class="al-bt"></th></tr></thead><tbody>
         ${brouillon.map((l, i) => `<tr class="${sel.f && l.isin.toUpperCase() === sel.f ? "al-actif" : ""}" data-ligne="${i}">
@@ -182,8 +190,7 @@ function rendrePortefeuille(z) {
         ${brouillon.length ? `<span class="al-total ${Math.abs(total - 100) < .01 ? "ok" : total > 100 ? "ko" : ""}">Total : <b>${nb(total)} %</b>${Math.abs(total - 100) < .01 ? " ✓" : total > 100 ? " (dépasse 100 %)" : total ? ` (reste ${nb(100 - total)} %)` : ""}</span>` : ""}</div>
       ${total > 0 ? barre(brouillon.map((l) => ({ ...l, part: Number(String(l.part).replace(",", ".")) || 0 }))) + `<div class="al-legende">${brouillon.map((l, i) => Number(String(l.part).replace(",", ".")) > 0 ? `<span><i style="background:${COULEURS[i % COULEURS.length]}"></i>${echapper(l.nom || "Sans nom")} ${nb(String(l.part).replace(",", "."))} %</span>` : "").join("")}</div>` : ""}
       ${modifie ? `<div class="al-enregistrer" role="status"><span>Modifications non enregistrées</span><button type="button" class="bouton bouton-discret" id="annuler">Annuler</button><button type="button" class="bouton" id="enregistrer">Enregistrer</button></div>` : ""}
-    </div>
-    <div class="al-section" id="pourquoi"><h3>Pourquoi ce choix <small>visible par tous les conseillers</small></h3><div id="com-p"></div></div>`;
+    </div>`;
   brancherFil(z);
   $("renommer").onclick = () => modifier("portefeuille", p);
   $("supprimer").onclick = () => supprimer("portefeuille", p, `le portefeuille « ${p.nom} » et ses commentaires`);
@@ -191,6 +198,12 @@ function rendrePortefeuille(z) {
     const profil = p.profil === b.dataset.profil ? "" : b.dataset.profil;
     try { await appelApi(`/api/allocation/portefeuille/${p.id}`, "PUT", { nom: p.nom, profil }); p.profil = profil || null; rendreArbre(); rendreCentre(); } catch (e) { notifier(e.message, true); }
   });
+  $("profil-libre").onclick = async () => {
+    const libre = p.profil && !PROFILS[p.profil] ? p.profil : "";
+    const v = await dialogue("Profil personnalisé", `<label>Profil<input type="text" name="profil" value="${echapper(libre)}" placeholder="Ex. : Retraite 2035, Revenus réguliers…" maxlength="40" autocomplete="off"></label><p>Laissez vide pour retirer le profil.</p>`, "Enregistrer");
+    if (!v) return;
+    try { await appelApi(`/api/allocation/portefeuille/${p.id}`, "PUT", { nom: p.nom, profil: v.profil.trim() }); p.profil = v.profil.trim() || null; rendreArbre(); rendreCentre(); } catch (e) { notifier(e.message, true); }
+  };
   z.querySelectorAll("[data-ligne] input").forEach((inp) => {
     inp.oninput = () => {
       const i = +inp.closest("tr").dataset.ligne, champ = inp.dataset.champ;
@@ -199,7 +212,7 @@ function rendrePortefeuille(z) {
       if (!modifie) { modifie = true; rendreCentreEnGardantFocus(inp); }
       else if (champ === "part") majTotal();
     };
-    inp.onfocus = () => { const isin = brouillon[+inp.closest("tr").dataset.ligne].isin; if (isin && isinValide(isin) && sel.f !== isin) { sel.f = isin; synchroniserUrl(); rendreDroite(); z.querySelectorAll("[data-ligne]").forEach((tr) => tr.classList.toggle("al-actif", brouillon[+tr.dataset.ligne].isin === isin)); } };
+    inp.onfocus = () => { const isin = brouillon[+inp.closest("tr").dataset.ligne].isin; if (isin && isinValide(isin) && (sel.f !== isin || ongletDroite !== "fonds")) { sel.f = isin; ongletDroite = "fonds"; synchroniserUrl(); rendreDroite(); z.querySelectorAll("[data-ligne]").forEach((tr) => tr.classList.toggle("al-actif", brouillon[+tr.dataset.ligne].isin === isin)); } };
   });
   z.querySelectorAll("[data-retirer]").forEach((b) => b.onclick = () => { brouillon.splice(+b.dataset.retirer, 1); modifie = true; rendreCentre(); });
   z.querySelectorAll("[data-monter]").forEach((b) => b.onclick = () => { const i = +b.dataset.monter; [brouillon[i - 1], brouillon[i]] = [brouillon[i], brouillon[i - 1]]; modifie = true; rendreCentre(); });
@@ -213,7 +226,6 @@ function rendrePortefeuille(z) {
   };
   if ($("annuler")) $("annuler").onclick = () => { brouillon = lignesDe(p.id).map((l) => ({ nom: l.nom, isin: l.isin || "", part: l.part ?? "" })); modifie = false; rendreCentre(); };
   if ($("enregistrer")) $("enregistrer").onclick = enregistrerLignes;
-  commentaires("p:" + p.id, $("com-p"), "Expliquez le choix de ce portefeuille : objectif, horizon, contexte de marché, points de vigilance…");
 }
 // Ré-affiche le centre (barre « Enregistrer », totaux) sans perdre la saisie en cours.
 function rendreCentreEnGardantFocus(inp) {
@@ -234,38 +246,55 @@ async function enregistrerLignes() {
   } catch (e) { notifier(e.message, true); }
 }
 
-// ---------------------------------------------------------------- Colonne de droite : le fonds
-function rendreDroite() {
-  const z = $("droite");
-  if (sel.f) {
-    const usages = D.lignes.filter((l) => l.isin === sel.f), nom = usages[0]?.nom || brouillon?.find((l) => l.isin === sel.f)?.nom || "Fonds";
-    z.innerHTML = `<div class="al-zone"><div class="al-titre-panneau"><span>Fonds sélectionné</span><button type="button" class="al-icone" id="fermer-f" aria-label="Fermer">✕</button></div>
-        <h3 class="al-fonds-nom">${echapper(nom)}</h3><div class="al-isin-ligne">${sel.f}<button type="button" class="al-icone" id="copier-isin" title="Copier l'ISIN" aria-label="Copier l'ISIN">${SVG.copier}</button></div></div>
-      <div class="al-defile">
-        <div class="al-zone"><div class="al-titre-panneau">Utilisé dans ${usages.length} portefeuille${usages.length > 1 ? "s" : ""}</div>
-          ${usages.length ? `<ul class="al-utilise">${usages.map((l) => { const p = portefeuille(l.portefeuille_id), c = contrat(p.contrat_id), a = assureur(c.assureur_id);
-            return `<li><button type="button" data-p="${p.id}"><span>${echapper(a.nom)} › ${echapper(c.nom)} › <b>${echapper(p.nom)}</b></span><small style="white-space:nowrap">${l.part != null ? nb(l.part) + " %" : ""}</small></button></li>`; }).join("")}</ul>` : `<p class="al-astuce">Pas encore enregistré dans un portefeuille.</p>`}</div>
-        <div class="al-zone"><div class="al-titre-panneau">Fiches et performances</div>
-          <div class="al-liens">
-            <a class="al-lien" href="${lienAmf(sel.f)}" target="_blank" rel="noopener noreferrer"><b>Base officielle de l'AMF (GECO)</b><span>Documents réglementaires et valeurs liquidatives, si le fonds y est enregistré</span></a>
-            <button type="button" class="al-lien" data-ext="https://www.quantalys.com/Recherche"><b>Quantalys</b><span>Performances, volatilité, notation : l'ISIN est copié, collez-le dans la recherche</span></button>
-            <button type="button" class="al-lien" data-ext="https://global.morningstar.com/fr/fonds"><b>Morningstar</b><span>Performances et notation : l'ISIN est copié, collez-le dans la recherche</span></button>
-          </div><p class="al-astuce" style="margin:8px 0 0;font-size:.78rem">Sites externes gratuits ; le site ne recopie aucune performance.</p></div>
-        <div class="al-zone"><div class="al-titre-panneau">Notre avis sur ce fonds</div><div id="com-f"></div></div>
-      </div>`;
-    $("fermer-f").onclick = () => { sel.f = null; synchroniserUrl(); rendreDroite(); $("centre").querySelectorAll(".al-actif").forEach((x) => x.classList.remove("al-actif")); };
-    $("copier-isin").onclick = () => copier(sel.f);
-    z.querySelectorAll("[data-ext]").forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(sel.f); notifier(`ISIN ${sel.f} copié : collez-le dans la recherche.`); } catch {} window.open(b.dataset.ext, "_blank", "noopener"); });
-    z.querySelectorAll("[data-p]").forEach((b) => b.onclick = () => choisir("p", +b.dataset.p));
-    commentaires("f:" + sel.f, $("com-f"), "Pourquoi ce fonds : gestion, frais, régularité, rôle dans le portefeuille…");
-    return;
-  }
+// ---------------------------------------------------------------- Colonne de droite : « Pourquoi ce choix » et le fonds
+function htmlFonds() {
+  const usages = D.lignes.filter((l) => l.isin === sel.f), nom = usages[0]?.nom || brouillon?.find((l) => l.isin === sel.f)?.nom || "Fonds";
+  return `<div class="al-zone"><div class="al-titre-panneau"><span>Fonds sélectionné</span><button type="button" class="al-icone" id="fermer-f" aria-label="Fermer">✕</button></div>
+      <h3 class="al-fonds-nom">${echapper(nom)}</h3><div class="al-isin-ligne">${sel.f}<button type="button" class="al-icone" id="copier-isin" title="Copier l'ISIN" aria-label="Copier l'ISIN">${SVG.copier}</button></div></div>
+    <div class="al-zone"><div class="al-titre-panneau">Utilisé dans ${usages.length} portefeuille${usages.length > 1 ? "s" : ""}</div>
+      ${usages.length ? `<ul class="al-utilise">${usages.map((l) => { const p = portefeuille(l.portefeuille_id), c = contrat(p.contrat_id), a = assureur(c.assureur_id);
+        return `<li><button type="button" data-p="${p.id}"><span>${echapper(a.nom)} › ${echapper(c.nom)} › <b>${echapper(p.nom)}</b></span><small style="white-space:nowrap">${l.part != null ? nb(l.part) + " %" : ""}</small></button></li>`; }).join("")}</ul>` : `<p class="al-astuce">Pas encore enregistré dans un portefeuille.</p>`}</div>
+    <div class="al-zone"><div class="al-titre-panneau">Fiches et performances</div>
+      <div class="al-liens">
+        <a class="al-lien" href="${lienAmf(sel.f)}" target="_blank" rel="noopener noreferrer"><b>Base officielle de l'AMF (GECO)</b><span>Documents réglementaires et valeurs liquidatives, si le fonds y est enregistré</span></a>
+        <button type="button" class="al-lien" data-ext="https://www.quantalys.com/Recherche"><b>Quantalys</b><span>Performances, volatilité, notation : l'ISIN est copié, collez-le dans la recherche</span></button>
+        <button type="button" class="al-lien" data-ext="https://global.morningstar.com/fr/fonds"><b>Morningstar</b><span>Performances et notation : l'ISIN est copié, collez-le dans la recherche</span></button>
+      </div><p class="al-astuce" style="margin:8px 0 0;font-size:.78rem">Sites externes gratuits ; le site ne recopie aucune performance.</p></div>
+    <div class="al-zone"><div class="al-titre-panneau">Notre avis sur ce fonds</div><div id="com-f"></div></div>`;
+}
+function brancherFonds(z) {
+  $("fermer-f").onclick = () => { sel.f = null; ongletDroite = "pourquoi"; synchroniserUrl(); rendreDroite(); $("centre").querySelectorAll(".al-actif").forEach((x) => x.classList.remove("al-actif")); };
+  $("copier-isin").onclick = () => copier(sel.f);
+  z.querySelectorAll("[data-ext]").forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(sel.f); notifier(`ISIN ${sel.f} copié : collez-le dans la recherche.`); } catch {} window.open(b.dataset.ext, "_blank", "noopener"); });
+  z.querySelectorAll("[data-p]").forEach((b) => b.onclick = () => choisir("p", +b.dataset.p));
+  commentaires("f:" + sel.f, $("com-f"), "Pourquoi ce fonds : gestion, frais, régularité, rôle dans le portefeuille…");
+}
+function htmlTop() {
   const compte = new Map();
   for (const l of D.lignes) if (l.isin) { const x = compte.get(l.isin) || { nom: l.nom, n: 0 }; x.n++; compte.set(l.isin, x); }
   const top = [...compte.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 12);
-  z.innerHTML = `<div class="al-zone"><div class="al-titre-panneau">Détail d'un fonds</div><p class="al-astuce" style="margin:0">Cliquez sur un fonds d'un portefeuille pour voir où il est utilisé et l'avis des conseillers.</p></div>
-    ${top.length ? `<div class="al-defile"><div class="al-zone"><div class="al-titre-panneau">Fonds les plus utilisés au cabinet</div><ul class="al-top">${top.map(([isin, x]) => `<li><button type="button" data-f="${isin}"><span>${echapper(x.nom)}</span><span class="doux petit">${x.n}×</span><small>${isin}</small></button></li>`).join("")}</ul></div></div>` : ""}`;
-  z.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { sel.f = b.dataset.f; synchroniserUrl(); rendreDroite(); });
+  return `<div class="al-zone"><p class="al-astuce" style="margin:0">Cliquez sur un fonds pour voir où il est utilisé, ses fiches et l'avis des conseillers.</p></div>
+    ${top.length ? `<div class="al-zone"><div class="al-titre-panneau">Fonds les plus utilisés au cabinet</div><ul class="al-top">${top.map(([isin, x]) => `<li><button type="button" data-f="${isin}"><span>${echapper(x.nom)}</span><span class="doux petit">${x.n}×</span><small>${isin}</small></button></li>`).join("")}</ul></div>` : ""}`;
+}
+function rendreDroite() {
+  const z = $("droite");
+  const brancherTop = () => z.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { sel.f = b.dataset.f; ongletDroite = "fonds"; synchroniserUrl(); rendreDroite(); });
+  if (sel.p) {
+    const n = D.commentaires["p:" + sel.p] || 0;
+    z.innerHTML = `<div class="al-onglets" role="tablist">
+        <button type="button" role="tab" aria-selected="${ongletDroite === "pourquoi"}" data-onglet="pourquoi">💬 Pourquoi ce choix${n ? ` <span class="al-badge">${n}</span>` : ""}</button>
+        <button type="button" role="tab" aria-selected="${ongletDroite === "fonds"}" data-onglet="fonds">📈 Fonds</button></div>
+      <div class="al-defile" role="tabpanel">${ongletDroite === "pourquoi"
+        ? `<div class="al-zone"><p class="al-astuce" style="margin:0 0 10px">Les raisons de ce portefeuille, visibles par tous les conseillers.</p><div id="com-p"></div></div>`
+        : sel.f ? htmlFonds() : htmlTop()}</div>`;
+    z.querySelectorAll("[data-onglet]").forEach((b) => b.onclick = () => { ongletDroite = b.dataset.onglet; rendreDroite(); });
+    if (ongletDroite === "pourquoi") commentaires("p:" + sel.p, $("com-p"), "Expliquez le choix de ce portefeuille : objectif, horizon, contexte de marché, points de vigilance…");
+    else if (sel.f) brancherFonds(z); else brancherTop();
+    return;
+  }
+  if (sel.f) { z.innerHTML = `<div class="al-defile">${htmlFonds()}</div>`; brancherFonds(z); return; }
+  z.innerHTML = `<div class="al-zone" style="padding-bottom:0"><div class="al-titre-panneau">Détail d'un fonds</div></div><div class="al-defile">${htmlTop()}</div>`;
+  brancherTop();
 }
 
 // ---------------------------------------------------------------- Commentaires « Pourquoi ce choix »
@@ -280,11 +309,11 @@ async function commentaires(cible, el, aide) {
   const ta = el.querySelector("textarea");
   el.querySelector(".al-ecrire .bouton").onclick = async () => {
     if (!ta.value.trim()) { ta.focus(); return; }
-    try { await appelApi("/api/allocation/commentaires", "POST", { cible, texte: ta.value }); D.commentaires[cible] = (D.commentaires[cible] || 0) + 1; commentaires(cible, el, aide); } catch (e) { notifier(e.message, true); }
+    try { await appelApi("/api/allocation/commentaires", "POST", { cible, texte: ta.value }); D.commentaires[cible] = (D.commentaires[cible] || 0) + 1; if (cible.startsWith("p:")) rendreDroite(); else commentaires(cible, el, aide); } catch (e) { notifier(e.message, true); }
   };
   el.querySelectorAll("[data-suppr]").forEach((b) => b.onclick = async () => {
     if (!(await confirmer("Supprimer ce commentaire ?", "Il ne sera plus visible par les autres conseillers.", "Supprimer"))) return;
-    try { await appelApi("/api/allocation/commentaires/" + b.dataset.suppr, "DELETE"); D.commentaires[cible]--; commentaires(cible, el, aide); } catch (e) { notifier(e.message, true); }
+    try { await appelApi("/api/allocation/commentaires/" + b.dataset.suppr, "DELETE"); D.commentaires[cible]--; if (cible.startsWith("p:")) rendreDroite(); else commentaires(cible, el, aide); } catch (e) { notifier(e.message, true); }
   });
   el.querySelectorAll("[data-modif]").forEach((b) => b.onclick = () => {
     const art = b.closest("article"), c = liste.find((x) => x.id === +b.dataset.modif);
@@ -314,10 +343,30 @@ const champNom = (lib, val, ex) => `<label>${lib}<input type="text" name="nom" v
 const puces = (g, lib, options, defaut) => `<label>${lib}<span class="al-profils" style="margin:0">${options.map(([v, l]) => `<button type="button" class="puce" data-g="${g}" data-v="${v}" aria-pressed="${v === defaut}">${l}</button>`).join("")}</span></label>`;
 const confirmer = async (titre, texte, bouton) => !!(await dialogue(titre, `<p>${texte}</p>`, bouton, true));
 
+// Champs du logo : site internet (icône récupérée automatiquement) ou image déposée.
+const champsLogo = (a = {}) => `<label>Site internet de l'assureur (facultatif)<input type="text" name="site" value="${echapper(a.site || "")}" placeholder="Ex. : assureur.fr" maxlength="200" autocomplete="off"></label>
+  <p style="margin-top:-6px;font-size:.8rem">Son logo (l'icône du site) s'affichera automatiquement.</p>
+  <label>Ou déposez le logo (PNG, JPG)<input type="file" name="logo" accept="image/png,image/jpeg,image/webp"></label>
+  ${a.logo ? `<label class="al-coche"><input type="checkbox" name="sans_logo" style="width:auto"> Retirer le logo déposé</label>` : ""}`;
+// Réduit l'image à 128 px au plus (le site n'enregistre qu'une petite vignette).
+async function vignette(fichier) {
+  if (!fichier || !fichier.size) return undefined;
+  if (fichier.size > 5 * 1024 * 1024) throw new Error("Image trop lourde (5 Mo au plus).");
+  const img = await createImageBitmap(fichier), k = Math.min(1, 128 / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/png");
+}
+async function corpsAssureur(v, a = {}) {
+  const corps = { nom: v.nom, site: v.site || "" };
+  const image = await vignette(v.logo);
+  if (image) corps.logo = image; else if (v.sans_logo) corps.logo = "";
+  return corps;
+}
 async function ajouterAssureur() {
-  const v = await dialogue("Nouvel assureur", champNom("Nom de l'assureur", "", "Ex. : nom de la compagnie"), "Ajouter");
+  const v = await dialogue("Nouvel assureur", champNom("Nom de l'assureur", "", "Ex. : nom de la compagnie") + champsLogo(), "Ajouter");
   if (!v) return;
-  try { const r = await appelApi("/api/allocation/assureur", "POST", { nom: v.nom }); await charger(); choisir("a", r.id, true); } catch (e) { notifier(e.message, true); }
+  try { const r = await appelApi("/api/allocation/assureur", "POST", await corpsAssureur(v)); await charger(); choisir("a", r.id, true); } catch (e) { notifier(e.message, true); }
 }
 async function ajouterContrat(aid) {
   const v = await dialogue("Nouveau contrat", champNom("Nom du contrat", "", "Ex. : nom commercial du contrat") + puces("type", "Type de contrat", [["av", "Assurance-vie"], ["per", "PER"]], "av"), "Ajouter");
@@ -331,9 +380,10 @@ async function ajouterPortefeuille(cid) {
 }
 async function modifier(type, x) {
   const extra = type === "contrat" ? puces("type", "Type de contrat", [["av", "Assurance-vie"], ["per", "PER"]], x.type) : "";
-  const v = await dialogue(type === "contrat" ? "Modifier le contrat" : "Renommer", champNom("Nom", x.nom, "") + extra, "Enregistrer");
+  const v = await dialogue(type === "contrat" ? "Modifier le contrat" : type === "assureur" ? "Modifier l'assureur" : "Renommer", champNom("Nom", x.nom, "") + extra + (type === "assureur" ? champsLogo(x) : ""), "Enregistrer");
   if (!v) return;
-  const corps = { nom: v.nom };
+  let corps = { nom: v.nom };
+  if (type === "assureur") try { corps = await corpsAssureur(v, x); } catch (e) { notifier(e.message, true); return; }
   if (type === "contrat") corps.type = v.type || x.type;
   if (type === "portefeuille") corps.profil = x.profil || "";
   try { await appelApi(`/api/allocation/${type}/${x.id}`, "PUT", corps); await charger(); rendre(); } catch (e) { notifier(e.message, true); }

@@ -147,6 +147,20 @@
     .bouton.danger { background: var(--ko); border-color: var(--ko); color: #fff; }
 
 
+
+    /* Logos des assureurs */
+    .al-logo { width: 20px; height: 20px; border-radius: 5px; flex: none; object-fit: contain; background: #fff; vertical-align: -5px; }
+    .al-logo.grand { width: 48px; height: 48px; border-radius: 12px; padding: 4px; box-sizing: border-box; border: 1px solid var(--bord); }
+    .al-logo-txt { display: inline-grid; place-items: center; background: var(--accent-doux); color: var(--accent-fonce); font-size: .6rem; font-weight: 700; }
+    .al-logo-txt.grand { font-size: 1rem; padding: 0; }
+    .al-titre-logo { display: flex; gap: 14px; align-items: center; }
+    .al-fil .al-logo { width: 16px; height: 16px; vertical-align: -3px; }
+    /* Onglets de la colonne de droite */
+    .al-onglets { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--bord); }
+    .al-onglets button { font: inherit; font-size: .88rem; font-weight: 600; padding: 13px 10px; border: 0; background: none; color: var(--doux); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .al-onglets button[aria-selected="true"] { color: var(--accent-fonce); border-bottom-color: var(--accent); }
+    .al-onglets button:hover { color: var(--texte); }
+    .al-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--accent-texte); font-size: .7rem; margin-left: 4px; }
     /* Import de documents */
     .al-dialogue.al-large { width: min(920px, calc(100vw - 32px)); }
     .al-depot { display: grid; justify-items: center; gap: 4px; padding: 34px 20px; border: 2px dashed var(--bord-fort); border-radius: 14px; cursor: pointer; text-align: center; font-weight: 400 !important; }

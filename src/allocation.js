@@ -9,7 +9,7 @@ const erreur = (m, s = 400) => json({ erreur: m }, s);
 const lire = async (r) => { try { return await r.json(); } catch { return {}; } };
 const maintenant = () => new Date().toISOString();
 const texte = (x, max) => String(x ?? "").replace(/[\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
-const TYPES = ["av", "per"], PROFILS = ["", "prudent", "equilibre", "dynamique", "offensif"];
+const TYPES = ["av", "per"];
 
 // ISIN : 2 lettres (pays), 9 caractères, 1 chiffre de contrôle (algorithme de Luhn sur les chiffres obtenus).
 export function isinValide(isin) {
@@ -26,7 +26,7 @@ export function isinValide(isin) {
 
 async function arbre(db) {
   const [a, c, p, l, n] = await Promise.all([
-    db.prepare("SELECT id, nom, maj_par, maj_le FROM alloc_assureurs ORDER BY nom COLLATE NOCASE").all(),
+    db.prepare("SELECT id, nom, site, logo, maj_par, maj_le FROM alloc_assureurs ORDER BY nom COLLATE NOCASE").all(),
     db.prepare("SELECT id, assureur_id, nom, type, maj_par, maj_le FROM alloc_contrats ORDER BY nom COLLATE NOCASE").all(),
     db.prepare("SELECT id, contrat_id, nom, profil, maj_par, maj_le FROM alloc_portefeuilles ORDER BY nom COLLATE NOCASE").all(),
     db.prepare("SELECT id, portefeuille_id, ordre, nom, isin, part FROM alloc_lignes ORDER BY portefeuille_id, ordre").all(),
@@ -84,7 +84,19 @@ export async function routeAllocation(request, env, chemin, moi, url) {
     if (!nom) return erreur("Le nom est obligatoire.");
     const champs = { nom };
     if (m[1] === "contrat") { if (d.type !== undefined || methode === "POST") { if (!TYPES.includes(d.type)) return erreur("Type de contrat invalide."); champs.type = d.type; } }
-    if (m[1] === "portefeuille" && d.profil !== undefined) { if (!PROFILS.includes(d.profil || "")) return erreur("Profil invalide."); champs.profil = d.profil || null; }
+    if (m[1] === "portefeuille" && d.profil !== undefined) champs.profil = texte(d.profil, 40) || null;   // profil type ou libre (40 caractères)
+    if (m[1] === "assureur") {
+      if (d.site !== undefined) {
+        const site = texte(d.site, 200).toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#]/)[0];
+        if (site && !/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(site)) return erreur("Adresse du site invalide (exemple : assureur.fr).");
+        champs.site = site || null;
+      }
+      if (d.logo !== undefined) {
+        const logo = String(d.logo || "");
+        if (logo && (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(logo) || logo.length > 200000)) return erreur("Logo invalide ou trop lourd.");
+        champs.logo = logo || null;
+      }
+    }
     const t = maintenant();
     if (methode === "POST") {
       if (T.parent) {
