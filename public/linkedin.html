@@ -19,6 +19,7 @@
   <script src="/fiches-suite.js"></script>
   <script src="/fiches-nouvelles.js"></script>
   <script src="/visuels-linkedin.js"></script>
+  <script src="/editeur-visuel.js"></script>
   <script src="/video-simulations.js"></script>
   <script src="/video-apercu.js"></script>
   <script src="/video-creation.js"></script>
@@ -397,11 +398,17 @@
     .lp-image-grille { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 18px; align-items: start; }
     @media (max-width: 640px) { .lp-image-grille { grid-template-columns: minmax(0, 1fr); } }
     .lp-image-zone { display: grid; gap: 8px; }
-    .lp-image-zone img { width: 100%; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+    .lp-image-zone img { width: 100%; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.18); display: block; }
+    .lp-image-vue, .lp-diapo-ed { position: relative; display: block; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 12px; }
+    .lp-image-crayon { position: absolute; right: 8px; bottom: 8px; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,.92); color: #1e2230; font-size: .78rem; font-weight: 600; opacity: 0; transition: opacity .15s; }
+    .lp-image-vue:hover .lp-image-crayon, .lp-image-vue:focus-visible .lp-image-crayon, .lp-diapo-ed:hover .lp-image-crayon, .lp-diapo-ed:focus-visible .lp-image-crayon { opacity: 1; }
+    @media (hover: none) { .lp-image-crayon { opacity: 1; } }
+    .lp-perso { margin: 0; }
+    .lp-diapo-ed { flex: 0 0 180px; scroll-snap-align: start; }
     .lp-image-grille input { width: 100%; }
     .lp-diapos-tete { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--bord); padding-top: 14px; }
     .lp-diapos-vue { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
-    .lp-diapos-vue img { flex: 0 0 180px; width: 180px; border-radius: 10px; scroll-snap-align: start; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+    .lp-diapos-vue img { flex: 0 0 180px; width: 180px; border-radius: 10px; scroll-snap-align: start; box-shadow: 0 4px 12px rgba(0,0,0,.15); display: block; }
     .lp-diapos { padding-left: 0; list-style: none; display: grid; gap: 10px; margin: 0; }
     .lp-diapos li { display: grid; gap: 6px; border: 1px solid var(--bord); border-radius: 12px; padding: 10px; }
     .lp-diapo-tete { display: flex; justify-content: space-between; align-items: center; font-size: .88rem; }

@@ -343,7 +343,8 @@
           <textarea data-dx="${i}" rows="2" maxlength="200" aria-label="Texte de la diapositive ${i + 1}">${echapper(d.texte)}</textarea></li>`).join("")}</ol>
         ${E.diapos.length < 10 ? `<button type="button" class="bouton bouton-discret" id="lp-dajout">+ Ajouter une diapositive</button>` : ""}</details>
         <p class="doux petit">Dans LinkedIn : « Commencer un post » → « Ajouter un document » → choisissez le PDF et donnez-lui un titre.</p>`;
-      z.oninput = (e) => { const t = e.target; if (t.dataset.dt) E.diapos[+t.dataset.dt].titre = t.value; else if (t.dataset.dx) E.diapos[+t.dataset.dx].texte = t.value; else return; clearTimeout(minuteur); minuteur = setTimeout(() => { dessinerDiaposVue(); sauver(); }, 400); };
+      z.oninput = (e) => { const t = e.target, dd = E.diapos[+(t.dataset.dt ?? t.dataset.dx)]; if (t.dataset.dt) dd.titre = t.value; else if (t.dataset.dx) dd.texte = t.value; else return;
+        if (dd.libre) synchroniserPage(dd.libre, dd, sig()); clearTimeout(minuteur); minuteur = setTimeout(() => { dessinerDiaposVue(); sauver(); }, 400); };
       z.onclick = (e) => {
         const b = e.target.closest("button"); if (!b) return;
         const d = b.dataset, l = E.diapos;
@@ -381,24 +382,75 @@
   async function dessinerImage() {
     const v = E.visuel; if (!v) return;
     $("lp-modeles").innerHTML = modelesPossibles(v).map((m) => `<button type="button" class="puce" data-modele="${m}" aria-pressed="${m === v.modele}">${NOMS_MODELES[m]}</button>`).join("");
-    $("lp-modeles").querySelectorAll("[data-modele]").forEach((b) => b.onclick = () => { v.modele = b.dataset.modele; sauver(); dessinerImage(); });
+    $("lp-modeles").querySelectorAll("[data-modele]").forEach((b) => b.onclick = () => {
+      if (v.libre && b.dataset.modele !== v.modele && !confirm("Changer de modèle remplace votre mise en page personnalisée. Continuer ?")) return;
+      v.modele = b.dataset.modele; delete v.libre; sauver(); dessinerImage();
+    });
     $("signature-resume").textContent = [signature.nom, signature.cabinet].filter(Boolean).join(" · ") || "à compléter";
     try {
       images = [await dessinerVisuel({ ...v, source: E.r?.lien?.nom || "" }, sig())];
       imageUrl = images[0].toDataURL("image/jpeg", .85);
-      $("lp-image-zone").innerHTML = `<img alt="Image du post" src="${imageUrl}"><button type="button" class="bouton bouton-discret" id="lp-png">⬇ Télécharger l'image</button>`;
+      $("lp-image-zone").innerHTML = `<button type="button" class="lp-image-vue" id="lp-image-vue" aria-label="Modifier l'image librement"><img alt="Image du post" src="${imageUrl}"><span class="lp-image-crayon" aria-hidden="true">✎ Modifier</span></button>
+        <button type="button" class="bouton" id="lp-editer">✎ Modifier l'image librement</button>
+        ${v.libre ? `<p class="doux petit lp-perso">Mise en page personnalisée · <button type="button" class="lien-bouton" id="lp-remodele">Revenir au modèle</button></p>` : ""}
+        <button type="button" class="bouton bouton-discret" id="lp-png">⬇ Télécharger l'image</button>`;
       $("lp-png").onclick = telechargerMedia;
-      $("alt-texte").innerHTML = `<strong>Texte alternatif</strong> (accessibilité)<p>${echapper(texteAlternatif(v))}</p><button type="button" class="lien-bouton" id="btn-alt">Copier le texte alternatif</button>`;
-      $("btn-alt").onclick = () => copier(texteAlternatif(v));
+      $("lp-editer").onclick = $("lp-image-vue").onclick = editerImage;
+      if ($("lp-remodele")) $("lp-remodele").onclick = () => { if (!confirm("Revenir à la mise en page du modèle ? Vos modifications de l'image seront effacées.")) return; delete v.libre; sauver(); dessinerImage(); };
+      const alt = texteAlternatifPage(v);
+      $("alt-texte").innerHTML = `<strong>Texte alternatif</strong> (accessibilité)<p>${echapper(alt)}</p><button type="button" class="lien-bouton" id="btn-alt">Copier le texte alternatif</button>`;
+      $("btn-alt").onclick = () => copier(alt);
     } catch (e) { $("lp-image-zone").innerHTML = `<p class="message ko">Image impossible à créer : ${echapper(e.message)}</p>`; }
     afficherApercu();
+  }
+  // Texte alternatif : celui du modèle, complété par les textes et images ajoutés dans l'éditeur libre.
+  function texteAlternatifPage(v, page = v.libre) {
+    if (!page) return texteAlternatif(v);
+    // Image modifiée : on décrit ce qui est réellement visible, de haut en bas (sans signature, source ni numéros).
+    const textes = page.elements.filter((e) => e.type === "texte" && !e.masque && !/^(sig\.|source$|pagination$|surtitre$)/.test(e.role || "")
+      && !/^\s*\d{1,2}\s*$|^[“→]$/.test(e.texte)).sort((a, b) => a.y - b.y || a.x - b.x).map((e) => e.texte.replace(/\s+/g, " ").trim()).filter(Boolean);
+    const nbImg = page.elements.filter((e) => e.type === "image").length;
+    let t = textes.length ? `Visuel : ${textes.map((x) => x.replace(/[.\s]+$/, "")).join(". ")}.` : "Visuel.";
+    if (nbImg) t += nbImg > 1 ? ` ${nbImg} images.` : " Une image.";
+    return t;
+  }
+  // Éditeur libre : le texte modifié sur l'image est recopié dans le post (titre, points, message final…).
+  function recopierTextes(page, cible) {
+    for (const el of page.elements) if (el.type === "texte" && el.role) {
+      const actuel = lireChamp(cible, el.role);
+      if (actuel != null && typoTexte(String(actuel)) !== el.texte) ecrireChamp(cible, el.role, el.texte.replace(/\u202f/g, " "));
+    }
+  }
+  async function editerImage() {
+    const v = E.visuel; if (!v) return;
+    const source = E.r?.lien?.nom || "";
+    await EditeurVisuel.ouvrir({
+      titre: "Modifier l'image du post",
+      page: v.libre || images[0]?.page || await pageModele({ ...v, source }, sig()),
+      modele: () => pageModele({ ...v, libre: undefined, source }, sig()),
+      auTerminer: (page) => { recopierTextes(page, v); v.libre = page; remplirTextesVisuel(); sauver(); dessinerImage(); afficherControle(); },
+    });
+  }
+  async function editerDiapo(i) {
+    const liste = E.diapos.filter((d) => d.titre.trim()), d = liste[i]; if (!d) return;
+    const meta = { surtitre: E.visuel?.surtitre || "Patrimoine", source: E.r?.lien?.nom || "" };
+    await EditeurVisuel.ouvrir({
+      titre: i === 0 ? "Modifier la couverture" : i === liste.length - 1 ? "Modifier la dernière diapositive" : `Modifier la diapositive ${i + 1}`,
+      page: d.libre || images[i]?.page || await pageDiapo(meta, d, i, liste.length, sig()),
+      modele: () => pageDiapo(meta, d, i, liste.length, sig()),
+      auTerminer: (page) => {
+        recopierTextes(page, d); d.libre = page; sauver();
+        const ouvert = $("lp-format-zone")?.querySelector("details")?.open; afficherZoneFormat(); if (ouvert) $("lp-format-zone").querySelector("details").open = true;
+      },
+    });
   }
   async function dessinerDiaposVue() {
     const v = { surtitre: E.visuel?.surtitre || "Patrimoine", source: E.r?.lien?.nom || "" };
     try {
       images = await dessinerDiapos(v, E.diapos.filter((d) => d.titre.trim()), sig());
       imageUrl = images[0]?.toDataURL("image/jpeg", .85) || "";
-      $("lp-diapos-vue").innerHTML = images.map((c, i) => `<img alt="Diapositive ${i + 1}" src="${c.toDataURL("image/jpeg", .8)}">`).join("");
+      $("lp-diapos-vue").innerHTML = images.map((c, i) => `<button type="button" class="lp-diapo-ed" data-ed="${i}" aria-label="Modifier la diapositive ${i + 1}"><img alt="Diapositive ${i + 1}" src="${c.toDataURL("image/jpeg", .8)}"><span class="lp-image-crayon" aria-hidden="true">✎</span></button>`).join("");
+      $("lp-diapos-vue").querySelectorAll("[data-ed]").forEach((b) => b.onclick = () => editerDiapo(+b.dataset.ed));
     } catch (e) { $("lp-diapos-vue").innerHTML = `<p class="message ko">Diapositives impossibles à créer : ${echapper(e.message)}</p>`; }
     afficherApercu();
   }
@@ -677,11 +729,15 @@
       if (!E.visuel) return;
       E.visuel.titre = $("v-titre").value.trim(); E.visuel.conclusion = $("v-conclusion").value.trim();
       E.visuel.points = $("v-points").value.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 4);
+      if (E.visuel.libre) synchroniserPage(E.visuel.libre, { ...E.visuel, source: E.r?.lien?.nom || "" }, sig());
       clearTimeout(minuteur); minuteur = setTimeout(() => { sauver(); dessinerImage(); afficherControle(); }, 400);
     };
     ["v-titre", "v-points", "v-conclusion"].forEach((id) => $(id).oninput = majTextes);
     $("btn-signature").onclick = async () => {
-      try { signature = await appelApi("/api/linkedin/signature", "POST", { nom: $("sig-nom").value, cabinet: $("sig-cabinet").value, pour_tous: $("sig-pour-tous").checked }); notifier("Signature enregistrée."); $("bloc-signature").open = false; if (E.r?.format === "carrousel") dessinerDiaposVue(); else dessinerImage(); }
+      try { signature = await appelApi("/api/linkedin/signature", "POST", { nom: $("sig-nom").value, cabinet: $("sig-cabinet").value, pour_tous: $("sig-pour-tous").checked }); notifier("Signature enregistrée."); $("bloc-signature").open = false;
+        if (E.visuel?.libre) synchroniserPage(E.visuel.libre, { ...E.visuel, source: E.r?.lien?.nom || "" }, sig());
+        for (const d of E.diapos || []) if (d.libre) synchroniserPage(d.libre, d, sig());
+        if (E.r?.format === "carrousel") dessinerDiaposVue(); else dessinerImage(); }
       catch (e) { notifier(e.message, true); }
     };
     appelApi("/api/linkedin/signature").then((s) => { signature = s; $("sig-nom").value = s.nom || ""; $("sig-cabinet").value = s.cabinet || ""; $("bloc-pour-tous").hidden = !s.admin; }).catch(() => {});

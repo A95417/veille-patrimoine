@@ -337,14 +337,25 @@ export async function routeLinkedin(request, env, chemin, moi) {
         // un ou plusieurs posts (série de 3)
         const nouveaux = (Array.isArray(d.posts) ? d.posts : [d]).filter((x) => x && x.texte).slice(0, 3).map((x) => {
           let extra = null;
-          try { if (x.extra && typeof x.extra === "object") { const t = JSON.stringify(x.extra); if (t.length <= 8000) extra = JSON.parse(t); } } catch {}
-          return { id: x.id || crypto.randomUUID(), texte: String(x.texte).slice(0, 3000), visuel: x.visuel || null,
+          // Les mises en page libres (éditeur d'image) sont gardées si elles restent raisonnables ; les images collées,
+          // elles, restent sur l'appareil (seule leur référence est enregistrée).
+          try { if (x.extra && typeof x.extra === "object") { const t = JSON.stringify(x.extra); if (t.length <= 80000) extra = JSON.parse(t); } } catch {}
+          let visuel = x.visuel && typeof x.visuel === "object" ? x.visuel : null;
+          try { if (visuel && JSON.stringify(visuel).length > 40000) { visuel = { ...visuel }; delete visuel.libre; } } catch { visuel = null; }
+          return { id: x.id || crypto.randomUUID(), texte: String(x.texte).slice(0, 3000), visuel,
             format: FORMATS_POST[x.format] ? x.format : "classique", extra,
             sujet: String(x.sujet || "").slice(0, 200), sujet_id: x.sujet_id || null, serie: x.serie ? String(x.serie).slice(0, 40) : null, partie: Number(x.partie) || null,
             statut: STATUTS.includes(x.statut) ? x.statut : "brouillon", date_prevue: date(x.date_prevue), maj_le: maj };
         });
         const ids = new Set(nouveaux.map((x) => x.id));
         liste = [...nouveaux, ...liste.filter((p) => !ids.has(p.id))].slice(0, 80);
+        // Garde la liste sous la taille permise par la base : on retire d'abord les mises en page libres des plus anciens posts.
+        for (let i = liste.length - 1; i >= 0 && JSON.stringify(liste).length > 1500000; i--) {
+          const p = liste[i];
+          if (p.visuel?.libre) p.visuel = { ...p.visuel, libre: undefined };
+          if (p.extra?.diapos?.some((d) => d.libre)) p.extra = { ...p.extra, diapos: p.extra.diapos.map(({ libre, ...d }) => d) };
+        }
+        while (liste.length > 1 && JSON.stringify(liste).length > 1500000) liste.pop();
       }
       await ecrireEtat(db, cle, liste);
     }
