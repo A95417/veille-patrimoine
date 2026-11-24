@@ -108,6 +108,8 @@ function soustitres(t, y = 1480) {
     o += `<tspan fill="${c}">${j ? " " : ""}${esc(m.mot.trim())}</tspan>`;
   });
   o += `</text>`;
+  // dialogue : prénom de celui qui parle, au-dessus du sous-titre
+  if (typeof LOCUTEUR !== "undefined" && LOCUTEUR) o += `<g id="stl"><rect id="stlb" x="0" y="${y - 138}" width="10" height="50" rx="25" fill="${LOCUTEUR === "Léa" ? "#2F6B3A" : ROSE}"/><text id="stlt" x="540" y="${y - 102}" text-anchor="middle" font-size="34" font-weight="800" fill="${LOCUTEUR === "Léa" ? BLANC : BX}">${esc(LOCUTEUR)}</text></g>`;
   return `<g id="stg" transform="translate(540 ${y - 26}) scale(${sc}) translate(-540 ${-(y - 26)})" opacity="${cl(k * 2.5)}">${o}</g>`;
 }
 function caleBoite() {
@@ -115,6 +117,8 @@ function caleBoite() {
   if (!t) return;
   let bb = t.getBBox();
   if (bb.width > 940) { t.setAttribute("font-size", String(76 * 940 / bb.width)); bb = t.getBBox(); }
+  const lt = document.getElementById("stlt"), lb = document.getElementById("stlb");
+  if (lt && lb) { const lw = lt.getBBox().width + 40; lt.setAttribute("x", bb.x - 30 + lw / 2); lb.setAttribute("x", bb.x - 30); lb.setAttribute("width", lw); }
   if (!r) return;
   r.setAttribute("x", bb.x - 30); r.setAttribute("y", bb.y - 12); r.setAttribute("width", bb.width + 60); r.setAttribute("height", bb.height + 24);
 }

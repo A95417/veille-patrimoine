@@ -31,7 +31,7 @@ window.init = (job, calage) => {
 };
 
 function volet(t) {
-  const S = SCENES.find((s) => s.i > 0 && t >= s.debut && t < s.debut + .3);
+  const S = SCENES.find((s) => s.i > 0 && !s.p.enchaine && t >= s.debut && t < s.debut + .3);   // répliques enchaînées : pas de volet
   if (!S) return "";
   const k = eo(lin(t, S.debut, S.debut + .28));
   return `<rect x="${-1080 * k}" y="0" width="1080" height="1920" fill="${BX}"/><rect x="${-1080 * k + 1060}" y="0" width="20" height="1920" fill="${ROSE}"/>`;
@@ -40,6 +40,7 @@ function volet(t) {
 window.draw = (t) => {
   const S = SCENES.find((s) => t >= s.debut && t < s.fin) || SCENES[SCENES.length - 1];
   const G = GAB[S.type];
+  if (typeof LOCUTEUR !== "undefined") LOCUTEUR = "";
   let o = G.dessin(S, t);
   if (!(G.masqueSousTitres && G.masqueSousTitres(S, t))) o += soustitres(t);
   o += volet(t);
@@ -58,7 +59,7 @@ window.imagesPretes = () => Promise.all([...document.images].map((i) => i.decode
 // Bruitages : transitions douces + ceux de chaque gabarit. Jamais rien après la dernière phrase.
 window.evenements = () => {
   const finVoix = MOTS.length ? MOTS[MOTS.length - 1].fin : 0, r = [];
-  SCENES.forEach((S) => { if (S.i > 0) r.push(["transition", S.debut - .05, .35]); (GAB[S.type].sons?.(S) || []).forEach((e) => r.push(e)); });
+  SCENES.forEach((S) => { if (S.i > 0 && !S.p.enchaine) r.push(["transition", S.debut - .05, .35]); (GAB[S.type].sons?.(S) || []).forEach((e) => r.push(e)); });
   return r.filter((e) => e[1] >= 0 && e[1] < finVoix - .05).sort((a, b) => a[1] - b[1]);
 };
 </script>

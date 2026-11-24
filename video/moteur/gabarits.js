@@ -653,3 +653,116 @@ GAB.fin_cours = {
   sons(S) { return [["pop", S.debut + .6, .4]]; },
   masqueSousTitres() { return true; },
 };
+
+// ---------------------------------------------------------------- Dialogue à deux personnages (vidéo « Le Livret A augmente… et alors ? »)
+// Une scène = une réplique. p : a, b (personnages, a à gauche), parle ("a" | "b"), decor, enchaine (même tableau que la
+// réplique précédente : ni volet ni nouvelle entrée), humeur_a, humeur_b, pose_a, pose_b, panneau { type, … }, carte_fin.
+// La bouche de celui qui parle s'ouvre au rythme des mots ; l'autre le regarde.
+let LOCUTEUR = "";
+const POSES = {
+  repos: { bras: [6, 6], coudes: [0, 0] },
+  explique: { bras: [10, 40], coudes: [0, 70] },
+  mains: { bras: [30, 30], coudes: [60, 60] },
+  telephone: { bras: [8, 25], coudes: [0, 175], tel: true, ecran: "#F3D3D8" },
+  pensive: { bras: [8, 30], coudes: [0, 150] },
+  table: { bras: [24, 24], coudes: [40, 40] },
+  carte: { bras: [8, 60], coudes: [0, 40] },
+  surprise: { bras: [40, 40], coudes: [70, 70] },
+};
+function ouvertureBouche(S, t) {   // 0 à 1, suivant les mots de la scène
+  const m = MOTS.find((w) => w.scene === S.i && t >= w.debut && t < w.fin);
+  if (!m) return 0;
+  const k = (t - m.debut) / Math.max(.08, m.fin - m.debut);
+  return .35 + .65 * Math.abs(Math.sin(k * Math.PI * Math.max(1, Math.round((m.fin - m.debut) / .14))));
+}
+// Premier instant du tableau (réplique non enchaînée) : les personnages n'entrent qu'une fois par tableau.
+function debutTableau(S) { let i = S.i; while (i > 0 && SCENES[i].p.enchaine) i--; return SCENES[i].debut; }
+// Instant où un mot est prononcé dans la scène (le n-ième s'il revient plusieurs fois), sinon « defaut ».
+function motT(S, cle, defaut, n = 0) {
+  const re = new RegExp("^[«“(]?" + cle, "i"), l = MOTS.filter((w) => w.scene === S.i && re.test(w.mot.normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
+  return l[Math.min(n, l.length - 1)]?.debut ?? defaut;
+}
+function panneauDialogue(P, S, t) {
+  const k0 = lin(t, S.debut + .15, S.debut + .55), apres = (x) => lin(t, x - .05, x + .35);
+  const K = (cle, i = 0) => apres(motT(S, cle, S.debut + .6 + i * .5));
+  let o = "";
+  if (P.type === "plafond") {
+    o += g(`<rect x="-430" y="-190" width="860" height="380" rx="44" fill="${BLANC}"/>` + txt(0, -110, "Plafond du Livret A", { size: 44, w: 800, f: GRIS }) +
+      txt(-200, 20, "22 950 €", { size: 72, w: 900, f: NUIT }) + `<path d="M-40 0 h70 m-22 -22 l22 22 l-22 22" stroke="${ROSE}" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` +
+      txt(220, 4, "25 000 €", { size: 60, w: 900, f: BX }) + txt(220, 64, "à 30 000 €", { size: 44, w: 800, f: BX }) +
+      `<rect x="-380" y="100" width="760" height="62" rx="31" fill="${ROSE2}"/>` + txt(0, 142, "1er février 2027 · annoncé, montant à fixer", { size: 31, w: 700, f: BX }),
+      `translate(540 560) scale(${.85 + .15 * back(k0)})`, cl(k0 * 3));
+  } else if (P.type === "puces") {
+    (P.items || []).forEach((s, i) => { const k = K((P.cles || [])[i] || "zz", i); o += g(`<rect x="-250" y="-50" width="500" height="100" rx="50" fill="${BLANC}"/><circle cx="-196" cy="0" r="32" fill="${VERT}"/><path d="M-211 0 l11 11 l22 -24" stroke="${BLANC}" stroke-width="7" fill="none" stroke-linecap="round"/>` + txt(24, 16, s, { size: 44, w: 800, f: NUIT }), `translate(540 ${440 + i * 125}) scale(${back(k)})`, cl(k * 3)); });
+  } else if (P.type === "precaution") {
+    o += g(`<rect x="-440" y="-250" width="880" height="500" rx="44" fill="${BLANC}" opacity=".96"/>` + txt(0, -175, "Épargne de précaution", { size: 50, w: 900, f: BX }), `translate(540 600)`, cl(k0 * 3));
+    [["Panne de voiture", "cle", "voiture"], ["Facture imprévue", "document", "facture"], ["Perte d'emploi", "valise", "emploi"]].forEach(([n, ic, cle], i) => { const k = K(cle, i); o += g(picto(ic, 0, -20, 1.7, BX) + txt(0, 70, n, { size: 30, w: 700, f: NUIT }), `translate(${250 + i * 290} 590) scale(${back(k)})`, cl(k * 3)); });
+    const k = K("trois", 4); o += g(pill(540, 780, 640, 84, BX, txt(540, 796, "3 à 6 mois de dépenses", { size: 42, w: 800, f: BLANC })), `translate(540 780) scale(${back(k)}) translate(-540 -780)`, cl(k * 3));
+  } else if (P.type === "taux") {
+    o += g(`<rect x="-440" y="-260" width="880" height="560" rx="44" fill="${BLANC}" opacity=".97"/>`, "translate(540 620)", cl(k0 * 3));
+    const barre = (x, v, max, coul, lib, val, n1, n2, k) => { const h = 280 * v / max * eo(k); return `<rect x="${x - 90}" y="${800 - h}" width="180" height="${h}" rx="18" fill="${coul}"/>` + txt(x, 780 - h, val, { size: 58, w: 900, f: coul === ROSE ? BX : coul, op: cl(k * 3) }) + txt(x, 850, lib, { size: 38, w: 800, f: NUIT }) + txt(x, 890, n1, { size: 26, w: 600, f: GRIS }) + txt(x, 924, n2, { size: 26, w: 600, f: GRIS }); };
+    const dejaVu = !!S.p.enchaine;   // réplique suivante : les barres restent affichées
+    o += barre(345, 2.5, 3.4, ROSE, "Livret A", "≈ 2,5 %", "estimation", "février 2027", dejaVu ? 1 : K("2,5")) + barre(735, 3.4, 3.4, BX, "Inflation", "3,4 %", "Insee, provisoire", "octobre 2026", dejaVu ? 1 : K("3,4"));
+  } else if (P.type === "pouvoir") {
+    const k = K("papier"), k2 = K("recule"), n = 6, rest = Math.round(n - 2 * eo(k2));
+    let pan = ""; for (let i = 0; i < n; i++) pan += `<g opacity="${i < rest ? 1 : .18}">${picto("cadeau", -250 + i * 100, 0, 1.3, BX)}</g>`;
+    o += g(`<rect x="-440" y="-170" width="880" height="340" rx="44" fill="${BLANC}" opacity=".97"/>` + txt(0, -95, "Avec les mêmes euros…", { size: 42, w: 800, f: NUIT }) + pan + g(pill(0, 110, 560, 76, BX, txt(0, 124, "Pouvoir d'achat ↓", { size: 40, w: 900, f: BLANC })), `scale(${back(k2)})`, cl(k2 * 3)), "translate(540 600)", cl(k * 3 + k0));
+  } else if (P.type === "profils") {
+    [["Prudent", "prudent"], ["Équilibré", "equilibre"], ["Dynamique", "dynamique"]].forEach(([s, cle], i) => { const k = K(cle, i); o += g(pill(0, 0, 300, 96, [ROSE2, ROSE, BX][i], txt(0, 15, s, { size: 42, w: 800, f: i === 2 ? BLANC : BX })), `translate(${220 + i * 320} 470) scale(${back(k)})`, cl(k * 3)); });
+    [["Un projet", "projet"], ["Ta retraite", "retraite"], ["Protéger ton argent", "proteger"]].forEach(([s, cle], i) => { const k = K(cle, i + 3); o += g(`<rect x="-150" y="-36" width="300" height="72" rx="36" fill="${BLANC}"/>` + txt(0, 12, s, { size: 30, w: 700, f: NUIT }), `translate(${220 + i * 320} 590) scale(${back(k)})`, cl(k * 3)); });
+  } else if (P.type === "etapes") {
+    (P.items || []).forEach((s, i) => { const k = K((P.cles || [])[i] || "zz", i); o += g(`<rect x="-300" y="-46" width="600" height="92" rx="46" fill="${BLANC}"/><circle cx="-250" cy="0" r="30" fill="${BX}"/>` + txt(-250, 12, String(i + 1), { size: 36, w: 900, f: BLANC }) + txt(20, 14, s, { size: 40, w: 800, f: NUIT }), `translate(540 ${420 + i * 118}) scale(${back(k)})`, cl(k * 3)); });
+  } else if (P.type === "titre") {
+    o += g(pill(540, 420, 900, 120, BX, txt(540, 442, P.texte, { size: 54, w: 900, f: BLANC })), `translate(540 420) scale(${back(k0)}) translate(-540 -420)`, cl(k0 * 3));
+  }
+  return o;
+}
+// Cartes posées sur la table ; « prise » : la carte du milieu monte vers la main de Léa.
+function cartesTable(t, S, prise) {
+  let o = `<rect x="120" y="1330" width="840" height="44" rx="18" fill="#7A5236"/><rect x="120" y="1368" width="840" height="14" fill="#5E3E28"/><rect x="160" y="1380" width="28" height="360" fill="#5E3E28"/><rect x="892" y="1380" width="28" height="360" fill="#5E3E28"/>`;
+  const noms = ["Prudent", "Équilibré", "Dynamique"];
+  noms.forEach((n, i) => {
+    const t0 = debutTableau(S), k = lin(t, t0 + .2 + i * .25, t0 + .55 + i * .25);
+    let x = 340 + i * 200, y = 1296, r = (i - 1) * 6, sc = 1;
+    if (prise && i === 0) { const kp = eio(lin(t, prise, prise + .9)); x = mix(x, 430, kp); y = mix(y, 1150, kp); r = mix(r, -12, kp); sc = mix(1, 1.15, kp); }
+    o += g(`<rect x="-80" y="-56" width="160" height="112" rx="14" fill="${BLANC}" stroke="${[ROSE, BX, NUIT][i]}" stroke-width="6"/><rect x="-80" y="-56" width="160" height="30" rx="14" fill="${[ROSE, BX, NUIT][i]}"/>` + txt(0, 26, n, { size: 28, w: 800, f: NUIT }),
+      `translate(${x} ${y - (1 - eo(k)) * 60}) rotate(${r}) scale(${sc})`, cl(k * 3));
+  });
+  return o;
+}
+GAB.dialogue = {
+  dessin(S, t) {
+    const p = S.p, t0 = debutTableau(S);
+    let o = decor(p.decor || "salon", t, SCENES.findIndex((x) => x.debut === t0));
+    const ke = eo(lin(t, t0, t0 + .55)), ouv = ouvertureBouche(S, t);
+    const A = { ...personnage(p.a || "lea_bsc"), ...(POSES[p.pose_a] || POSES.repos), x: 300, y: 1730, s: 1.26, humeur: humeur(p.humeur_a, "sourire"), cligne: cligne(t, 0) };
+    const B = { ...personnage(p.b || "theo"), ...(POSES[p.pose_b] || POSES.repos), x: 790, y: 1730, s: 1.3, humeur: humeur(p.humeur_b, "neutre"), cligne: cligne(t, 1.3) };
+    if (POSES[p.pose_b]?.bras) B.bras = [...POSES[p.pose_b].bras].reverse(), B.coudes = [...POSES[p.pose_b].coudes].reverse();   // Théo : geste de la main côté Léa
+    A.regard = p.parle === "b" ? .6 : .3; B.regard = p.parle === "a" ? -.6 : -.3;
+    if (p.parle === "a") A.parle = ouv; else B.parle = ouv;
+    const saut = (qui) => (p.parle === qui && ouv > 0 ? -Math.abs(Math.sin(t * 7)) * 5 : 0);
+    o += g(perso(A, t), `translate(${-(1 - ke) * 700} ${saut("a")})`);
+    o += g(perso(B, t), `translate(${(1 - ke) * 700} ${saut("b")})`);
+    if (p.cartes) o += cartesTable(t, S, p.prise ? ph(S, 0) + .2 : null);
+    if (p.panneau) o += panneauDialogue(p.panneau, S, t);
+    if (p.bandeau) o += g(pill(540, 300, 900, 100, NUIT, txt(540, 318, p.bandeau, { size: 44, w: 800, f: BLANC })), "", cl(lin(t, t0 + .1, t0 + .4) * 2));
+    LOCUTEUR = p.parle === "a" ? A.nom || "Léa" : B.nom || "Théo";
+    // Carte de fin : après la dernière réplique, sur la tenue de la dernière scène.
+    if (p.carte_fin) {
+      const tf = phf(S, nbP(S) - 1) + .35;
+      if (t >= tf) {
+        const Sf = { ...S, debut: tf, P: [tf, tf + .5, tf + 1.1], PF: [tf + .4, tf + 1.0, tf + 2.4], p: { style: "bordeaux", ...p.carte_fin } };
+        const k = eo(lin(t, tf, tf + .35));
+        o += `<g transform="translate(${(1 - k) * 1080} 0)">${GAB.fin.dessin(Sf, t)}</g>`;
+      }
+    }
+    return o;
+  },
+  masqueSousTitres(S, t) { return S.p.carte_fin && t >= phf(S, nbP(S) - 1) + .3; },
+  sons(S) {
+    const r = [], p = S.p;
+    if (p.panneau) r.push(["pop", S.debut + .2, .35]);
+    if (p.cartes && !p.enchaine) r.push(["pop", S.debut + .3, .3], ["pop", S.debut + .55, .3], ["pop", S.debut + .8, .3]);
+    return r;
+  },
+};

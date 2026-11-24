@@ -1,0 +1,266 @@
+{
+ "format": "9:16",
+ "graine": 5,
+ "sous_titres": "mot",
+ "ambiance": "dynamique",
+ "config": {
+  "cabinet": "BSC PATRIMOINE",
+  "activite": "Conseil en gestion de patrimoine",
+  "mail": "contact@example.com",
+  "telephone": "06 39 98 12 34",
+  "mentions": [
+   "Tout investissement comporte des risques, y compris de perte en capital.",
+   "Les performances passées ne préjugent pas des performances futures.",
+   "Taux de février 2027 : estimation. Inflation d'octobre 2026 : Insee, provisoire.",
+   "Coordonnées fictives (provisoires)."
+  ]
+ },
+ "scenes": [
+  {
+   "type": "dialogue",
+   "texte": "Théo ! T'as vu ? Le plafond du Livret A devrait passer de 22 950 € à 25 000, peut-être même 30 000 €, au 1er février 2027 ! Je vais tout mettre dessus !",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "a",
+    "decor": "salon",
+    "pose_a": "telephone",
+    "humeur_a": "sourire",
+    "humeur_b": "neutre",
+    "bandeau": "Le Livret A augmente… et alors ?",
+    "panneau": {
+     "type": "plafond"
+    }
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "C'est une bonne nouvelle… pour ton épargne de précaution. Pas forcément pour le reste.",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "b",
+    "decor": "salon",
+    "enchaine": true,
+    "pose_a": "telephone",
+    "humeur_a": "sourire",
+    "pose_b": "explique",
+    "humeur_b": "neutre"
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Comment ça ? C'est sans risque, c'est disponible, et ma banque me le propose à chaque rendez-vous !",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "a",
+    "decor": "cuisine",
+    "pose_a": "surprise",
+    "humeur_a": "surpris",
+    "humeur_b": "neutre",
+    "panneau": {
+     "type": "puces",
+     "items": [
+      "Sans risque",
+      "Disponible"
+     ],
+     "cles": [
+      "risque",
+      "disponible"
+     ]
+    }
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Justement. Le Livret A, c'est la solution que toutes les banques proposent par défaut. Il est parfait pour une chose : ton argent de côté pour les coups durs. Une panne de voiture, une facture imprévue, une perte d'emploi… En général, on garde trois à six mois de dépenses.",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "b",
+    "decor": "cuisine",
+    "enchaine": true,
+    "humeur_a": "neutre",
+    "pose_b": "explique",
+    "humeur_b": "sourire",
+    "panneau": {
+     "type": "precaution"
+    }
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Mais ce n'est pas un placement pour faire travailler ton argent. Regarde : son taux devrait tourner autour de 2,5 % en février. Et l'inflation provisoire d'octobre était de 3,4 %.",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "b",
+    "decor": "bureau",
+    "pose_b": "explique",
+    "humeur_b": "neutre",
+    "humeur_a": "neutre",
+    "panneau": {
+     "type": "taux"
+    }
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Donc… mon argent gagne moins vite que les prix augmentent ?",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "a",
+    "decor": "bureau",
+    "enchaine": true,
+    "pose_a": "pensive",
+    "humeur_a": "souci",
+    "humeur_b": "neutre",
+    "panneau": {
+     "type": "taux"
+    }
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Exactement. Sur le papier, tu as plus d'euros. Mais avec ces euros, tu peux acheter moins de choses. Ton pouvoir d'achat recule.",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "b",
+    "decor": "bureau",
+    "enchaine": true,
+    "pose_b": "mains",
+    "humeur_b": "neutre",
+    "humeur_a": "souci",
+    "panneau": {
+     "type": "pouvoir"
+    }
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Mais investir, c'est pas réservé aux gros patrimoines ou aux experts ?",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "a",
+    "decor": "appartement",
+    "pose_a": "pensive",
+    "humeur_a": "souci",
+    "humeur_b": "sourire"
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Pas du tout. Il existe plein de solutions, adaptées à tous les profils : prudent, équilibré, dynamique. Que tu veuilles préparer un projet, ta retraite, ou simplement protéger ton argent dans le temps.",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "b",
+    "decor": "appartement",
+    "enchaine": true,
+    "pose_b": "explique",
+    "humeur_b": "sourire",
+    "humeur_a": "neutre",
+    "panneau": {
+     "type": "profils"
+    }
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Chez BSC Patrimoine, on ne décide pas à ta place. Chaque situation est unique : on regarde la tienne, tes objectifs, ton rapport au risque… et on t'explique chaque option simplement.",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "b",
+    "decor": "bureau",
+    "pose_b": "table",
+    "humeur_b": "sourire",
+    "humeur_a": "neutre",
+    "cartes": true,
+    "panneau": {
+     "type": "etapes",
+     "items": [
+      "Ta situation",
+      "Tes objectifs",
+      "Ton rapport au risque"
+     ],
+     "cles": [
+      "tienne",
+      "objectifs",
+      "risque"
+     ]
+    }
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Et après ?",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "a",
+    "decor": "bureau",
+    "enchaine": true,
+    "pose_a": "repos",
+    "humeur_a": "neutre",
+    "pose_b": "table",
+    "humeur_b": "sourire",
+    "cartes": true
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "On te propose les cartes. C'est toi qui choisis celle qui te convient le mieux.",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "b",
+    "decor": "bureau",
+    "enchaine": true,
+    "pose_b": "mains",
+    "humeur_b": "sourire",
+    "humeur_a": "sourire",
+    "cartes": true
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Alors le Livret A pour la précaution… et le reste, on en parle ?",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "a",
+    "decor": "bureau",
+    "enchaine": true,
+    "pose_a": "carte",
+    "humeur_a": "sourire",
+    "humeur_b": "sourire",
+    "cartes": true,
+    "prise": true
+   }
+  },
+  {
+   "type": "dialogue",
+   "texte": "Avec plaisir. Prends rendez-vous avec BSC Patrimoine.",
+   "p": {
+    "a": "lea_bsc",
+    "b": "theo",
+    "parle": "b",
+    "decor": "bureau",
+    "enchaine": true,
+    "pose_a": "carte",
+    "humeur_a": "sourire",
+    "pose_b": "explique",
+    "humeur_b": "sourire",
+    "cartes": true,
+    "carte_fin": {
+     "question": "Et si on prenait le temps d'en parler ?"
+    }
+   }
+  }
+ ]
+}

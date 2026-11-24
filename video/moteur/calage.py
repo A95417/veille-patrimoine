@@ -134,7 +134,7 @@ for j, p in enumerate(phrases):
     poids = [syllabes(w) + .3 for w in p["mots"]]; T = sum(poids); x = a
     for w, k in zip(p["mots"], poids):
         d = (b - a) * k / T
-        mots.append({"mot": w, "debut": round(reel(x), 3), "fin": round(reel(x + d), 3), "groupe": j}); x += d
+        mots.append({"mot": w, "debut": round(reel(x), 3), "fin": round(reel(x + d), 3), "groupe": j, "scene": p["scene"]}); x += d
 
 # scènes
 n = len(job["scenes"]); scenes = []

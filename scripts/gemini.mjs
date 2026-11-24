@@ -82,10 +82,16 @@ export async function choisirModeleVoix() {
 }
 
 // Renvoie l'audio brut (PCM 16 bits mono) lu par une voix naturelle, ou { quota: true }.
+// voix : un nom (« Charon ») ou, pour un dialogue, « Léa=Zephyr,Théo=Sadachbia » ; le texte est alors écrit
+// « Léa: … » / « Théo: … », une réplique par ligne (les noms servent à choisir la voix, ils ne sont pas lus).
 export async function genererVoix(modele, texte, voix = "Charon") {
+  const roles = String(voix).includes("=") ? String(voix).split(",").map((x) => x.split("=").map((y) => y.trim())).filter(([a, b]) => a && b) : null;
+  const speechConfig = roles
+    ? { multiSpeakerVoiceConfig: { speakerVoiceConfigs: roles.map(([speaker, nom]) => ({ speaker, voiceConfig: { prebuiltVoiceConfig: { voiceName: nom } } })) } }
+    : { voiceConfig: { prebuiltVoiceConfig: { voiceName: voix } } };
   const corps = {
     contents: [{ role: "user", parts: [{ text: texte }] }],
-    generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voix } } } },
+    generationConfig: { responseModalities: ["AUDIO"], speechConfig },
   };
   for (let essai = 1; essai <= 2; essai++) {
     const r = await fetch(`${API}/models/${modele}:generateContent`, {
