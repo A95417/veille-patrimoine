@@ -66,7 +66,7 @@ function deBase64(s) {
 const COORD_FICTIVES = { cabinet: "BSC PATRIMOINE", activite: "Conseil en gestion de patrimoine", mail: "contact@example.com", telephone: "06 39 98 12 34", fictives: true };
 
 // ---------------------------------------------------------------- Gabarits autorisés et leurs paramètres (liste blanche)
-const PERSOS = ["lea", "tom", "tom_age", "conseil", "ines", "hugo", "sarah", "isaac", "michel", "francoise"];
+const PERSOS = ["lea", "tom", "tom_age", "conseil", "ines", "hugo", "sarah", "isaac", "michel", "francoise", "lea_bsc", "theo"];
 const LIEUX = ["appartement", "salon", "cuisine", "chambre_soir", "bureau", "coworking", "banque", "rue", "parc", "cafe", "mer", "maison_vente"];
 const P = {   // nom → [type, longueur max ou valeurs permises]
   personnage: ["enum", PERSOS], personnage_gauche: ["enum", PERSOS], personnage_droite: ["enum", PERSOS],
@@ -507,7 +507,7 @@ RÈGLES STRICTES :
 - ANGLE DEMANDÉ : ${ANGLES[angle][0]}. ${ANGLES[angle][1]}
 - Personnages disponibles (choisis-les selon le sujet, varie-les, garde le même personnage pour une même histoire) :
   lea (femme 25 ans, jeune active), tom (homme 25 ans, sweat), tom_age (le même Tom à 35 ans), ines (étudiante 22 ans), hugo (jeune actif 23 ans, casquette),
-  sarah (cheffe d'entreprise 40 ans), isaac (entrepreneur 38 ans), michel (retraité 66 ans), francoise (jeune retraitée 63 ans), conseil (conseiller en patrimoine).
+  sarah (cheffe d'entreprise 40 ans), isaac (entrepreneur 38 ans), michel (retraité 66 ans), francoise (jeune retraitée 63 ans), conseil (conseiller en patrimoine), lea_bsc (Léa du cabinet, casquette verte), theo (Théo du cabinet, lunettes et casque audio).
   Exemples : transmission ou succession → michel, francoise ; trésorerie, entreprise → sarah, isaac ; premier emploi, épargne de départ → ines, hugo, lea, tom.
 - Décors disponibles (adapte le lieu à la situation et varie-les d'une scène à l'autre) : ${LIEUX.join(", ")}.
   Exemples : immobilier → maison_vente ; vacances, projets → mer ; budget du quotidien → cuisine ; rendez-vous → banque ou bureau ; le soir, l'inquiétude → chambre_soir.

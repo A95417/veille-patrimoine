@@ -259,7 +259,8 @@
     "cartes": true,
     "carte_fin": {
      "question": "Et si on prenait le temps d'en parler ?"
-    }
+    },
+    "pris": true
    }
   }
  ]

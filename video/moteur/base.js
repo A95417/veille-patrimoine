@@ -109,7 +109,12 @@ function soustitres(t, y = 1480) {
   });
   o += `</text>`;
   // dialogue : prénom de celui qui parle, au-dessus du sous-titre
-  if (typeof LOCUTEUR !== "undefined" && LOCUTEUR) o += `<g id="stl"><rect id="stlb" x="0" y="${y - 138}" width="10" height="50" rx="25" fill="${LOCUTEUR === "Léa" ? "#2F6B3A" : ROSE}"/><text id="stlt" x="540" y="${y - 102}" text-anchor="middle" font-size="34" font-weight="800" fill="${LOCUTEUR === "Léa" ? BLANC : BX}">${esc(LOCUTEUR)}</text></g>`;
+  // le prénom suit la réplique du sous-titre affiché (et non la scène), pour rester juste pendant les enchaînements
+  let qui = typeof LOCUTEUR !== "undefined" ? LOCUTEUR : "";
+  const Sb = typeof SCENES !== "undefined" && b[0].scene != null ? SCENES[b[0].scene] : null;
+  if (Sb && Sb.type === "dialogue") qui = (PRESETS[Sb.p.parle === "a" ? Sb.p.a : Sb.p.b] || {}).nom || qui;
+  const LOCUTEUR_ = qui;
+  if (LOCUTEUR_) o += `<g id="stl"><rect id="stlb" x="0" y="${y - 138}" width="10" height="50" rx="25" fill="${LOCUTEUR_ === "Léa" ? "#2F6B3A" : ROSE}"/><text id="stlt" x="540" y="${y - 102}" text-anchor="middle" font-size="34" font-weight="800" fill="${LOCUTEUR_ === "Léa" ? BLANC : BX}">${esc(LOCUTEUR_)}</text></g>`;
   return `<g id="stg" transform="translate(540 ${y - 26}) scale(${sc}) translate(-540 ${-(y - 26)})" opacity="${cl(k * 2.5)}">${o}</g>`;
 }
 function caleBoite() {

@@ -695,13 +695,14 @@ function panneauDialogue(P, S, t) {
   } else if (P.type === "puces") {
     (P.items || []).forEach((s, i) => { const k = K((P.cles || [])[i] || "zz", i); o += g(`<rect x="-250" y="-50" width="500" height="100" rx="50" fill="${BLANC}"/><circle cx="-196" cy="0" r="32" fill="${VERT}"/><path d="M-211 0 l11 11 l22 -24" stroke="${BLANC}" stroke-width="7" fill="none" stroke-linecap="round"/>` + txt(24, 16, s, { size: 44, w: 800, f: NUIT }), `translate(540 ${440 + i * 125}) scale(${back(k)})`, cl(k * 3)); });
   } else if (P.type === "precaution") {
-    o += g(`<rect x="-440" y="-250" width="880" height="500" rx="44" fill="${BLANC}" opacity=".96"/>` + txt(0, -175, "Épargne de précaution", { size: 50, w: 900, f: BX }), `translate(540 600)`, cl(k0 * 3));
-    [["Panne de voiture", "cle", "voiture"], ["Facture imprévue", "document", "facture"], ["Perte d'emploi", "valise", "emploi"]].forEach(([n, ic, cle], i) => { const k = K(cle, i); o += g(picto(ic, 0, -20, 1.7, BX) + txt(0, 70, n, { size: 30, w: 700, f: NUIT }), `translate(${250 + i * 290} 590) scale(${back(k)})`, cl(k * 3)); });
-    const k = K("trois", 4); o += g(pill(540, 780, 640, 84, BX, txt(540, 796, "3 à 6 mois de dépenses", { size: 42, w: 800, f: BLANC })), `translate(540 780) scale(${back(k)}) translate(-540 -780)`, cl(k * 3));
+    const kp = K("parfait");   // le cadre arrive avec « parfait pour une chose »
+    o += g(`<rect x="-440" y="-250" width="880" height="470" rx="44" fill="${BLANC}" opacity=".96"/>` + txt(0, -175, "Épargne de précaution", { size: 50, w: 900, f: BX }), `translate(540 580) scale(${.9 + .1 * back(kp)})`, cl(kp * 3));
+    [["Panne de voiture", "cle", "voiture"], ["Facture imprévue", "document", "facture"], ["Perte d'emploi", "valise", "emploi"]].forEach(([n, ic, cle], i) => { const k = K(cle, i); o += g(picto(ic, 0, -20, 1.7, BX) + txt(0, 70, n, { size: 30, w: 700, f: NUIT }), `translate(${250 + i * 290} 570) scale(${back(k)})`, cl(k * 3)); });
+    const k = K("trois", 4); o += g(pill(540, 730, 640, 84, BX, txt(540, 746, "3 à 6 mois de dépenses", { size: 42, w: 800, f: BLANC })), `translate(540 730) scale(${back(k)}) translate(-540 -730)`, cl(k * 3));
   } else if (P.type === "taux") {
-    o += g(`<rect x="-440" y="-260" width="880" height="560" rx="44" fill="${BLANC}" opacity=".97"/>`, "translate(540 620)", cl(k0 * 3));
-    const barre = (x, v, max, coul, lib, val, n1, n2, k) => { const h = 280 * v / max * eo(k); return `<rect x="${x - 90}" y="${800 - h}" width="180" height="${h}" rx="18" fill="${coul}"/>` + txt(x, 780 - h, val, { size: 58, w: 900, f: coul === ROSE ? BX : coul, op: cl(k * 3) }) + txt(x, 850, lib, { size: 38, w: 800, f: NUIT }) + txt(x, 890, n1, { size: 26, w: 600, f: GRIS }) + txt(x, 924, n2, { size: 26, w: 600, f: GRIS }); };
-    const dejaVu = !!S.p.enchaine;   // réplique suivante : les barres restent affichées
+    const dejaVu = !!S.p.enchaine, kr = dejaVu ? 1 : K("regarde");   // le cadre arrive avec « Regarde »
+    o += g(`<rect x="-440" y="-250" width="880" height="500" rx="44" fill="${BLANC}" opacity=".97"/>`, `translate(540 530) scale(${.9 + .1 * back(kr)})`, cl(kr * 3));
+    const barre = (x, v, max, coul, lib, val, n1, n2, k) => { const h = 210 * v / max * eo(k); return `<rect x="${x - 90}" y="${660 - h}" width="180" height="${h}" rx="18" fill="${coul}"/>` + txt(x, 640 - h, val, { size: 56, w: 900, f: coul === ROSE ? BX : coul, op: cl(k * 3) }) + g(txt(x, 708, lib, { size: 38, w: 800, f: NUIT }) + txt(x, 712 + 34, n1, { size: 26, w: 600, f: GRIS }) + txt(x, 712 + 66, n2, { size: 26, w: 600, f: GRIS }), "", cl(kr * 3)); };   // réplique suivante : les barres restent affichées
     o += barre(345, 2.5, 3.4, ROSE, "Livret A", "≈ 2,5 %", "estimation", "février 2027", dejaVu ? 1 : K("2,5")) + barre(735, 3.4, 3.4, BX, "Inflation", "3,4 %", "Insee, provisoire", "octobre 2026", dejaVu ? 1 : K("3,4"));
   } else if (P.type === "pouvoir") {
     const k = K("papier"), k2 = K("recule"), n = 6, rest = Math.round(n - 2 * eo(k2));
@@ -719,11 +720,11 @@ function panneauDialogue(P, S, t) {
 }
 // Cartes posées sur la table ; « prise » : la carte du milieu monte vers la main de Léa.
 function cartesTable(t, S, prise) {
-  let o = `<rect x="120" y="1330" width="840" height="44" rx="18" fill="#7A5236"/><rect x="120" y="1368" width="840" height="14" fill="#5E3E28"/><rect x="160" y="1380" width="28" height="360" fill="#5E3E28"/><rect x="892" y="1380" width="28" height="360" fill="#5E3E28"/>`;
+  let o = `<rect x="120" y="1296" width="840" height="44" rx="18" fill="#7A5236"/><rect x="120" y="1334" width="840" height="14" fill="#5E3E28"/><rect x="160" y="1346" width="28" height="394" fill="#5E3E28"/><rect x="892" y="1346" width="28" height="394" fill="#5E3E28"/>`;
   const noms = ["Prudent", "Équilibré", "Dynamique"];
   noms.forEach((n, i) => {
     const t0 = debutTableau(S), k = lin(t, t0 + .2 + i * .25, t0 + .55 + i * .25);
-    let x = 340 + i * 200, y = 1296, r = (i - 1) * 6, sc = 1;
+    let x = 340 + i * 200, y = 1262, r = (i - 1) * 6, sc = 1;
     if (prise && i === 0) { const kp = eio(lin(t, prise, prise + .9)); x = mix(x, 430, kp); y = mix(y, 1150, kp); r = mix(r, -12, kp); sc = mix(1, 1.15, kp); }
     o += g(`<rect x="-80" y="-56" width="160" height="112" rx="14" fill="${BLANC}" stroke="${[ROSE, BX, NUIT][i]}" stroke-width="6"/><rect x="-80" y="-56" width="160" height="30" rx="14" fill="${[ROSE, BX, NUIT][i]}"/>` + txt(0, 26, n, { size: 28, w: 800, f: NUIT }),
       `translate(${x} ${y - (1 - eo(k)) * 60}) rotate(${r}) scale(${sc})`, cl(k * 3));
@@ -743,7 +744,7 @@ GAB.dialogue = {
     const saut = (qui) => (p.parle === qui && ouv > 0 ? -Math.abs(Math.sin(t * 7)) * 5 : 0);
     o += g(perso(A, t), `translate(${-(1 - ke) * 700} ${saut("a")})`);
     o += g(perso(B, t), `translate(${(1 - ke) * 700} ${saut("b")})`);
-    if (p.cartes) o += cartesTable(t, S, p.prise ? ph(S, 0) + .2 : null);
+    if (p.cartes) o += cartesTable(t, S, p.prise ? ph(S, 0) + .2 : p.pris ? -99 : null);   // « pris » : la carte est déjà dans la main
     if (p.panneau) o += panneauDialogue(p.panneau, S, t);
     if (p.bandeau) o += g(pill(540, 300, 900, 100, NUIT, txt(540, 318, p.bandeau, { size: 44, w: 800, f: BLANC })), "", cl(lin(t, t0 + .1, t0 + .4) * 2));
     LOCUTEUR = p.parle === "a" ? A.nom || "Léa" : B.nom || "Théo";

@@ -75,7 +75,7 @@
     mythe: [["mythe", "Idée reçue"], ["realite", "Réalité"]],
     sablier: [["haut", "Texte du haut"], ["gros", "Gros message"]],
   };
-  const PERSOS = [["lea", "Léa, 25 ans"], ["tom", "Tom, 25 ans"], ["tom_age", "Tom, 35 ans"], ["ines", "Inès, 22 ans, étudiante"], ["hugo", "Hugo, 23 ans"], ["sarah", "Sarah, 40 ans, cheffe d'entreprise"], ["isaac", "Isaac, 38 ans, entrepreneur"], ["michel", "Michel, 66 ans, retraité"], ["francoise", "Françoise, 63 ans"], ["conseil", "Le conseiller"]];
+  const PERSOS = [["lea", "Léa, 25 ans"], ["tom", "Tom, 25 ans"], ["tom_age", "Tom, 35 ans"], ["ines", "Inès, 22 ans, étudiante"], ["hugo", "Hugo, 23 ans"], ["sarah", "Sarah, 40 ans, cheffe d'entreprise"], ["isaac", "Isaac, 38 ans, entrepreneur"], ["michel", "Michel, 66 ans, retraité"], ["francoise", "Françoise, 63 ans"], ["conseil", "Le conseiller"], ["lea_bsc", "Léa (BSC, casquette verte)"], ["theo", "Théo (BSC, lunettes et casque)"]];
   const LIEUX = [["appartement", "Appartement"], ["salon", "Salon familial"], ["cuisine", "Cuisine"], ["chambre_soir", "Chambre, le soir"], ["bureau", "Bureau"], ["coworking", "Coworking"], ["banque", "Agence bancaire"], ["rue", "Rue en ville"], ["parc", "Parc"], ["cafe", "Terrasse de café"], ["mer", "Bord de mer"], ["maison_vente", "Maison « À vendre »"]];
   // Champs de personnage et de décor proposés selon le gabarit.
   const CHOIX = {
