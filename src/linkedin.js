@@ -12,6 +12,21 @@ const json = (d, s = 200) =>
   new Response(JSON.stringify(nettoyerTout(d)), { status: s, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 const erreur = (m, s = 400) => json({ erreur: m }, s);
 
+// Même empreinte que le robot de collecte (scripts/collecte.mjs : normaliserLien puis sha256, 32 caractères).
+function normaliserLien(lien) {
+  try {
+    const u = new URL(lien.trim());
+    u.hash = "";
+    for (const k of [...u.searchParams.keys()]) if (/^(utm_|xtor|at_|fbclid|gclid|ref$|cmp)/i.test(k)) u.searchParams.delete(k);
+    u.hostname = u.hostname.replace(/^www\./, "");
+    return u.toString().replace(/\/$/, "");
+  } catch { return lien.trim(); }
+}
+async function empreinteLien(lien) {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normaliserLien(lien)));
+  return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+}
+
 export const APPROCHES = {
   decryptage: "Décryptage d'actualité : expliquer ce qui change, pour qui, et pourquoi c'est important.",
   pedagogie: "Pédagogie : expliquer simplement la notion patrimoniale qui se cache derrière le sujet.",
@@ -342,9 +357,26 @@ export async function routeLinkedin(request, env, chemin, moi) {
     const d = await lireJson();
     let u; try { u = new URL(String(d.lien || "").trim()); } catch { return erreur("Ce lien n'est pas valide."); }
     if (!/^https?:$/.test(u.protocol)) return erreur("Ce lien n'est pas valide.");
-    const base = (u.host + u.pathname).replace(/\/$/, "");
-    const a = await db.prepare("SELECT a.sujet_id, a.source_nom, COALESCE(s.titre_fr, s.titre) AS titre FROM articles a JOIN sujets s ON s.id = a.sujet_id WHERE a.lien = ? OR a.lien LIKE ? OR a.lien LIKE ? LIMIT 1")
-      .bind(u.href, "%://" + base, "%://" + base + "%").first();
+    // Recherche sans motif LIKE (D1 refuse les motifs de plus de 50 octets) : par l'empreinte du lien (colonne indexée),
+    // calculée comme le robot de collecte, pour le lien tel quel et ses variantes (sans paramètres, https ou http, « www. », « / » final).
+    const variantes = new Set();
+    for (const sansQuery of [false, true]) for (const proto of ["https:", "http:"]) for (const www of [false, true]) {
+      const v = new URL(u.href); v.hash = ""; v.protocol = proto;
+      if (sansQuery) v.search = "";
+      v.hostname = www ? "www." + v.hostname.replace(/^www\./, "") : v.hostname.replace(/^www\./, "");
+      const t = v.toString(); variantes.add(t); variantes.add(t.replace(/\/$/, "")); variantes.add(t.replace(/\/?$/, "/"));
+    }
+    const liens = [...variantes].slice(0, 40);
+    const empreintes = [...new Set(await Promise.all(liens.map(empreinteLien)))];
+    let a;
+    try {
+      a = await db.prepare(`SELECT a.sujet_id, a.source_nom, COALESCE(s.titre_fr, s.titre) AS titre FROM articles a JOIN sujets s ON s.id = a.sujet_id
+        WHERE a.empreinte IN (${empreintes.map(() => "?").join(",")}) LIMIT 1`)
+        .bind(...empreintes).first();
+    } catch (e) {
+      console.error("lien collé", e?.message);
+      return erreur("La recherche de cet article dans la veille a échoué. Collez le texte en accès libre ci-dessous.", 500);
+    }
     if (!a) return json({ trouve: false });
     return json({ trouve: true, sujet_id: a.sujet_id, titre: a.titre, media: a.source_nom });
   }
