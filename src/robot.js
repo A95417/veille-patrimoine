@@ -282,8 +282,6 @@ export async function routeRobot(request, env, chemin) {
       items.push({ ...x, depuis, notifie: !!ancien?.notifie });
       if (!ancien) nouveaux.push(items[items.length - 1]);
     }
-    // Les annonces encore récentes mais sorties du calcul (moins de sources sur 12 h) restent jusqu'à 24 h.
-    for (const x of avant.items || []) if (!items.some((y) => y.cle === x.cle) && maintenant - new Date(x.depuis) <= 24 * 3600e3 && items.length < 4) items.push(x);
     let push = null;
     if (nouveaux.length && corps.notifier !== false) {
       const x = nouveaux[0];

@@ -263,8 +263,8 @@
     async function chargerAlertes() {
       const { sujets, alertes_marches: alertes = [], direct = [], direct_maj } = await appelApi("/api/une");
       const caches = new Set(masques());
-      // Sujets notés 5 pas encore repris par le robot « En direct » (avant son premier passage).
-      const items = [...direct, ...sujets.filter((s) => !direct.some((d) => d.sujet_id === s.id)).map((s) => ({
+      // Sujets notés 5 : seulement si le robot « En direct » n'a encore jamais tourné (secours).
+      const items = [...direct, ...(direct_maj ? [] : sujets).map((s) => ({
         cle: s.id, sujet_id: s.id, titre: s.titre_fr || s.titre, raison: "majeur", heure: s.derniere_pub,
         nb_sources: new Set(s.articles.map((a) => a.source_nom)).size,
         liens: [...new Map(s.articles.map((a) => [a.source_nom, a])).values()].slice(0, 3).map((a) => ({ source: a.source_nom, lien: a.lien })) }))]
@@ -276,7 +276,7 @@
       document.getElementById("alerte-liste").innerHTML = items.map((x) =>
         `<li class="direct-item"><time class="direct-heure" datetime="${echapper(x.heure)}">${echapper(jourOuHeure(x.heure))}</time>
           <div class="direct-corps"><a class="direct-titre-lien" href="${lienSujet(x.sujet_id)}">${echapper(x.titre)}</a>
-            <span class="direct-meta">${x.raison === "repris" || x.nb_sources >= 4 ? `<b>${x.nb_sources} sources</b>` : `<b>Majeur</b>`}
+            <span class="direct-meta">${x.raison === "repris" || x.nb_sources >= 4 ? `<b>${x.nb_sources} sources</b>` : `<b>Majeur · ${x.nb_sources} source${x.nb_sources > 1 ? "s" : ""}</b>`}
               ${x.liens.map((a) => `<a href="${echapper(a.lien)}" target="_blank" rel="noopener noreferrer"${a.officielle ? ' class="direct-officiel"' : ""}>${a.officielle ? "Officiel · " : ""}${echapper(a.source.replace(/\s*\(.*\)\s*$/, ""))} ↗</a>`).join("")}</span></div>
           ${fermer(x.cle)}</li>`).join("") + marches.map((a) =>
         `<li class="direct-item"><time class="direct-heure">${echapper(heureParis(a.maj_le))}</time>

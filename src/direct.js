@@ -63,7 +63,7 @@ function decrire(sujets) {
   const importanceIA = Math.max(0, ...sujets.map((s) => s.importance || 0));
   // Bonus de reprise : un fait repris par au moins 3 sources monte d'un niveau, sans dépasser 4 sans source officielle.
   let importance = importanceIA;
-  if (nbSources >= 3 && importanceIA >= 1) importance = Math.min(officielle ? 5 : 4, Math.max(importance, importanceIA + 1));
+  if (nbSources >= 3 && importanceIA >= 1) importance = Math.max(importanceIA, Math.min(officielle ? 5 : 4, importanceIA + 1));   // jamais à la baisse
   // Liens : la source officielle d'abord, puis les plus récents (une source une fois).
   const liens = [...parSource.values()].sort((a, b) => (b.groupe === "officielle") - (a.groupe === "officielle") || String(b.publie_le).localeCompare(String(a.publie_le)));
   const premier = articles.reduce((m, a) => (!m || String(a.publie_le) < m ? String(a.publie_le) : m), null);
@@ -92,7 +92,9 @@ export async function evenementsDepuis(db, depuis, { importanceMin = null, limit
   return regrouperEvenements(sujets.filter((s) => s.articles.length));
 }
 
-// Annonces « En direct » : fait jugé majeur (5) dans les dernières 24 h, ou repris par au moins 4 sources en 12 h.
+// Annonces « En direct » : fait jugé majeur (5) et confirmé (au moins 2 sources, ou une source officielle) dans les
+// dernières 24 h, ou repris par au moins 4 sources en 12 h. Les plus repris d'abord : un fait dont tout le monde parle
+// passe avant une note 5 donnée par l'IA à partir d'un seul article.
 export const SEUIL_SOURCES_DIRECT = 4;
 export async function calculerDirect(db, maintenant = Date.now()) {
   const h24 = new Date(maintenant - 24 * 3600e3).toISOString(), h12 = new Date(maintenant - 12 * 3600e3).toISOString();
@@ -100,7 +102,7 @@ export async function calculerDirect(db, maintenant = Date.now()) {
   const retenus = [];
   for (const e of evts) {
     const recents = new Set(e.sujets.flatMap((s) => s.articles).filter((a) => a.publie_le >= h12).map((a) => a.source_nom));
-    const majeur = e.importance_ia >= 5, repris = recents.size >= SEUIL_SOURCES_DIRECT;
+    const majeur = e.importance_ia >= 5 && (e.nb_sources >= 2 || e.officielle), repris = recents.size >= SEUIL_SOURCES_DIRECT;
     if (!majeur && !repris) continue;
     if (!(e.principal.titre_fr || e.principal.titre)) continue;
     retenus.push({
@@ -111,5 +113,5 @@ export async function calculerDirect(db, maintenant = Date.now()) {
       liens: e.liens.slice(0, 3).map((a) => ({ source: a.source_nom, lien: a.lien, officielle: a.groupe === "officielle" })),
     });
   }
-  return retenus.sort((a, b) => (b.raison === "majeur") - (a.raison === "majeur") || b.nb_sources - a.nb_sources || String(b.heure).localeCompare(String(a.heure))).slice(0, 4);
+  return retenus.sort((a, b) => b.nb_sources - a.nb_sources || (b.raison === "majeur") - (a.raison === "majeur") || String(b.heure).localeCompare(String(a.heure))).slice(0, 5);
 }
