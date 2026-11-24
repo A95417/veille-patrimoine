@@ -52,10 +52,28 @@ async function appelSite(chemin, methode = "GET", corps) {
 }
 
 // Les 5 à 10 actualités majeures : importance 3 et plus ; complétées par du niveau 2 s'il y en a moins de 5.
-export function choisirActualites(sujets) {
+// Contrôle de couverture : un fait repris par au moins 3 sources (« reprise », calculée par le site) figure toujours
+// dans le brief, même avec une note moyenne (au plus 12 actualités au total).
+export const SEUIL_REPRISE_BRIEF = 3;
+export function controleCouverture(sujets, retenus) {
+  const ids = new Set(retenus.map((s) => s.id));
+  return sujets.filter((s) => (s.reprise || 0) >= SEUIL_REPRISE_BRIEF && !ids.has(s.id))
+    .sort((a, b) => (b.reprise || 0) - (a.reprise || 0));
+}
+export function choisirActualites(sujets, bilan = null) {
   const majeurs = sujets.filter((s) => s.importance >= 3).slice(0, 10);
   const complements = sujets.filter((s) => s.importance === 2).slice(0, Math.max(0, 5 - majeurs.length));
-  return [...majeurs, ...complements].map((s) => {
+  const retenus = [...majeurs, ...complements];
+  const oublies = controleCouverture(sujets, retenus);
+  const ajoutes = oublies.slice(0, Math.max(0, 12 - retenus.length));
+  // Les faits très repris ajoutés sont rangés à leur place (importance, puis nombre de sources).
+  const tous = [...retenus, ...ajoutes].sort((a, b) => b.importance - a.importance || (b.reprise || 0) - (a.reprise || 0));
+  if (bilan) {
+    bilan.tres_repris = sujets.filter((s) => (s.reprise || 0) >= SEUIL_REPRISE_BRIEF).map((s) => `${s.titre_fr || s.titre} (${s.reprise} sources)`);
+    bilan.ajoutes = ajoutes.map((s) => `${s.titre_fr || s.titre} (${s.reprise} sources)`);
+    bilan.non_retenus = oublies.slice(ajoutes.length).map((s) => `${s.titre_fr || s.titre} (${s.reprise} sources)`);
+  }
+  return tous.map((s) => {
     let detail = null;
     try { detail = s.resume_detail ? JSON.parse(s.resume_detail) : null; } catch {}
     let categories = [];
@@ -65,6 +83,7 @@ export function choisirActualites(sujets) {
       id: s.id,
       titre: s.titre_fr || s.titre,
       importance: s.importance,
+      reprise: s.reprise || null,
       categories,
       resume: (detail && detail.essentiel) || s.resume_court || "",
       sources: sources.map((a) => ({ nom: a.source_nom, lien: a.lien })),
@@ -161,7 +180,12 @@ export async function produireBrief(date = new Date()) {
   if (d.existe && !FORCER && !rattrapage) { console.log(`Brief du ${jour} (${edition}) : déjà rédigé.`); return null; }
   if (rattrapage) console.log(`Brief du ${jour} (${edition}) : rédigé sans synthèse, nouvel essai avec l'IA.`);
 
-  const actualites = choisirActualites(d.sujets);
+  const couverture = {};
+  const actualites = choisirActualites(d.sujets, couverture);
+  console.log(`Couverture : ${couverture.tres_repris.length} fait(s) repris par au moins ${SEUIL_REPRISE_BRIEF} sources`
+    + (couverture.tres_repris.length ? " : " + couverture.tres_repris.join(" ; ") : "") + ".");
+  if (couverture.ajoutes.length) console.log("Ajoutés au brief par le contrôle de couverture : " + couverture.ajoutes.join(" ; "));
+  if (couverture.non_retenus.length) console.log("Très repris mais hors brief (12 actualités au plus) : " + couverture.non_retenus.join(" ; "));
   const recent = (m, heures) => m && Date.now() - new Date(m.maj_le) < heures * 3600 * 1000;
   let marches = null;
   if (edition === "matin") {
@@ -190,7 +214,7 @@ export async function produireBrief(date = new Date()) {
         ? `CHIFFRES DE MARCHÉ (clôtures de la veille, estimations via des fonds indiciels) :\n${texteMarches(marches)}\n\nSUJETS DES DERNIÈRES 24 HEURES`
         : `CHIFFRES DE MARCHÉ (séance du jour : Europe clôturée, New York en cours ; estimations via des fonds indiciels) :\n${texteMarches(marches)}\n\nSUJETS PARUS DEPUIS 7 H CE MATIN`) +
       ` (du plus important au moins important) :\n` +
-      actualites.map((a) => `SUJET id=${a.id} — importance ${a.importance}/5 — ${a.categories.join(", ")}\n  Titre : ${a.titre}\n  Résumé : ${a.resume}`).join("\n\n") +
+      actualites.map((a) => `SUJET id=${a.id} — importance ${a.importance}/5${a.reprise >= 2 ? ` — repris par ${a.reprise} sources` : ""} — ${a.categories.join(", ")}\n  Titre : ${a.titre}\n  Résumé : ${a.resume}`).join("\n\n") +
       `\n\nCHIFFRES DÉJÀ PUBLIÉS (à ne pas reprendre) :\n` +
       ((d.chiffres_precedents || []).map((c) => `- ${c.valeur} : ${c.libelle}`).join("\n") || "(aucun)");
     const ajouts = {};

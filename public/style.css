@@ -595,3 +595,26 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .couleur-fiche[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--texte); }
 .couleur-fiche[aria-pressed="true"]::after { content: "✓"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: .8rem; text-shadow: 0 0 3px rgba(0,0,0,.6); }
 .couleurs-fiches-nom { font-size: .8rem; color: var(--doux); }
+
+/* Bandeau « En direct » de l'accueil : annonces importantes repérées par le robot (fait majeur ou très repris). */
+.direct { background: var(--carte); border: 1px solid var(--ko); border-left: 5px solid var(--ko); border-radius: 14px; padding: 12px 14px 10px 16px; margin-bottom: 18px; }
+.direct-tete { display: flex; align-items: center; gap: 8px; }
+.direct-tete strong { color: var(--ko); letter-spacing: .02em; }
+.direct-point { width: 10px; height: 10px; border-radius: 50%; background: var(--ko); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ko) 55%, transparent); animation: direct-pouls 2s ease-out infinite; }
+@keyframes direct-pouls { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ko) 55%, transparent); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .direct-point { animation: none; } }
+.direct ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; }
+.direct-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; padding: 9px 0; border-top: 1px solid var(--bord); }
+.direct-item:first-child { border-top: 0; }
+.direct-heure { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ko); font-size: .92rem; padding-top: 1px; }
+.direct-corps { display: grid; gap: 3px; min-width: 0; }
+.direct-titre-lien { color: var(--texte); font-weight: 650; text-decoration: none; line-height: 1.35; }
+.direct-titre-lien:hover { text-decoration: underline; }
+.direct-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .84rem; color: var(--doux); }
+.direct-meta b { color: var(--texte); font-weight: 600; }
+.direct-meta a { color: var(--doux); text-decoration: none; }
+.direct-meta a:hover { color: var(--accent); text-decoration: underline; }
+.direct-meta a.direct-officiel { color: var(--ok); font-weight: 600; }
+.direct-fermer { border: 0; background: none; color: var(--doux); font-size: 1.25rem; line-height: 1; padding: 2px 6px; border-radius: 8px; cursor: pointer; }
+.direct-fermer:hover { background: var(--fond); color: var(--texte); }
+@media (max-width: 560px) { .direct-item { grid-template-columns: minmax(0, 1fr) auto; } .direct-heure { grid-column: 1; } .direct-corps { grid-column: 1; } .direct-fermer { grid-row: 1; grid-column: 2; } }

@@ -1,5 +1,6 @@
 import { routeLinkedin } from "./linkedin.js";
 import { envoyerATous } from "./notifications.js";
+import { calculerDirect, evenementsDepuis } from "./direct.js";
 import { routeVideoRobot } from "./video.js";
 import { routeCoursRobot } from "./cours.js";
 // Adresses réservées au robot de collecte (GitHub Actions).
@@ -223,18 +224,19 @@ export async function routeRobot(request, env, chemin) {
     const depuisDemande = u.get("depuis");
     const depuis = depuisDemande && !isNaN(new Date(depuisDemande)) ? new Date(depuisDemande).toISOString()
       : new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-    const { results: sujets } = await db
-      .prepare(`SELECT id, titre, titre_fr, importance, categories, resume_court, resume_detail, nb_articles, derniere_pub
-                  FROM sujets WHERE derniere_pub >= ? AND importance >= 2 AND nb_articles > 0
-                 ORDER BY importance DESC, nb_articles DESC, derniere_pub DESC LIMIT 25`)
-      .bind(depuis).all();
-    for (const lot of morceaux(sujets, PARAMS_MAX)) {
-      if (!lot.length) continue;
-      const { results } = await db
-        .prepare(`SELECT sujet_id, source_nom, lien, publie_le FROM articles WHERE sujet_id IN (${lot.map(() => "?").join(",")}) ORDER BY publie_le DESC`)
-        .bind(...lot.map((s) => s.id)).all();
-      for (const s of lot) s.sources = results.filter((a) => a.sujet_id === s.id).map(({ sujet_id, ...a }) => a);
-    }
+    // Sujets regroupés par événement (un même fait repris par plusieurs médias, en français ou en anglais, ne compte
+    // qu'une fois) ; « reprise » = nombre de sources distinctes, qui fait monter l'importance (bonus plafonné à 4
+    // sans source officielle). Un fait très repris n'est donc jamais écarté du brief.
+    const evts = await evenementsDepuis(db, depuis, { importanceMin: 1 });
+    const sujets = evts.filter((e) => e.importance >= 2 && e.principal.resume_court)
+      .sort((a, b) => b.importance - a.importance || b.nb_sources - a.nb_sources || String(b.derniere_pub).localeCompare(String(a.derniere_pub)))
+      .slice(0, 25)
+      .map((e) => {
+        const { articles, cree_le, ...p } = e.principal;
+        return { ...p, importance: e.importance, importance_ia: e.importance_ia, reprise: e.nb_sources, officielle: e.officielle,
+                 autres_sujets: e.sujets.filter((s) => s.id !== p.id).map((s) => s.id),
+                 sources: e.liens.map(({ source_nom, lien, publie_le }) => ({ source_nom, lien, publie_le })) };
+      });
     const lireEtat = async (cle) => {
       const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = ?").bind(cle).first();
       try { return l ? { ...JSON.parse(l.valeur), maj_le: l.maj_le } : null; } catch { return null; }
@@ -262,6 +264,39 @@ export async function routeRobot(request, env, chemin) {
       db.prepare("DELETE FROM briefs WHERE jour < ?").bind(new Date(Date.now() - 92 * 86400000).toISOString().slice(0, 10)),
     ]);
     return json({ ok: true });
+  }
+
+  // « En direct » : après chaque passage du robot, repère les annonces importantes (fait majeur, ou repris par
+  // au moins 4 sources en 12 h), les garde 24 h pour le bandeau de l'accueil et prévient les abonnés qui l'ont demandé.
+  if (chemin === "/api/robot/direct" && request.method === "POST") {
+    const maintenant = Date.now();
+    const l = await db.prepare("SELECT valeur FROM etat WHERE cle = 'direct'").first();
+    let avant = { items: [] }; try { avant = l ? JSON.parse(l.valeur) : avant; } catch {}
+    const deja = new Map((avant.items || []).map((x) => [x.cle, x]));
+    const calcules = await calculerDirect(db, maintenant);
+    const items = [], nouveaux = [];
+    for (const x of calcules) {
+      const ancien = deja.get(x.cle);
+      const depuis = ancien?.depuis || new Date(maintenant).toISOString();
+      if (maintenant - new Date(depuis) > 24 * 3600e3) continue;      // affiché 24 h au plus
+      items.push({ ...x, depuis, notifie: !!ancien?.notifie });
+      if (!ancien) nouveaux.push(items[items.length - 1]);
+    }
+    // Les annonces encore récentes mais sorties du calcul (moins de sources sur 12 h) restent jusqu'à 24 h.
+    for (const x of avant.items || []) if (!items.some((y) => y.cle === x.cle) && maintenant - new Date(x.depuis) <= 24 * 3600e3 && items.length < 4) items.push(x);
+    let push = null;
+    if (nouveaux.length && corps.notifier !== false) {
+      const x = nouveaux[0];
+      push = await envoyerATous(db, "direct", { titre: "En direct : " + x.titre.slice(0, 70), corps: `${x.nb_sources} source${x.nb_sources > 1 ? "s" : ""} · ${x.liens.map((a) => a.source.replace(/\s*\(.*\)\s*$/, "")).join(", ")}`.slice(0, 180),
+        url: "/sujet?id=" + encodeURIComponent(x.sujet_id) }, new URL(request.url).origin).catch(() => null);
+      for (const n of nouveaux) n.notifie = true;
+    }
+    await db.prepare("INSERT OR REPLACE INTO etat (cle, valeur, maj_le) VALUES ('direct', ?, ?)").bind(JSON.stringify({ items }), new Date(maintenant).toISOString()).run();
+    // Pour le journal du robot : les 5 faits les plus repris des 12 dernières heures, même s'ils ne sont pas « en direct ».
+    const evts = await evenementsDepuis(db, new Date(maintenant - 12 * 3600e3).toISOString());
+    const plus_repris = evts.sort((a, b) => b.nb_sources - a.nb_sources).slice(0, 5)
+      .map((e) => ({ titre: e.principal.titre_fr || e.principal.titre, sources: e.nb_sources, importance_ia: e.importance_ia, importance: e.importance }));
+    return json({ items: items.map(({ cle, titre, nb_sources, raison, depuis }) => ({ cle, titre, nb_sources, raison, depuis })), nouveaux: nouveaux.length, push, plus_repris });
   }
 
   // Schémas du brief (un par actualité), ajoutés au contenu d'un brief existant.

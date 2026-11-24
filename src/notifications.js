@@ -90,7 +90,7 @@ export async function routeNotifications(request, env, chemin, moi) {
   if (chemin === "/api/push/abonnement" && request.method === "POST") {
     const d = await lire(), a = d.abonnement || {};
     if (!/^https:\/\//.test(a.endpoint || "") || !a.keys?.p256dh || !a.keys?.auth) return json({ erreur: "Abonnement invalide." }, 400);
-    const editions = (Array.isArray(d.editions) ? d.editions : ["matin", "soir"]).filter((e) => e === "matin" || e === "soir").join(",") || "matin,soir";
+    const editions = (Array.isArray(d.editions) ? d.editions : ["matin", "soir"]).filter((e) => ["matin", "soir", "direct"].includes(e)).join(",") || "matin,soir";
     await db.prepare(`INSERT INTO push_abonnements (endpoint, utilisateur_id, p256dh, auth, editions, cree_le) VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(endpoint) DO UPDATE SET utilisateur_id = excluded.utilisateur_id, p256dh = excluded.p256dh, auth = excluded.auth, editions = excluded.editions`)
       .bind(a.endpoint, moi.id, a.keys.p256dh, a.keys.auth, editions, new Date().toISOString()).run();

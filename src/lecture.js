@@ -102,7 +102,11 @@ export async function routeLecture(chemin, url, db) {
       .bind(depuis)
       .all();
     await avecArticles(db, results, false);
-    return json({ sujets: results, alertes_marches: await alertesDuJour(db) });
+    // « En direct » : annonces repérées par le robot (fait majeur ou repris par au moins 4 sources), gardées 24 h.
+    const l = await db.prepare("SELECT valeur, maj_le FROM etat WHERE cle = 'direct'").first();
+    let direct = [];
+    try { direct = (l ? JSON.parse(l.valeur).items : []).filter((x) => Date.now() - new Date(x.depuis) <= 24 * 3600e3).map(({ notifie, ...x }) => x); } catch {}
+    return json({ sujets: results, alertes_marches: await alertesDuJour(db), direct, direct_maj: l?.maj_le || null });
   }
 
   // Calendrier fiscal (impots.gouv.fr) : échéances à venir, avec un rappel de fin d'année pour le PER.

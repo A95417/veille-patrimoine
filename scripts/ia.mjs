@@ -38,7 +38,8 @@ TA TÂCHE : pour chaque sujet fourni, donne :
   5 = décision ou événement majeur, effectif ou acté : mesure fiscale ou patrimoniale adoptée ou publiée, décision de taux de la BCE ou de la Fed, chute marquée des marchés, nouveau taux du Livret A, réforme votée de l'assurance-vie, du PER, des successions ou de l'IFI.
   4 = texte ou chiffre officiel important : projet de loi, amendement adopté en commission ou en séance, nouvelle doctrine fiscale BOFiP concernant les particuliers ou les dirigeants, chiffre macroéconomique officiel clé (inflation, croissance, chômage en France ou en zone euro), décision d'un régulateur (AMF, ACPR).
   3 = utile pour échanger avec un client : tendance des placements, de l'immobilier ou des SCPI, mouvement de marché notable, discours d'un banquier central, analyse argumentée sur l'épargne ou la fiscalité, actualité crypto majeure.
-  2 = secondaire : déclaration ou proposition politique sans texte en discussion (meeting, interview, programme de campagne), actualité d'une entreprise, information sectorielle, actualité internationale peu liée à l'épargne des clients.
+  3 aussi = annonce majeure d'une très grande entreprise cotée, suivie par les marchés du monde entier (par exemple les plus grandes capitalisations du CAC 40 ou de Wall Street) : départ, nomination ou retour de son dirigeant, résultats, rachat ou fusion, enquête ou sanction importante. Note 4 si l'annonce fait nettement bouger les marchés d'après l'article.
+  2 = secondaire : déclaration ou proposition politique sans texte en discussion (meeting, interview, programme de campagne), actualité courante d'une entreprise (hors annonce majeure d'une très grande entreprise cotée), information sectorielle, actualité internationale peu liée à l'épargne des clients.
   1 = hors sujet pour un gestionnaire de patrimoine.
   En cas d'hésitation entre deux niveaux, choisis le plus bas.
 - "categories" : 1 à 3 catégories, choisies uniquement dans la liste autorisée (« Autre » si rien ne convient). Les catégories de produits et de règles (Assurance-vie, Épargne retraite (PER), Épargne réglementée, Fiscalité, Législation patrimoniale, Transmission & succession, Retraite & réformes, Prévoyance…) concernent UNIQUEMENT la France : un dispositif étranger (401(k), IRA, ISA, fiscalité américaine…) va dans « Autre », « Marchés actions » ou « Macroéconomie » selon le cas.
@@ -166,8 +167,21 @@ export async function traiter() {
     // Toujours enregistrer la consommation, même en cas d'erreur.
     await appelSite("/api/robot/ia/quota", "POST", { ajouts: g.ajouts });
     console.log("Bilan IA :", JSON.stringify({ ...bilan, appels: g.appels, utilisation_du_jour: g.ajouts }));
+    await enDirect();
   }
   return bilan;
+}
+
+// « En direct » : une fois les nouveaux sujets classés, le site repère les annonces importantes (fait majeur ou
+// repris par au moins 4 sources en 12 h) pour le bandeau de l'accueil. Le journal liste les faits les plus repris.
+async function enDirect() {
+  try {
+    const r = await appelSite("/api/robot/direct", "POST", {});
+    console.log(`En direct : ${r.items.length} annonce(s) à l'accueil${r.nouveaux ? `, dont ${r.nouveaux} nouvelle(s)` : ""}`
+      + (r.items.length ? " : " + r.items.map((x) => `${x.titre} (${x.nb_sources} sources)`).join(" ; ") : "") + ".");
+    if (r.push) console.log(`En direct : notification envoyée à ${r.push.envoyes}/${r.push.abonnes} appareil(s).`);
+    console.log("Faits les plus repris (12 h) : " + (r.plus_repris || []).map((e) => `${e.titre} — ${e.sources} sources, note ${e.importance_ia}${e.importance !== e.importance_ia ? "→" + e.importance : ""}`).join(" ; "));
+  } catch (e) { console.error("En direct : échec :", e.message); }
 }
 
 async function travailler(g, bilan) {

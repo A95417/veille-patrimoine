@@ -87,8 +87,9 @@
 <body>
   <header class="entete" id="entete"></header>
   <main class="page">
-    <section class="alerte-bandeau" id="alerte" hidden>
-      <strong>Important</strong>
+    <section class="direct" id="alerte" hidden aria-live="polite" aria-labelledby="direct-titre">
+      <div class="direct-tete"><span class="direct-point" aria-hidden="true"></span><strong id="direct-titre">En direct</strong>
+        <span class="doux petit" id="direct-maj"></span></div>
       <ul id="alerte-liste"></ul>
     </section>
 
@@ -250,15 +251,43 @@
       document.getElementById("info-maj").textContent = "Mis à jour à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     }
 
-    // ------------------------------------------------------------ Alertes (sujets d'importance 5, chute de marché)
+    // ------------------------------------------------------------ En direct : annonces importantes (fait majeur, ou repris par
+    // au moins 4 sources en 12 h, repéré par le robot à chaque passage), chute de marché. Chaque annonce peut être masquée.
+    const CLE_MASQUES = "direct_masques";
+    const masques = () => { try { return JSON.parse(localStorage.getItem(CLE_MASQUES) || "[]"); } catch { return []; } };
+    const heureParis = (iso) => new Date(iso).toLocaleTimeString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" });
+    const jourOuHeure = (iso) => {
+      const j = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
+      return j(iso) === j(Date.now()) ? heureParis(iso) : "hier " + heureParis(iso);
+    };
     async function chargerAlertes() {
-      const { sujets, alertes_marches: alertes = [] } = await appelApi("/api/une");
-      document.getElementById("alerte").hidden = !sujets.length && !alertes.length;
-      document.getElementById("alerte-liste").innerHTML = alertes.map((a) =>
-        `<li><a class="alerte-marche" href="/marches">▼ ${echapper(nomCourt(a))} : ${String(a.variation).replace(".", ",")} % aujourd'hui</a>
-          <span class="doux petit"> · estimation via ${echapper(a.via)} · relevé ${quand(a.maj_le)}</span></li>`).join("") + sujets.map((s) =>
-        `<li><a href="${lienSujet(s.id)}">${echapper(s.titre_fr || s.titre)}</a>
-          <span class="doux petit"> · ${[...new Set(s.articles.map((a) => a.source_nom))].map(echapper).join(", ")} · ${quand(s.derniere_pub)}</span></li>`).join("");
+      const { sujets, alertes_marches: alertes = [], direct = [], direct_maj } = await appelApi("/api/une");
+      const caches = new Set(masques());
+      // Sujets notés 5 pas encore repris par le robot « En direct » (avant son premier passage).
+      const items = [...direct, ...sujets.filter((s) => !direct.some((d) => d.sujet_id === s.id)).map((s) => ({
+        cle: s.id, sujet_id: s.id, titre: s.titre_fr || s.titre, raison: "majeur", heure: s.derniere_pub,
+        nb_sources: new Set(s.articles.map((a) => a.source_nom)).size,
+        liens: [...new Map(s.articles.map((a) => [a.source_nom, a])).values()].slice(0, 3).map((a) => ({ source: a.source_nom, lien: a.lien })) }))]
+        .filter((x) => !caches.has(x.cle));
+      const marches = alertes.filter((a) => !caches.has("m:" + (a.symbole || a.nom || nomCourt(a)) + ":" + String(a.maj_le).slice(0, 10)));
+      document.getElementById("alerte").hidden = !items.length && !marches.length;
+      document.getElementById("direct-maj").textContent = direct_maj ? "· vérifié à " + heureParis(direct_maj) : "";
+      const fermer = (cle) => `<button type="button" class="direct-fermer" data-masquer="${echapper(cle)}" aria-label="Masquer cette annonce" title="Masquer">×</button>`;
+      document.getElementById("alerte-liste").innerHTML = items.map((x) =>
+        `<li class="direct-item"><time class="direct-heure" datetime="${echapper(x.heure)}">${echapper(jourOuHeure(x.heure))}</time>
+          <div class="direct-corps"><a class="direct-titre-lien" href="${lienSujet(x.sujet_id)}">${echapper(x.titre)}</a>
+            <span class="direct-meta">${x.raison === "repris" || x.nb_sources >= 4 ? `<b>${x.nb_sources} sources</b>` : `<b>Majeur</b>`}
+              ${x.liens.map((a) => `<a href="${echapper(a.lien)}" target="_blank" rel="noopener noreferrer"${a.officielle ? ' class="direct-officiel"' : ""}>${a.officielle ? "Officiel · " : ""}${echapper(a.source.replace(/\s*\(.*\)\s*$/, ""))} ↗</a>`).join("")}</span></div>
+          ${fermer(x.cle)}</li>`).join("") + marches.map((a) =>
+        `<li class="direct-item"><time class="direct-heure">${echapper(heureParis(a.maj_le))}</time>
+          <div class="direct-corps"><a class="alerte-marche" href="/marches">▼ ${echapper(nomCourt(a))} : ${String(a.variation).replace(".", ",")} % aujourd'hui</a>
+            <span class="direct-meta">estimation via ${echapper(a.via)}</span></div>
+          ${fermer("m:" + (a.symbole || a.nom || nomCourt(a)) + ":" + String(a.maj_le).slice(0, 10))}</li>`).join("");
+      document.querySelectorAll("[data-masquer]").forEach((b) => b.onclick = () => {
+        const l = masques().concat(b.dataset.masquer).slice(-60);
+        try { localStorage.setItem(CLE_MASQUES, JSON.stringify(l)); } catch {}
+        chargerAlertes().catch(() => {});
+      });
     }
 
     // ------------------------------------------------------------ Brief du matin, chiffre du jour, points pour les rendez-vous
@@ -459,7 +488,9 @@
     }
     document.getElementById("nouveautes").onclick = () => { charger(false); rafraichir(); };
     setInterval(verifierNouveautes, 2 * 60 * 1000);
-    setInterval(() => { if (!document.hidden) { chargerAlertes().catch(() => {}); chargerMarches(); } }, 10 * 60 * 1000);
+    setInterval(() => { if (!document.hidden) chargerAlertes().catch(() => {}); }, 2 * 60 * 1000);   // « En direct » : toutes les 2 minutes
+    setInterval(() => { if (!document.hidden) chargerMarches(); }, 10 * 60 * 1000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) chargerAlertes().catch(() => {}); });
 
   </script>
 </body>
