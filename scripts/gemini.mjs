@@ -89,6 +89,7 @@ export async function genererVoix(modele, texte, voix = "Charon") {
   const speechConfig = roles
     ? { multiSpeakerVoiceConfig: { speakerVoiceConfigs: roles.map(([speaker, nom]) => ({ speaker, voiceConfig: { prebuiltVoiceConfig: { voiceName: nom } } })) } }
     : { voiceConfig: { prebuiltVoiceConfig: { voiceName: voix } } };
+  if (roles) return voixDialogue(modele, texte, roles);
   const corps = {
     contents: [{ role: "user", parts: [{ text: texte }] }],
     generationConfig: { responseModalities: ["AUDIO"], speechConfig },
@@ -105,6 +106,40 @@ export async function genererVoix(modele, texte, voix = "Charon") {
     if (!part) throw new Error("Réponse audio vide.");
     const taux = Number((part.inlineData.mimeType || "").match(/rate=(\d+)/)?.[1]) || 24000;
     return { pcm: Buffer.from(part.inlineData.data, "base64"), taux };
+  }
+  return { quota: true };
+}
+
+// Dialogue à deux voix (API « interactions » de Gemini) : une réplique par ligne « Nom: texte ». Seul le texte de
+// chaque réplique est envoyé, avec le nom du personnage pour choisir sa voix (aucune consigne de ton).
+async function voixDialogue(modele, texte, roles) {
+  const noms = new Set(roles.map(([n]) => n));
+  const repliques = texte.split("\n").map((l) => l.match(/^\s*([^:]{1,30}):\s*(.+)$/)).filter((m) => m && noms.has(m[1].trim()))
+    .map((m) => ({ type: "text", text: m[2].trim(), annotations: [{ type: "speech_metadata", speaker: m[1].trim() }] }));
+  if (!repliques.length) throw new Error("Dialogue vide (lignes « Nom: texte » attendues).");
+  const corps = {
+    model: modele,
+    input: [{ type: "user_input", content: repliques }],
+    response_format: { type: "audio" },
+    generation_config: { speech_config: { speakers: roles.map(([speaker, voice]) => ({ speaker, voice })) } },
+  };
+  for (let essai = 1; essai <= 2; essai++) {
+    const r = await fetch(`${API}/interactions`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": CLE }, body: JSON.stringify(corps) });
+    if (r.status === 429) return { quota: true, detail: (await r.text()).slice(0, 300) };
+    if (r.status >= 500 && essai === 1) { await pause(8000); continue; }
+    const t = await r.text();
+    if (!r.ok) throw new Error(`Voix (dialogue) ${modele} HTTP ${r.status} : ${t.slice(0, 400)}`);
+    const j = JSON.parse(t);
+    const audio = (j.steps || []).filter((s) => s.type === "model_output").flatMap((s) => s.content || []).filter((c) => c.type === "audio").pop();
+    if (!audio?.data) throw new Error("Réponse audio vide : " + t.slice(0, 300));
+    const buf = Buffer.from(audio.data, "base64");
+    // WAV (en-tête RIFF) : on garde les échantillons du bloc « data » ; sinon PCM brut à 24 kHz.
+    if (buf.slice(0, 4).toString() === "RIFF") {
+      const taux = buf.readUInt32LE(24); let i = 12;
+      while (i < buf.length - 8) { const id = buf.slice(i, i + 4).toString(), n = buf.readUInt32LE(i + 4); if (id === "data") return { pcm: buf.slice(i + 8, i + 8 + n), taux }; i += 8 + n; }
+      throw new Error("WAV sans données audio.");
+    }
+    return { pcm: buf, taux: 24000 };
   }
   return { quota: true };
 }

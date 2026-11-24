@@ -490,7 +490,7 @@ GAB.fin = {
       contacts.forEach(([ic, v], i) => { o += g(icone(ic, 240, 1260 + i * 120) + txt(305, 1276 + i * 120, court(v, 34), { anchor: "start", size: 46, w: 800, f: c.txt, ls: 1 }), `translate(${(1 - eo(i ? k5 : k4)) * -60} 0)`, i ? k5 : k4); });
     }
     // mentions sur 1 ou 2 lignes chacune (jamais coupées), avec un bandeau discret pour la lisibilité
-    const ment = (C.mentions || []).slice(0, 4).flatMap((m) => lignes(court(m, 130), 66, 2)).slice(0, 5);
+    const ment = (C.mentions || []).slice(0, 4).flatMap((m) => lignes(court(m, 140), 74, 2)).slice(0, 6);
     if (ment.length && p.style && p.style !== "clair" && p.style !== "bordeaux" && p.style !== "cercles") o += `<rect x="70" y="1468" width="940" height="${ment.length * 34 + 26}" rx="20" fill="#000" opacity=".28"/>`;
     ment.forEach((m, i) => { o += txt(540, 1496 + i * 34, m, { size: 25, w: 500, f: c.ment, op: .9 }); });
     return o;
@@ -679,7 +679,7 @@ function ouvertureBouche(S, t) {   // 0 à 1, suivant les mots de la scène
 function debutTableau(S) { let i = S.i; while (i > 0 && SCENES[i].p.enchaine) i--; return SCENES[i].debut; }
 // Instant où un mot est prononcé dans la scène (le n-ième s'il revient plusieurs fois), sinon « defaut ».
 function motT(S, cle, defaut, n = 0) {
-  const re = new RegExp("^[«“(]?" + cle, "i"), l = MOTS.filter((w) => w.scene === S.i && re.test(w.mot.normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
+  const re = new RegExp("^(?:[«“(]|[a-z]+['’])?" + cle, "i"), l = MOTS.filter((w) => w.scene === S.i && re.test(w.mot.normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
   return l[Math.min(n, l.length - 1)]?.debut ?? defaut;
 }
 function panneauDialogue(P, S, t) {
