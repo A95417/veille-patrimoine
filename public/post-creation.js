@@ -55,7 +55,7 @@
               <div class="lp-formats" role="group" aria-label="Format">${Object.entries(FORMATS).map(([k, [ico, n, d]]) => `<button type="button" class="lp-format" data-format="${k}" aria-pressed="${k === E.format}"><span class="lp-format-ico" aria-hidden="true">${ico}</span><b>${n}</b><small>${d}</small></button>`).join("")}</div>
               <div class="lp-reglages">
                 <div><span class="vs-lib">Ton</span><div class="puces">${Object.entries(TONS).map(([k, l]) => `<button type="button" class="puce" data-ton="${k}">${l}</button>`).join("")}</div></div>
-                <div id="lp-longueur-bloc"><span class="vs-lib">Longueur</span><div class="puces">${Object.entries(LONGUEURS).map(([k, l]) => `<button type="button" class="puce" data-longueur="${k}">${l}</button>`).join("")}</div></div>
+                <div id="lp-longueur-bloc"><span class="vs-lib">Longueur</span><div class="puces">${Object.entries(LONGUEURS).map(([k, l]) => `<button type="button" class="puce" data-longueur="${k}">${l}</button>`).join("")}</div><small class="lp-fixe" id="lp-longueur-fixe" hidden></small></div>
                 <div><span class="vs-lib">Émojis</span><div class="puces">${Object.entries(EMOJIS).map(([k, l]) => `<button type="button" class="puce" data-emojis="${k}">${l}</button>`).join("")}</div></div>
               </div>
               <details class="lp-plus"><summary>Plus d'options : angle, précision, mon style</summary>
@@ -219,7 +219,11 @@
     document.querySelectorAll("[data-longueur]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.longueur === E.longueur));
     document.querySelectorAll("[data-emojis]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.emojis === E.emojis));
     document.querySelectorAll("[data-approche]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.approche === E.approche));
-    $("lp-longueur-bloc").hidden = ["serie", "sondage", "carrousel"].includes(E.format);
+    // Carrousel, sondage et série ont une taille fixée par le format : la longueur reste visible mais grisée.
+    const fixe = { carrousel: "Fixée par le format : 5 à 8 diapositives", sondage: "Fixée par le format : 4 réponses", serie: "Fixée par le format : 3 posts" }[E.format];
+    $("lp-longueur-bloc").classList.toggle("lp-grise", !!fixe);
+    document.querySelectorAll("[data-longueur]").forEach((b) => { b.disabled = !!fixe; if (fixe) b.setAttribute("aria-pressed", "false"); });
+    $("lp-longueur-fixe").hidden = !fixe; $("lp-longueur-fixe").textContent = fixe || "";
     majGo();
   }
   function majGo() {

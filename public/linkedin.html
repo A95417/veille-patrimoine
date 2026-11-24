@@ -365,9 +365,11 @@
     .lp-format[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-doux); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
     .lp-format-ico { font-size: 1.3rem; }
     .lp-format b { font-size: .92rem; } .lp-format small { font-size: .76rem; color: var(--doux); line-height: 1.25; }
-    .lp-reglages { display: flex; gap: 12px 22px; flex-wrap: wrap; }
-    .lp-reglages > div, .lp-reglages > div[hidden] + div { display: grid; gap: 6px; }
+    .lp-reglages { display: flex; gap: 12px 22px; flex-wrap: wrap; align-items: flex-start; }
+    .lp-reglages > div, .lp-reglages > div[hidden] + div { display: grid; gap: 6px; align-content: start; }
     .lp-reglages > div[hidden] { display: none; }
+    .lp-grise .puce { opacity: .45; cursor: not-allowed; }
+    .lp-fixe { font-size: .8rem; color: var(--doux); }
     .lp-plus > summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: .9rem; padding: 4px 0; }
     .lp-plus[open] { display: grid; gap: 8px; }
     .lp-plus[open] > summary { margin-bottom: 4px; }
